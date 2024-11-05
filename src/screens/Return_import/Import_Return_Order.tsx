@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
-import { Upload, Button, Row, Col, ConfigProvider, Layout, Select, Form, Table, message, Modal, Tooltip } from 'antd';
+import { Upload, Button, Row, Col, ConfigProvider, Layout, notification, Popconfirm, Tooltip, Table } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import icon from '../../assets/images/document-text.png';
-
-const options = [
-  { value: '12345', label: '12345' },
-  { value: '12346', label: '12346' },
-  { value: '12347', label: '12347' },
-];
 
 const dataSource = [
   { Order: '12345', SKU: 'SKU001', QTY: '10', Amount: '100.00', SO: 'SO001', Order_status: 'Cancel', SO_status: 'Invoice', key: '12345', SR_Create: 'NULL' },
@@ -61,32 +55,19 @@ const columns = [
 ];
 
 const ImportOrder = () => {
-  const [form] = Form.useForm();
-  const [selectedValue, setSelectedValue] = useState<string | undefined>();
-  const [filteredData, setFilteredData] = useState<any[]>([]);
   const [importedData, setImportedData] = useState<any[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [isSRCreated, setIsSRCreated] = useState(false); // เพิ่มการประกาศตัวแปรที่นี่
-
-  const handleSelectChange = (value: string) => {
-    setSelectedValue(value);
-  };
-
-  const handleCheck = () => {
-    if (selectedValue) {
-      const dataToShow = dataSource.filter(item => item.Order === selectedValue);
-      setImportedData(dataToShow);
-    }
-  };
+  const [isSRCreated, setIsSRCreated] = useState(false);
 
   const handleDownloadTemplate = () => {
-    const ws = XLSX.utils.json_to_sheet([]);
-    XLSX.utils.sheet_add_aoa(ws, [columns.map(col => col.title)]);
+    const templateData = [
+      { Order: '' },
+    ];
 
+    const ws = XLSX.utils.json_to_sheet(templateData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Template');
-
-    XLSX.writeFile(wb, 'Template.xlsx');
+    XLSX.writeFile(wb, 'Order_Template.xlsx');
   };
 
   const handleImportExcel = (file: File) => {
@@ -97,7 +78,7 @@ const ImportOrder = () => {
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
       const importedData = XLSX.utils.sheet_to_json(worksheet);
-
+  
       const transformedData = importedData.map((row: any) => ({
         Order: row['Order'] || row['Order ID'],
         SKU: row['SKU'],
@@ -108,11 +89,20 @@ const ImportOrder = () => {
         SO_status: row['SO Status'] || row['SO Status'],
         SR_Create: row['SR_Create'] || row['SR_Create'],
       }));
+  
+      const filteredData = transformedData.filter((row: any) => row.Order); // Filter out empty orders
 
-      const filteredData = transformedData.filter((row: any) => Object.values(row).some(value => value !== '' && value !== undefined));
-      setImportedData(filteredData);
+      // Map imported data to dataSource only for existing orders
+      const matchedData = filteredData
+        .map((item) => {
+          const found = dataSource.find(source => source.Order === item.Order.toString());
+          return found ? { ...found } : null; // Spread found item or return null
+        })
+        .filter(Boolean); // Filter out null values
+  
+      setImportedData(matchedData);
     };
-    
+  
     reader.readAsBinaryString(file);
   };
 
@@ -124,45 +114,13 @@ const ImportOrder = () => {
     showUploadList: false,
   };
 
-  const showDeleteConfirm = () => {
-    Modal.confirm({
-      title: 'ยืนยันการลบ',
-      content: 'คุณแน่ใจว่าต้องการลบข้อมูลที่เลือก?',
-      onOk: handleDelete,
-      onCancel: () => {},
-    });
-  };
-
   const handleDelete = () => {
-    const selectedData = importedData.filter((record: any) => selectedRowKeys.includes(record.Order));
-    console.log('ข้อมูลที่ลบ:', selectedData);
-  
     const remainingData = importedData.filter((record: any) => !selectedRowKeys.includes(record.Order));
     setImportedData(remainingData);
     setSelectedRowKeys([]);
-    message.success('ลบข้อมูลสำเร็จ');
+    notification.success({ message: 'Deleted successfully' });
   };
-  
-  const showConfirmModal = () => {
-    if (isSRCreated) {
-      // แสดงข้อความยืนยันการส่งข้อมูล
-      Modal.confirm({
-        title: 'ยืนยันการส่งข้อมูล',
-        content: 'คุณแน่ใจว่าต้องการยืนยันการส่งข้อมูล?',
-        onOk: handleConfirm, // ถ้ายืนยันให้เรียกใช้ handleConfirm
-        onCancel: () => {},
-      });
-    } else {
-      // ถ้ายังไม่มีการสร้าง SR ให้แสดงข้อความยืนยันการสร้าง SR
-      Modal.confirm({
-        title: 'ยืนยันการสร้าง SR',
-        content: 'คุณแน่ใจว่าต้องการส่งข้อมูลสร้าง SR?',
-        onOk: handleCreateSR,
-        onCancel: () => {},
-      });
-    }
-  };
-  
+
   const handleCreateSR = () => {
     const updatedData = importedData.map((record: any) => {
       if (selectedRowKeys.includes(record.Order)) {
@@ -176,20 +134,15 @@ const ImportOrder = () => {
     });
     setImportedData(updatedData);
     setIsSRCreated(true);
-    message.success('SR สร้างสำเร็จ');
+    notification.success({ message: 'SR created successfully' });
   };
 
   const handleConfirm = () => {
-    const selectedData = importedData.filter((record: any) => selectedRowKeys.includes(record.Order));
-    console.log('ข้อมูลที่มี SR:', selectedData);
-    
-    // ลบข้อมูลที่เลือกออกจาก importedData
     const remainingData = importedData.filter((record: any) => !selectedRowKeys.includes(record.Order));
     setImportedData(remainingData);
-    
-    setSelectedRowKeys([]); // รีเซ็ต selectedRowKeys หลังจากยืนยัน
-    setIsSRCreated(false); // รีเซ็ต isSRCreated เพื่อให้ปุ่มกลับเป็น "สร้าง SR"
-    message.success('ยืนยันข้อมูลสำเร็จ');
+    setSelectedRowKeys([]);
+    setIsSRCreated(false);
+    notification.success({ message: 'Data confirmed successfully' });
   };
 
   const rowSelection = {
@@ -203,7 +156,7 @@ const ImportOrder = () => {
     <Layout>
       <ConfigProvider>
         <div style={{ marginLeft: '28px', fontSize: '25px', fontWeight: 'bold', color: 'DodgerBlue' }}>
-          Import Order
+          Import Return order 
         </div>
         <Layout.Content
           style={{
@@ -214,82 +167,66 @@ const ImportOrder = () => {
             borderRadius: "8px",
           }}
         >
-         <Row gutter={20} justify="end">
-  <Col>
-    <Tooltip title="Download the template file from table">
-      <Button onClick={handleDownloadTemplate}>
-        <img src={icon} alt="Download Icon" style={{ width: 16, height: 16, marginRight: 8 }} />
-        Download Template
-      </Button>
-    </Tooltip>
-  </Col>
-  <Col>
-    <Tooltip title="Import Excel file">
-      <Upload {...uploadProps}>
-        <Button icon={<UploadOutlined />} style={{ background: '#7161EF', color: '#FFF' }}>
-          Import Excel
-        </Button>
-      </Upload>
-    </Tooltip>
-  </Col>
-</Row>
-
-
-          <Form layout="vertical" form={form} style={{ marginTop: '40px' }}>
-            <Row justify="center" align="middle" >
-              <Col span={8}>
-                <Form.Item
-                  label="กรอกเลข Order"
-                  name="กรอกเลข Order"
-                  rules={[{ required: true, message: 'Please select the SKU!' }]}
-                >
-                  <Row gutter={16}>
-                    <Col span={22}>
-                      <Select
-                        showSearch
-                        style={{maxWidth: '500px', height: '50px'}}
-                        placeholder="กรอกเลข Order"
-                        optionFilterProp="label"
-                        value={selectedValue}
-                        onChange={handleSelectChange}
-                        options={options}
-                      />
-                    </Col>
-                    <Col span={2}>
-                    <Tooltip title="ตรวจสอบเลขOrder">
-                      <Button type="primary" style={{ height: '50px', width: '100px'                      }} onClick={handleCheck}>
-                        ตรวจสอบ
-                      </Button>
-                      </Tooltip>
-                    </Col>
-                  </Row>
-                </Form.Item>
-              </Col>
-            </Row>
-          </Form>
+          <Row gutter={20} justify="end" style={{marginBottom:'30px'}}>
+            <Col>
+              <Tooltip title="Download the template file from table">
+                <Button onClick={handleDownloadTemplate}>
+                  <img src={icon} alt="Download Icon" style={{ width: 16, height: 16, marginRight: 8 }} />
+                  Download Template
+                </Button>
+              </Tooltip>
+            </Col>
+            <Col>
+              <Tooltip title="Import Excel file">
+                <Upload {...uploadProps}>
+                  <Button icon={<UploadOutlined />} style={{ background: '#7161EF', color: '#FFF' }}>
+                    Import Excel
+                  </Button>
+                </Upload>
+              </Tooltip>
+            </Col>
+          </Row>
 
           <Table
             rowSelection={rowSelection}
-            dataSource={importedData}
+            dataSource={importedData} // Use the mapped importedData
             columns={columns}
             pagination={false}
             rowKey="Order"
-            style={{ width: '100%', tableLayout: 'fixed' }} // Ensure the table takes full width and is fixed layout
+            style={{ width: '100%', tableLayout: 'fixed'}} 
             scroll={{ x: 'max-content' }}
           />
 
-<Row gutter={16} justify="center" style={{ marginTop: '20px' }}>
-  <Col>
-    <Button type="primary" onClick={showConfirmModal} disabled={selectedRowKeys.length === 0}>
-      {isSRCreated ? 'ยืนยันข้อมูล' : 'สร้าง SR'}
-    </Button>
-  </Col>
-  <Col>
-    <Button danger onClick={showDeleteConfirm} disabled={selectedRowKeys.length === 0}>
-      ลบ
-    </Button>
-  </Col>
-</Row>
+          <Row gutter={16} justify="center" style={{ marginTop: '20px' }}>
+            <Col>
+              <Popconfirm 
+                title={isSRCreated ? 'Confirm data submission?' : 'Confirm SR creation?'}
+                onConfirm={isSRCreated ? handleConfirm : handleCreateSR}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button type="primary" disabled={selectedRowKeys.length === 0}>
+                  {isSRCreated ? 'Confirm Data' : 'Create SR'}
+                </Button>
+              </Popconfirm>
+            </Col>
+            <Col>
+              <Popconfirm
+                title="Confirm data reset?"
+                onConfirm={() => {
+                  setImportedData([]);
+                  setSelectedRowKeys([]);
+                  notification.success({ message: 'Data reset successfully' });
+                }}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button type="default" disabled={importedData.length === 0}>
+                  Reset
+                </Button>
+              </Popconfirm>
+            </Col>
+          </Row>
         </Layout.Content>
       </ConfigProvider>
     </Layout>
@@ -297,4 +234,3 @@ const ImportOrder = () => {
 };
 
 export default ImportOrder;
-
