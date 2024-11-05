@@ -1,6 +1,14 @@
 stages:
     - sonarqube-check
     - sonarqube-vulnerability-report
+    - build-test
+    - create-test
+    - deploy-test
+    - deploy-test-186
+    - build
+    - create
+    - deploy
+
 
 sonarqube-check:
   stage: sonarqube-check
@@ -23,16 +31,164 @@ sonarqube-check:
 sonarqube-vulnerability-report:
   stage: sonarqube-vulnerability-report
   script:
-    - 'curl -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/issues/gitlab_sast_export?projectKey=frontend-boiler-page&branch=${CI_COMMIT_BRANCH}&pullRequest=${CI_MERGE_REQUEST_IID}" -o gl-sast-sonar-report.json'
+    - 'curl -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/issues/gitlab_sast_export?projectKey=dc-newstock-front&branch=${CI_COMMIT_BRANCH}&pullRequest=${CI_MERGE_REQUEST_IID}" -o gl-sast-sonar-report.json'
   allow_failure: true
   only:
-    - merge_requests
-    - master
     - main
-    - develop
   artifacts:
     expire_in: 1 day
     reports:
       sast: gl-sast-sonar-report.json
   dependencies:
     - sonarqube-check
+
+build-test:
+  stage: build-test
+  image: node:20-alpine
+  before_script:
+    - echo "$ENV_DEV" > .env
+    - cat .env
+    - npm install --legacy-peer-deps
+  script:
+    - export CI=false
+    - npm run build
+  cache:
+    key: build-cache
+    paths:
+      - node_modules
+      - build
+  only:
+    - main
+
+create-test:
+  stage: create-test
+  image: docker:24.0.6
+  services:
+    - docker:24.0.6-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+  cache:
+    key: build-cache
+    paths:
+      - build
+    policy: pull
+  only:
+    - main
+
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+
+deploy-test:
+  stage: deploy-test
+  image: alpine:3.17
+  only:
+    - main
+  before_script:
+    - apk add --update openssh-client openssh bash --repository https://uk.alpinelinux.org/alpine/v3.11/main
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$SSH_KEY_86" > ./key.file
+    - chmod 400 ./key.file
+    - ssh-add ./key.file
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+  script:
+    - ssh -o StrictHostkeyChecking=no admindcom@$SERVER_IP_86 "
+      docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+      docker stop $CI_PROJECT_NAME || true &&
+      docker rm $CI_PROJECT_NAME || true &&
+      docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA &&
+      docker run -d --name $CI_PROJECT_NAME -p $SERVICE_PORT:3000 $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA &&
+      docker image prune -a -f &&
+      exit"
+
+deploy-test-186:
+  stage: deploy-test-186
+  image: alpine:3.17
+  when: manual
+  only:
+    - main
+  before_script:
+    - apk add --update openssh-client openssh bash --repository https://uk.alpinelinux.org/alpine/v3.11/main
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$SSH_KEY_186" > ./key.file
+    - chmod 400 ./key.file
+    - ssh-add ./key.file
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+  script:
+    - ssh -o StrictHostkeyChecking=no admindcom@$SERVER_IP_186 "
+      docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+      docker stop $CI_PROJECT_NAME || true &&
+      docker rm $CI_PROJECT_NAME || true &&
+      docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA &&
+      docker run -d --name $CI_PROJECT_NAME -p $SERVICE_PORT:3000 $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA &&
+      docker image prune -a -f &&
+      exit"
+
+build:
+  stage: build
+  image: node:20-alpine
+  before_script:
+    - echo "$ENV_PRODUCTION" > .env
+    - cat .env
+    - npm install --legacy-peer-deps
+  script:
+    - export CI=false
+    - npm run build
+  cache:
+    key: build-cache
+    paths:
+      - node_modules
+      - build
+  only:
+    - tags
+
+create:
+  stage: create
+  image: docker:24.0.6
+  services:
+    - docker:24.0.6-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+  cache:
+    key: build-cache
+    paths:
+      - build
+    policy: pull
+  only:
+    - tags
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+
+deploy:
+  stage: deploy
+  image: alpine:3.17
+  only:
+    - tags
+  before_script:
+    - apk add --update openssh-client openssh bash --repository https://uk.alpinelinux.org/alpine/v3.11/main
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$SSH_KEY_186" > ./key.file
+    - chmod 400 ./key.file
+    - ssh-add ./key.file
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+  script:
+    - ssh -o StrictHostkeyChecking=no admindcom@$SERVER_IP_186 "
+      docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+      docker stop $CI_PROJECT_NAME || true &&
+      docker rm $CI_PROJECT_NAME || true &&
+      docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG &&
+      docker run -d --name $CI_PROJECT_NAME -p $SERVICE_PORT:3000 $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG &&
+      docker image prune -a -f &&
+      exit"
