@@ -60,8 +60,6 @@ build:
     paths:
       - node_modules
       - build
-  only:
-    - dev
 
 create:
   stage: create
@@ -77,9 +75,6 @@ create:
     paths:
       - build
     policy: pull
-  only:
-    - dev
-
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
@@ -88,8 +83,6 @@ create:
 deploy:
   stage: deploy
   image: alpine:3.17
-  only:
-    - dev
   before_script:
     - apk add --update openssh-client openssh bash --repository https://uk.alpinelinux.org/alpine/v3.11/main
     - mkdir -p ~/.ssh
