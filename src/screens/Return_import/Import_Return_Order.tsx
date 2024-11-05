@@ -7,6 +7,7 @@ import icon from '../../assets/images/document-text.png';
 const dataSource = [
   { Order: '12345', SKU: 'SKU001', QTY: '10', Amount: '100.00', SO: 'SO001', Order_status: 'Cancel', SO_status: 'Invoice', key: '12345', SR_Create: 'NULL' },
   { Order: '12346', SKU: 'SKU002', QTY: '5', Amount: '50.00', SO: 'SO002', Order_status: 'Completed', SO_status: 'Invoice', key: '12346', SR_Create: 'NULL' },
+  { Order: '12347', SKU: 'SKU002', QTY: '5', Amount: '50.00', SO: 'SO002', Order_status: 'Completed', SO_status: 'Invoice', key: '12346', SR_Create: 'NULL' },
 ];
 
 const columns = [
