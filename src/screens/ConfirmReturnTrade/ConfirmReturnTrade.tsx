@@ -401,17 +401,21 @@ const ConfirmReturnTrade = () => {
 
             {activeTabKey=='1' && (
             <Modal
+            closable={false}
           width={800}
           title="Edit Order"
           visible={isModalVisible}
           onOk={handleOk}
-          onCancel={handleCancel}
+         
           footer={
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-               
-               <Button onClick={handleOk} style={{ marginLeft: 8, backgroundColor: '#14C11B', color: '#FFF' }}>
-                        Update
-                    </Button>
+
+                <Button onClick={handleOk} style={{ marginLeft: 8, backgroundColor: '#14C11B', color: '#FFF' }}>
+                    Update
+                </Button>
+                <Button onClick={handleCancel} style={{ marginLeft: 8, background: '#D9D9D9', color: '#909090' }}>
+                    Cancel
+                </Button>
             </div>
         }
         >

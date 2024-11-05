@@ -42,6 +42,11 @@ const SaleReturn: React.FC = () => {
       setCurrentStep((prevStep) => prevStep + 1);
     }
   };
+  const handleBackStep = () => {
+    if (currentStep > 0) {  // ตรวจสอบว่า currentStep มากกว่า 0 เพื่อย้อยกลับ
+        setCurrentStep((prevStep) => prevStep - 1);
+    }
+};
 
   const handleSubmit = () => {
     // Reset all steps and images
@@ -103,36 +108,49 @@ const SaleReturn: React.FC = () => {
             </Col>
 
             <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
-              {!images[`step${currentStep + 1}`] ? (
+            {currentStep > 0 && (  // แสดงปุ่ม "ย้อนกลับ" เมื่อ currentStep > 0
                 <Button
-                  type="primary"
-                  onClick={capturePhoto}
-                  style={{ display: 'flex', alignItems: 'center', marginTop: '10px' }}>
-                  ถ่ายรูป
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    icon={<RedoOutlined />}
-                    style={{ marginRight: '20px', width: '100px', color: '#35465B' }}
+                    style={{marginRight: '20px', width: '100px', color: '#35465B'}}
                     type="default"
-                    onClick={retakePhoto}
-                  >
-                    ถ่ายใหม่
-                  </Button>
+                    onClick={handleBackStep}
+                >
+                    ย้อนกลับ
+                </Button>
+            )}
+    {!images[`step${currentStep + 1}`] ? (
+        <Button
+            type="primary"
+            onClick={capturePhoto}
+            style={{ display: 'flex', alignItems: 'center'}}
+        >
+            ถ่ายรูป
+        </Button>
+    ) : (
+        <>
+            <Button
+                icon={<RedoOutlined />}
+                style={{ marginRight: '20px', width: '100px', color: '#35465B' }}
+                type="default"
+                onClick={retakePhoto}
+            >
+                ถ่ายใหม่
+            </Button>
 
-                  {currentStep < 2 && (
-                    <Button
-                      style={{ width: '100px' }}
-                      type="primary"
-                      onClick={handleNextStep}
-                    >
-                      ถัดไป
-                    </Button>
-                  )}
-                </>
-              )}
-            </Col>
+           
+
+            {currentStep < 2 && (
+                <Button
+                    style={{ width: '100px' }}
+                    type="primary"
+                    onClick={handleNextStep}
+                >
+                    ถัดไป
+                </Button>
+            )}
+        </>
+    )}
+</Col>
+
           </Row>
 
           {/* Display gallery and Submit button only after finishing step 3 */}
@@ -175,3 +193,4 @@ const SaleReturn: React.FC = () => {
 };
 
 export default SaleReturn;
+ 

@@ -188,7 +188,7 @@ ROUTE_SALERETURN: {
 ROUTE_CREATEBLIND: {
   KEY: "CreateBlindReturn",
   PATH: "/CreateBlindReturn",
-  LABEL: "CreateBlindReturn",
+  LABEL: "CreateBuildReturn",
   COMPONENT: CreateBlind,
   ELEMENT: () => <CreateBlind/>,
 },
@@ -367,7 +367,7 @@ ROUTE_SALERETURN: {
 ROUTE_CREATEBLIND: {
   KEY: "CreateBlindReturn",
   PATH: "/CreateBlindReturn",
-  LABEL: "CreateBlindReturn",
+  LABEL: "CreateBuildReturn",
   COMPONENT: CreateBlind,
   ELEMENT: () => <CreateBlind/>,
 },

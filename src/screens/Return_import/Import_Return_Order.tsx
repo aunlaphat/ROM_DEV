@@ -7,6 +7,7 @@ import icon from '../../assets/images/document-text.png';
 const dataSource = [
   { Order: '12345', SKU: 'SKU001', QTY: '10', Amount: '100.00', SO: 'SO001', Order_status: 'Cancel', SO_status: 'Invoice', key: '12345', SR_Create: 'NULL' },
   { Order: '12346', SKU: 'SKU002', QTY: '5', Amount: '50.00', SO: 'SO002', Order_status: 'Completed', SO_status: 'Invoice', key: '12346', SR_Create: 'NULL' },
+  { Order: '12347', SKU: 'SKU002', QTY: '5', Amount: '50.00', SO: 'SO002', Order_status: 'Completed', SO_status: 'Invoice', key: '12346', SR_Create: 'NULL' },
 ];
 
 const columns = [
@@ -60,10 +61,7 @@ const ImportOrder = () => {
   const [isSRCreated, setIsSRCreated] = useState(false);
 
   const handleDownloadTemplate = () => {
-    const templateData = [
-      { Order: '' },
-    ];
-
+    const templateData = [{ Order: '' }];
     const ws = XLSX.utils.json_to_sheet(templateData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Template');
@@ -78,7 +76,7 @@ const ImportOrder = () => {
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
       const importedData = XLSX.utils.sheet_to_json(worksheet);
-  
+
       const transformedData = importedData.map((row: any) => ({
         Order: row['Order'] || row['Order ID'],
         SKU: row['SKU'],
@@ -90,15 +88,14 @@ const ImportOrder = () => {
         SR_Create: row['SR_Create'] || row['SR_Create'],
       }));
   
-      const filteredData = transformedData.filter((row: any) => row.Order); // Filter out empty orders
+      const filteredData = transformedData.filter((row: any) => row.Order);
 
-      // Map imported data to dataSource only for existing orders
       const matchedData = filteredData
         .map((item) => {
           const found = dataSource.find(source => source.Order === item.Order.toString());
-          return found ? { ...found } : null; // Spread found item or return null
+          return found ? { ...found } : null;
         })
-        .filter(Boolean); // Filter out null values
+        .filter(Boolean);
   
       setImportedData(matchedData);
     };
@@ -156,7 +153,7 @@ const ImportOrder = () => {
     <Layout>
       <ConfigProvider>
         <div style={{ marginLeft: '28px', fontSize: '25px', fontWeight: 'bold', color: 'DodgerBlue' }}>
-          Import Return order 
+          Import Return order
         </div>
         <Layout.Content
           style={{
@@ -189,7 +186,7 @@ const ImportOrder = () => {
 
           <Table
             rowSelection={rowSelection}
-            dataSource={importedData} // Use the mapped importedData
+            dataSource={importedData}
             columns={columns}
             pagination={false}
             rowKey="Order"
@@ -206,23 +203,24 @@ const ImportOrder = () => {
                 cancelText="No"
               >
                 <Button type="primary" disabled={selectedRowKeys.length === 0}>
-                  {isSRCreated ? 'Confirm Data' : 'Create SR'}
+                  {isSRCreated ? 'Submit' : 'Create SR'}
                 </Button>
               </Popconfirm>
             </Col>
             <Col>
               <Popconfirm
-                title="Confirm data reset?"
+                title="Confirm back"
                 onConfirm={() => {
                   setImportedData([]);
                   setSelectedRowKeys([]);
-                  notification.success({ message: 'Data reset successfully' });
+                  setIsSRCreated(false); // Reset the SR creation state
+               
                 }}
                 okText="Yes"
                 cancelText="No"
               >
                 <Button type="default" disabled={importedData.length === 0}>
-                  Reset
+                  Back
                 </Button>
               </Popconfirm>
             </Col>

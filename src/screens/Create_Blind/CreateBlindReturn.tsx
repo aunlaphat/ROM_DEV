@@ -1,7 +1,7 @@
-import { Button, Radio, Select, Space, Col, ConfigProvider, Form, Layout, Row, Input, InputNumber, Table, notification, message } from "antd";
-import { DeleteOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import { Button, Radio, Select, Space, Col, ConfigProvider, Form, Layout, Row, Input, InputNumber, Table, notification, message, Tooltip } from "antd";
+import { DeleteOutlined, PlusCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import type { RadioChangeEvent } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 
 interface TableDataItem {
@@ -36,7 +36,9 @@ const CreateBlind = () => {
     const [value, setValue] = useState<number>(0);
     const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
     const [form] = Form.useForm();
+    const [form2] = Form.useForm();
     const [formValid, setFormValid] = useState(false);
+    const [formskuValid, setFormskuValid] = useState(false);
     const [qty, setQty] = useState<number | null>(null);
     const [key, setKey] = useState<null>(null);
     const [tableData, setTableData] = useState<TableDataItem[]>([]); // ใช้ interface ที่กำหนด
@@ -44,6 +46,7 @@ const CreateBlind = () => {
     
     const onChange = (e: RadioChangeEvent) => {
         setValue(e.target.value);
+        handleFormValidation();
         setShowInput(e.target.value === 1);
     };
 
@@ -54,7 +57,7 @@ const CreateBlind = () => {
     const handleNameChange = (value: string) => {
         const selectedOption = SKUName.find((item) => item.Name === value);
         if (selectedOption) {
-            form.setFieldsValue({
+            form2.setFieldsValue({
                 SKU: selectedOption.SKU,
                 SKU_Name: selectedOption.Name,
             });
@@ -66,7 +69,7 @@ const CreateBlind = () => {
     const handleSKUChange = (value: string) => {
         const selectedOption = SKUName.find((item) => item.SKU === value);
         if (selectedOption) {
-            form.setFieldsValue({
+            form2.setFieldsValue({
                 SKU: selectedOption.SKU,
                 SKU_Name: selectedOption.Name,
             });
@@ -74,25 +77,33 @@ const CreateBlind = () => {
             setSelectedName(selectedOption.Name);
         }
     };
+    
+
 
     const handleAdd = () => {
-        form.validateFields(['SKU', 'SKU_Name', 'QTY'])
-            .then((values) => {
-                const newKey = selectedSKU!; // ใช้ SKU เป็น key
-                setTableData([...tableData, { SKU: selectedSKU!, SKU_Name: selectedName!, QTY: qty!, key: newKey }]); // เพิ่มข้อมูลไปยัง tableData
-                form.resetFields(['SKU', 'QTY', 'SKU_Name']); // ล้างฟิลด์ในฟอร์ม
-    
-                notification.success({
-                    message: "เพิ่มข้อมูลสำเร็จ",
-                });
-            })
-            .catch((errorInfo) => {
-                notification.warning({
-                    message: "มีข้อสงสัย",
-                    description: "กรุณากรอกข้อมูลให้ครบก่อนเพิ่ม!",
-                });
+        // ตรวจสอบว่า SKU ซ้ำหรือไม่
+        const isDuplicate = tableData.some(item => item.SKU === selectedSKU);
+        
+        if (isDuplicate) {
+            notification.warning({
+                message: "SKU ซ้ำ",
+                description: "SKU นี้ถูกเพิ่มไปแล้ว",
             });
+            return;  // หยุดการทำงานหากพบว่า SKU ซ้ำ
+        }
+        
+        // หาก SKU ไม่ซ้ำ ให้เพิ่มข้อมูลใหม่
+        const newKey = selectedSKU!;
+        setTableData([...tableData, { SKU: selectedSKU!, SKU_Name: selectedName!, QTY: qty!, key: newKey }]);
+        
+        // รีเซ็ตฟอร์ม
+        form.resetFields(['SKU', 'QTY', 'SKU_Name']);
+        
+        notification.success({
+            message: "เพิ่มข้อมูลสำเร็จ",
+        });
     };
+    
     const handleDelete = (key: string) => {
         setTableData(tableData.filter(item => item.key !== key));
         notification.success({
@@ -142,32 +153,47 @@ const CreateBlind = () => {
     };
 
     const handleSubmit = () => {
-        if (value === 2) { // กรณีเลือก "No"
-            if (checkFormValidity()) {
-                handleNavigateToTakepicture(); // ไปหน้า Take Picture ถ้าข้อมูลครบ
-            } else {
-                notification.warning({
-                    message: "กรุณากรอกข้อมูลให้ครบ",
-                    description: "กรุณากรอกข้อมูลในฟอร์มให้ครบถ้วนก่อนที่จะดำเนินการต่อ!",
-                });
-            }
-        } else if (value === 1) { // กรณีเลือก "Yes"
-            if (tableData.length > 0) { // ตรวจสอบว่ามีข้อมูลในตารางแล้วหรือไม่
-                handleNavigateToTakepicture(); // ไปหน้า Take Picture ถ้าข้อมูลครบ
-            } else {
-                notification.warning({
-                    message: "กรุณาเพิ่มข้อมูลในตาราง",
-                    description: "กรุณาเพิ่มข้อมูลในตารางก่อนที่จะดำเนินการต่อ!",
-                });
-            }
+        if (value === 2) {
+            // กรณีเลือก "No"
+            handleNavigateToTakepicture();
+        } else if (value === 1 && tableData.length === 0) {
+            notification.warning({
+                message: "กรุณาเพิ่มข้อมูลในตาราง",
+                description: "กรุณากรอก SKU และจำนวนอย่างน้อย 1 รายการในตารางก่อนที่จะดำเนินการต่อ!",
+            });
+        } else {
+            handleNavigateToTakepicture();
         }
-    
     };
+    
+    const handleFormValidation = () => {
+        // alert('test1');
+        const username = form.getFieldValue('Username');
+        const phonenumber = form.getFieldValue('Phonenumber');
+        const Address = form.getFieldValue('Address');
+        const Tracking = form.getFieldValue('Tracking');
+        const Transport = form.getFieldValue('TransportType');
+        // alert(Transport);
+        // console.log(allFields);
+        if(username !== undefined && (phonenumber !== undefined && phonenumber?.length === 10) && Address !== undefined && Tracking !== undefined && Transport!==undefined){
+            setFormValid(true); 
+        }else{
+            setFormValid(false); 
+        }
+        
+    };
+
+    const handleValuesChange = () => {
+        // alert(value);
+        // alert('test');
+        handleFormValidation();// Trigger alert on any form field change
+    };
+
 
     return (
         <ConfigProvider>
             <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
-                Create Blind Return
+                Create Build Return
             </div>
             <Layout>
                 <Layout.Content
@@ -180,7 +206,9 @@ const CreateBlind = () => {
                         overflow: "auto",
                     }}
                 >
-                    <Form form={form} layout="vertical">
+                    <Form form={form} 
+                     onValuesChange={handleValuesChange} 
+                    layout="vertical">
                         <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
                             <Col span={8}>
                                 <Form.Item
@@ -215,8 +243,19 @@ const CreateBlind = () => {
                                         placeholder="กรอกเบอร์โทร"
                                         maxLength={10}
                                         onChange={(e) => {
-                                            const formattedValue = formatAccountNumber(e.target.value);
-                                            e.target.value = formattedValue; // อัปเดตค่าใน input
+                                            let value = e.target.value;
+                                
+                                            // Limit the value to 10 characters and remove non-numeric characters
+                                            if (value.length > 10) {
+                                                value = value.slice(0, 10);
+                                            }
+                                
+                                            // Optionally format the value (e.g., adding spaces or dashes)
+                                            // For example, here we remove all non-numeric characters for simplicity
+                                            value = value.replace(/\D/g, '');
+                                
+                                            // Set the value back to the input field
+                                            e.target.value = value;
                                         }}
 
 
@@ -237,10 +276,16 @@ const CreateBlind = () => {
                         <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
                             <Col span={8}>
                                 <Form.Item
-                                    label={<span style={{ color: '#657589' }}>กรอกเลข Tracking</span>}
+                                   label={
+                                    <span style={{ color: '#657589' }}>
+                                      กรอกเลข Tracking:&nbsp;
+                                      <Tooltip title="เลขTracking จากขนส่ง">
+                                        <QuestionCircleOutlined style={{ color: '#657589' }} />
+                                      </Tooltip>
+                                    </span>
+                                  }
                                     name="Tracking"
-                                    rules={[{ required: true, message: 'กรุณากรอกเลข Tracking!' }]}
-                                >
+                                    rules={[{ required: true, message: "กรอกเลข Tracking" }]}>
                                     <Input style={{ height: 40 }} placeholder="กรอกเลข Tracking" />
                                 </Form.Item>
                             </Col>
@@ -276,87 +321,90 @@ const CreateBlind = () => {
                         </Row>
                     </Form>
                     <Form
-                        form={form}
-                        layout="vertical"
-                        onValuesChange={() => {
-                            const { SKU, SKU_Name, QTY, KEY } = form.getFieldsValue();
-                            // ตรวจสอบว่าฟิลด์ที่ต้องกรอกมีค่าหรือไม่
-                            setFormValid(!!SKU && !!SKU_Name && !!QTY);
-                        }}
-                    >
-                        <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
-                            {/* ... ส่วนอื่น ๆ ของฟอร์ม ... */}
-                        </Row>
+    form={form2}
+    layout="vertical"
+    onValuesChange={() => {
+        const { SKU, SKU_Name, QTY } = form2.getFieldsValue();
+        console.log(SKU,SKU_Name,QTY);
+        // ตรวจสอบว่าทุกฟิลด์มีค่าไม่เป็น undefined และไม่เป็นค่าว่าง
+        const isFormValid = SKU !== undefined && SKU_Name !== undefined && QTY !== undefined;
+        setFormskuValid(isFormValid);
+    }}
+>
+    <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
+        {/* ... ส่วนอื่น ๆ ของฟอร์ม ... */}
+    </Row>
 
-                        <Row align="middle" justify="start" style={{ marginTop: "20px", width: '100%' }}>
-                            <div style={{ marginRight: "10px" }}>แกะกล่อง</div>
-                            <Radio.Group onChange={onChange} value={value}>
-                                <Radio value={1}>Yes</Radio>
-                                <Radio value={2}>No</Radio>
-                            </Radio.Group>
-                        </Row>
+    <Row align="middle" justify="start" style={{ marginTop: "20px", width: '100%' }}>
+        <div style={{ marginRight: "10px" }}>แกะกล่อง</div>
+        <Radio.Group onChange={onChange} value={value}>
+            <Radio value={1}>Yes</Radio>
+            <Radio value={2}>No</Radio>
+        </Radio.Group>
+    </Row>
 
-                        {showInput && (
-                            <Row gutter={16} style={{ marginTop: "20px", width: '100%' }}>
-                                <Col span={8}>
-                                    <Form.Item
-                                        label={<span style={{ color: '#657589' }}>กรอก SKU:</span>}
-                                        name="SKU"
-                                        rules={[{ required: true, message: "กรุณากรอก SKU" }]}
-                                    >
-                                        <Select
-                                            showSearch
-                                            style={{ width: '100%', height: '40px' }}
-                                            placeholder="เลือก SKU"
-                                            value={selectedSKU}
-                                            onChange={handleSKUChange}
-                                            options={skuOptions}
-                                        />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={8}>
-                                    <Form.Item
-                                        label={<span style={{ color: '#657589' }}>Name:</span>}
-                                        name="SKU_Name"
-                                        rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
-                                    >
-                                        <Select
-                                            showSearch
-                                            style={{ width: '100%', height: '40px' }}
-                                            placeholder="เลือก SKU Name"
-                                            value={selectedName}
-                                            onChange={handleNameChange}
-                                            options={nameOptions}
-                                        />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={4}>
-                                    <Form.Item
-                                        label={<span style={{ color: '#657589' }}>QTY:</span>}
-                                        name="QTY"
-                                        rules={[{ required: true, message: 'กรุณากรอกจำนวน' }]}
-                                    >
-                                        <InputNumber
-                                            min={1}
-                                            max={100}
-                                            value={qty}
-                                            onChange={(value) => setQty(value)}
-                                            style={{ width: '100%', height: 40, lineHeight: '40px' }}
-                                        />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={4}>
-                                    <Button
-                                        type="primary"
-                                        disabled={!formValid}  // ปิดการใช้งานเมื่อ form ไม่ valid
-                                        onClick={handleAdd}
-                                        style={{ width: '100%', height: '40px', marginTop: 30 }}
-                                    >
-                                        <PlusCircleOutlined /> {/* เพิ่มไอคอนที่นี่ */}
-                                        Add
-                                    </Button>
-                                </Col>
-                            </Row>
+    {showInput && (
+        <Row gutter={16} style={{ marginTop: "20px", width: '100%' }}>
+        <Col span={8}>
+            <Form.Item
+                label={<span style={{ color: '#657589' }}>กรอก SKU:</span>}
+                name="SKU"
+                rules={[{ required: true, message: "กรุณากรอก SKU" }]}
+            >
+                <Select
+                    showSearch
+                    style={{ width: '100%', height: '40px' }}
+                    placeholder="เลือก SKU"
+                    value={selectedSKU}
+                    onChange={handleSKUChange}
+                    options={skuOptions}
+                />
+            </Form.Item>
+        </Col>
+        <Col span={8}>
+            <Form.Item
+                label={<span style={{ color: '#657589' }}>Name:</span>}
+                name="SKU_Name"
+                rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
+            >
+                <Select
+                    showSearch
+                    style={{ width: '100%', height: '40px' }}
+                    placeholder="เลือก SKU Name"
+                    value={selectedName}
+                    onChange={handleNameChange}
+                    options={nameOptions}
+                />
+            </Form.Item>
+        </Col>
+        <Col span={4}>
+            <Form.Item
+                label={<span style={{ color: '#657589' }}>QTY:</span>}
+                name="QTY"
+                rules={[{ required: true, message: 'กรุณากรอกจำนวน' }]}
+            >
+                <InputNumber
+                    min={1}
+                    max={100}
+                    value={qty}
+                    onChange={(value) => setQty(value)}
+                    style={{ width: '100%', height: 40, lineHeight: '40px' }}
+                />
+            </Form.Item>
+                            </Col>
+                            <Col span={4}>
+            <Button
+                type="primary"
+                disabled={!formskuValid}  // ปิดการใช้งานเมื่อ form ไม่ valid
+                onClick={handleAdd}
+                style={{ width: '100%', height: '40px', marginTop: 30 }}
+            >
+                <PlusCircleOutlined /> {/* เพิ่มไอคอนที่นี่ */}
+                Add
+            </Button>
+        </Col>
+                        </Row>
+                        
                         )}
 
                         {showInput && (
@@ -371,15 +419,15 @@ const CreateBlind = () => {
                         
                     </Form>
                     <Row align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}> 
-                    <Button 
-                type="primary" 
-                
-                onClick={handleSubmit} 
-                disabled={!checkFormValidity()} // Disable ปุ่มถ้าฟอร์มไม่ถูกต้อง
-            >
-                ยืนยัน
-            </Button>
-                    </Row>
+                    <Button
+            type="primary"
+            onClick={handleSubmit}
+            disabled={(value === 2 && formValid === true ) ? false : (value === 1 && tableData.length > 0&& formValid === true ) ? false :true}
+            // disabled={tableData.length === 0 || !formValid || value === undefined}  // ปิดการใช้งานเมื่อไม่มีข้อมูลในตาราง, form ไม่ valid หรือไม่มีการเลือก value
+        >
+            ยืนยัน
+        </Button>
+    </Row>
                 </Layout.Content>
             </Layout>
         </ConfigProvider>

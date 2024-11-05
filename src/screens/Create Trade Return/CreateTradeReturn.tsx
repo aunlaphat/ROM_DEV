@@ -1,5 +1,5 @@
-import { Popconfirm, Button, Col, ConfigProvider, DatePicker, Form, Input, InputNumber, Layout, Row, Select, Table, notification, Modal, Upload, Divider } from "antd";
-import { SearchOutlined,DeleteOutlined, LeftOutlined, PlusCircleOutlined, UploadOutlined, CloseOutlined } from '@ant-design/icons';
+import { Popconfirm, Button, Col, ConfigProvider, DatePicker, Form, Input, InputNumber, Layout, Row, Select, Table, notification, Modal, Upload, Divider, Tooltip } from "antd";
+import { SearchOutlined, DeleteOutlined, LeftOutlined, PlusCircleOutlined, UploadOutlined, CloseOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
 import Popup from 'reactjs-popup';
@@ -34,7 +34,7 @@ interface Customer {
   Invoice_name: string;
   Address: string;
   Tax: string;
-  Customer_name:string;
+  Customer_name: string;
 }
 interface DataItem {
   key: number;
@@ -47,12 +47,23 @@ const Customeraccount = [
   {
     Key: 1,
     Customer_account: "DC-NMI-0033",
+    Customer_name: "ปิยวลี ศรีสุวรรณ",
     Invoice_name: "ปิยะวลี",
     Address: '990 อาคารอับดุลราฮิม ชั้น 18-19 ถ.พระราม 4 สีลม บางรัก กรุงเทพมหานคร 10500',
-    Tax:'1233456789876543223',
-    Customer_name:"ปิยะวลี"
+    Tax: '-',
+
+  },
+  {
+    Key: 2,
+    Customer_account: "DC-NMI-0034",
+    Customer_name: "สมชาย สินทรัพย์",
+    Invoice_name: "สมชาย",
+    Address: '500 อาคารกลาง ถนนสีลม บางรัก กรุงเทพมหานคร 10500',
+    Tax: '-',
   },
 ];
+
+
 
 
 // สร้าง options สำหรับ SKU
@@ -75,12 +86,13 @@ const CreateTradeReturn = () => {
   const [selectedSKU, setSelectedSKU] = useState<string | undefined>(undefined);
   const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
   const [form] = Form.useForm();
+  const [formValid, setFormValid] = useState(false);
   const [formaddress] = Form.useForm();
   const [selectedAccount, setSelectedAccount] = useState<Customer | null>(null);
   const [dataSource, setDataSource] = useState<DataItem[]>([]);
-
-
-
+  const [price, setPrice] = useState<number | null>(null); // Allow null
+  const [qty, setQty] = useState<number | null>(null);  // Allow null
+  const [isInvoiceEnabled, setIsInvoiceEnabled] = useState(false);
   const [province, setProvince] = useState<string | undefined>(undefined);
   const [district, setDistrict] = useState<string | undefined>(undefined);
   const [subDistrict, setSubDistrict] = useState<string | undefined>(undefined);
@@ -123,16 +135,25 @@ const CreateTradeReturn = () => {
   const handleAccountChange = (value: string) => {
     const selectedCustomer = Customeraccount.find(account => account.Customer_account === value);
     setSelectedAccount(selectedCustomer || null);
-    if (selectedCustomer) {
-      form.setFieldsValue({
-        Invoice_name: selectedCustomer.Invoice_name,
-        Address: selectedCustomer.Address,
-        Tax: selectedCustomer.Tax,
-        Customer_name: selectedCustomer.Customer_name,
-      });
-    }
+    setIsInvoiceEnabled(!!selectedCustomer);
+
+    form.setFieldsValue({
+      Invoice_name: selectedCustomer?.Invoice_name || '',
+      Address: selectedCustomer?.Address || '',
+      Customer_name: selectedCustomer?.Customer_name || '',
+      Tax: selectedCustomer?.Tax || '',
+    });
   };
-  
+
+  const handleInvoiceChange = (value: string) => {
+    const selectedCustomer = Customeraccount.find(account => account.Invoice_name === value);
+    setSelectedAccount(selectedCustomer || null);
+
+    form.setFieldsValue({
+      Address: selectedCustomer?.Address || '',
+
+    });
+  };
 
   const handleOpen = () => {
     setOpen(true);
@@ -140,9 +161,9 @@ const CreateTradeReturn = () => {
   const handleClose = () => {
     setOpen(false);
     // ให้ฟอร์มรีเซ็ตเฉพาะในกรณีที่ไม่ได้กดบันทึก
-    
+
   };
-  
+
 
   const handleSelectChange = (value: any) => {
     // เมื่อเลือกจังหวัดแล้วปิด Popup
@@ -173,55 +194,65 @@ const CreateTradeReturn = () => {
     }
   };
   const handleSubmit = () => {
-    form.validateFields()
-      .then(values => {
-        console.log('Form Values:', values);
-        console.log('Table Data:', dataSource);
-        // รีเซ็ตฟอร์มและตาราง
-        form.resetFields();
-        setDataSource([]); // หรือคุณสามารถปรับเป็นค่าเริ่มต้นที่คุณต้องการได้
-        notification.success({
-          message: 'ส่งข้อมูลสำเร็จ',
-          description: 'ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!',
-        });
-      })
-      .catch(info => {
-        console.log('Validate Failed:', info);
-        notification.warning({
-          message: 'มีข้อสงสัย',
-          description: 'กรุณากรอกข้อมูลให้ครบก่อนส่ง!',
-        });
+    if (dataSource.length === 0) {
+      notification.warning({
+        message: 'ไม่สามารถส่งข้อมูลได้',
+        description: 'กรุณาเพิ่มข้อมูลในตารางก่อนส่ง!',
       });
+      return; // หยุดการทำงานของฟังก์ชัน
+    }
+
+    // ส่งข้อมูลและรีเซ็ตฟอร์มและตาราง
+    console.log('Table Data:', dataSource);
+
+    // รีเซ็ตฟอร์มและตาราง
+    form.resetFields();
+    setDataSource([]); // หรือปรับเป็นค่าเริ่มต้นที่คุณต้องการได้
+
+    notification.success({
+      message: 'ส่งข้อมูลสำเร็จ',
+      description: 'ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!',
+    });
   };
+
   const handleSelectAddress = (address: string) => {
     setInvoiceAddress(address); // ตั้งค่าที่อยู่ที่เลือก
     form.setFieldsValue({ Invoice_address: address }); // ตั้งค่าให้ฟอร์ม
     // setOpen(false); // ปิด Popup
   };
 
-  
+
   const handleSave = async () => {
     try {
       const values = await formaddress.validateFields();
       console.log('Form Values:', values);
+
+      // Update form values in the main form
       form.setFieldsValue({
-        Address: values.AddressNew+" "+values.SubDistrict+" "+values.district+" "+values.province+" "+values.PostalCode,
+        Invoice_name: values.Invoice_name, // Update the Invoice name
+        Address: values.AddressNew + " " + values.SubDistrict + " " + values.district + " " + values.province + " " + values.PostalCode,
       });
+
       setIsSaving(true);
-  
-      
-        setSelectedAccount(values); // Save the address data
-        setIsSaving(false);
-        handleClose(); // Close modal after save
-     
+      setSelectedAccount(values); // Save the address data if needed
+      setIsSaving(false);
+
+      // Reset modal form fields
+      formaddress.resetFields(); // Reset the fields in the modal
+
+      handleClose(); // Close modal after save
+
     } catch (error) {
       console.error('Failed to save:', error);
     }
   };
-  
-  
-  
-  
+
+
+  const onSearch = (value: string) => {
+    console.log('search:', value);
+  };
+
+
   const columns = [
     { title: 'SKU', dataIndex: 'SKU', key: 'SKU' },
     { title: 'Name', dataIndex: 'Name', key: 'Name' },
@@ -249,71 +280,86 @@ const CreateTradeReturn = () => {
     const templateColumns = columns.filter(col => col.key !== 'Action'); // กรองออก action column
     const ws = XLSX.utils.json_to_sheet([]);
     XLSX.utils.sheet_add_aoa(ws, [templateColumns.map(col => col.title)]);
-  
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Template');
-  
+
     XLSX.writeFile(wb, 'Template.xlsx');
   };
-  
- const handleUpload = (file: File) => {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const data = new Uint8Array(e.target?.result as ArrayBuffer);
-    const workbook = XLSX.read(data, { type: 'array' });
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json<DataItem>(worksheet);
-    
-    // กรองข้อมูลเฉพาะที่มี SKU และ QTY
-    const filteredData = json.filter(item => item.SKU && item.QTY);
-    
-    // อัปเดต dataSource ด้วยข้อมูลที่กรอง
-    setDataSource(filteredData);
-    
-    notification.success({
-      message: 'อัปโหลดสำเร็จ',
-      description: 'ข้อมูลจากไฟล์ Excel ถูกนำเข้าเรียบร้อยแล้ว!',
-    });
-  };
-  reader.readAsArrayBuffer(file);
-};
 
-const uploadProps = {
-  beforeUpload: (file: File) => {
-    handleUpload(file);
-    return false; // ป้องกันไม่ให้ Ant Design ทำการอัปโหลด
-  },
-};
+  const handleUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json<DataItem>(worksheet);
+
+      // กรองข้อมูลเฉพาะที่มี SKU และ QTY
+      const filteredData = json.filter(item => item.SKU && item.QTY);
+
+      // อัปเดต dataSource ด้วยข้อมูลที่กรอง
+      setDataSource(filteredData);
+
+      notification.success({
+        message: 'อัปโหลดสำเร็จ',
+        description: 'ข้อมูลจากไฟล์ Excel ถูกนำเข้าเรียบร้อยแล้ว!',
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const uploadProps = {
+    beforeUpload: (file: File) => {
+      handleUpload(file);
+      return false; // ป้องกันไม่ให้ Ant Design ทำการอัปโหลด
+    },
+  };
 
   const handleAdd = () => {
-  form.validateFields()
-    .then(values => {
-      const newData = {
-        key: dataSource.length + 1,
-        SKU: values.SKU,
-        Name: values.SKU_Name,
-        QTY: values.QTY,
-        Price: values. Price,
-      };
-      setDataSource([...dataSource, newData]); // เพิ่มข้อมูลใหม่ไปยัง dataSource
-      
-      // แสดงข้อความเมื่อเพิ่มข้อมูลสำเร็จ
-      notification.success({
-        message: "เพิ่มสำเร็จ",
-        description: "ข้อมูลของคุณถูกเพิ่มเรียบร้อยแล้ว!",
-      });
+    form.validateFields()
+      .then(values => {
+        // ตรวจสอบว่า SKU ที่กรอกมีอยู่ใน dataSource หรือไม่
+        const isSKUExist = dataSource.some(item => item.SKU === values.SKU);
 
-      // ไม่ต้องล้างฟิลด์ในฟอร์มหลังจากเพิ่มข้อมูลถ้าต้องการแสดงข้อมูลต่อ
-    })
-    .catch(info => {
-      console.log('Validate Failed:', info);
-      notification.warning({
-        message: "มีข้อสงสัย",
-        description: "กรุณากรอกข้อมูลให้ครบก่อนเพิ่ม!",
-      });
-    });
-};
+        if (isSKUExist) {
+          // แสดงข้อความเตือนว่า SKU ซ้ำ
+          notification.warning({
+            message: "มีข้อผิดพลาด",
+            description: "SKU นี้ถูกเพิ่มไปแล้วในรายการ!",
+          });
+          return; // ไม่ทำการเพิ่มข้อมูล
+        }
 
+        // ถ้า SKU ยังไม่ซ้ำ เพิ่มข้อมูลใหม่
+        const newData = {
+          key: dataSource.length + 1,
+          SKU: values.SKU,
+          Name: values.SKU_Name,
+          QTY: values.QTY,
+          Price: values.Price,
+          Tax: values.Tax || '', // ถ้าไม่มี Tax ให้ใส่ค่าว่าง
+        };
+
+        setDataSource([...dataSource, newData]); // เพิ่มข้อมูลใหม่ไปยัง dataSource
+
+        // แสดงข้อความเมื่อเพิ่มข้อมูลสำเร็จ
+        notification.success({
+          message: "เพิ่มสำเร็จ",
+          description: "ข้อมูลของคุณถูกเพิ่มเรียบร้อยแล้ว!",
+        });
+
+        // ล้างฟิลด์ในฟอร์มหลังจากเพิ่มข้อมูลเสร็จ
+        form.resetFields(['SKU', 'SKU_Name', 'QTY', 'Price']);
+      })
+      .catch(info => {
+        console.log('Validate Failed:', info);
+        notification.warning({
+          message: "มีข้อสงสัย",
+          description: "กรุณากรอกข้อมูลให้ครบก่อนเพิ่ม!",
+        });
+      });
+  };
 
 
   const handleDelete = (key: number) => {
@@ -323,6 +369,17 @@ const uploadProps = {
       description: 'ข้อมูลของคุณถูกลบออกเรียบร้อยแล้ว.',
     });
   };
+
+
+  const onChange = () => {
+    const values = form.getFieldsValue();
+    const { Date, SKU, QTY } = values;
+
+    // Set form validity based on required fields
+    setFormValid(Date && SKU && QTY);
+  };
+
+
   return (
     <ConfigProvider>
       <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
@@ -330,58 +387,80 @@ const uploadProps = {
       </div>
       <Layout>
         <Layout.Content
+
           style={{
-            margin: "10px",
+            margin: "24px",
+            padding: 36,
             minHeight: 360,
             background: "#fff",
             borderRadius: "8px",
 
 
+
           }}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            // onValuesChange={handleonChange}
-
-            style={{ width: '100%', display: 'flex', padding: '30px' }}
-          >
+          <Form form={form} layout="vertical" style={{ width: '100%', padding: '30px' }}>
             <div>
-            <Divider style={{color: '#657589', fontSize:'22px',margin:30}} orientation="left">Sale Order Information</Divider>
-              <Row gutter={16} style={{ marginTop: '10px'}}>
-                <Col span={12}>
-
-                  <Form.Item label={<span style={{ color: '#657589' }}>Sales Order:</span>} name="Sales_Order"
-                    rules={[{ required: true, message: "กรอก Sales Order" }]}>
-                      
-                    <Input style={{height:40}}/>
+              <Divider style={{ color: '#657589', fontSize: '22px', margin: 30 }} orientation="left">Sale Order Information</Divider>
+              <Row gutter={16}  >
+                <Col span={8}>
+                  <Form.Item label={
+                    <span style={{ color: '#657589' }}>
+                      กรอกเลข Tracking:&nbsp;
+                      <Tooltip title="เลขTracking จากขนส่ง">
+                        <QuestionCircleOutlined style={{ color: '#657589' }} />
+                      </Tooltip>
+                    </span>
+                  }
+                    name="Tracking"
+                    rules={[{ required: true, message: "กรอกเลข Tracking" }]}>
+                    <Input style={{ height: 40 }} />
                   </Form.Item>
                 </Col>
-                </Row> 
-                <Row gutter={16} style={{ marginTop: '10px'}}>
                 <Col span={8}>
                   <Form.Item
-                    label={<span style={{ color: '#657589' }}>กรอกเอกสารอ้างอิง IJ:</span>}
-                    name="IJ"
-                    rules={[{ required: true, message: "กรุณากรอกเอกสารอ้างอิง IJ" }]}
-                  >
-                    <Input style={{ width: '100%', height: '40px', }} placeholder="กรอกเอกสารอ้างอิง" />
-                  </Form.Item>
-                </Col> 
-             
-                <Col span={8}>
-                  <Form.Item
-                    label={<span style={{ color: '#657589' }}>Customer account:</span>}
-                    name="Customer_account"
-                    rules={[{ required: true, message: 'Customer account is required' }]}
+                    label={<span style={{ color: '#657589' }}>Transport Type:</span>}
+                    name="TransportType"
+                    rules={[{ required: true, message: "กรุณาเลือก Transport Type" }]}
                   >
                     <Select
-                      style={{ width: '100%', height: '40px', borderWidth: '1px' }}
+                      style={{ width: '100%', height: '40px' }}
                       showSearch
-                      placeholder="Customer account"
-                      optionFilterProp="children"
-                      onChange={handleAccountChange}
-                    >
+                      placeholder="TransportType"
+                      optionFilterProp="label"
+                      onChange={onChange}
+                      onSearch={onSearch}
+                      options={[
+                        { value: 'SPX Express', label: 'SPX Express' },
+                        { value: 'J&T Express', label: 'J&T Express' },
+                        { value: 'Flash Express', label: 'Flash Express' },
+                        { value: 'Shopee', label: 'Shopee' },
+                        { value: 'NocNoc', label: 'NocNoc' },
+
+                      ]}
+
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={8}></Col>
+              </Row>
+
+              <Row gutter={16} align="middle" justify="center" style={{ marginTop: '20px', width: '100%' }}>
+                <Col span={8}>
+                  <Form.Item label={
+                    <span style={{ color: '#657589' }}>
+                      กรอกเอกสารอ้างอิง:&nbsp;
+                      <Tooltip title="ตัวอย่างเอกสาร SOA2410-00234">
+                        <QuestionCircleOutlined style={{ color: '#657589' }} />
+                      </Tooltip>
+                    </span>
+                  } name="Doc">
+                    <Input style={{ width: '100%', height: '40px' }} placeholder="ตัวอย่างเอกสาร SOA2410-00234" />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item label={<span style={{ color: '#657589' }}>Customer account:</span>} name="Customer_account" rules={[{ required: true, message: 'Customer account is required' }]}>
+                    <Select style={{ width: '100%', height: '40px', borderWidth: '1px' }} showSearch placeholder="Customer account" optionFilterProp="children" onChange={handleAccountChange}>
                       {Customeraccount.map(account => (
                         <Select.Option key={account.Key} value={account.Customer_account}>
                           {account.Customer_account}
@@ -390,166 +469,78 @@ const uploadProps = {
                     </Select>
                   </Form.Item>
                 </Col>
-                
                 <Col span={8}>
-                <Form.Item
-               
-               label={<span style={{ color: '#657589' }}>Customer name:</span>}
-               name="Customer_name"
-               rules={[{ required: true, message: 'Invoice name is required' }]}
-             >
-               <Input
-                 style={{ width: '100%', height: '40px', borderWidth: '1px' }}
-                 placeholder="Customer name"
-                 value={selectedAccount?.Customer_name} // แสดงค่า Tax ID ถ้ามี
-                 disabled // ปิดการใช้งานถ้าไม่มีลูกค้าที่เลือก
-               />
-             </Form.Item>
-                </Col>
-                </Row> 
-
-                <Row gutter={16} style={{ marginTop: '10px'}}>
-                <Col span={8}>
-                  <Form.Item
-               
-                  label={<span style={{ color: '#657589' }}>Invoice name:</span>}
-                  name="Invoice_name"
-                  rules={[{ required: true, message: 'Invoice name is required' }]}
-                >
-                  <Input
-                    style={{ width: '100%', height: '40px', borderWidth: '1px' }}
-                    placeholder="Invoice name"
-                    value={selectedAccount?.Invoice_name} // แสดงค่า Tax ID ถ้ามี
-                    disabled // ปิดการใช้งานถ้าไม่มีลูกค้าที่เลือก
-                  />
-                </Form.Item>
-                </Col>
-              
-                <Col span={8}>
-                <Form.Item
-                    label={<span style={{ color: '#657589' }}>Tax ID(เลขผู้เสียภาษี):</span>}
-                    name="Tax"
-                    rules={[{ required: true, message: 'Invoice name is required' }]}
-                  >
-                    <Input
-                      style={{ width: '100%', height: '40px', borderWidth: '1px' }}
-                      placeholder="Tax ID"
-                      value={selectedAccount?.Tax} // แสดงค่า Tax ID ถ้ามี
-                      disabled // ปิดการใช้งานถ้าไม่มีลูกค้าที่เลือก
-                    />
+                  <Form.Item label={<span style={{ color: '#657589' }}>Customer name:</span>} name="Customer_name" rules={[{ required: true, message: 'Customer name is required' }]}>
+                    <Input style={{ width: '100%', height: '40px', borderWidth: '1px' }} placeholder="Customer name" value={selectedAccount?.Customer_name} disabled />
                   </Form.Item>
                 </Col>
-            
-             </Row>
-         
-                <Divider style={{color: '#657589', fontSize:'22px',margin:30}} orientation="left">Address Information</Divider>
+              </Row>
 
-                <Row gutter={16} style={{ marginTop: '10px'}}>
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                <Col span={8}>
+                  <Form.Item label={<span style={{ color: '#657589' }}>Invoice name:</span>} name="Invoice_name" rules={[{ required: true, message: 'Invoice name is required' }]}>
+                    <Select style={{ width: '100%', height: '40px', borderWidth: '1px' }} showSearch placeholder="Invoice name" optionFilterProp="children" disabled={!isInvoiceEnabled} onChange={handleInvoiceChange}>
+                      {Customeraccount.map(account => (
+                        <Option key={account.Key} value={account.Invoice_name}>
+                          {account.Invoice_name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col span={8}>
+                  <Form.Item label={<span style={{ color: '#657589' }}>Tax ID(เลขผู้เสียภาษี):</span>} name="Tax" rules={[{ required: selectedAccount ? true : false, message: 'Tax ID is required' }]}>
+                    <Input style={{ width: '100%', height: '40px', borderWidth: '1px' }} placeholder="Tax ID" value={selectedAccount?.Tax} disabled />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Divider style={{ color: '#657589', fontSize: '22px', margin: 30 }} orientation="left">Address Information</Divider>
+              <Row gutter={16} style={{ marginTop: '10px' }}>
                 <Col span={18}>
-                <Form.Item
-                  label={<span style={{ color: '#657589' }}>Invoice address:</span>}
-                  name="Address"
-                  rules={[{ required: true, message: 'Invoice address is required' }]}
-                >
-                  <Select
-                    style={{ width: '100%', height: '40px', borderWidth: '1px' }}
-                    suffixIcon={null}
-                    disabled
-                    value={selectedAccount ? selectedAccount.Address : null} // Use undefined when selectedAccount is null
-                  >
-                    {selectedAccount ? (
-                      <Option value={selectedAccount.Address}>
-                        {selectedAccount.Address}
-                      </Option>
-                    ) : (
-                      <Option value="">ไม่มีข้อมูล</Option> // Optional: Placeholder for when there's no selected account
-                    )}
-                  </Select>
-                </Form.Item>
-      </Col>
-      
+                  <Form.Item label={<span style={{ color: '#657589' }}>Invoice address:</span>} name="Address" rules={[{ required: true, message: 'Invoice address is required' }]}>
+                    <Select style={{ width: '100%', height: '40px', borderWidth: '1px' }} suffixIcon={null} disabled value={selectedAccount ? selectedAccount.Address : undefined}>
+                      {selectedAccount ? (
+                        <Option value={selectedAccount.Address}>{selectedAccount.Address}</Option>
+                      ) : (
+                        <Option value="">ไม่มีข้อมูล</Option>
+                      )}
+                    </Select>
+                  </Form.Item>
+                </Col>
                 <Col span={6}>
-                  <Button
-                    type="primary"
-                    onClick={handleOpen} // เปิด Popup เมื่อกดปุ่ม
-                    style={{ width: '100%', height: '40px', marginTop: 30 }}
-                  >
-                    New invoice address
-                  </Button>
-
-                
+                  <Button type="primary" onClick={handleOpen} style={{ width: '100%', height: '40px', marginTop: 30 }}>New invoice address</Button>
                 </Col>
+              </Row>
 
-                </Row>
-
-                <Divider style={{color: '#657589', fontSize:'22px',margin:30}} orientation="left"> SKU information</Divider>
-                
-                <Row gutter={16} style={{ marginTop: '10px'}}>
+              <Divider style={{ color: '#657589', fontSize: '22px', margin: 30 }} orientation="left"> SKU information</Divider>
+              <Row gutter={16} style={{ marginTop: '10px', width: '100%' }}>
                 <Col span={6}>
-                  <Form.Item
-                    label={<span style={{ color: '#657589' }}>กรอก SKU :</span>}
-                    name="SKU"
-                    rules={[{ required: true, message: "กรุณากรอก SKU" }]}
-                  >
-                    <Select
-                      showSearch
-                      style={{ width: '100%', height: '40px' }}
-                      placeholder="Search to Select"
-                      optionFilterProp="label"
-                      value={selectedSKU} // แสดง SKU ที่ถูกเลือก
-                      onChange={handleSKUChange}
-                      options={skuOptions} // แสดง SKU ใน dropdown
-                    />
+                  <Form.Item label={<span style={{ color: '#657589' }}>กรอก SKU :</span>} name="SKU" rules={[{ required: true, message: "กรุณากรอก SKU" }]}>
+                    <Select showSearch style={{ width: '100%', height: '40px' }} placeholder="Search to Select" optionFilterProp="label" value={selectedSKU} onChange={handleSKUChange} options={skuOptions} dropdownStyle={{ minWidth: 200 }} />
+                  </Form.Item>
+                </Col>
 
+                <Col span={7}>
+                  <Form.Item label={<span style={{ color: '#657589' }}>กรอก SKU Name:</span>} name="SKU_Name" rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}>
+                    <Select showSearch style={{ width: '100%', height: '40px' }} placeholder="Search to Select" optionFilterProp="label" value={selectedName} onChange={handleNameChange} options={nameOptions} dropdownStyle={{ minWidth: 300 }} />
                   </Form.Item>
                 </Col>
-               
-                <Col span={6}>
-                  <Form.Item
-                    label={<span style={{ color: '#657589' }}>กรอก SKU Name:</span>}
-                    name="SKU_Name"
-                    rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
-                  >
-                    <Select
-                      showSearch
-                      style={{ width: '100%', height: '40px' }}
-                      placeholder="Search to Select"
-                      optionFilterProp="label"
-                      value={selectedName} // แสดง SKU Name ที่ถูกเลือก
-                      onChange={handleNameChange}
-                      options={nameOptions} // แสดง SKU Name ใน dropdown
-                    />
-                  </Form.Item>
-                </Col>
-               
-                <Col span={4}>
-                  <Form.Item
-                    label={<span style={{ color: '#657589' }}>QTY:</span>}
-                    name="QTY"
-                    rules={[{ required: true, message: 'กรุณากรอกจำนวน' }]}
-                  >
-                    <InputNumber min={1} max={100} defaultValue={0} style={{ width: '100%', height: '40px', lineHeight: '40px', }} />
 
+                <Col span={4}>
+                  <Form.Item label={<span style={{ color: '#657589' }}>QTY:</span>} name="QTY" rules={[{ required: true, message: "กรุณากรอก QTY" }]}>
+                    <InputNumber min={1} max={100} value={qty} onChange={(value) => setQty(value)} style={{ width: '100%', height: '40px', lineHeight: '40px' }} />
                   </Form.Item>
                 </Col>
-                <Col span={4}>
-                  <Form.Item
-                    label={<span style={{ color: '#657589' }}>Price:</span>}
-                    name="Price"
-                    rules={[{ required: true, message: 'กรุณากรอกราคา' }]}
-                  >
-                    <InputNumber
-                      min={1}
-                      max={100000}
-                      defaultValue={0}
-                      step={0.01} // เพิ่ม step สำหรับการเพิ่มลดเป็นทศนิยม
-                      style={{ width: '100%', height: '40px', lineHeight: '40px' }}
-                    />
 
+                <Col span={4}>
+                  <Form.Item label={<span style={{ color: '#657589' }}>Price:</span>} name="Price" rules={[{ required: true, message: "กรุณากรอก Price" }]}>
+                    <InputNumber min={1} max={100000} value={price} onChange={(value) => setPrice(value)} step={0.01} style={{ width: '100%', height: '40px', lineHeight: '40px' }} />
                   </Form.Item>
                 </Col>
-               
-                <Col span={4}>
+
+                <Col span={3}>
 
                   <Button
                     type="primary"
@@ -560,106 +551,112 @@ const uploadProps = {
                     Add
                   </Button>
                 </Col>
-            </Row>
+              </Row>
             </div>
           </Form>
           <Modal
-      open={open}
-      onClose={handleClose}
-      closeIcon={false}
-      footer={null}
-    >
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
-        <Button type="text" onClick={handleClose} icon={<CloseOutlined style={{ fontSize: '24px' }} />} danger />
-      </div>
-      <div style={{ fontSize: '20px', color: '#35465B', textAlign: 'center' }}>
-        New Invoice Address
-      </div>
-      <Form
-        form={formaddress}
-        layout="vertical"
-        style={{ width: '100%', display: 'flex', padding: 20 }}
-        onFinish={handleSave}
-      >
-        <Row gutter={16} style={{ marginTop: '10px', justifyContent: 'center' }}>
-        
-          <Col>
-            <Form.Item
-              label={<span style={{ color: '#657589' }}>Name account:</span>}
-              name="Name_account"
-              rules={[{ required: true, message: "Name account" }]}
+            open={open}
+            onClose={handleClose}
+            closeIcon={false}
+            footer={null}
+          >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px', overflow: "auto", }}>
+              <Button type="text" onClick={handleClose} icon={<CloseOutlined style={{ fontSize: '24px' }} />} danger />
+            </div>
+            <div style={{ fontSize: '20px', color: '#35465B', }}>
+              New Invoice Address
+            </div>
+            <Form
+              form={formaddress}
+              layout="vertical"
+              style={{ width: '100%', display: 'flex', padding: 20 }}
+              onFinish={handleSave}
             >
-              <Input style={{ width: '400px', height: '40px' }} placeholder="กรอกชื่อบัญชี" />
-            </Form.Item>
-          </Col>
+              <Row gutter={16} style={{ marginTop: '10px', justifyContent: 'center' }}>
 
-          <Col>
-            <Form.Item
-              label={<span style={{ color: '#657589' }}>บ้านเลขที่:</span>}
-              name="AddressNew"
-              rules={[{ required: true, message: "กรอก บ้านเลขที่" }]}
-            >
-              <Input style={{ width: '400px', height: '40px' }} placeholder="กรอกบ้านเลขที่" />
-            </Form.Item>
-          </Col>
+                <Col >
+                  <Form.Item
+                    label={<span style={{ color: '#657589' }}>Invoice name:</span>}
+                    name="Invoice_name"
+                    rules={[{ required: true, message: "กรอก Invoice" }]}
+                  >
+                    <Input
+                      style={{ width: '400px', height: '40px' }}
+                      placeholder="Invoice name"
+                      value={selectedAccount?.Invoice_name} // แสดงค่า Tax ID ถ้ามี
+                      disabled={!selectedAccount} // ปิดการใช้งานถ้าไม่มีลูกค้าที่เลือก
+                    />
+                  </Form.Item>
+                </Col>
 
-          {/* Province */}
-          <Col>
-            <Form.Item label="จังหวัด:" name="province" rules={[{ required: true, message: 'เลือกจังหวัด' }]}>
-              <Select placeholder="Select Province" onChange={handleProvinceChange} style={{ width: '400px', height: '40px' }}>
-                {provinces.map((item) => (
-                  <Option key={item} value={item}>{item}</Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
 
-          {/* District */}
-          <Col>
-            <Form.Item label="เขต:" name="district" rules={[{ required: true, message: 'เลือกเขต' }]}>
-              <Select placeholder="Select District" onChange={handleDistrictChange} style={{ width: '400px', height: '40px' }}>
-                {districts.map((item) => (
-                  <Option key={item} value={item}>{item}</Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
+                <Col>
+                  <Form.Item
+                    label={<span style={{ color: '#657589' }}>บ้านเลขที่:</span>}
+                    name="AddressNew"
+                    rules={[{ required: true, message: "กรอก บ้านเลขที่" }]}
+                  >
+                    <Input style={{ width: '400px', height: '40px' }} placeholder="กรอกบ้านเลขที่" />
+                  </Form.Item>
+                </Col>
 
-          {/* SubDistrict */}
-          <Col>
-            <Form.Item label="แขวง:" name="SubDistrict" rules={[{ required: true, message: 'เลือกแขวง' }]}>
-              <Select placeholder="Select SubDistrict" onChange={handleSubDistrictChange} style={{ width: '400px', height: '40px' }}>
-                {subDistricts.map((item) => (
-                  <Option key={item} value={item}>{item}</Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
+                {/* Province */}
+                <Col>
+                  <Form.Item label={<span style={{ color: '#657589' }}>จังหวัด:</span>} name="province" rules={[{ required: true, message: 'เลือกจังหวัด' }]}>
+                    <Select placeholder="Select Province" onChange={handleProvinceChange} style={{ width: '400px', height: '40px' }}>
+                      {provinces.map((item) => (
+                        <Option key={item} value={item}>{item}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
 
-          {/* Postal Code */}
-          <Col>
-            <Form.Item label="รหัสไปรษณีย์:" name="PostalCode" rules={[{ required: true, message: 'กรุณาระบุรหัสไปรษณีย์' }]}>
-              <Select placeholder="Postal Code" value={postalCode} style={{ width: '400px', height: '40px' }}>
-                {postalCode && <Option key={postalCode} value={postalCode}>{postalCode}</Option>}
-              </Select>
-            </Form.Item>
-          </Col>
+                {/* District */}
+                <Col>
+                  <Form.Item label={<span style={{ color: '#657589' }}>เขต:</span>} name="district" rules={[{ required: true, message: 'เลือกเขต' }]}>
+                    <Select placeholder="Select District" onChange={handleDistrictChange} style={{ width: '400px', height: '40px' }}>
+                      {districts.map((item) => (
+                        <Option key={item} value={item}>{item}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
 
-          {/* Save Button */}
-          <Col>
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                disabled={isSaving}
-              >
-                Save
-              </Button>
-            </Form.Item>
-          </Col>
-        </Row>
-      </Form>
-    </Modal>
+                {/* SubDistrict */}
+                <Col>
+                  <Form.Item label={<span style={{ color: '#657589' }}>แขวง:</span>} name="SubDistrict" rules={[{ required: true, message: 'เลือกแขวง' }]}>
+                    <Select placeholder="Select SubDistrict" onChange={handleSubDistrictChange} style={{ width: '400px', height: '40px' }}>
+                      {subDistricts.map((item) => (
+                        <Option key={item} value={item}>{item}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                {/* Postal Code */}
+                <Col>
+                  <Form.Item label={<span style={{ color: '#657589' }}>รหัสไปรษณีย์:</span>} name="PostalCode" rules={[{ required: true, message: 'กรุณาระบุรหัสไปรษณีย์' }]}>
+                    <Select placeholder="Postal Code" value={postalCode} style={{ width: '400px', height: '40px' }}>
+                      {postalCode && <Option key={postalCode} value={postalCode}>{postalCode}</Option>}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                {/* Save Button */}
+                <Col>
+                  <Form.Item>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      disabled={isSaving}
+                    >
+                      Save
+                    </Button>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+          </Modal>
 
 
 
@@ -674,41 +671,41 @@ const uploadProps = {
             </Col>
 
             <Col>
-    <Upload {...uploadProps} showUploadList={false}>
-      <Button icon={<UploadOutlined />} style={{ background: '#7161EF', color: '#FFF', marginBottom: 10 }}>
-        Import Excel
-      </Button>
-    </Upload>
-  </Col>
+              <Upload {...uploadProps} showUploadList={false}>
+                <Button icon={<UploadOutlined />} style={{ background: '#7161EF', color: '#FFF', marginBottom: 10 }}>
+                  Import Excel
+                </Button>
+              </Upload>
+            </Col>
 
           </Row>
           <div>
-          <Table
-            dataSource={dataSource}
-            columns={columns}
-            rowKey="key"
-            pagination={false} // Disable pagination if necessary
-            style={{ width: '100%', tableLayout: 'fixed' }} // Ensure the table takes full width and is fixed layout
-            scroll={{ x: 'max-content' }}
+            <Table
+              dataSource={dataSource}
+              columns={columns}
+              rowKey="key"
+              pagination={false} // Disable pagination if necessary
+              style={{ width: '100%', tableLayout: 'fixed' }} // Ensure the table takes full width and is fixed layout
+              scroll={{ x: 'max-content' }}
 
-          />
+            />
           </div>
           <Row justify="center" gutter={16}>
-  <Popconfirm
-    title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
-    onConfirm={handleSubmit} // เรียกใช้ฟังก์ชัน handleSubmit เมื่อกดยืนยัน
-    okText="ใช่"
-    cancelText="ไม่"
-  >
-    <Button 
-      style={{ color: '#fff', backgroundColor: '#14C11B', width: 100, height: 40, margin: 20 }}
-    >
-      Submit
-    </Button>
-  </Popconfirm>
-</Row>
+            <Popconfirm
+              title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
+              onConfirm={handleSubmit} // เรียกใช้ฟังก์ชัน handleSubmit เมื่อกดยืนยัน
+              okText="ใช่"
+              cancelText="ไม่"
+            >
+              <Button
+                style={{ color: '#fff', backgroundColor: '#14C11B', width: 100, height: 40, margin: 20 }}
+              >
+                Submit
+              </Button>
+            </Popconfirm>
+          </Row>
         </Layout.Content>
-    
+
       </Layout>
     </ConfigProvider>
   );

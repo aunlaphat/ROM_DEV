@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Steps, Col, ConfigProvider, Form, Layout, Row, Select, Button, Table, Modal, Input, notification, Divider } from 'antd';
+import { Steps, Col, ConfigProvider, Form, Layout, Row, Select, Button, Table, Modal, Input, notification, Divider, Popconfirm } from 'antd';
 import Webcam from 'react-webcam';
 import { CameraOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { QrReader, QrReaderProps } from 'react-qr-reader';
@@ -133,16 +133,39 @@ const OtherReturn: React.FC = () => {
             title: 'Action',
             key: 'action',
             render: (_: any, record: DataType) => (
-                <>
-                    <Button style={{ marginRight: '10px', marginBottom: '10px', background: '#BADEFF', color: '#1890FF' }} type="primary" onClick={() => handleRetakePhoto(record.key)} icon={<RedoOutlined />}>
-                        ถ่ายรูปใหม่
-                    </Button>
-                    <Button type="primary" onClick={() => handleDelete(record.key)} style={{ color: '#E53939', background: '#F9D3D3' }} icon={<DeleteOutlined />}>
-                        Delete
-                    </Button>
-                </>
+              <>
+                <Button
+                  style={{
+                    marginRight: '10px',
+                    marginBottom: '10px',
+                    background: '#BADEFF',
+                    color: '#1890FF',
+                  }}
+                  type="primary"
+                  onClick={() => handleRetakePhoto(record.key)}
+                  icon={<RedoOutlined />}
+                >
+                  ถ่ายรูปใหม่
+                </Button>
+          
+                <Popconfirm
+                  title="คุณแน่ใจหรือว่าต้องการลบรายการนี้?"
+                  onConfirm={() => handleDelete(record.key)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดยืนยัน
+                  okText="ยืนยัน"
+                  cancelText="ยกเลิก"
+                >
+                  <Button
+                    type="primary"
+                    style={{ color: '#E53939', background: '#F9D3D3' }}
+                    icon={<DeleteOutlined />}
+                  >
+                    Delete
+                  </Button>
+                </Popconfirm>
+              </>
             ),
-        },
+          },
+          
     ];
 
     const [data, setData] = useState<DataType[]>([
@@ -216,6 +239,11 @@ const OtherReturn: React.FC = () => {
         setCurrentRecordKey(null);
         setSkuName(null);
         setImages((prevImages) => ({ ...prevImages, [`step${currentStep + 1}`]: null })); // Clear image if needed
+    };
+    const handleBackStep = () => {
+        if (currentStep > 0) {  // ตรวจสอบว่า currentStep มากกว่า 0 เพื่อย้อยกลับ
+            setCurrentStep((prevStep) => prevStep - 1);
+        }
     };
 
     const handleConfirmReceived = () => {
@@ -382,6 +410,15 @@ const OtherReturn: React.FC = () => {
                                 </Col>
 
                                 <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
+                                {currentStep > 0 && (  // แสดงปุ่ม "ย้อนกลับ" เมื่อ currentStep > 0
+                <Button
+                    style={{marginRight: '10px', width: '100px', color: '#35465B'}}
+                    type="default"
+                    onClick={handleBackStep}
+                >
+                    ย้อนกลับ
+                </Button>
+                   )}
                                     {!images[`step${currentStep + 1}`] ? (
                                         <Button
                                             type="primary"
@@ -394,7 +431,7 @@ const OtherReturn: React.FC = () => {
 
                                             <Button
                                                 icon={<RedoOutlined />}
-                                                style={{ marginRight: '20px', width: '100px', color: '#35465B' }}
+                                                style={{ marginRight: '10px', width: '100px', color: '#35465B' }}
                                                 type="default"
                                                 onClick={retakePhoto}
                                             >

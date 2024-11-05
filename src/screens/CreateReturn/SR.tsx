@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { notification, Alert, Popconfirm, Layout, Button, ConfigProvider, Form, Row, Col, Select, FormProps, Input, DatePicker, Table, Modal, message } from 'antd';
+import { notification, Alert, Popconfirm, Layout, Button, ConfigProvider, Form, Row, Col, Select, FormProps, Input, DatePicker, Table, Modal, message, Tooltip } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { DeleteOutlined, LeftOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import { DeleteOutlined, LeftOutlined, PlusCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 
 
 const SRPage = () => {
@@ -51,13 +51,13 @@ const SRPage = () => {
       notification.success({
         message: 'สำเร็จ',
         description: `Create SR สำเร็จ! เลขสุ่มที่สร้างคือ: ${randomNumber}`,
-    });
+      });
 
       setIsSubmitted(true);
     } catch (error) {
       handleError(error);
     }
-    
+
   };
 
 
@@ -76,17 +76,17 @@ const SRPage = () => {
   };
   const handleChange = (value: string, key: number, field: string) => {
     const updatedDataSource = selectedData.map((item) => {
-        if (item.key === key) {
-            return { ...item, [field]: value };
-        }
-        return item;
+      if (item.key === key) {
+        return { ...item, [field]: value };
+      }
+      return item;
     });
     console.log("updatedDataSource:", updatedDataSource);
     setSelectedData(updatedDataSource);
-};
+  };
 
 
-  
+
 
 
 
@@ -94,23 +94,24 @@ const SRPage = () => {
   const handleBack = () => {
     navigate('/CreateReturn'); // Navigate to CreateReturn page
   };
+  
 
   const handleCheck = () => {
     if (!selectedSalesOrder) {
       message.error("กรุณาเลือก Sales Order ก่อน");
       return;
     }
-  
+
     const selectedOption = options.find(option => option.value === selectedSalesOrder);
-  
+
     if (!selectedOption) {
       message.error("ไม่พบ Sales Order ที่เลือก");
       return;
     }
-  
+
     const relatedOrder = checkSR.find(order => order.Sales_Order === selectedOption.label);
     const relatedData = data[selectedOption.label] || []; // ดึงข้อมูลที่ตรงกันจาก data
-  
+
     if (relatedOrder) {
       // ตั้งค่าฟิลด์ข้อมูลจาก checkSR และ data รวมกัน
       form.setFieldsValue({
@@ -128,27 +129,20 @@ const SRPage = () => {
       message.error("ไม่พบข้อมูลที่ตรงกัน");
     }
   };
-  
-  
+
+
 
   const handleSubmitData = () => {
-    Modal.confirm({
-      title: 'ยืนยันการส่งข้อมูล',
-      content: 'คุณต้องการส่งข้อมูลนี้ใช่หรือไม่?',
-      okText: 'ใช่',
-      cancelText: 'ไม่',
-      onOk: () => {
-        console.log("Sending data:", selectedData);
-        setSelectedData([]);
-        form.resetFields();
-        setIsSubmitted(false);
-        notification.success({
-          message: 'ส่งข้อมูล สำเร็จ',
-          description: 'ข้อมูลทั้งหมดได้ถูกส่งรียบร้อยแล้ว',
-      });
-      },
+    console.log("Sending data:", selectedData);
+    setSelectedData([]);
+    form.resetFields();
+    setIsSubmitted(false);
+    notification.success({
+      message: 'ส่งข้อมูล สำเร็จ',
+      description: 'ข้อมูลทั้งหมดได้ถูกส่งเรียบร้อยแล้ว',
     });
   };
+
 
   const options = [
     { value: '1', label: 'SOA2409-12345' },
@@ -168,21 +162,21 @@ const SRPage = () => {
     { Sales_Order: "SOA2409-12350", Tracking_Order: "2409901234901", SR_Create: "Null", SO_Status: "invoice", MKP_Status: 'Cancel' },
   ];
 
-  const data: Record<string, { key: number,SKU: string; SKU_Name: string; QTY: string; Price: string; Location_to: string; Warehouse_Form: string }[]> = {
+  const data: Record<string, { key: number, SKU: string; SKU_Name: string; QTY: string; Price: string; Location_to: string; Warehouse_Form: string }[]> = {
     "SOA2409-12345": [
-      {key: 1, SKU: "G097171-ARM01-BL", SKU_Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", QTY: "2", Price: "2,000", Location_to: "Return", Warehouse_Form: '' },
+      { key: 1, SKU: "G097171-ARM01-BL", SKU_Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", QTY: "2", Price: "2,000", Location_to: "Return", Warehouse_Form: '' },
 
     ],
     "SOA2409-12346": [
-      {key: 2, SKU: "G097171-ARM02-BL", SKU_Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", QTY: "3", Price: "3,000", Location_to: "Return", Warehouse_Form: '' },
+      { key: 2, SKU: "G097171-ARM02-BL", SKU_Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", QTY: "3", Price: "3,000", Location_to: "Return", Warehouse_Form: '' },
 
     ],
     "SOA2409-12347": [
-      {key: 3, SKU: "G097171-ARM03-BL", SKU_Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", QTY: "4", Price: "4,000", Location_to: "Return", Warehouse_Form: '' },
+      { key: 3, SKU: "G097171-ARM03-BL", SKU_Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", QTY: "4", Price: "4,000", Location_to: "Return", Warehouse_Form: '' },
 
     ],
     "SOA2409-12348": [
-      {key: 4, SKU: "G097171-ARM04-BL", SKU_Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", QTY: "5", Price: "5,000", Location_to: "Return", Warehouse_Form: '' },
+      { key: 4, SKU: "G097171-ARM04-BL", SKU_Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", QTY: "5", Price: "5,000", Location_to: "Return", Warehouse_Form: '' },
 
     ],
 
@@ -193,7 +187,6 @@ const SRPage = () => {
     { title: 'SKU_Name', dataIndex: 'SKU_Name' },
     { title: 'QTY', dataIndex: 'QTY', },
     { title: 'Price', dataIndex: 'Price', },
-    { title: 'Location_to', dataIndex: 'Location_to', },
 
     {
       title: 'Warehouse Form',
@@ -213,24 +206,26 @@ const SRPage = () => {
               { value: 'MMT', label: 'MMT' },
               { value: 'RBN', label: 'RBN' },
             ]}
-            onChange={(value)=>handleChange(value,record.key,"Warehouse_Form")}
+            onChange={(value) => handleChange(value, record.key, "Warehouse_Form")}
 
 
 
           />
+
         </Form.Item>
       ),
     },
+    { title: 'Location_to', dataIndex: 'Location_to', },
 
 
   ];
   const handleonChange = () => {
     const values = form.getFieldsValue();
-    console.log("values-----------",values)
+    console.log("values-----------", values)
     setFormValid(
-        values.Date && values.TrackingNumber && values.TransportType
+      values.Date && values.TrackingNumber && values.TransportType
     );
-};
+  };
 
   console.log("formValid:", formValid);
   console.log("dataSource length:", dataSource.length);
@@ -239,7 +234,7 @@ const SRPage = () => {
     form.setFieldsValue(checkSR[0]); // Set initial values
     const data = form.getFieldsValue()
     console.log(selectedData[0]?.Warehouse_Form)
-    
+
 
   }, [form]);
 
@@ -260,15 +255,17 @@ const SRPage = () => {
     SKU_Name: string;
   }
   const handleCancel = () => {
-    form.resetFields();       // รีเซ็ตค่าในฟอร์มทั้งหมด
-    setSelectedData([]);        // รีเซ็ตข้อมูล dataSource
-    setIsSubmitted(false);    // รีเซ็ตสถานะ isSubmitted
+    form.resetFields();       // Reset all form fields
+    setSelectedSalesOrder(''); // Clear SO/Order field
+    setSelectedData([]);       // Clear dataSource
+    setIsChecked(false);    // Reset submit status
     notification.success({
       message: 'Cancel สำเร็จ',
       description: 'ข้อมูลทั้งหมดได้ถูกยกเลิกเรียบร้อยแล้ว',
-  });
-   
-};
+    });
+
+
+  };
   return (
     <ConfigProvider>
 
@@ -307,7 +304,7 @@ const SRPage = () => {
                 >
                   <Select
                     showSearch
-                    style={{ height: 40, width:300 }}
+                    style={{ height: 40, width: 300 }}
                     placeholder="Search to Select"
                     optionFilterProp="label"
                     value={selectedSalesOrder}
@@ -328,18 +325,20 @@ const SRPage = () => {
             </Row>
           </Form>
         </Layout.Content>
-        <Layout.Content style={{
-          
-          marginRight:24 ,
-          marginLeft:24 ,
-          padding: 36,
-          minHeight: 360,
-          background: "#fff",
-          borderRadius: "8px",
-          justifyContent: 'center', // Center content horizontally
-          alignItems: 'center', // Center content vertically
-        }}>
-          {isChecked && (
+
+        {isChecked && (
+          <Layout.Content style={{
+
+            marginRight: 24,
+            marginLeft: 24,
+            padding: 36,
+            minHeight: 360,
+            background: "#fff",
+            borderRadius: "8px",
+            justifyContent: 'center', // Center content horizontally
+            alignItems: 'center', // Center content vertically
+          }}>
+
             <div>
               <Form
                 form={form}
@@ -362,19 +361,39 @@ const SRPage = () => {
                     </Col>
                     <Col span={8}>
                       <Form.Item
-                        label={<span style={{ color: '#657589' }}>SR_Create:</span>}
+                        label={
+                          <span style={{ color: '#657589' }}>
+                            SR Create:&nbsp;
+                            <Tooltip title="กด create SR ระบบจะส่งคำสั่งสร้าง เข้า AX แล้วจะได้เลข SR">
+                              <QuestionCircleOutlined style={{ color: '#657589' }} />
+                            </Tooltip>
+                          </span>
+                        }
                         name="SR_Create"
                       >
-                        <Input style={{ width: '100%', height: '40px' }} placeholder="SR Create" disabled />
+                         <Input style={{ width: '100%', height: '40px' }} disabled />
                       </Form.Item>
                     </Col>
                     <Col span={8}>
-                      <Form.Item label={<span style={{ color: '#657589' }}>SO Status:</span>} name="SO_Status">
+                      <Form.Item label={
+                          <span style={{ color: '#657589' }}>
+                            SO Status:&nbsp;
+                            <Tooltip title="สถานะของ Sale Order">
+                              <QuestionCircleOutlined style={{ color: '#657589' }} />
+                            </Tooltip>
+                          </span>
+                           } name="SO_Status">
                         <Input style={{ width: '100%', height: '40px' }} disabled />
                       </Form.Item>
                     </Col>
                     <Col span={8}>
-                      <Form.Item label={<span style={{ color: '#657589' }}>MKP Status:</span>} name="MKP_Status">
+                      <Form.Item label={
+                          <span style={{ color: '#657589' }}>
+                            MKP Status:&nbsp;
+                            <Tooltip title="สถานะของ Maketplace">
+                              <QuestionCircleOutlined style={{ color: '#657589' }} />
+                            </Tooltip>
+                          </span> } name="MKP_Status">
                         <Input style={{ width: '100%', height: '40px' }} disabled />
                       </Form.Item>
                     </Col>
@@ -386,7 +405,13 @@ const SRPage = () => {
                       </Form.Item>
                     </Col>
                     <Col span={8}>
-                      <Form.Item label={<span style={{ color: '#657589' }}>กรอกเลข Tracking:</span>} name="TrackingNumber" rules={[{ required: true, message: 'กรุณากรอกเลข Tracking!' }]}>
+                      <Form.Item label={
+                          <span style={{ color: '#657589' }}>
+                              กรอกเลข Tracking:&nbsp;
+                            <Tooltip title="เลขTracking จากขนส่ง">
+                              <QuestionCircleOutlined style={{ color: '#657589' }} />
+                            </Tooltip>
+                          </span> } name="TrackingNumber" rules={[{ required: true, message: 'กรุณากรอกเลข Tracking!' }]}>
                         <Input style={{ width: '100%', height: '40px' }} placeholder="กรอกเลข Tracking" />
                       </Form.Item>
                     </Col>
@@ -405,11 +430,11 @@ const SRPage = () => {
                           optionFilterProp="label"
 
                           options={[
-                            { value: '1', label: 'SPX Express' },
-                            { value: '2', label: 'J&T Express' },
-                            { value: '3', label: 'Flash Express' },
-                            { value: '4', label: 'Shopee' },
-                            { value: '5', label: 'NocNoc' },
+                            { value: 'SPX Express', label: 'SPX Express' },
+                            { value: 'J&T Express', label: 'J&T Express' },
+                            { value: 'Flash Express', label: 'Flash Express' },
+                            { value: 'Shopee', label: 'Shopee' },
+                            { value: 'NocNoc', label: 'NocNoc' },
                           ]}
                         />
                       </Form.Item>
@@ -419,13 +444,13 @@ const SRPage = () => {
               </Form>
 
               <Table
-              components={{
-                header: {
-                  cell: (props: React.HTMLAttributes<HTMLElement>) => (
-                    <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B' }} />
-                  ),
-                },
-              }}
+                components={{
+                  header: {
+                    cell: (props: React.HTMLAttributes<HTMLElement>) => (
+                      <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B' }} />
+                    ),
+                  },
+                }}
                 style={{ width: '100%', tableLayout: 'fixed', marginTop: '50px' }} // Ensure the table takes full width and is fixed layout
                 scroll={{ x: 'max-content' }}
                 dataSource={selectedData}
@@ -438,46 +463,51 @@ const SRPage = () => {
                 {!isSubmitted ? (
                   <Button
                     type="primary"
-                    onClick={handleCreateSR} // เรียกใช้ฟังก์ชันนี้เมื่อ !isSubmitted
-                    style={{ width: 100, height: 40 ,marginRight: '10px' }}
+                    onClick={handleCreateSR}
+                    style={{ width: 100, height: 40, marginRight: '20px' }}
                     disabled={!formValid || selectedData.length === 0 || !selectedData.every(item => item.Warehouse_Form)}
                   >
-                    Create IJ
+                    Create SR
                   </Button>
                 ) : (
-                  <Button
-                    type="primary"
-                    onClick={handleSubmitData} // เรียกใช้ฟังก์ชันนี้เมื่อ isSubmitted
-
-
-                    style={{ width: 100, height: 40 }}
-                    disabled={!formValid || selectedData.length === 0 || !selectedData.every(item => item.Warehouse_Form)}
+                  <Popconfirm
+                    title="ยืนยันการส่งข้อมูล"
+                    description="คุณต้องการส่งข้อมูลนี้ใช่หรือไม่?"
+                    onConfirm={handleSubmitData}
+                    okText="ใช่"
+                    cancelText="ไม่"
                   >
-                    ส่งข้อมูล
-                  </Button>
+                    <Button
+                      style={{ width: 100, height: 40, marginRight: '20px' }} // เพิ่ม marginRight เพื่อให้ปุ่มห่างจากปุ่ม Cancel
+                      type="primary"
+                      disabled={!isSubmitted}
+                    >
+                      ส่งข้อมูล
+                    </Button>
+                  </Popconfirm>
                 )}
 
-
-<Popconfirm
-        title="ต้องการยกเลิกหรือไม่?"
-        description="คุณแน่ใจหรือไม่ว่าต้องการยกเลิกข้อมูลทั้งหมด?"
-        onConfirm={handleCancel} // ยืนยันการยกเลิก
-        okText="ใช่"
-        cancelText="ไม่"
-    >
-        <Button 
-            type="default" 
-            style={{ width: 100, height: 40 }}
-        >
-            Cancel
-        </Button>
-    </Popconfirm>
+                <Popconfirm
+                  title="ต้องการยกเลิกหรือไม่?"
+                  description="คุณแน่ใจหรือไม่ว่าต้องการยกเลิกข้อมูลทั้งหมด?"
+                  onConfirm={handleCancel}
+                  okText="ใช่"
+                  cancelText="ไม่"
+                >
+                  <Button
+                    type="default"
+                    style={{ width: 100, height: 40 }}
+                  >
+                    Cancel
+                  </Button>
+                </Popconfirm>
               </Row>
+
             </div>
 
-          )}
 
-        </Layout.Content>
+          </Layout.Content>
+        )}
       </Layout>
     </ConfigProvider>
   );
