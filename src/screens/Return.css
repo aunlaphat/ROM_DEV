@@ -1,0 +1,4 @@
+.custom-table .ant-table-header {
+    background-color: #1890ff; /* สีพื้นหลังของหัวตารางที่คุณต้องการ */
+    color: white; /* สีตัวอักษรในหัวตาราง */
+  }

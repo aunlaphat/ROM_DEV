@@ -1,0 +1,10 @@
+.custom-selected-row {
+    background-color: #ffffff  /* สีพื้นหลังของแถวที่ถูกเลือก */
+  }
+  
+  .ant-table-thead > tr > th {
+    
+    font-weight: bold;
+    text-align: center;
+  }
+  
