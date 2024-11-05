@@ -1,6 +1,9 @@
 stages:
     - sonarqube-check
     - sonarqube-vulnerability-report
+    - build
+    - create
+    - deploy
 
 sonarqube-check:
   stage: sonarqube-check
@@ -18,12 +21,15 @@ sonarqube-check:
     - sonar-scanner
   allow_failure: true
   only:
+    - merge_requests
+    - master
     - main
+    - develop
 
 sonarqube-vulnerability-report:
   stage: sonarqube-vulnerability-report
   script:
-    - 'curl -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/issues/gitlab_sast_export?projectKey=frontend-boiler-page&branch=${CI_COMMIT_BRANCH}&pullRequest=${CI_MERGE_REQUEST_IID}" -o gl-sast-sonar-report.json'
+    - 'curl -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/issues/gitlab_sast_export?projectKey=auto-inventory-journal&branch=${CI_COMMIT_BRANCH}&pullRequest=${CI_MERGE_REQUEST_IID}" -o gl-sast-sonar-report.json'
   allow_failure: true
   only:
     - merge_requests
@@ -36,3 +42,131 @@ sonarqube-vulnerability-report:
       sast: gl-sast-sonar-report.json
   dependencies:
     - sonarqube-check
+
+build:
+  stage: build
+  image: node:20-alpine
+  before_script:
+    - echo "$ENV_DEV" > .env
+    - cat .env
+    - free -m
+
+    - npm install --legacy-peer-deps
+  script:
+    - export CI=false
+    - npm run build
+  cache:
+    key: build-cache
+    paths:
+      - node_modules
+      - build
+
+create:
+  stage: create
+  image: docker:24.0.6
+  services:
+    - docker:24.0.6-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+  cache:
+    key: build-cache
+    paths:
+      - build
+    policy: pull
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+
+deploy:
+  stage: deploy
+  image: alpine:3.17
+  before_script:
+    - apk add --update openssh-client openssh bash --repository https://uk.alpinelinux.org/alpine/v3.11/main
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$SSH_KEY_PROD" > ./key.file
+    - chmod 400 ./key.file
+    - ssh-add ./key.file
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+  script:
+    - ssh -o StrictHostkeyChecking=no admindcom@$SERVER_IP_PROD "
+      docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+      docker stop $CI_PROJECT_NAME || true &&
+      docker rm $CI_PROJECT_NAME || true &&
+      docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA &&
+      docker run -d --name $CI_PROJECT_NAME -p $SERVICE_PORT:3000 $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA &&
+      docker image prune -a -f &&
+      exit"
+
+build-prod-186:
+  stage: build
+  image: node:20-alpine
+  before_script:
+    - echo "$ENV_PROD" > .env
+    - cat .env
+    - npm install --legacy-peer-deps
+  script:
+    - export CI=false
+    - npm run build
+  cache:
+    key: build-cache
+    paths:
+      - node_modules
+      - build
+  only:
+    - tags
+  tags:
+    - production
+
+create-prod-186:
+  stage: create
+  image: docker:24.0.6
+  services:
+    - docker:24.0.6-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+  cache:
+    key: build-cache
+    paths:
+      - build
+    policy: pull
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+  only:
+    - tags
+  tags:
+    - production
+
+deploy-prod-186:
+  when: manual
+  stage: deploy
+  image: alpine:3.17
+  before_script:
+    - apk add --update openssh-client openssh bash --repository https://uk.alpinelinux.org/alpine/v3.11/main
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$SSH_KEY_PROD_C1" > ./key.file
+    - chmod 400 ./key.file
+    - ssh-add ./key.file
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+  only:
+    - tags
+  tags:
+    - production
+  script:
+    - ssh -o StrictHostkeyChecking=no admindcom@$SERVER_IP_PROD_C1 "
+      docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+      docker stop $CI_PROJECT_NAME || true &&
+      docker rm $CI_PROJECT_NAME || true &&
+      docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG &&
+      docker run -d --restart=always --name $CI_PROJECT_NAME -p $SERVICE_PORT:3000 $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG &&
+      docker image prune -a -f &&
+      exit"
