@@ -67,6 +67,7 @@
     ]
   },
   "devDependencies": {
+    "@iconify/react": "^5.0.2",
     "@types/react-highlight-words": "^0.20.0"
   }
 }

@@ -92,10 +92,13 @@ const ManageUser = () => {
             width: '250px',
             render: (record: User) => (
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Avatar src={record.Image} alt="avatar" style={{ marginRight: '8px', width: 64, height: 64 }} />
+                    <Avatar src={record.Image} alt="avatar" style={{ marginRight: '8px', width: 56, height: 56 }} />
                     <div>
-                        <div style={{ color: '#35465B', fontWeight: 'bold', fontSize: '16px' }}>{record.Name}</div>
-                        <div style={{ color: '#35465B', marginTop: '10px', fontSize: '14px' }}>{record.Role} {record.Warehouse}</div>
+                        <div style={{ color: '#35465B', fontWeight: 'bold', fontSize: '16px', }}>{record.Name}</div>
+                        <div style={{ color: '#35465B', marginTop: '10px', fontSize: '14px' }}>
+                            {record.Role} <span style={{ marginLeft: '8px' }}>{record.Warehouse}</span>
+                        </div>
+
                     </div>
                 </div>
             ),
@@ -109,8 +112,8 @@ const ManageUser = () => {
                     <Button
                         icon={<EditOutlined />}
                         onClick={() => handleEdit(record)}
-                        type="link"
-                        style={{ color: '#939393' }}
+                        type="primary"
+                        style={{ color: '#FFFFFF', background: '#D9D9D9' }}
                     >
                         แก้ไข
                     </Button>
@@ -122,8 +125,8 @@ const ManageUser = () => {
                     >
                         <Button
                             icon={<DeleteOutlined />}
-                            type="link"
-                            style={{ color: 'red' }}
+                            type="primary"
+                            style={{ color: 'red', background: '#F9D3D3', marginLeft: '20px' }}
                         >
                             ลบ
                         </Button>

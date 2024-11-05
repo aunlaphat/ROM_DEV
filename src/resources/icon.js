@@ -44,15 +44,17 @@ import {
   FaUserCog,
   FaUserPlus,
 } from "react-icons/fa";
+import { TbUserCog,TbTruckReturn,TbReportAnalytics } from "react-icons/tb";
 import { MdAutorenew, MdWavingHand, MdOutlineClose } from "react-icons/md";
 import { BiBarcode ,BiCheckCircl,} from "react-icons/bi";
 import { FaBoxesPacking } from "react-icons/fa6";
 import { SlCheck } from "react-icons/sl";
+import { HiOutlineArchiveBox } from "react-icons/hi2";
 import { HiOutlineArrowDownOnSquare } from "react-icons/hi2";
 import { GrView, GrNext,GrHomeRounded } from "react-icons/gr";
 import { FaRegEdit,HiOutlineHome } from "react-icons/fa";
 import { GoHome } from "react-icons/go";
-import { BsCheckCircle,BsBoxArrowInLeft,BsArrowDownSquare } from "react-icons/bs";
+import { BsCheckCircle,BsBoxArrowInLeft,BsArrowDownSquare ,} from "react-icons/bs";
 import { VscGoToFile } from "react-icons/vsc";
 /**
  * React Icons --> https://react-icons.github.io/react-icons/
@@ -61,6 +63,9 @@ export const Icon = {
  
   download: (props) => <BsFillCloudArrowDownFill {...props} />,
   search: (props) => <BsSearch {...props} />,
+  Report: (props) => <TbReportAnalytics {...props} />,
+  Box1: (props) => <HiOutlineArchiveBox {...props} />,
+  Return: (props) => <TbTruckReturn {...props} />,
   BoxArrow: (props) => <BsArrowDownSquare {...props} />,
   edit: (props) => <BsFillPenFill {...props} />,
   GoToFile: (props) => <VscGoToFile {...props} />,

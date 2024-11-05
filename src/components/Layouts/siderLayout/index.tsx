@@ -9,6 +9,7 @@ import { ROUTES_PATH } from "../../../resources/routes-name";
 import { Icon } from "../../../resources";
 import { FormOutlined} from '@ant-design/icons';
 
+
 const { Sider } = Layout;
 
 const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
@@ -123,14 +124,14 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
     {
       title: ROUTES_PATH.     ROUTE_SALERETURN.LABEL,
       key: ROUTES_PATH.    ROUTE_SALERETURN.PATH,
-      icon: Icon.dashboard(),
+      icon: Icon.Return(),
       link: ROUTES_PATH.     ROUTE_SALERETURN.PATH,
       role: [1, 2],
     },
     {
       title: ROUTES_PATH.     ROUTE_OTHER.LABEL,
       key: ROUTES_PATH.    ROUTE_OTHER.PATH,
-      icon: Icon.dashboard(),
+      icon: Icon.Return(),
       link: ROUTES_PATH.     ROUTE_OTHER.PATH,
       role: [1, 2],
     },
@@ -138,14 +139,14 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
     {
       title: ROUTES_PATH.     ROUTE_REPORT.LABEL,
       key: ROUTES_PATH.    ROUTE_REPORT.PATH,
-      icon: Icon.dashboard(),
+      icon: Icon.Report(),
       link: ROUTES_PATH.     ROUTE_REPORT.PATH,
       role: [1, 2],
     },
     {
       title: ROUTES_PATH.     ROUTE_MANAGEUSER.LABEL,
       key: ROUTES_PATH.    ROUTE_MANAGEUSER.PATH,
-      icon: Icon.dashboard(),
+      icon: Icon.manageUser(),
       link: ROUTES_PATH.     ROUTE_MANAGEUSER.PATH,
       role: [1, 2],
     },
