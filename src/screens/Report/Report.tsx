@@ -149,7 +149,7 @@ const columns = [
         <ConfigProvider>
              
             <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
-            Confirm Return Trade
+           Report
             </div>
             <Layout>
                 <Layout.Content
@@ -169,6 +169,7 @@ const columns = [
                             <Row gutter={8} align="middle" justify="center" style={{ marginTop: "20px" }}>
                                 <Col>
                                     <Form.Item
+                                    id="Select date"
                                         layout="vertical"
                                         label="Select date"
                                         name="Select date"
@@ -183,6 +184,7 @@ const columns = [
                                 </Col>
                                 <Col style={{ marginTop: "4px" }}>
                                     <Button
+                                    id="Search"
                                         type="primary"
                                         style={{ height: "40px", width: "100px", background: "#32ADE6" }}
                                         onClick={handleSearch}
@@ -194,6 +196,7 @@ const columns = [
                             <div>
                             <Col style={{ marginTop: "4px" }}>
                         <Button
+                         id="Export Excel"
                             type="primary"
                             style={{ height: "40px", width: "120px", background: "#B6AEF3", marginBottom:'20px' }}
                             onClick={handleExportExcel}
@@ -202,6 +205,7 @@ const columns = [
                         </Button>
                     </Col>
                                 <Table 
+                             id="Table1"
                                  components={{
                                     header: {
                                       cell: (props: React.HTMLAttributes<HTMLElement>) => (

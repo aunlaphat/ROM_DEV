@@ -366,6 +366,7 @@ const OtherReturn: React.FC = () => {
                     <Row align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
                         <Col span={12} >
                             <Form.Item
+                            id="selectedSalesOrder"
                                 layout="vertical"
                                 label={<span style={{ color: '#657589' }}>กรอกเลข Order</span>}
                                 name="selectedSalesOrder"
@@ -395,6 +396,7 @@ const OtherReturn: React.FC = () => {
                                 <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '20px' }}>
                                     {!images[`step${currentStep + 1}`] ? (
                                         <Webcam
+                                            id="Webcam1"
                                             audio={false}
                                             ref={webcamRef}
                                             screenshotFormat="image/jpeg"
@@ -412,6 +414,7 @@ const OtherReturn: React.FC = () => {
                                 <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
                                 {currentStep > 0 && (  // แสดงปุ่ม "ย้อนกลับ" เมื่อ currentStep > 0
                 <Button
+                id="Back"
                     style={{marginRight: '10px', width: '100px', color: '#35465B'}}
                     type="default"
                     onClick={handleBackStep}
@@ -421,6 +424,7 @@ const OtherReturn: React.FC = () => {
                    )}
                                     {!images[`step${currentStep + 1}`] ? (
                                         <Button
+                                        id="ถ่ายรูป"
                                             type="primary"
                                             onClick={capturePhoto}
                                             style={{ display: 'flex', alignItems: 'center', width: '100px', }}>
@@ -430,6 +434,7 @@ const OtherReturn: React.FC = () => {
                                         <>
 
                                             <Button
+                                             id="ถ่ายรูปใหม่"
                                                 icon={<RedoOutlined />}
                                                 style={{ marginRight: '10px', width: '100px', color: '#35465B' }}
                                                 type="default"
@@ -438,6 +443,7 @@ const OtherReturn: React.FC = () => {
                                                 ถ่ายใหม่
                                             </Button>
                                             <Button
+                                             id="ถัดไป"
                                                 style={{ width: '100px' }}
                                                 type="primary"
                                                 onClick={handleNextStep}
@@ -458,6 +464,7 @@ const OtherReturn: React.FC = () => {
                             <Row justify="center" align="middle" style={{ marginTop: 20 }}>
                                 <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
                                     <Form.Item
+                                     id="กรอก SKU"
                                         layout="vertical"
                                         label={<span style={{ color: '#657589' }}>กรอก SKU เพื่อรับเข้า</span>}
                                         style={{ marginBottom: 0 }}
@@ -471,6 +478,7 @@ const OtherReturn: React.FC = () => {
                                             style={{ width: '375px', marginRight: '10px', height: 40 }}
                                         />
                                         <Button
+                                        id="สแกน SKU"
                                             icon={<ScanOutlined />}
                                             onClick={handleScanSku}
                                             style={{ height: 40, marginLeft: 5 }}
@@ -482,13 +490,15 @@ const OtherReturn: React.FC = () => {
                                 <Row gutter={40} style={{ marginTop: '20px' }}>
 
                                     <Col span={12} >
-                                        <Button type="primary" onClick={handleConfirmReceived} disabled={!skuInput} style={{}}>
+                                        <Button 
+                                        id=" ยืนยันการรับเข้า"
+                                        type="primary" onClick={handleConfirmReceived} disabled={!skuInput} style={{}}>
                                             ยืนยันการรับเข้า
                                         </Button>
 
                                     </Col>
                                     <Col span={12} >
-                                        <Button type="primary" onClick={handleSubmit} style={{ background: '#14C11B' }} >
+                                        <Button   id=" ส่งข้อมูล" type="primary" onClick={handleSubmit} style={{ background: '#14C11B' }} >
                                             ส่งข้อมูล
                                         </Button>
                                     </Col>
@@ -527,6 +537,7 @@ const OtherReturn: React.FC = () => {
                         >
                             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
                                 <Webcam
+                                id="webcam2"
                                     audio={false}
                                     ref={webcamRef}
                                     screenshotFormat="image/jpeg"
@@ -534,7 +545,7 @@ const OtherReturn: React.FC = () => {
                                 />
                             </div>
                             <Row justify="center" style={{ marginTop: '10px' }}>
-                                <Button type="primary" onClick={handleCapturePhoto}>
+                                <Button id="ถ่ายรูป2" type="primary" onClick={handleCapturePhoto}>
                                     ถ่ายรูป
                                 </Button>
                             </Row>

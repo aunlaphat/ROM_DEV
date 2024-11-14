@@ -267,249 +267,245 @@ const SRPage = () => {
 
   };
   return (
-    <ConfigProvider>
-
-      <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
-        Create SR Return
-      </div>
-      <Layout>
-        <Layout.Content style={{
-          margin: "24px",
-          padding: 20,
-          minHeight: 200,
-          background: "#fff",
-          borderRadius: "8px",
-          display: 'flex',
-
-        }}>
-
-          <Button
-            onClick={handleBack}
-            style={{ background: '#98CEFF', color: '#fff' }}
-          >
-            <LeftOutlined style={{ color: '#fff', marginRight: 5 }} />
-            Back
-          </Button>
-          <Form
-            layout="vertical"
-            form={form}
-            style={{ width: '100%', marginTop: '40px' }}
-          >
-            <Row gutter={30} justify="center" align="middle" style={{ width: '100%' }}>
-              <Col>
-                <Form.Item
-                  label={<span style={{ color: '#657589' }}>กรอกเลข SO/Order ที่ต้องการสร้างSR</span>}
-                  name="selectedSalesOrder"
-                  rules={[{ required: true, message: 'กรุณากรอกเลข SO/Order ที่ต้องการสร้างSR!' }]}
-                >
-                  <Select
-                    showSearch
-                    style={{ height: 40, width: 300 }}
-                    placeholder="Search to Select"
-                    optionFilterProp="label"
-                    value={selectedSalesOrder}
-                    onChange={(value) => {
-                      setSelectedSalesOrder(value);
-                    }}
-                    options={options}
-                  />
-                </Form.Item>
-
-              </Col>
-              <Col>
-                <Button type="primary" style={{ width: 100, height: 40, marginTop: 4 }} onClick={handleCheck}>
-                  Check
-                </Button>
-
-              </Col>
-            </Row>
-          </Form>
-        </Layout.Content>
-
-        {isChecked && (
-          <Layout.Content style={{
-
+    <ConfigProvider >
+    <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
+      Create SR Return
+    </div>
+    <Layout>
+      <Layout.Content style={{
+        margin: "24px",
+        padding: 20,
+        minHeight: 200,
+        background: "#fff",
+        borderRadius: "8px",
+        display: 'flex',
+      }}>
+        <Button
+          id="backButton"
+          onClick={handleBack}
+          style={{ background: '#98CEFF', color: '#fff' }}
+        >
+          <LeftOutlined style={{ color: '#fff', marginRight: 5 }} />
+          Back
+        </Button>
+        <Form
+          layout="vertical"
+          form={form}
+          style={{ width: '100%', marginTop: '40px' }}
+        >
+          <Row gutter={30} justify="center" align="middle" style={{ width: '100%' }}>
+            <Col>
+              <Form.Item
+                id="salesOrderFormItem"
+                label={<span style={{ color: '#657589' }}>กรอกเลข SO/Order ที่ต้องการสร้างSR</span>}
+                name="selectedSalesOrder"
+                rules={[{ required: true, message: 'กรุณากรอกเลข SO/Order ที่ต้องการสร้างSR!' }]}
+              >
+                <Select
+                  id="salesOrderSelect"
+                  showSearch
+                  style={{ height: 40, width: 300 }}
+                  placeholder="Search to Select"
+                  optionFilterProp="label"
+                  value={selectedSalesOrder}
+                  onChange={(value) => {
+                    setSelectedSalesOrder(value);
+                  }}
+                  options={options}
+                />
+              </Form.Item>
+            </Col>
+            <Col>
+              <Button id="checkButton" type="primary" style={{ width: 100, height: 40, marginTop: 4 }} onClick={handleCheck}>
+                Check
+              </Button>
+            </Col>
+          </Row>
+        </Form>
+      </Layout.Content>
+  
+      {isChecked && (
+        <Layout.Content 
+          id="checkedContent"
+          style={{
             marginRight: 24,
             marginLeft: 24,
             padding: 36,
             minHeight: 360,
             background: "#fff",
             borderRadius: "8px",
-            justifyContent: 'center', // Center content horizontally
-            alignItems: 'center', // Center content vertically
-          }}>
-
-            <div>
-              <Form
-                form={form}
-                layout="vertical"
-                onValuesChange={handleonChange}
-
-                style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-              >
-                <div style={{ width: '100%', maxWidth: '800px' }}>
-                  <Row gutter={16} style={{ marginTop: '10px', justifyContent: 'center' }}>
-                    <Col span={8}>
-                      <Form.Item label={<span style={{ color: '#657589' }}>Sale Order:</span>} name="Sales_Order">
-                        <Input style={{ width: '100%', height: '40px' }} disabled />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label={<span style={{ color: '#657589' }}>Tracking Order:</span>} name="Tracking_Order">
-                        <Input style={{ width: '100%', height: '40px' }} disabled />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item
-                        label={
-                          <span style={{ color: '#657589' }}>
-                            SR Create:&nbsp;
-                            <Tooltip title="กด create SR ระบบจะส่งคำสั่งสร้าง เข้า AX แล้วจะได้เลข SR">
-                              <QuestionCircleOutlined style={{ color: '#657589' }} />
-                            </Tooltip>
-                          </span>
-                        }
-                        name="SR_Create"
-                      >
-                         <Input style={{ width: '100%', height: '40px' }} disabled />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label={
-                          <span style={{ color: '#657589' }}>
-                            SO Status:&nbsp;
-                            <Tooltip title="สถานะของ Sale Order">
-                              <QuestionCircleOutlined style={{ color: '#657589' }} />
-                            </Tooltip>
-                          </span>
-                           } name="SO_Status">
-                        <Input style={{ width: '100%', height: '40px' }} disabled />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label={
-                          <span style={{ color: '#657589' }}>
-                            MKP Status:&nbsp;
-                            <Tooltip title="สถานะของ Maketplace">
-                              <QuestionCircleOutlined style={{ color: '#657589' }} />
-                            </Tooltip>
-                          </span> } name="MKP_Status">
-                        <Input style={{ width: '100%', height: '40px' }} disabled />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label={<span style={{ color: '#657589' }}>วันที่คืน:</span>} name="Date" rules={[{ required: true, message: 'กรุณาเลือกวันที่คืน' }]}>
-                        <DatePicker style={{ width: '100%', height: '40px' }} placeholder="เลือกวันที่คืน" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item label={
-                          <span style={{ color: '#657589' }}>
-                              กรอกเลข Tracking:&nbsp;
-                            <Tooltip title="เลขTracking จากขนส่ง">
-                              <QuestionCircleOutlined style={{ color: '#657589' }} />
-                            </Tooltip>
-                          </span> } name="TrackingNumber" rules={[{ required: true, message: 'กรุณากรอกเลข Tracking!' }]}>
-                        <Input style={{ width: '100%', height: '40px' }} placeholder="กรอกเลข Tracking" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={8}>
-                      <Form.Item
-                        label={<span style={{ color: '#657589' }}>Transport Type:</span>}
-                        name="TransportType"
-                        rules={[{ required: true, message: 'กรุณาเลือกTransportType ' }]}
-                      >
-                        <Select
-                          style={{ width: '100%', height: '40px', borderWidth: '1px', }}
-
-
-                          showSearch
-                          placeholder="TransportType"
-                          optionFilterProp="label"
-
-                          options={[
-                            { value: 'SPX Express', label: 'SPX Express' },
-                            { value: 'J&T Express', label: 'J&T Express' },
-                            { value: 'Flash Express', label: 'Flash Express' },
-                            { value: 'Shopee', label: 'Shopee' },
-                            { value: 'NocNoc', label: 'NocNoc' },
-                          ]}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                </div>
-              </Form>
-
-              <Table
-                components={{
-                  header: {
-                    cell: (props: React.HTMLAttributes<HTMLElement>) => (
-                      <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B' }} />
-                    ),
-                  },
-                }}
-                style={{ width: '100%', tableLayout: 'fixed', marginTop: '50px' }} // Ensure the table takes full width and is fixed layout
-                scroll={{ x: 'max-content' }}
-                dataSource={selectedData}
-                columns={columns}
-                pagination={false}
-                rowKey={(record) => record.SKU}
-              />
-
-              <Row justify="center" style={{ marginTop: '20px' }}>
-                {!isSubmitted ? (
-                  <Button
-                    type="primary"
-                    onClick={handleCreateSR}
-                    style={{ width: 100, height: 40, marginRight: '20px' }}
-                    disabled={!formValid || selectedData.length === 0 || !selectedData.every(item => item.Warehouse_Form)}
-                  >
-                    Create SR
-                  </Button>
-                ) : (
-                  <Popconfirm
-                    title="ยืนยันการส่งข้อมูล"
-                    description="คุณต้องการส่งข้อมูลนี้ใช่หรือไม่?"
-                    onConfirm={handleSubmitData}
-                    okText="ใช่"
-                    cancelText="ไม่"
-                  >
-                    <Button
-                      style={{ width: 100, height: 40, marginRight: '20px' }} // เพิ่ม marginRight เพื่อให้ปุ่มห่างจากปุ่ม Cancel
-                      type="primary"
-                      disabled={!isSubmitted}
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <div>
+            <Form
+              form={form}
+              layout="vertical"
+              onValuesChange={handleonChange}
+              style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            >
+              <div style={{ width: '100%', maxWidth: '800px' }}>
+                <Row gutter={16} style={{ marginTop: '10px', justifyContent: 'center' }}>
+                  <Col span={8}>
+                    <Form.Item id="Sale-Order" label={<span style={{ color: '#657589' }}>Sale Order:</span>} name="Sales_Order">
+                      <Input id="Sale-Order" style={{ width: '100%', height: '40px' }} disabled />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item id="Tracking-Order" label={<span style={{ color: '#657589' }}>Tracking Order:</span>} name="Tracking_Order">
+                      <Input id="Tracking-Order" style={{ width: '100%', height: '40px' }} disabled />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item id="SR-Create"
+                      label={
+                        <span style={{ color: '#657589' }}>
+                          SR Create:&nbsp;
+                          <Tooltip title="กด create SR ระบบจะส่งคำสั่งสร้าง เข้า AX แล้วจะได้เลข SR">
+                            <QuestionCircleOutlined style={{ color: '#657589' }} />
+                          </Tooltip>
+                        </span>
+                      }
+                      name="SR_Create"
                     >
-                      ส่งข้อมูล
-                    </Button>
-                  </Popconfirm>
-                )}
-
+                      <Input id="SR-Create" style={{ width: '100%', height: '40px' }} disabled />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item id="SO-Status"
+                      label={
+                        <span style={{ color: '#657589' }}>
+                          SO Status:&nbsp;
+                          <Tooltip title="สถานะของ Sale Order">
+                            <QuestionCircleOutlined style={{ color: '#657589' }} />
+                          </Tooltip>
+                        </span>
+                      }
+                      name="SO_Status"
+                    >
+                      <Input id="SO-Status" style={{ width: '100%', height: '40px' }} disabled />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item label={
+                      <span style={{ color: '#657589' }}>
+                        MKP Status:&nbsp;
+                        <Tooltip title="สถานะของ Maketplace">
+                          <QuestionCircleOutlined style={{ color: '#657589' }} />
+                        </Tooltip>
+                      </span>} 
+                      name="MKP_Status"
+                    >
+                      <Input style={{ width: '100%', height: '40px' }} disabled />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8} />
+                  <Col span={8}>
+                    <Form.Item label={<span style={{ color: '#657589' }}>วันที่คืน:</span>} name="Date" rules={[{ required: true, message: 'กรุณาเลือกวันที่คืน' }]}>
+                      <DatePicker style={{ width: '100%', height: '40px' }} placeholder="เลือกวันที่คืน" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item label={
+                      <span style={{ color: '#657589' }}>
+                        กรอกเลข Tracking:&nbsp;
+                        <Tooltip title="เลขTracking จากขนส่ง">
+                          <QuestionCircleOutlined style={{ color: '#657589' }} />
+                        </Tooltip>
+                      </span>} 
+                      name="TrackingNumber" 
+                      rules={[{ required: true, message: 'กรุณากรอกเลข Tracking!' }]}
+                    >
+                      <Input style={{ width: '100%', height: '40px' }} placeholder="กรอกเลข Tracking" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item
+                      label={<span style={{ color: '#657589' }}>Transport Type:</span>}
+                      name="TransportType"
+                      rules={[{ required: true, message: 'กรุณาเลือกTransportType ' }]}
+                    >
+                      <Select
+                        style={{ width: '100%', height: '40px', borderWidth: '1px' }}
+                        showSearch
+                        placeholder="TransportType"
+                        optionFilterProp="label"
+                        options={[
+                          { value: 'SPX Express', label: 'SPX Express' },
+                          { value: 'J&T Express', label: 'J&T Express' },
+                          { value: 'Flash Express', label: 'Flash Express' },
+                          { value: 'Shopee', label: 'Shopee' },
+                          { value: 'NocNoc', label: 'NocNoc' },
+                        ]}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </div>
+            </Form>
+  
+            <Table
+              components={{
+                header: {
+                  cell: (props: React.HTMLAttributes<HTMLElement>) => (
+                    <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B' }} />
+                  ),
+                },
+              }}
+              style={{ width: '100%', tableLayout: 'fixed', marginTop: '50px' }}
+              scroll={{ x: 'max-content' }}
+              dataSource={selectedData}
+              columns={columns}
+              pagination={false}
+              rowKey={(record) => record.SKU}
+            />
+  
+            <Row justify="center" style={{ marginTop: '20px' }}>
+              {!isSubmitted ? (
+                <Button
+                  type="primary"
+                  onClick={handleCreateSR}
+                  style={{ width: 100, height: 40, marginRight: '20px' }}
+                  disabled={!formValid || selectedData.length === 0 || !selectedData.every(item => item.Warehouse_Form)}
+                >
+                  Create SR
+                </Button>
+              ) : (
                 <Popconfirm
-                  title="ต้องการยกเลิกหรือไม่?"
-                  description="คุณแน่ใจหรือไม่ว่าต้องการยกเลิกข้อมูลทั้งหมด?"
-                  onConfirm={handleCancel}
+                  title="ยืนยันการส่งข้อมูล"
+                  description="คุณต้องการส่งข้อมูลนี้ใช่หรือไม่?"
+                  onConfirm={handleSubmitData}
                   okText="ใช่"
                   cancelText="ไม่"
                 >
                   <Button
-                    type="default"
-                    style={{ width: 100, height: 40 }}
+                    style={{ width: 100, height: 40, marginRight: '20px' }}
+                    type="primary"
+                    disabled={!isSubmitted}
                   >
-                    Cancel
+                    ส่งข้อมูล
                   </Button>
                 </Popconfirm>
-              </Row>
-
-            </div>
-
-
-          </Layout.Content>
-        )}
-      </Layout>
-    </ConfigProvider>
+              )}
+              <Popconfirm
+                title="ต้องการยกเลิกหรือไม่?"
+                description="คุณแน่ใจหรือไม่ว่าต้องการยกเลิกข้อมูลทั้งหมด?"
+                onConfirm={handleCancel}
+                okText="ใช่"
+                cancelText="ไม่"
+              >
+                <Button type="default" style={{ width: 100, height: 40 }}>
+                  Cancel
+                </Button>
+              </Popconfirm>
+            </Row>
+          </div>
+        </Layout.Content>
+      )}
+    </Layout>
+  </ConfigProvider>
+  
   );
 };
 

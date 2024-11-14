@@ -362,12 +362,13 @@ const IJPage: React.FC = () => {
 
 
     return (
-        <ConfigProvider>
-            <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
+        <ConfigProvider >
+            <div  id="titleContainer" style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
                 Create IJ Return
             </div>
-            <Layout>
+            <Layout id="layout">
                 <Layout.Content
+                id="contentContainer"
                     style={{
                         margin: "24px",
                         padding: 36,
@@ -377,8 +378,9 @@ const IJPage: React.FC = () => {
                         overflow: "auto",
                     }}
                 >
-                    <div>
+                    <div id="mainContent">
                         <Button
+                         id="backButton"
                             onClick={handleBack}
                             style={{ background: '#98CEFF', color: '#fff' }}
                         >
@@ -387,27 +389,30 @@ const IJPage: React.FC = () => {
                         </Button>
 
                         <Form
+                        id="form"
                             form={form}
                             layout="vertical"
                             onValuesChange={onChange}
                             style={{ padding: '20px', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                         >
-                            <div style={{ width: '100%', maxWidth: '800px' }}> {/* Adjust max-width here */}
+                            <div id="formContainer" style={{ width: '100%', maxWidth: '800px' }}> {/* Adjust max-width here */}
 
                                 <Divider style={{ color: '#657589', fontSize: '22px', marginTop: 30, marginBottom: 30 }} orientation="left"> IJ document Information </Divider>
                                 <Row gutter={16} >
 
                                     <Col span={8}>
                                         <Form.Item
+                                          id="ijDocumentInput"
                                             label={<span style={{ color: '#657589' }}>กรอกเอกสารอ้างอิง IJ (ไม่บังคับ):</span>}
                                             name="IJ"
 
                                         >
-                                            <Input style={{ width: '100%', height: '40px', }} placeholder="กรอกเอกสารอ้างอิง" onChange={handleRemarkChange} disabled={formDisabled} />
+                                            <Input id="Doc" style={{ width: '100%', height: '40px', }} placeholder="กรอกเอกสารอ้างอิง" onChange={handleRemarkChange} disabled={formDisabled} />
                                         </Form.Item>
                                     </Col>
                                     <Col span={8}>
                                         <Form.Item
+                                         id="ijCreateInput"
                                             label={
                                                 <span style={{ color: '#657589' }}>
                                                     IJ Create:&nbsp;
@@ -418,11 +423,12 @@ const IJPage: React.FC = () => {
                                             }
                                             name="IJ_Create"
                                         >
-                                            <Input style={{ width: '100%', height: '40px', }} placeholder="IJ Create" disabled={true} />
+                                            <Input  style={{ width: '100%', height: '40px', }} placeholder="IJ Create" disabled={true} />
                                         </Form.Item>
                                     </Col>
                                     <Col span={8}>
                                         <Form.Item
+                                            id="remarkInput"
                                             label={<span style={{ color: '#657589' }}>Remark (ไม่บังคับ):</span>}
                                             name="Remark"
                                         >
@@ -434,6 +440,7 @@ const IJPage: React.FC = () => {
                                     <Divider style={{ color: '#657589', fontSize: '22px', marginTop: 30, marginBottom: 30 }} orientation="left"> Transport Information </Divider>
                                     <Col span={8}>
                                         <Form.Item
+                                        id="Date"
                                             label={<span style={{ color: '#657589' }}>วันที่คืน:</span>}
                                             name="Date"
                                             rules={[{ required: true, message: 'กรุณาเลือกวันที่คืน' }]}
@@ -443,6 +450,7 @@ const IJPage: React.FC = () => {
                                     </Col>
                                     <Col span={8}>
                                         <Form.Item
+                                         id="Tracking"
                                             label={
                                                 <span style={{ color: '#657589' }}>
                                                     กรอกเลข Tracking:&nbsp;
@@ -462,6 +470,7 @@ const IJPage: React.FC = () => {
                                     </Col>
                                     <Col span={8}>
                                         <Form.Item
+                                         id="TransportType"
                                             label={<span style={{ color: '#657589' }}>Transport Type:</span>}
                                             name="TransportType"
                                             rules={[{ required: true, message: "กรุณาเลือก Transport Type" }]}
@@ -490,6 +499,7 @@ const IJPage: React.FC = () => {
                                 <Row gutter={16} >
                                     <Col span={8}>
                                         <Form.Item
+                                        id="Sku"
                                             label={<span style={{ color: '#657589' }}>กรอก SKU:</span>}
                                             name="SKU"
                                             rules={[{ required: true, message: "กรุณากรอก SKU" }]}
@@ -509,6 +519,7 @@ const IJPage: React.FC = () => {
                                     </Col>
                                     <Col span={8}>
                                         <Form.Item
+                                          id="SkuName"
                                             label={<span style={{ color: '#657589' }}>Name:</span>}
                                             name="SKU_Name"
                                             rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
@@ -527,7 +538,8 @@ const IJPage: React.FC = () => {
                                     </Col>
                                     <Col span={4}>
                                         <Form.Item label={<span style={{ color: '#657589' }}>QTY:</span>}
-                                            name="QTY"
+                                             id="qty"
+                                           name="QTY"
                                             rules={[{ required: true, message: "กรุณากรอก QTY" }]}>
                                             <InputNumber
                                                 min={1}
@@ -541,6 +553,7 @@ const IJPage: React.FC = () => {
                                     <Col span={4}>
 
                                         <Button
+                                          id="addsku"
                                             type="primary"
                                             disabled={!formValid || isSubmitted}
                                             onClick={handleAdd}
@@ -567,6 +580,7 @@ const IJPage: React.FC = () => {
 
                         <div >
                             <Table
+                            id="table"
                                 components={{
                                     header: {
                                         cell: (props: React.HTMLAttributes<HTMLElement>) => (
@@ -586,6 +600,7 @@ const IJPage: React.FC = () => {
                     </div>
                     <Row justify="center" style={{ marginTop: '20px' }}>
                         <Popconfirm
+                        id="popconfirmforreateIJ,sendData"
                             title={isSubmitted ? "ยืนยันการส่งข้อมูล" : "ยืนยันการสร้าง IJ"}
                             description={isSubmitted ? "คุณต้องการส่งข้อมูลนี้ใช่หรือไม่?" : "คุณต้องการสร้าง IJ ใช่หรือไม่?"}
                             onConfirm={isSubmitted ? handleSubmitData : handleCreateIJ} // ฟังก์ชันตามสถานะ isSubmitted
@@ -593,6 +608,7 @@ const IJPage: React.FC = () => {
                             cancelText="ไม่"
                         >
                             <Button
+                            id="createIJ,sendData"
                                 type="primary"
                                 style={{ width: 100, height: 40, marginRight: '10px' }} // เพิ่มช่องว่างทางขวา
                                 disabled={!formValid || dataSource.length === 0}
@@ -602,6 +618,7 @@ const IJPage: React.FC = () => {
                         </Popconfirm>
 
                         <Popconfirm
+                          id="popconfirmforcancel"
                             title="ต้องการยกเลิกหรือไม่?"
                             description="คุณแน่ใจหรือไม่ว่าต้องการยกเลิกข้อมูลทั้งหมด?"
                             onConfirm={handleCancel} // ยืนยันการยกเลิก
@@ -609,6 +626,7 @@ const IJPage: React.FC = () => {
                             cancelText="ไม่"
                         >
                             <Button
+                            id="cancel"
                                 type="default"
                                 style={{ width: 100, height: 40 }}
                             >

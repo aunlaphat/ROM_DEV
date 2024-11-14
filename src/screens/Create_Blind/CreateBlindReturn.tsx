@@ -212,6 +212,7 @@ const CreateBlind = () => {
                         <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
                             <Col span={8}>
                                 <Form.Item
+                                id="Username"
                                     label={<span style={{ color: '#657589' }}>กรอกชื่อลูกค้า</span>}
                                     name="Username"
                                     rules={[{ required: true, message: 'กรุณากรอกชื่อลูกค้า Order!' }]}
@@ -221,6 +222,7 @@ const CreateBlind = () => {
                             </Col>
                             <Col span={8}>
                                 <Form.Item
+                                  id="Phonenumber"
                                     label={<span style={{ color: '#657589' }}>กรอกเบอร์โทร</span>}
                                     name="Phonenumber"
                                     rules={[{
@@ -264,6 +266,7 @@ const CreateBlind = () => {
                             </Col>
                             <Col span={8}>
                                 <Form.Item
+                                 id="Address"
                                     label={<span style={{ color: '#657589' }}>กรอกที่อยู่</span>}
                                     name="Address"
                                     rules={[{ required: true, message: 'กรุณากรอกที่อยู่!' }]}
@@ -276,6 +279,7 @@ const CreateBlind = () => {
                         <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
                             <Col span={8}>
                                 <Form.Item
+                                 id="Tracking"
                                    label={
                                     <span style={{ color: '#657589' }}>
                                       กรอกเลข Tracking:&nbsp;
@@ -291,6 +295,7 @@ const CreateBlind = () => {
                             </Col>
                             <Col span={8}>
                                 <Form.Item
+                                  id="Ordernumber"
                                     label={<span style={{ color: '#657589' }}>กรอกเลข Order</span>}
                                     name="Ordernumber"
 
@@ -300,6 +305,7 @@ const CreateBlind = () => {
                             </Col>
                             <Col span={8}>
                                 <Form.Item
+                                   id="TransportType"
                                     label={<span style={{ color: '#657589' }}>Transport Type:</span>}
                                     name="TransportType"
                                     rules={[{ required: true, message: 'กรุณาเลือก Transport Type' }]}
@@ -337,7 +343,7 @@ const CreateBlind = () => {
 
     <Row align="middle" justify="start" style={{ marginTop: "20px", width: '100%' }}>
         <div style={{ marginRight: "10px" }}>แกะกล่อง</div>
-        <Radio.Group onChange={onChange} value={value}>
+        <Radio.Group   id="Radio" onChange={onChange} value={value}>
             <Radio value={1}>Yes</Radio>
             <Radio value={2}>No</Radio>
         </Radio.Group>
@@ -347,6 +353,7 @@ const CreateBlind = () => {
         <Row gutter={16} style={{ marginTop: "20px", width: '100%' }}>
         <Col span={8}>
             <Form.Item
+             id="Sku" 
                 label={<span style={{ color: '#657589' }}>กรอก SKU:</span>}
                 name="SKU"
                 rules={[{ required: true, message: "กรุณากรอก SKU" }]}
@@ -363,6 +370,7 @@ const CreateBlind = () => {
         </Col>
         <Col span={8}>
             <Form.Item
+                id="SkuName" 
                 label={<span style={{ color: '#657589' }}>Name:</span>}
                 name="SKU_Name"
                 rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
@@ -379,6 +387,7 @@ const CreateBlind = () => {
         </Col>
         <Col span={4}>
             <Form.Item
+                id="qty" 
                 label={<span style={{ color: '#657589' }}>QTY:</span>}
                 name="QTY"
                 rules={[{ required: true, message: 'กรุณากรอกจำนวน' }]}
@@ -394,6 +403,7 @@ const CreateBlind = () => {
                             </Col>
                             <Col span={4}>
             <Button
+                id="Add" 
                 type="primary"
                 disabled={!formskuValid}  // ปิดการใช้งานเมื่อ form ไม่ valid
                 onClick={handleAdd}
@@ -409,6 +419,7 @@ const CreateBlind = () => {
 
                         {showInput && (
                             <Table
+                            id="Table" 
                                 style={{ marginTop: '20px' }}
                                 columns={columns}
                                 dataSource={tableData}
@@ -420,6 +431,7 @@ const CreateBlind = () => {
                     </Form>
                     <Row align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}> 
                     <Button
+                        id="Confirm" 
             type="primary"
             onClick={handleSubmit}
             disabled={(value === 2 && formValid === true ) ? false : (value === 1 && tableData.length > 0&& formValid === true ) ? false :true}

@@ -155,6 +155,7 @@ const ManageUser = () => {
                 >
                     <Row gutter={20} justify="end">
                         <Button
+                        id=" Add New"
                             type="primary"
                             icon={<PlusOutlined />}
                             onClick={handleAddNew}
@@ -164,6 +165,7 @@ const ManageUser = () => {
                         </Button>
                     </Row>
                     <Table
+                    id="Table1"
                         style={{ padding: 40 }}
                         components={{
                             header: {
@@ -192,7 +194,7 @@ const ManageUser = () => {
                             okText="Yes"
                             cancelText="No"
                         >
-                            <Button key="submit" type="primary" style={{ background: '#14C11B' }}>
+                            <Button id="Update,บันทัก" key="submit" type="primary" style={{ background: '#14C11B' }}>
                                 {currentUser ? "Update" : "บันทึก"}
                             </Button>
                         </Popconfirm>
@@ -201,6 +203,7 @@ const ManageUser = () => {
             >
                 <Form form={form} layout="vertical">
                     <Form.Item
+                    id="Name"
                         name="Name"
                         label="Username"
                         rules={[{ required: true, message: 'Please enter the username' }]}
@@ -208,6 +211,7 @@ const ManageUser = () => {
                         <Input style={{ height: 40 }} placeholder="Enter username" />
                     </Form.Item>
                     <Form.Item
+                    id="Role"
                         name="Role"
                         label="Role"
                         rules={[{ required: true, message: 'Please select a role' }]}
@@ -218,6 +222,7 @@ const ManageUser = () => {
                         </Select>
                     </Form.Item>
                     <Form.Item
+                     id="Warehouse"
                         name="Warehouse"
                         label="Warehouse"
                         rules={[{ required: true, message: 'Please select a warehouse' }]}

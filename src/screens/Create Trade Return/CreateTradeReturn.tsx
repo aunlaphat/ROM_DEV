@@ -404,14 +404,16 @@ const CreateTradeReturn = () => {
               <Divider style={{ color: '#657589', fontSize: '22px', margin: 30 }} orientation="left">Sale Order Information</Divider>
               <Row gutter={16}  >
                 <Col span={8}>
-                  <Form.Item label={
-                    <span style={{ color: '#657589' }}>
-                      กรอกเลข Tracking:&nbsp;
-                      <Tooltip title="เลขTracking จากขนส่ง">
-                        <QuestionCircleOutlined style={{ color: '#657589' }} />
-                      </Tooltip>
-                    </span>
-                  }
+                  <Form.Item
+                    id="Tracking"
+                    label={
+                      <span style={{ color: '#657589' }}>
+                        กรอกเลข Tracking:&nbsp;
+                        <Tooltip title="เลขTracking จากขนส่ง">
+                          <QuestionCircleOutlined style={{ color: '#657589' }} />
+                        </Tooltip>
+                      </span>
+                    }
                     name="Tracking"
                     rules={[{ required: true, message: "กรอกเลข Tracking" }]}>
                     <Input style={{ height: 40 }} />
@@ -419,6 +421,7 @@ const CreateTradeReturn = () => {
                 </Col>
                 <Col span={8}>
                   <Form.Item
+                    id="TransportType"
                     label={<span style={{ color: '#657589' }}>Transport Type:</span>}
                     name="TransportType"
                     rules={[{ required: true, message: "กรุณาเลือก Transport Type" }]}
@@ -447,19 +450,23 @@ const CreateTradeReturn = () => {
 
               <Row gutter={16} align="middle" justify="center" style={{ marginTop: '20px', width: '100%' }}>
                 <Col span={8}>
-                  <Form.Item label={
-                    <span style={{ color: '#657589' }}>
-                      กรอกเอกสารอ้างอิง:&nbsp;
-                      <Tooltip title="ตัวอย่างเอกสาร SOA2410-00234">
-                        <QuestionCircleOutlined style={{ color: '#657589' }} />
-                      </Tooltip>
-                    </span>
-                  } name="Doc">
+                  <Form.Item
+                    id="Doc"
+                    label={
+                      <span style={{ color: '#657589' }}>
+                        กรอกเอกสารอ้างอิง:&nbsp;
+                        <Tooltip title="ตัวอย่างเอกสาร SOA2410-00234">
+                          <QuestionCircleOutlined style={{ color: '#657589' }} />
+                        </Tooltip>
+                      </span>
+                    } name="Doc">
                     <Input style={{ width: '100%', height: '40px' }} placeholder="ตัวอย่างเอกสาร SOA2410-00234" />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item label={<span style={{ color: '#657589' }}>Customer account:</span>} name="Customer_account" rules={[{ required: true, message: 'Customer account is required' }]}>
+                  <Form.Item
+                    id="CustomerAccount"
+                    label={<span style={{ color: '#657589' }}>Customer account:</span>} name="Customer_account" rules={[{ required: true, message: 'Customer account is required' }]}>
                     <Select style={{ width: '100%', height: '40px', borderWidth: '1px' }} showSearch placeholder="Customer account" optionFilterProp="children" onChange={handleAccountChange}>
                       {Customeraccount.map(account => (
                         <Select.Option key={account.Key} value={account.Customer_account}>
@@ -470,7 +477,9 @@ const CreateTradeReturn = () => {
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item label={<span style={{ color: '#657589' }}>Customer name:</span>} name="Customer_name" rules={[{ required: true, message: 'Customer name is required' }]}>
+                  <Form.Item
+                    id="CustomerName"
+                    label={<span style={{ color: '#657589' }}>Customer name:</span>} name="Customer_name" rules={[{ required: true, message: 'Customer name is required' }]}>
                     <Input style={{ width: '100%', height: '40px', borderWidth: '1px' }} placeholder="Customer name" value={selectedAccount?.Customer_name} disabled />
                   </Form.Item>
                 </Col>
@@ -478,7 +487,9 @@ const CreateTradeReturn = () => {
 
               <Row gutter={16} style={{ marginTop: '10px' }}>
                 <Col span={8}>
-                  <Form.Item label={<span style={{ color: '#657589' }}>Invoice name:</span>} name="Invoice_name" rules={[{ required: true, message: 'Invoice name is required' }]}>
+                  <Form.Item
+                    id="InvoiceName"
+                    label={<span style={{ color: '#657589' }}>Invoice name:</span>} name="Invoice_name" rules={[{ required: true, message: 'Invoice name is required' }]}>
                     <Select style={{ width: '100%', height: '40px', borderWidth: '1px' }} showSearch placeholder="Invoice name" optionFilterProp="children" disabled={!isInvoiceEnabled} onChange={handleInvoiceChange}>
                       {Customeraccount.map(account => (
                         <Option key={account.Key} value={account.Invoice_name}>
@@ -490,7 +501,9 @@ const CreateTradeReturn = () => {
                 </Col>
 
                 <Col span={8}>
-                  <Form.Item label={<span style={{ color: '#657589' }}>Tax ID(เลขผู้เสียภาษี):</span>} name="Tax" rules={[{ required: selectedAccount ? true : false, message: 'Tax ID is required' }]}>
+                  <Form.Item
+                    id="Taxid"
+                    label={<span style={{ color: '#657589' }}>Tax ID(เลขผู้เสียภาษี):</span>} name="Tax" rules={[{ required: selectedAccount ? true : false, message: 'Tax ID is required' }]}>
                     <Input style={{ width: '100%', height: '40px', borderWidth: '1px' }} placeholder="Tax ID" value={selectedAccount?.Tax} disabled />
                   </Form.Item>
                 </Col>
@@ -499,7 +512,9 @@ const CreateTradeReturn = () => {
               <Divider style={{ color: '#657589', fontSize: '22px', margin: 30 }} orientation="left">Address Information</Divider>
               <Row gutter={16} style={{ marginTop: '10px' }}>
                 <Col span={18}>
-                  <Form.Item label={<span style={{ color: '#657589' }}>Invoice address:</span>} name="Address" rules={[{ required: true, message: 'Invoice address is required' }]}>
+                  <Form.Item
+                    id="InvoiceAddress"
+                    label={<span style={{ color: '#657589' }}>Invoice address:</span>} name="Address" rules={[{ required: true, message: 'Invoice address is required' }]}>
                     <Select style={{ width: '100%', height: '40px', borderWidth: '1px' }} suffixIcon={null} disabled value={selectedAccount ? selectedAccount.Address : undefined}>
                       {selectedAccount ? (
                         <Option value={selectedAccount.Address}>{selectedAccount.Address}</Option>
@@ -510,32 +525,42 @@ const CreateTradeReturn = () => {
                   </Form.Item>
                 </Col>
                 <Col span={6}>
-                  <Button type="primary" onClick={handleOpen} style={{ width: '100%', height: '40px', marginTop: 30 }}>New invoice address</Button>
+                  <Button
+                    id="NewInvoiceAddress"
+                    type="primary" onClick={handleOpen} style={{ width: '100%', height: '40px', marginTop: 30 }}>New invoice address</Button>
                 </Col>
               </Row>
 
               <Divider style={{ color: '#657589', fontSize: '22px', margin: 30 }} orientation="left"> SKU information</Divider>
               <Row gutter={16} style={{ marginTop: '10px', width: '100%' }}>
                 <Col span={6}>
-                  <Form.Item label={<span style={{ color: '#657589' }}>กรอก SKU :</span>} name="SKU" rules={[{ required: true, message: "กรุณากรอก SKU" }]}>
+                  <Form.Item
+                    id="Sku"
+                    label={<span style={{ color: '#657589' }}>กรอก SKU :</span>} name="SKU" rules={[{ required: true, message: "กรุณากรอก SKU" }]}>
                     <Select showSearch style={{ width: '100%', height: '40px' }} placeholder="Search to Select" optionFilterProp="label" value={selectedSKU} onChange={handleSKUChange} options={skuOptions} dropdownStyle={{ minWidth: 200 }} />
                   </Form.Item>
                 </Col>
 
                 <Col span={7}>
-                  <Form.Item label={<span style={{ color: '#657589' }}>กรอก SKU Name:</span>} name="SKU_Name" rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}>
+                  <Form.Item
+                    id="Skuname"
+                    label={<span style={{ color: '#657589' }}>กรอก SKU Name:</span>} name="SKU_Name" rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}>
                     <Select showSearch style={{ width: '100%', height: '40px' }} placeholder="Search to Select" optionFilterProp="label" value={selectedName} onChange={handleNameChange} options={nameOptions} dropdownStyle={{ minWidth: 300 }} />
                   </Form.Item>
                 </Col>
 
                 <Col span={4}>
-                  <Form.Item label={<span style={{ color: '#657589' }}>QTY:</span>} name="QTY" rules={[{ required: true, message: "กรุณากรอก QTY" }]}>
+                  <Form.Item
+                    id="qty"
+                    label={<span style={{ color: '#657589' }}>QTY:</span>} name="QTY" rules={[{ required: true, message: "กรุณากรอก QTY" }]}>
                     <InputNumber min={1} max={100} value={qty} onChange={(value) => setQty(value)} style={{ width: '100%', height: '40px', lineHeight: '40px' }} />
                   </Form.Item>
                 </Col>
 
                 <Col span={4}>
-                  <Form.Item label={<span style={{ color: '#657589' }}>Price:</span>} name="Price" rules={[{ required: true, message: "กรุณากรอก Price" }]}>
+                  <Form.Item
+                    id="price"
+                    label={<span style={{ color: '#657589' }}>Price:</span>} name="Price" rules={[{ required: true, message: "กรุณากรอก Price" }]}>
                     <InputNumber min={1} max={100000} value={price} onChange={(value) => setPrice(value)} step={0.01} style={{ width: '100%', height: '40px', lineHeight: '40px' }} />
                   </Form.Item>
                 </Col>
@@ -543,6 +568,7 @@ const CreateTradeReturn = () => {
                 <Col span={3}>
 
                   <Button
+                    id="add"
                     type="primary"
                     style={{ width: '100%', height: '40px', marginTop: 30 }}
                     onClick={handleAdd} // เรียกใช้ฟังก์ชัน handleAdd
@@ -561,7 +587,7 @@ const CreateTradeReturn = () => {
             footer={null}
           >
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px', overflow: "auto", }}>
-              <Button type="text" onClick={handleClose} icon={<CloseOutlined style={{ fontSize: '24px' }} />} danger />
+              <Button id="Closeicon" type="text" onClick={handleClose} icon={<CloseOutlined style={{ fontSize: '24px' }} />} danger />
             </div>
             <div style={{ fontSize: '20px', color: '#35465B', }}>
               New Invoice Address
@@ -576,6 +602,7 @@ const CreateTradeReturn = () => {
 
                 <Col >
                   <Form.Item
+                    id="Invoicename"
                     label={<span style={{ color: '#657589' }}>Invoice name:</span>}
                     name="Invoice_name"
                     rules={[{ required: true, message: "กรอก Invoice" }]}
@@ -592,6 +619,7 @@ const CreateTradeReturn = () => {
 
                 <Col>
                   <Form.Item
+                    id="addressnew"
                     label={<span style={{ color: '#657589' }}>บ้านเลขที่:</span>}
                     name="AddressNew"
                     rules={[{ required: true, message: "กรอก บ้านเลขที่" }]}
@@ -602,7 +630,9 @@ const CreateTradeReturn = () => {
 
                 {/* Province */}
                 <Col>
-                  <Form.Item label={<span style={{ color: '#657589' }}>จังหวัด:</span>} name="province" rules={[{ required: true, message: 'เลือกจังหวัด' }]}>
+                  <Form.Item
+                    id="SelectProvince"
+                    label={<span style={{ color: '#657589' }}>จังหวัด:</span>} name="province" rules={[{ required: true, message: 'เลือกจังหวัด' }]}>
                     <Select placeholder="Select Province" onChange={handleProvinceChange} style={{ width: '400px', height: '40px' }}>
                       {provinces.map((item) => (
                         <Option key={item} value={item}>{item}</Option>
@@ -613,7 +643,9 @@ const CreateTradeReturn = () => {
 
                 {/* District */}
                 <Col>
-                  <Form.Item label={<span style={{ color: '#657589' }}>เขต:</span>} name="district" rules={[{ required: true, message: 'เลือกเขต' }]}>
+                  <Form.Item
+                    id="SelectDistrict"
+                    label={<span style={{ color: '#657589' }}>เขต:</span>} name="district" rules={[{ required: true, message: 'เลือกเขต' }]}>
                     <Select placeholder="Select District" onChange={handleDistrictChange} style={{ width: '400px', height: '40px' }}>
                       {districts.map((item) => (
                         <Option key={item} value={item}>{item}</Option>
@@ -624,7 +656,9 @@ const CreateTradeReturn = () => {
 
                 {/* SubDistrict */}
                 <Col>
-                  <Form.Item label={<span style={{ color: '#657589' }}>แขวง:</span>} name="SubDistrict" rules={[{ required: true, message: 'เลือกแขวง' }]}>
+                  <Form.Item
+                    id="SelectSubDistrict"
+                    label={<span style={{ color: '#657589' }}>แขวง:</span>} name="SubDistrict" rules={[{ required: true, message: 'เลือกแขวง' }]}>
                     <Select placeholder="Select SubDistrict" onChange={handleSubDistrictChange} style={{ width: '400px', height: '40px' }}>
                       {subDistricts.map((item) => (
                         <Option key={item} value={item}>{item}</Option>
@@ -635,7 +669,9 @@ const CreateTradeReturn = () => {
 
                 {/* Postal Code */}
                 <Col>
-                  <Form.Item label={<span style={{ color: '#657589' }}>รหัสไปรษณีย์:</span>} name="PostalCode" rules={[{ required: true, message: 'กรุณาระบุรหัสไปรษณีย์' }]}>
+                  <Form.Item
+                    id="PostalCode"
+                    label={<span style={{ color: '#657589' }}>รหัสไปรษณีย์:</span>} name="PostalCode" rules={[{ required: true, message: 'กรุณาระบุรหัสไปรษณีย์' }]}>
                     <Select placeholder="Postal Code" value={postalCode} style={{ width: '400px', height: '40px' }}>
                       {postalCode && <Option key={postalCode} value={postalCode}>{postalCode}</Option>}
                     </Select>
@@ -644,15 +680,16 @@ const CreateTradeReturn = () => {
 
                 {/* Save Button */}
                 <Col>
-                  <Form.Item>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      disabled={isSaving}
-                    >
-                      Save
-                    </Button>
-                  </Form.Item>
+
+                  <Button
+                    id="save"
+                    type="primary"
+                    htmlType="submit"
+                    disabled={isSaving}
+                  >
+                    Save
+                  </Button>
+
                 </Col>
               </Row>
             </Form>
@@ -662,7 +699,9 @@ const CreateTradeReturn = () => {
 
           <Row gutter={20} style={{ marginBottom: 20, marginLeft: 20 }}>
             <Col  >
-              <Button onClick={handleDownloadTemplate}>
+              <Button 
+              id=" Download Template"
+              onClick={handleDownloadTemplate}>
                 <img src={icon} alt="Download Icon" style={{ width: 16, height: 16, marginRight: 8 }} />
                 Download Template
               </Button>
@@ -672,7 +711,7 @@ const CreateTradeReturn = () => {
 
             <Col>
               <Upload {...uploadProps} showUploadList={false}>
-                <Button icon={<UploadOutlined />} style={{ background: '#7161EF', color: '#FFF', marginBottom: 10 }}>
+                <Button id=" Import Excel" icon={<UploadOutlined />} style={{ background: '#7161EF', color: '#FFF', marginBottom: 10 }}>
                   Import Excel
                 </Button>
               </Upload>
@@ -692,12 +731,14 @@ const CreateTradeReturn = () => {
           </div>
           <Row justify="center" gutter={16}>
             <Popconfirm
+            id="popconfirmSubmit"
               title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
               onConfirm={handleSubmit} // เรียกใช้ฟังก์ชัน handleSubmit เมื่อกดยืนยัน
               okText="ใช่"
               cancelText="ไม่"
             >
               <Button
+              id="Submit"
                 style={{ color: '#fff', backgroundColor: '#14C11B', width: 100, height: 40, margin: 20 }}
               >
                 Submit

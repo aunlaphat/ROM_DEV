@@ -293,6 +293,7 @@ const ConfirmReturnTrade = () => {
                     }}
                 >
                     <Tabs
+                    id="card"
                         onChange={onTabChange}
                         type="card"
                         items={[
@@ -306,6 +307,7 @@ const ConfirmReturnTrade = () => {
                             <Row gutter={8} align="middle" justify="center" style={{ marginTop: "20px" }}>
                                 <Col>
                                     <Form.Item
+                                    id="Select date"
                                         layout="vertical"
                                         label="Select date"
                                         name="Select date"
@@ -320,6 +322,7 @@ const ConfirmReturnTrade = () => {
                                 </Col>
                                 <Col style={{ marginTop: "4px" }}>
                                     <Button
+                                    id="Search"
                                         type="primary"
                                         style={{ height: "40px", width: "100px", background: "#32ADE6" }}
                                         onClick={handleSearch}
@@ -330,6 +333,7 @@ const ConfirmReturnTrade = () => {
                             </Row>
                             <div>
                                 <Table 
+                                id="Table1"
                                  components={{
                                     header: {
                                       cell: (props: React.HTMLAttributes<HTMLElement>) => (
@@ -354,6 +358,7 @@ const ConfirmReturnTrade = () => {
                         <Row gutter={8} align="middle" justify="center" style={{ marginTop: "20px" }}>
                             <Col>
                                 <Form.Item
+                                id="Select date2"
                                     layout="vertical"
                                     label="Select date"
                                     name="Select date"
@@ -368,6 +373,7 @@ const ConfirmReturnTrade = () => {
                             </Col>
                             <Col style={{ marginTop: "4px" }}>
                                 <Button
+                                id="Search2"
                                     type="primary"
                                     style={{ height: "40px", width: "100px", background: "#32ADE6" }}
                                     onClick={handleSearch}
@@ -378,6 +384,7 @@ const ConfirmReturnTrade = () => {
                         </Row>
                         <div>
                             <Table 
+                            id="Table2"
                              components={{
                                 header: {
                                   cell: (props: React.HTMLAttributes<HTMLElement>) => (
@@ -410,10 +417,10 @@ const ConfirmReturnTrade = () => {
           footer={
             <div style={{ display: 'flex', justifyContent: 'center' }}>
 
-                <Button onClick={handleOk} style={{ marginLeft: 8, backgroundColor: '#14C11B', color: '#FFF' }}>
+                <Button id="Update" onClick={handleOk} style={{ marginLeft: 8, backgroundColor: '#14C11B', color: '#FFF' }}>
                     Update
                 </Button>
-                <Button onClick={handleCancel} style={{ marginLeft: 8, background: '#D9D9D9', color: '#909090' }}>
+                <Button id="Cancel" onClick={handleCancel} style={{ marginLeft: 8, background: '#D9D9D9', color: '#909090' }}>
                     Cancel
                 </Button>
             </div>
@@ -424,24 +431,24 @@ const ConfirmReturnTrade = () => {
                     <Form layout="vertical" style={{ marginTop: 20 }}>
                         <Row gutter={16}>
                             <Col span={8}>
-                            <Form.Item label={<span style={{ color: '#657589' }}>Order</span>}>
+                            <Form.Item id="Order1" label={<span style={{ color: '#657589' }}>Order</span>}>
                                     <Input style={{ height: 40 }} value={selectedRecord.Order} readOnly disabled />
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
-                            <Form.Item label={<span style={{ color: '#657589' }}>SO/INV</span>}>
+                            <Form.Item id="So/inv1" label={<span style={{ color: '#657589' }}>SO/INV</span>}>
                                     <Input style={{ height: 40 }} value={selectedRecord.SO_INV} disabled />
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
-                            <Form.Item label={<span style={{ color: '#657589' }}>SR</span>}>
+                            <Form.Item id="SR1" label={<span style={{ color: '#657589' }}>SR</span>}>
                                     <Input style={{ height: 40 }} value={selectedRecord.SR} disabled />
                                 </Form.Item>
                             </Col>
                         </Row>
                         <Row gutter={16}>
                             <Col span={5}>
-                            <Form.Item label={<span style={{ color: '#657589' }}>กรอกโค้ด R</span>}>
+                            <Form.Item id="codeR1" label={<span style={{ color: '#657589' }}>กรอกโค้ด R</span>}>
                                     <Select
                                         style={{ height: 40 }}
                                         value={codeR}
@@ -458,7 +465,7 @@ const ConfirmReturnTrade = () => {
                                 </Form.Item>
                             </Col>
                             <Col span={5}>
-                            <Form.Item label={<span style={{ color: '#657589' }}>ชื่อของโค้ด R</span>}>
+                            <Form.Item id="NameR1" label={<span style={{ color: '#657589' }}>ชื่อของโค้ด R</span>}>
                                     <Select
                                         style={{ height: 40 }}
                                         value={nameR}
@@ -475,7 +482,7 @@ const ConfirmReturnTrade = () => {
                                 </Form.Item>
                             </Col>
                             <Col span={5}>
-                            <Form.Item label={<span style={{ color: '#657589' }}>QTY:</span>}>
+                            <Form.Item id="qty1" label={<span style={{ color: '#657589' }}>QTY:</span>}>
                                     <InputNumber
                                         min={1}
                                         max={100}
@@ -486,7 +493,7 @@ const ConfirmReturnTrade = () => {
                                 </Form.Item>
                             </Col>
                             <Col span={5}>
-                            <Form.Item label={<span style={{ color: '#657589' }}>Price:</span>}>
+                            <Form.Item id="price1" label={<span style={{ color: '#657589' }}>Price:</span>}>
                                     <InputNumber
                                         min={1}
                                         max={100000}
@@ -499,6 +506,7 @@ const ConfirmReturnTrade = () => {
                             </Col>
                             <Col span={4}>
                                 <Button
+                                id="Add2"
                                     type="primary"
                                     style={{ width: '100%', height: '40px', marginTop: 30 }}
                                     onClick={handleAdd}
@@ -512,6 +520,7 @@ const ConfirmReturnTrade = () => {
 
                     {/* Table to display product data */}
                     <Table
+                    id="Table3"
                     components={{
                       header: {
                         cell: (props: React.HTMLAttributes<HTMLElement>) => (
@@ -576,13 +585,13 @@ const ConfirmReturnTrade = () => {
                        
                             
                                 <Col span={12}>
-                                <Form.Item label={<span style={{ color: '#657589' }}>Order</span>}>
+                                <Form.Item id="Order2" label={<span style={{ color: '#657589' }}>Order</span>}>
                                         <Input style={{ height: 40 }} value={selectedRecord.Order} readOnly disabled />
                                     </Form.Item>
                                 </Col>
                                
                                 <Col span={12}>
-                                <Form.Item label={<span style={{ color: '#657589' }}>SR</span>}>
+                                <Form.Item id="SR2" label={<span style={{ color: '#657589' }}>SR</span>}>
                                         <Input style={{ height: 40 }} value={selectedRecord.SR} disabled />
                                     </Form.Item>
                                 </Col>
@@ -593,6 +602,7 @@ const ConfirmReturnTrade = () => {
     
                         {/* Table to display product data */}
                         <Table
+                        id="Table4"
                         components={{
                           header: {
                             cell: (props: React.HTMLAttributes<HTMLElement>) => (

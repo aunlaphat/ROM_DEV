@@ -195,6 +195,7 @@ const OtherReturn = () => {
         >
           <Tabs
             onChange={onTabChange}
+             id="card"
             type="card"
             items={[
               { label: "Blind Return", key: "1" },
@@ -216,6 +217,7 @@ const OtherReturn = () => {
                     rules={[{ required: true, message: "Please select the Select date!" }]}
                   >
                     <RangePicker
+                       id="Selectdate"
                       value={dates}
                       style={{ height: "40px" }}
                       onChange={handleDateChange}
@@ -224,6 +226,7 @@ const OtherReturn = () => {
                 </Col>
                 <Col style={{ marginTop: "4px" }}>
                   <Button
+                  id="Search"
                     type="primary"
                     style={{ height: "40px", width: "100px", background: "#32ADE6" }}
                     onClick={handleSearch}
@@ -236,18 +239,21 @@ const OtherReturn = () => {
               <Divider orientation="left">Sale Return</Divider>
 
               <List
+               id="order-list-saleReturn" 
                 size="large"
                 bordered
                 dataSource={filteredData}
                 renderItem={(item) => (
                   <List.Item key={item.Ordernumber}>
                     <code
+                    id={`order-${item.Ordernumber}`}
                       style={{ cursor: 'pointer' }}
                       onClick={() => handleOrderClick(item)}
                     >
                       Order Number: {item.Ordernumber}, Date: {item.Date}
                     </code>
                     <Button
+                    id="Copytext"
                       type="link"
                       onClick={() => handleCopy(item.Ordernumber)}
                     >
@@ -260,18 +266,21 @@ const OtherReturn = () => {
               <Divider orientation="left">IJ Return</Divider>
 
               <List
+                 id="order-list-IJReturn" 
                 size="large"
                 bordered
                 dataSource={filteredDataIJ}
                 renderItem={(item) => (
                   <List.Item key={item.Ordernumber}>
                     <code
+                     id={`order-${item.Ordernumber}`}
                       style={{ cursor: 'pointer' }}
                       onClick={() => handleOrderClick(item)}
                     >
                       Order Number: {item.Ordernumber}, Date: {item.Date}
                     </code>
                     <Button
+                      id="Copytext"
                       type="link"
                       onClick={() => handleCopy(item.Ordernumber)}
                     >
@@ -306,6 +315,7 @@ const OtherReturn = () => {
 
           {/* Modal Popup */}
           <Popup
+             
             open={!!selectedOrder}
             closeOnDocumentClick={false}
             onClose={closeModal}
@@ -334,7 +344,7 @@ const OtherReturn = () => {
                 <Row justify="space-between" align="middle">
                   <Row style={{ marginTop: '10px', width: '50%' }}>
                     <Col span={10}>
-                      <Button style={{ fontSize: '15px', color: '#35465B', background: '#D9D9D9', height: '40px', marginTop: '10px' }}>
+                      <Button id="OrderNumber" style={{ fontSize: '15px', color: '#35465B', background: '#D9D9D9', height: '40px', marginTop: '10px' }}>
                         Order Number: {selectedOrder.Ordernumber}
                       </Button>
                     </Col>
@@ -342,6 +352,7 @@ const OtherReturn = () => {
                   </Row>
                   <Col>
                     <Button
+                    id="closeicon"
                       onClick={closeModal}
                       type="text" // ใช้ type="text" เพื่อให้ดูเหมือนไอคอน
                       icon={<CloseOutlined style={{ fontSize: '30px' }} />} // ใช้ไอคอน CloseOutlined
@@ -351,33 +362,34 @@ const OtherReturn = () => {
               )}
 
               {selectedOrder && (
-                <Tabs defaultActiveKey="1" style={{ marginTop: '20px' }}>
-                  <TabPane tab="Order Detail" key="1">
-                    <Row justify="space-between" align="middle">
-                      <Col span={12} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <div
-                          style={{
-                            width: '90%', // ปรับเป็นเปอร์เซ็นต์เพื่อให้ยืดหยุ่น
-                            maxWidth: '900px', // ความกว้างสูงสุด
-                            height: '570px', // ใช้ auto เพื่อให้ยืดหยุ่นตามเนื้อหา
-                            maxHeight: '650px', // จำกัดความสูง
-                            border: '1px solid #EDEDED', // ขอบของกรอบ
-                            borderRadius: '10px', // มุมมนของกรอบ
-                            display: 'flex', // จัดเรียงเนื้อหาภายในกรอบ
-                            flexDirection: 'column', // เปลี่ยนเป็นแนวตั้ง
-                            alignItems: 'flex-start', // จัดให้ชิดซ้าย
-                            padding: '20px', // เพิ่ม padding
-                            overflow: 'auto', // เพิ่ม scroll หากเนื้อหามากเกินไป
-                          }}
-                        >
-                          <h2 style={{ margin: 0, color: '#35465B', fontSize: '20px' }}>Order Detail</h2>
-                          <Form initialValues={detailorder[0]} layout="vertical" style={{ padding: '10px', width: '100%' }}>
+               <Tabs id="order-tabs" defaultActiveKey="1" style={{ marginTop: '20px' }}>
+               <TabPane id="order-detail-tab" tab="Order Detail" key="1">
+                 <Row id="order-detail-row" justify="space-between" align="middle">
+                   <Col id="order-detail-col" span={12} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                     <div
+                       id="order-detail-container"
+                       style={{
+                         width: '90%', // ปรับเป็นเปอร์เซ็นต์เพื่อให้ยืดหยุ่น
+                         maxWidth: '900px', // ความกว้างสูงสุด
+                         height: '570px', // ใช้ auto เพื่อให้ยืดหยุ่นตามเนื้อหา
+                         maxHeight: '650px', // จำกัดความสูง
+                         border: '1px solid #EDEDED', // ขอบของกรอบ
+                         borderRadius: '10px', // มุมมนของกรอบ
+                         display: 'flex', // จัดเรียงเนื้อหาภายในกรอบ
+                         flexDirection: 'column', // เปลี่ยนเป็นแนวตั้ง
+                         alignItems: 'flex-start', // จัดให้ชิดซ้าย
+                         padding: '20px', // เพิ่ม padding
+                         overflow: 'auto', // เพิ่ม scroll หากเนื้อหามากเกินไป
+                       }}
+                     >
+                          <h2 id="order-detail-title" style={{ margin: 0, color: '#35465B', fontSize: '20px' }}>Order Detail</h2>
+                          <Form   id="order-detail-form" initialValues={detailorder[0]} layout="vertical" style={{ padding: '10px', width: '100%' }}>
       {fieldPairs.map((pair, index) => (
-        <Row gutter={16} style={{ marginTop: '10px', width: '100%' }} key={index}>
+        <Row id={`order-row-${index}`} gutter={16} style={{ marginTop: '10px', width: '100%' }} key={index}>
           {pair.map((field) => (
-            <Col span={12} key={field.name}>
-              <Form.Item label={field.label} name={field.name}>
-                <Input placeholder={field.label} disabled />
+            <Col id={`order-col-${field.name}`}  span={12} key={field.name}>
+              <Form.Item  id={`form-item-${field.name}`} label={field.label} name={field.name}>
+                <Input id={`input-${field.name}`} placeholder={field.label} disabled />
               </Form.Item>
             </Col>
           ))}
@@ -402,9 +414,10 @@ const OtherReturn = () => {
                             overflow: 'auto', // เพิ่ม scroll หากเนื้อหามากเกินไป
                           }}
                         >
-                          <h2 style={{ margin: 0, color: '#35465B', fontSize: '20px' }}>คืนครบ</h2>
-                          <Form style={{ padding: '5px', width: '100%' }}>
+                          <h2 id="return-complete-title" style={{ margin: 0, color: '#35465B', fontSize: '20px' }}>คืนครบ</h2>
+                          <Form  id="return-complete-form" style={{ padding: '5px', width: '100%' }}>
                             <Table
+                            id="return-complete-table"
                               components={{
                                 header: {
                                   cell: (props: React.HTMLAttributes<HTMLElement>) => (
@@ -417,9 +430,10 @@ const OtherReturn = () => {
                               dataSource={datacolumn}
                             />
                           </Form>
-                          <h2 style={{ margin: 0, color: '#35465B', fontSize: '20px' }}>คืนไม่ครบ</h2>
-                          <Form style={{ padding: '5px', width: '100%' }}>
+                          <h2 id="return-incomplete-title" style={{ margin: 0, color: '#35465B', fontSize: '20px' }}>คืนไม่ครบ</h2>
+                          <Form id="return-incomplete-form"  style={{ padding: '5px', width: '100%' }}>
                             <Table
+                             id="return-incomplete-table"
                               components={{
                                 header: {
                                   cell: (props: React.HTMLAttributes<HTMLElement>) => (
@@ -436,7 +450,7 @@ const OtherReturn = () => {
                       </Col>
                     </Row>
                   </TabPane>
-                  <TabPane tab="Return Images" key="2">
+                  <TabPane id="tab-Return-Images" tab="Return Images" key="2">
                     {/* เนื้อหาสำหรับ Return Images */}
                     <Row justify="space-between" align="middle">
                       <Col span={12} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -455,20 +469,22 @@ const OtherReturn = () => {
                             overflow: 'auto', // เพิ่ม scroll หากเนื้อหามากเกินไป
                           }}
                         >
-                         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+                         <div  id="return-images-container" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
   {                   datacolumn?.map((item: any) => (
     <Card
+    id={`return-image-card-${item.SKU}`}
       key={item.SKU} // เพิ่ม key เพื่อให้ React รู้จักแต่ละ Card
       style={{ margin: '10px', textAlign: 'center', width: '200px' }} // กำหนดความกว้างให้คงที่
       cover={
         <Image
+        id={`return-image-${item.SKU}`}
           width={200}
           src="https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png"
           preview // Enable image preview
         />
       }
     >
-      <span style={{ fontSize: '20px', color: '#35465B' }}>{item.SKU}</span>
+      <span  id={`return-image-sku-${item.SKU}`} style={{ fontSize: '20px', color: '#35465B' }}>{item.SKU}</span>
     </Card>
   ))}
 </div>
@@ -493,20 +509,22 @@ const OtherReturn = () => {
                           }}
                         >
 
-<div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+<div id="return-images-container" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
   {datacolumn?.map((item: any) => (
     <Card
+    id={`return-image-card-${item.SKU}`}
       key={item.SKU} // เพิ่ม key เพื่อให้ React รู้จักแต่ละ Card
       style={{ margin: '10px', textAlign: 'center', width: '200px' }} // กำหนดความกว้างให้คงที่
       cover={
         <Image
+        id={`return-image-${item.SKU}`}
           width={200}
           src="https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png"
           preview // Enable image preview
         />
       }
     >
-      <span style={{ fontSize: '20px', color: '#35465B' }}>{item.SKU}</span>
+      <span id={`return-image-sku-${item.SKU}`}  style={{ fontSize: '20px', color: '#35465B' }}>{item.SKU}</span>
     </Card>
   ))}
 </div>

@@ -167,7 +167,7 @@ const ImportOrder = () => {
           <Row gutter={20} justify="end" style={{marginBottom:'30px'}}>
             <Col>
               <Tooltip title="Download the template file from table">
-                <Button onClick={handleDownloadTemplate}>
+                <Button id="  Download Template" onClick={handleDownloadTemplate}>
                   <img src={icon} alt="Download Icon" style={{ width: 16, height: 16, marginRight: 8 }} />
                   Download Template
                 </Button>
@@ -176,7 +176,7 @@ const ImportOrder = () => {
             <Col>
               <Tooltip title="Import Excel file">
                 <Upload {...uploadProps}>
-                  <Button icon={<UploadOutlined />} style={{ background: '#7161EF', color: '#FFF' }}>
+                  <Button id=" Import Excel" icon={<UploadOutlined />} style={{ background: '#7161EF', color: '#FFF' }}>
                     Import Excel
                   </Button>
                 </Upload>
@@ -185,6 +185,7 @@ const ImportOrder = () => {
           </Row>
 
           <Table
+          id="table1"
             rowSelection={rowSelection}
             dataSource={importedData}
             columns={columns}
@@ -197,18 +198,20 @@ const ImportOrder = () => {
           <Row gutter={16} justify="center" style={{ marginTop: '20px' }}>
             <Col>
               <Popconfirm 
+              
                 title={isSRCreated ? 'Confirm data submission?' : 'Confirm SR creation?'}
                 onConfirm={isSRCreated ? handleConfirm : handleCreateSR}
                 okText="Yes"
                 cancelText="No"
               >
-                <Button type="primary" disabled={selectedRowKeys.length === 0}>
+                <Button id="Submit,Create SR" type="primary" disabled={selectedRowKeys.length === 0}>
                   {isSRCreated ? 'Submit' : 'Create SR'}
                 </Button>
               </Popconfirm>
             </Col>
             <Col>
               <Popconfirm
+              
                 title="Confirm back"
                 onConfirm={() => {
                   setImportedData([]);
@@ -219,7 +222,7 @@ const ImportOrder = () => {
                 okText="Yes"
                 cancelText="No"
               >
-                <Button type="default" disabled={importedData.length === 0}>
+                <Button id=" Back" type="default" disabled={importedData.length === 0}>
                   Back
                 </Button>
               </Popconfirm>

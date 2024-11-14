@@ -21,56 +21,56 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
   // }, [location]);
 
   const ROUTES_MENU: MenuItemProps[] = [
-    {
-      title: ROUTES_PATH.ROUTE_MAIN.LABEL,
-      key: ROUTES_PATH.ROUTE_MAIN.PATH,
-      icon: Icon.dashboard(),
-      link: ROUTES_PATH.ROUTE_MAIN.PATH,
-      role: [1, 2],
-    },
-    {
-      title: ROUTES_PATH.ROUTE_ADJUST.LABEL,
-      key: ROUTES_PATH.ROUTE_ADJUST.PATH,
-      icon: Icon.dashboard(),
-      link: ROUTES_PATH.ROUTE_ADJUST.PATH,
-      role: [1, 2],
-    },
-    {
-      title: ROUTES_PATH.ROUTE_PLATFORM.LABEL,
-      key: ROUTES_PATH.ROUTE_PLATFORM.PATH,
-      icon: Icon.dashboard(),
-      link: ROUTES_PATH.ROUTE_PLATFORM.PATH,
-      role: [1, 2],
-    },
-    {
-      title: ROUTES_PATH.ROUTE_MANAGEMENT.LABEL,
-      key: ROUTES_PATH.ROUTE_MANAGEMENT.PATH,
-      icon: Icon.dashboard(),
-      link: ROUTES_PATH.ROUTE_MANAGEMENT.PATH,
-      role: [1, 2],
-    },
-    {
-      title: "Sync MKP",
-      key: "",
-      icon: Icon.dashboard(),
-      link:"",
-      role: [1],
-      subItems: [
-        {
-          title: ROUTES_PATH.ROUTE_SYNC.LABEL,
-          key: ROUTES_PATH.ROUTE_SYNC.PATH,
-          icon: Icon.dashboard(),
-          link: ROUTES_PATH.ROUTE_SYNC.PATH,
-          role: [1, 2],
-        },
-        {
-          title: "Uplift",
-          key: "/sync/subitem2",
-          icon: Icon.dashboard(), // Replace with your icon
-          link: "/sync/subitem2",
-        },
-      ],
-    },
+    // {
+    //   title: ROUTES_PATH.ROUTE_MAIN.LABEL,
+    //   key: ROUTES_PATH.ROUTE_MAIN.PATH,
+    //   icon: Icon.dashboard(),
+    //   link: ROUTES_PATH.ROUTE_MAIN.PATH,
+    //   role: [1, 2],
+    // },
+    // {
+    //   title: ROUTES_PATH.ROUTE_ADJUST.LABEL,
+    //   key: ROUTES_PATH.ROUTE_ADJUST.PATH,
+    //   icon: Icon.dashboard(),
+    //   link: ROUTES_PATH.ROUTE_ADJUST.PATH,
+    //   role: [1, 2],
+    // },
+    // {
+    //   title: ROUTES_PATH.ROUTE_PLATFORM.LABEL,
+    //   key: ROUTES_PATH.ROUTE_PLATFORM.PATH,
+    //   icon: Icon.dashboard(),
+    //   link: ROUTES_PATH.ROUTE_PLATFORM.PATH,
+    //   role: [1, 2],
+    // },
+    // {
+    //   title: ROUTES_PATH.ROUTE_MANAGEMENT.LABEL,
+    //   key: ROUTES_PATH.ROUTE_MANAGEMENT.PATH,
+    //   icon: Icon.dashboard(),
+    //   link: ROUTES_PATH.ROUTE_MANAGEMENT.PATH,
+    //   role: [1, 2],
+    // },
+    // {
+    //   title: "Sync MKP",
+    //   key: "",
+    //   icon: Icon.dashboard(),
+    //   link:"",
+    //   role: [1],
+    //   subItems: [
+    //     {
+    //       title: ROUTES_PATH.ROUTE_SYNC.LABEL,
+    //       key: ROUTES_PATH.ROUTE_SYNC.PATH,
+    //       icon: Icon.dashboard(),
+    //       link: ROUTES_PATH.ROUTE_SYNC.PATH,
+    //       role: [1, 2],
+    //     },
+    //     {
+    //       title: "Uplift",
+    //       key: "/sync/subitem2",
+    //       icon: Icon.dashboard(), // Replace with your icon
+    //       link: "/sync/subitem2",
+    //     },
+    //   ],
+    // },
     {
       title: ROUTES_PATH.   ROUTE_RETURNORDER.LABEL,
       key: ROUTES_PATH.  ROUTE_RETURNORDER.PATH,
@@ -150,26 +150,26 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
       link: ROUTES_PATH.     ROUTE_MANAGEUSER.PATH,
       role: [1, 2],
     },
-    {
-      title: ROUTES_PATH.   ROUTE_CREATEEXPENSE.LABEL,
-      key: ROUTES_PATH.  ROUTE_CREATEEXPENSE.PATH,
-      icon: Icon.dashboard(),
-      link: ROUTES_PATH.   ROUTE_CREATEEXPENSE.PATH,
-      role: [1, 2],
-    },
+    // {
+    //   title: ROUTES_PATH.   ROUTE_CREATEEXPENSE.LABEL,
+    //   key: ROUTES_PATH.  ROUTE_CREATEEXPENSE.PATH,
+    //   icon: Icon.dashboard(),
+    //   link: ROUTES_PATH.   ROUTE_CREATEEXPENSE.PATH,
+    //   role: [1, 2],
+    // },
    
     
    
    
     
-    {
-      title: "จัดการผู้ใช้งาน",
-      key: "/management_user",
-      icon: Icon.users(),
-      link: "",
-      role: [1],
-      subItems: [],
-    },
+    // {
+    //   title: "จัดการผู้ใช้งาน",
+    //   key: "/management_user",
+    //   icon: Icon.users(),
+    //   link: "",
+    //   role: [1],
+    //   subItems: [],
+    // },
   ];
 
   return (
