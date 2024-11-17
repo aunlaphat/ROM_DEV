@@ -32,9 +32,9 @@ func GetMongoDB(Url string, database string, logger logs.Logger) *mongo.Database
 	return mongoDB
 }
 
-func GetSqlDB(config ConfigSQL, database string, logger logs.Logger) *sqlx.DB {
+func GetSqlDB(config Config, database string, logger logs.Logger) *sqlx.DB {
 	connStringDatabase := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%s;database=%s;trustservercertificate=true;encrypt=DISABLE",
-		config.DBHost, config.DBUser, config.DBPassword, config.DBPort, database)
+		config.SQLHost, config.SQLUser, config.SQLPassword, config.SQLPort, database)
 	dbTemp, err := sqlx.Open("sqlserver", connStringDatabase)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -43,7 +43,7 @@ func GetSqlDB(config ConfigSQL, database string, logger logs.Logger) *sqlx.DB {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	logger.Info("Connected to MSSQL at " + config.DBHost)
+	logger.Info("Connected to MSSQL at " + config.SQLHost)
 
 	return dbTemp
 }

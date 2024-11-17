@@ -1,7 +1,8 @@
 package api
 
 import (
-	"boilerplate-backend-go/service"
+	req "boilerplate-backend-go/dto/request"
+	res "boilerplate-backend-go/dto/response"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -28,34 +29,16 @@ func (app *Application) AuthRoute(apiRouter *chi.Mux) {
 var contentType = "content-type"
 var appJson = "application/json"
 
-type resToken struct {
-	UserID       string `json:"userID"`
-	RoleID       int    `json:"roleID"`
-	PermissionID string `json:"permissionID"`
-	DeptNo       string `json:"deptNo"`
-	NickName     string `json:"nickName"`
-	FullNameTH   string `json:"fullNameTH"`
-	FullNameEN   string `json:"fullNameEN"`
-	Platfrom     string `json:"platfrom"`
-}
-
 // Generate JWT token with username's payload
-func (app *Application) GenerateToken(tokenData resToken) string {
+func (app *Application) GenerateToken(tokenData res.Login) string {
 	data := map[string]interface{}{
-		"userID":       tokenData.UserID,
-		"roleID":       tokenData.RoleID,
-		"permissionID": tokenData.PermissionID,
-		"deptNo":       tokenData.DeptNo,
-		"nickName":     tokenData.NickName,
-		"fullNameTH":   tokenData.FullNameTH,
-		"fullNameEN":   tokenData.FullNameEN,
-		"plateform":    tokenData.Platfrom,
+		"userID":     tokenData.UserID,
+		"roleID":     tokenData.RoleID,
+		"nickName":   tokenData.NickName,
+		"fullNameTH": tokenData.FullNameTH,
+		"plateform":  tokenData.Platfrom,
 	}
-	fmt.Println("data beore encode", data)
-	res2, tokenString, res := app.TokenAuth.Encode(data)
-	fmt.Println("res", res)
-	fmt.Println("res2", res2)
-	fmt.Println("token", tokenString)
+	_, tokenString, _ := app.TokenAuth.Encode(data)
 	return tokenString
 }
 
@@ -75,7 +58,7 @@ func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	req := service.InputLogin{}
+	req := req.LoginWeb{}
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		handleError(w, err)
@@ -87,15 +70,12 @@ func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
 		handleError(w, err)
 		return
 	}
-	tokenData := resToken{
-		UserID:       user.UserID,
-		RoleID:       user.RoleID,
-		PermissionID: user.PermissionID,
-		DeptNo:       user.DeptNo,
-		NickName:     user.NickName,
-		FullNameTH:   user.FullNameTH,
-		FullNameEN:   user.FullNameEN,
-		Platfrom:     user.Platfrom,
+	tokenData := res.Login{
+		UserID:     user.UserID,
+		RoleID:     user.RoleID,
+		NickName:   user.NickName,
+		FullNameTH: user.FullNameTH,
+		Platfrom:   user.Platfrom,
 	}
 	fmt.Println("token data", tokenData)
 	token := app.GenerateToken(tokenData)
@@ -127,7 +107,7 @@ func (app *Application) LoginFromLark(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	req := service.InputLoginLark{}
+	req := req.LoginLark{}
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		handleError(w, err)
@@ -139,15 +119,12 @@ func (app *Application) LoginFromLark(w http.ResponseWriter, r *http.Request) {
 		handleError(w, err)
 		return
 	}
-	tokenData := resToken{
-		UserID:       user.UserID,
-		RoleID:       user.RoleID,
-		PermissionID: user.PermissionID,
-		DeptNo:       user.DeptNo,
-		NickName:     user.NickName,
-		FullNameTH:   user.FullNameTH,
-		FullNameEN:   user.FullNameEN,
-		Platfrom:     user.Platfrom,
+	tokenData := res.Login{
+		UserID:     user.UserID,
+		RoleID:     user.RoleID,
+		NickName:   user.NickName,
+		FullNameTH: user.FullNameTH,
+		Platfrom:   user.Platfrom,
 	}
 	token := app.GenerateToken(tokenData)
 

@@ -31,3 +31,7 @@ func (repo repositoryDB) GetUserFromLark(username, userID string) (response.Logi
 	}
 	return user, nil
 }
+
+func (repo repositoryDB) GetUser(username, password string) (response.Login, error) {
+	return response.Login{}, nil
+}

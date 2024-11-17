@@ -1,178 +1,180 @@
 package utils
 
-import (
-	"fmt"
-	"log"
-	"os"
-	"strconv"
+// import (
+// 	"fmt"
+// 	"log"
+// 	"os"
+// 	"strconv"
 
-	"github.com/joho/godotenv"
-)
+// 	"github.com/joho/godotenv"
+// )
 
-type ConfigMongo struct {
-	Url    string
-	NameDB string
-}
+// type ConfigMongo struct {
+// 	Url    string
+// 	NameDB string
+// }
 
-func LoadConfigMongo() (*ConfigMongo, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-		return nil, err
-	}
+// var AppConfig Config
 
-	subfix := ""
-	if os.Getenv("MODE") == "DEV" {
-		subfix = "_DEV"
-		fmt.Println("DEV")
-	}
+// func LoadConfigMongo() (*ConfigMongo, error) {
+// 	err := godotenv.Load(".env")
+// 	if err != nil {
+// 		log.Fatal("Error loading .env file")
+// 		return nil, err
+// 	}
 
-	configMongo := &ConfigMongo{
-		Url:    os.Getenv("MONGOURI" + subfix),
-		NameDB: os.Getenv("MONGO_DB_NAME" + subfix),
-	}
+// 	subfix := ""
+// 	if os.Getenv("MODE") == "DEV" {
+// 		subfix = "_DEV"
+// 		fmt.Println("DEV")
+// 	}
 
-	return configMongo, nil
-}
+// 	configMongo := &ConfigMongo{
+// 		Url:    os.Getenv("MONGOURI" + subfix),
+// 		NameDB: os.Getenv("MONGO_DB_NAME" + subfix),
+// 	}
 
-type ConfigSQL struct {
-	DBHost     string
-	DBPort     string
-	DataBase   string
-	DBUser     string
-	DBPassword string
-}
+// 	return configMongo, nil
+// }
 
-func LoadConfigSQL() (*ConfigSQL, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-		return nil, err
-	}
-	subfix := ""
-	if os.Getenv("MODE") == "DEV" {
-		subfix = "_DEV"
-	}
+// type ConfigSQL struct {
+// 	DBHost     string
+// 	DBPort     string
+// 	DataBase   string
+// 	DBUser     string
+// 	DBPassword string
+// }
 
-	// Create connection string
-	configSQL := &ConfigSQL{
-		DBHost:     os.Getenv("MSSQL_DB_SERVER" + subfix),
-		DBPort:     os.Getenv("MSSQL_DB_PORT" + subfix),
-		DataBase:   os.Getenv("MSSQL_DB_DATABASE" + subfix),
-		DBUser:     os.Getenv("MSSQL_DB_USER" + subfix),
-		DBPassword: os.Getenv("MSSQL_DB_PASSWORD" + subfix),
-	}
-	return configSQL, nil
-}
+// func LoadConfigSQL() (*ConfigSQL, error) {
+// 	err := godotenv.Load(".env")
+// 	if err != nil {
+// 		log.Fatal("Error loading .env file")
+// 		return nil, err
+// 	}
+// 	subfix := ""
+// 	if os.Getenv("MODE") == "DEV" {
+// 		subfix = "_DEV"
+// 	}
 
-func LoadPort() (int, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file 1")
-		return 0, err
-	}
-	subfix := ""
-	if os.Getenv("MODE") == "DEV" {
-		subfix = "_DEV"
-	}
-	port := os.Getenv("PORT" + subfix)
+// 	// Create connection string
+// 	configSQL := &ConfigSQL{
+// 		DBHost:     os.Getenv("MSSQL_DB_SERVER" + subfix),
+// 		DBPort:     os.Getenv("MSSQL_DB_PORT" + subfix),
+// 		DataBase:   os.Getenv("MSSQL_DB_DATABASE" + subfix),
+// 		DBUser:     os.Getenv("MSSQL_DB_USER" + subfix),
+// 		DBPassword: os.Getenv("MSSQL_DB_PASSWORD" + subfix),
+// 	}
+// 	return configSQL, nil
+// }
 
-	port_num, err := strconv.Atoi(port)
-	if err != nil {
-		log.Fatal("Error loading .env file 2")
-		return 0, err
-	}
-	return port_num, nil
-}
+// func LoadPort() (int, error) {
+// 	err := godotenv.Load(".env")
+// 	if err != nil {
+// 		log.Fatal("Error loading .env file 1")
+// 		return 0, err
+// 	}
+// 	subfix := ""
+// 	if os.Getenv("MODE") == "DEV" {
+// 		subfix = "_DEV"
+// 	}
+// 	port := os.Getenv("PORT" + subfix)
 
-func LoadAxApi() (string, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file 3")
-		return "", err
-	}
-	subfix := ""
-	if os.Getenv("MODE") == "DEV" {
-		subfix = "_DEV"
-	}
-	ax_api := os.Getenv("AX_API" + subfix)
-	return ax_api, nil
-}
+// 	port_num, err := strconv.Atoi(port)
+// 	if err != nil {
+// 		log.Fatal("Error loading .env file 2")
+// 		return 0, err
+// 	}
+// 	return port_num, nil
+// }
 
-func LoadJWTSerect() (string, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
+// func LoadAxApi() (string, error) {
+// 	err := godotenv.Load(".env")
+// 	if err != nil {
+// 		log.Fatal("Error loading .env file 3")
+// 		return "", err
+// 	}
+// 	subfix := ""
+// 	if os.Getenv("MODE") == "DEV" {
+// 		subfix = "_DEV"
+// 	}
+// 	ax_api := os.Getenv("AX_API" + subfix)
+// 	return ax_api, nil
+// }
 
-		log.Fatal("Error loading .env file 4")
-		return "", err
-	}
-	subfix := ""
-	if os.Getenv("MODE") == "DEV" {
-		subfix = "_DEV"
-	}
-	ax_api := os.Getenv("JWT_SECRET" + subfix)
-	return ax_api, nil
-}
+// func LoadJWTSerect() (string, error) {
+// 	err := godotenv.Load(".env")
+// 	if err != nil {
 
-type ConfigSMS struct {
-	SMSApiKey   string
-	SMSClientID string
-	SMSSenderID string
-}
+// 		log.Fatal("Error loading .env file 4")
+// 		return "", err
+// 	}
+// 	subfix := ""
+// 	if os.Getenv("MODE") == "DEV" {
+// 		subfix = "_DEV"
+// 	}
+// 	ax_api := os.Getenv("JWT_SECRET" + subfix)
+// 	return ax_api, nil
+// }
 
-func checkEnv() error {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file 5")
-		return err
-	}
-	return nil
+// type ConfigSMS struct {
+// 	SMSApiKey   string
+// 	SMSClientID string
+// 	SMSSenderID string
+// }
 
-}
-func LoadConfigSMS() (*ConfigSMS, error) {
-	err := checkEnv()
-	if err != nil {
-		return nil, err
-	}
+// func checkEnv() error {
+// 	err := godotenv.Load(".env")
+// 	if err != nil {
+// 		log.Fatal("Error loading .env file 5")
+// 		return err
+// 	}
+// 	return nil
 
-	configSMS := &ConfigSMS{
-		SMSApiKey:   os.Getenv("SMS_APIKEY"),
-		SMSClientID: os.Getenv("SMS_CLIENT_ID"),
-		SMSSenderID: os.Getenv("SMS_SENDER_ID"),
-	}
-	return configSMS, nil
-}
+// }
+// func LoadConfigSMS() (*ConfigSMS, error) {
+// 	err := checkEnv()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-func LoadConfigGoogleMapAPI() (string, error) {
-	err := checkEnv()
-	if err != nil {
-		return "", err
-	}
-	subfix := ""
-	if os.Getenv("MODE") == "DEV" {
-		subfix = "_DEV"
-	}
-	googleMapApi := os.Getenv("GOOGLE_MAP_APIKEY" + subfix)
-	return googleMapApi, nil
-}
+// 	configSMS := &ConfigSMS{
+// 		SMSApiKey:   os.Getenv("SMS_APIKEY"),
+// 		SMSClientID: os.Getenv("SMS_CLIENT_ID"),
+// 		SMSSenderID: os.Getenv("SMS_SENDER_ID"),
+// 	}
+// 	return configSMS, nil
+// }
 
-type ConfigRedis struct {
-	Address  string
-	Password string
-	DB       int
-}
+// func LoadConfigGoogleMapAPI() (string, error) {
+// 	err := checkEnv()
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	subfix := ""
+// 	if os.Getenv("MODE") == "DEV" {
+// 		subfix = "_DEV"
+// 	}
+// 	googleMapApi := os.Getenv("GOOGLE_MAP_APIKEY" + subfix)
+// 	return googleMapApi, nil
+// }
 
-func LoadConfigRedis() (*ConfigRedis, error) {
+// type ConfigRedis struct {
+// 	Address  string
+// 	Password string
+// 	DB       int
+// }
 
-	err := checkEnv()
-	if err != nil {
-		return nil, err
-	}
-	db, _ := strconv.Atoi(os.Getenv("REDIS_DB_DATABASE"))
-	configRedis := &ConfigRedis{
-		Address:  os.Getenv("REDIS_DB_ADDRESS"),
-		Password: os.Getenv("REDIS_DB_PASSWORD"),
-		DB:       db,
-	}
-	return configRedis, nil
-}
+// func LoadConfigRedis() (*ConfigRedis, error) {
+
+// 	err := checkEnv()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	db, _ := strconv.Atoi(os.Getenv("REDIS_DB_DATABASE"))
+// 	configRedis := &ConfigRedis{
+// 		Address:  os.Getenv("REDIS_DB_ADDRESS"),
+// 		Password: os.Getenv("REDIS_DB_PASSWORD"),
+// 		DB:       db,
+// 	}
+// 	return configRedis, nil
+// }

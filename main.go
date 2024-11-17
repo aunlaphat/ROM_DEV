@@ -1,24 +1,31 @@
 package main
 
 import (
-	api "boilerplate-backend-go/cmd/api"
+	api "boilerplate-backend-go/api"
 	"boilerplate-backend-go/logs"
 	"boilerplate-backend-go/service"
 	"boilerplate-backend-go/utils"
 	"flag"
+	"log"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/go-chi/jwtauth"
 	"github.com/joho/godotenv"
 )
 
-// @title FOC
+// @title Boilerplate Service
 // @version 1.0
-// @description This is a sample server for FOC project not Frog OOB OOB.
+// @description This is a sample server for Boilerplate project .
 // contact.name API Support
 
 // @BasePath /api
 func main() {
+	//Env loading
+	err := godotenv.Load("./.env")
+
+	if err != nil {
+		log.Fatalln("failed to load .env file: " + err.Error())
+	}
 	//Flag variable
 	logger, logClose, err := logs.NewLogger("./uploads/error/error.log", 1, 1, 7)
 	defer logClose()
@@ -27,65 +34,25 @@ func main() {
 	}
 
 	//Instance logger of service
-	logger.Info("TRADE ORDER SERVICE")
+	logger.Info("BOILERPLATE SERVICE")
 
-	var cfg api.Config
-	port_env, err := utils.LoadPort()
-	if err != nil {
-		logger.Fatal(err.Error())
-		port_env = 8080
-	}
+	utils.LoadConfig()
 
-	flag.IntVar(&cfg.Port, "port", port_env, "Application server port")
+	flag.IntVar(&utils.AppConfig.ServerPort, "port", utils.AppConfig.ServerPort, "Application server port")
 	flag.Parse()
 
-	//Env loading
-	err = godotenv.Load("./.env")
-
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	//JWT Serect
-	jwtSerect, err := utils.LoadJWTSerect()
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-
 	//SQL Server database
-	configSql, err := utils.LoadConfigSQL()
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	SqlDB := utils.GetSqlDB(*configSql, configSql.DataBase, *logger)
+	SqlDB := utils.GetSqlDB(utils.AppConfig, utils.AppConfig.DatabaseName, *logger)
 
 	defer SqlDB.Close()
 	//SMS
-	configSms, err := utils.LoadConfigSMS()
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-	cfg.SmsApiKey = configSms.SMSApiKey
-	cfg.SmsClientId = configSms.SMSClientID
-	cfg.SmsSenderId = configSms.SMSSenderID
-
-	//Redis
-	// configRedis, err := utils.LoadConfigRedis()
-	// if err != nil {
-	// 	logger.Fatal(err.Error())
-	// }
-	// redisDB := redis.NewClient(&redis.Options{
-	// 	Addr:     configRedis.Address,
-	// 	Password: configRedis.Password,
-	// 	DB:       configRedis.DB,
-	// })
 
 	//Instance Service
 	srv := service.NewService(SqlDB, *logger)
 	//Instance application
 	app := &api.Application{
-		Config:    cfg,
 		Logger:    *logger,
-		TokenAuth: jwtauth.New("HS256", []byte(jwtSerect), nil),
+		TokenAuth: jwtauth.New("HS256", []byte(utils.AppConfig.JWTSecret), nil),
 		Service:   srv,
 	}
 	// Run application

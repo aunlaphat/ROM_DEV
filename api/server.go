@@ -1,6 +1,7 @@
 package api
 
 import (
+	"boilerplate-backend-go/utils"
 	"context"
 	"errors"
 	"fmt"
@@ -14,7 +15,7 @@ import (
 // Server relate define
 func (app *Application) Serve() error {
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", app.Config.Port),
+		Addr:         fmt.Sprintf(":%d", utils.AppConfig.ServerPort),
 		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
@@ -35,7 +36,7 @@ func (app *Application) Serve() error {
 		shutdownError <- srv.Shutdown(ctx)
 	}()
 
-	app.Logger.Info(fmt.Sprintf("Starting server at port :%d", app.Config.Port))
+	app.Logger.Info(fmt.Sprintf("Starting server at port :%d", utils.AppConfig.ServerPort))
 
 	err := srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
@@ -47,7 +48,7 @@ func (app *Application) Serve() error {
 		return err
 	}
 
-	app.Logger.Info(fmt.Sprintf("stop server at port :%d", app.Config.Port))
+	app.Logger.Info(fmt.Sprintf("stop server at port :%d", utils.AppConfig.ServerPort))
 
 	return nil
 }
