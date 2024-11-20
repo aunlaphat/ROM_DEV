@@ -96,26 +96,31 @@ const OtherReturn = () => {
 
   const columns = [
     {
+      id: 'SKU',
       title: 'SKU',
       dataIndex: 'SKU',
       key: 'sku',
     },
     {
+      id: 'QTY',
       title: 'QTY',
       dataIndex: 'QTY',
       key: 'qty',
     },
     {
+      id: 'จำนวนเข้ารับจริง',
       title: 'จำนวนเข้ารับจริง',
       dataIndex: 'จำนวนเข้ารับจริง',
       key: 'จำนวนเข้ารับจริง',
     },
     {
+      id: 'Warehouse',
       title: 'Warehouse',
       dataIndex: 'Warehouse',
       key: 'warehouse',
     },
     {
+      id: 'Location',
       title: 'Location',
       dataIndex: 'Location',
       key: 'location',
@@ -198,11 +203,11 @@ const OtherReturn = () => {
              id="card"
             type="card"
             items={[
-              { label: "Blind Return", key: "1" },
-              { label: "Booked Return", key: "2" },
-              { label: "Waiting Action", key: "3" },
-              { label: "Unsuccess", key: "4" },
-              { label: "Success", key: "5" },
+              { label: "Build Return", key: "1" ,id:"Build Return"},
+              { label: "Booked Return", key: "2" ,id:"Booked Return"},
+              { label: "Waiting Action", key: "3",id:"Waiting Action" },
+              { label: "Unsuccess", key: "4",id:"Unsuccess" },
+              { label: "Success", key: "5",id:"Success" },
             ]}
           />
 
@@ -211,13 +216,14 @@ const OtherReturn = () => {
               <Row gutter={8} align="middle" justify="center" style={{ marginTop: "20px" }}>
                 <Col>
                   <Form.Item
+                   id="Selectdate"
                     layout="vertical"
                     label="Select date"
                     name="Select date"
                     rules={[{ required: true, message: "Please select the Select date!" }]}
                   >
                     <RangePicker
-                       id="Selectdate"
+                      
                       value={dates}
                       style={{ height: "40px" }}
                       onChange={handleDateChange}

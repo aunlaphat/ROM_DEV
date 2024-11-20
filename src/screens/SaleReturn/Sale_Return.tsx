@@ -90,13 +90,14 @@ const SaleReturn: React.FC = () => {
     };
 
     const columns = [
-        { title: 'SKU', dataIndex: 'sku', key: 'sku' },
-        { title: 'Name', dataIndex: 'name', key: 'name' },
-        { title: 'QTY', dataIndex: 'qty', key: 'qty' },
-        { title: 'จำนวนรับเข้า', dataIndex: 'receivedQty', key: 'receivedQty' },
-        { title: 'Amount', dataIndex: 'amount', key: 'amount' },
+        { title: 'SKU', dataIndex: 'sku', key: 'sku' ,id:'sku'},
+        { title: 'Name', dataIndex: 'name', key: 'name' ,id:'name'},
+        { title: 'QTY', dataIndex: 'qty', key: 'qty' ,id:'qty'},
+        { title: 'จำนวนรับเข้า', dataIndex: 'receivedQty', key: 'receivedQty' ,id:'receivedQty'},
+        { title: 'Amount', dataIndex: 'amount', key: 'amount',id:'amount' },
         {
             title: 'Return',
+            id:'Return' ,
             dataIndex: 'Return',
             key: 'Return',
             render: (_: any, record: DataType) => {
@@ -115,6 +116,7 @@ const SaleReturn: React.FC = () => {
         },
         {
             title: 'Image',
+            id:'Image',
     dataIndex: 'image',
     key: 'image',
     render: (_: any, record: DataType) => {
@@ -137,6 +139,7 @@ const SaleReturn: React.FC = () => {
     
     {
         title: 'Action',
+        id:'Action',
         key: 'action',
         render: (_: any, record: DataType) => (
           <>
@@ -147,6 +150,7 @@ const SaleReturn: React.FC = () => {
                 background: '#BADEFF',
                 color: '#1890FF',
               }}
+              id="Takepicture"
               type="primary"
               onClick={() => handleRetakePhoto(record.key)}
               icon={<RedoOutlined />}
@@ -155,12 +159,14 @@ const SaleReturn: React.FC = () => {
             </Button>
       
             <Popconfirm
+             id="Delectpopconfirm"
               title="คุณแน่ใจหรือว่าต้องการลบรายการนี้?"
               onConfirm={() => handleDelete(record.key)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดยืนยัน
               okText="ยืนยัน"
               cancelText="ยกเลิก"
             >
               <Button
+              id="Cancel"
                 type="primary"
                 style={{ color: '#E53939', background: '#F9D3D3' }}
                 icon={<DeleteOutlined />}

@@ -129,23 +129,25 @@ const DraftandConfirm = () => {
         },
     ];
     const columnsconfirm = [
-        { title: "Order", dataIndex: "Order", key: "Order" },
-        { title: "SO/INV", dataIndex: "SO_INV", key: "SO_INV" },
-        { title: "Customer", dataIndex: "Customer", key: "Customer" },
-        { title: "SR", dataIndex: "SR", key: "SR" },
-        { title: "Return Tracking", dataIndex: "ReturnTracking", key: "ReturnTracking" },
-        { title: "Transport", dataIndex: "Transport", key: "Transport" },
+        { title: "Order", dataIndex: "Order", key: "Order" ,id:"Order" },
+        { title: "SO/INV", dataIndex: "SO_INV", key: "SO_INV",id:"SO_INV"  },
+        { title: "Customer", dataIndex: "Customer", key: "Customer",id:"Customer"  },
+        { title: "SR", dataIndex: "SR", key: "SR",id:"SR"  },
+        { title: "Return Tracking", dataIndex: "ReturnTracking", key: "ReturnTracking" ,id:"ReturnTracking" },
+        { title: "Transport", dataIndex: "Transport", key: "Transport",id:"Transport"  },
 
-        { title: "Channel", dataIndex: "Channel", key: "Channel" },
-        { title: "Date Create", dataIndex: "Date_Create", key: "Date_Create" },
-        { title: "Warehouse", dataIndex: "Warehouse", key: "Warehouse" },
+        { title: "Channel", dataIndex: "Channel", key: "Channel" ,id:"Channel" },
+        { title: "Date Create", dataIndex: "Date_Create", key: "Date_Create",id:"Date_Create"  },
+        { title: "Warehouse", dataIndex: "Warehouse", key: "Warehouse",id:"Warehouse"  },
         {
             title: "Action",
+            id:"Action" ,
             dataIndex: "Action",
             key: "Action",
             render: (_: any, record: Order) => (
                 <Tooltip title="Edit">
                     <Button
+                    id="Edit"
                         type="link"
                         icon={<FormOutlined />}
                         onClick={() => handleEdit(record, activeTabKey)}
@@ -157,13 +159,13 @@ const DraftandConfirm = () => {
     ];
 
     const codeROptions = [
-        { value: 'R01', label: 'R01' },
-        { value: 'R02', label: 'R02' },
+        { value: 'R01', label: 'R01' , id:'R01'},
+        { value: 'R02', label: 'R02',id:'R02' },
     ];
 
     const codeNameOptions = [
-        { value: 'ส่วนลด', label: 'ส่วนลด' },
-        { value: 'ของแถม', label: 'แถม' },
+        { value: 'ส่วนลด', label: 'ส่วนลด' ,id:'ส่วนลด'},
+        { value: 'ของแถม', label: 'แถม',id:'แถม' },
     ];
     const { Option } = Select;
     const [hover, setHover] = useState(false);
@@ -621,7 +623,7 @@ const DraftandConfirm = () => {
                                     },
                                 }}
                                 columns={[
-                                    { title: 'SKU', dataIndex: 'SKU' },
+                                    { title: 'SKU',  dataIndex: 'SKU' },
                                     { title: 'Name', dataIndex: 'Name' },
                                     { title: 'QTY', dataIndex: 'QTY' },
                                     { title: 'Price', dataIndex: 'Price' },

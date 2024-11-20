@@ -114,18 +114,22 @@ const CreateBlind = () => {
    
     const columns = [
         {
+            id:'SKU',
             title: 'SKU',
             dataIndex: 'SKU',
         },
         {
+            id:'Name',
             title: 'Name',
             dataIndex: 'SKU_Name',
         },
         {
+            id:'QTY',
             title: 'QTY',
             dataIndex: 'QTY',
         },
         {
+            id:'Action',
             title: "Action",
             dataIndex: "Action",
             render: (_: any, record: { key: string }) => (

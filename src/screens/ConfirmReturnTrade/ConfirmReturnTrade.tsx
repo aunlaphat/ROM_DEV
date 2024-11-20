@@ -101,17 +101,18 @@ const ConfirmReturnTrade = () => {
 
 
     const columns = [
-        { title: "Order", dataIndex: "Order", key: "Order",     render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
-        { title: "SO/INV", dataIndex: "SO_INV", key: "SO_INV", render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span> },
-        { title: "Customer", dataIndex: "Customer", key: "Customer" ,render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span> },
-        { title: "SR", dataIndex: "SR", key: "SR",render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
-        { title: "Return Tracking", dataIndex: "ReturnTracking", key: "ReturnTracking",render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
-        { title: "Transport", dataIndex: "Transport", key: "Transport" ,render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span> },
-        { title: "Channel", dataIndex: "Channel", key: "Channel",render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
-        { title: "Date Create", dataIndex: "Date_Create", key: "Date_Create" ,render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span> },
-        { title: "Warehouse", dataIndex: "Warehouse", key: "Warehouse",render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
+        { title: "Order", dataIndex: "Order", id:"Order", key: "Order",     render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
+        { title: "SO/INV", dataIndex: "SO_INV", id:"SO_INV", key: "SO_INV", render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span> },
+        { title: "Customer", dataIndex: "Customer", id:"Customer", key: "Customer" ,render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span> },
+        { title: "SR", dataIndex: "SR", id:"SR", key: "SR",render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
+        { title: "Return Tracking", id:"ReturnTracking", dataIndex: "ReturnTracking", key: "ReturnTracking",render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
+        { title: "Transport",  id:"Transport",  dataIndex: "Transport", key: "Transport" ,render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span> },
+        { title: "Channel",  id:"Channel",  dataIndex: "Channel", key: "Channel",render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
+        { title: "Date Create",  id:"Date_Create",  dataIndex: "Date_Create", key: "Date_Create" ,render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span> },
+        { title: "Warehouse",  id:"Warehouse",  dataIndex: "Warehouse", key: "Warehouse",render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
         {
             title: "Action",
+            id:"Action", 
             dataIndex: "Action",
             key: "Action",
             render: (_: any, record: Order) => (
@@ -127,17 +128,18 @@ const ConfirmReturnTrade = () => {
         },
     ];
     const columnsconfirm = [
-      { title: "Order", dataIndex: "Order", key: "Order" },
-      { title: "SO/INV", dataIndex: "SO_INV", key: "SO_INV" },
-      { title: "Customer", dataIndex: "Customer", key: "Customer" },
-      { title: "SR", dataIndex: "SR", key: "SR" },
-      { title: "Return Tracking", dataIndex: "ReturnTracking", key: "ReturnTracking" },
-      { title: "Transport", dataIndex: "Transport", key: "Transport" },
-      { title: "Channel", dataIndex: "Channel", key: "Channel" },
-      { title: "Date Create", dataIndex: "Date_Create", key: "Date_Create" },
-      { title: "Warehouse", dataIndex: "Warehouse", key: "Warehouse" },
+      { title: "Order", dataIndex: "Order", key: "Order", id:"Order",  },
+      { title: "SO/INV", dataIndex: "SO_INV", key: "SO_INV" , id:"SO_INV", },
+      { title: "Customer", dataIndex: "Customer", key: "Customer" , id:"Customer", },
+      { title: "SR", dataIndex: "SR", key: "SR", id:"SR",  },
+      { title: "Return Tracking", dataIndex: "ReturnTracking", key: "ReturnTracking" , id:"ReturnTracking", },
+      { title: "Transport", dataIndex: "Transport", key: "Transport" , id:"Transport", },
+      { title: "Channel", dataIndex: "Channel", key: "Channel", id:"Channel",  },
+      { title: "Date Create", dataIndex: "Date_Create", key: "Date_Create", id:"Date_Create",  },
+      { title: "Warehouse", dataIndex: "Warehouse", key: "Warehouse", id:"Warehouse",  },
       {
           title: "Action",
+          id:"Action",
           dataIndex: "Action",
           key: "Action",
           render: (_: any, record: Order) => (
@@ -154,13 +156,13 @@ const ConfirmReturnTrade = () => {
   ];
   
     const codeROptions = [
-      { value: 'R01', label: 'R01' },
-      { value: 'R02', label: 'R02' },
+      { value: 'R01', label: 'R01',id:'R01' },
+      { value: 'R02', label: 'R02',id:'R02' },
     ];
     
     const codeNameOptions = [
-      { value: 'ส่วนลด', label: 'ส่วนลด' },
-      { value: 'ของแถม', label: 'แถม' },
+      { value: 'ส่วนลด', label: 'ส่วนลด',id:'ส่วนลด' },
+      { value: 'ของแถม', label: 'แถม',id:'แถม' },
     ];
     const { Option } = Select;
     const [dates, setDates] = useState<[Dayjs, Dayjs] | null>(null);
@@ -541,12 +543,14 @@ const ConfirmReturnTrade = () => {
                               render: (_, record) => 
                                   record.Type === 'addon' ? (
                                       <Popconfirm
+                                      id="popconfirmdelect"
                                           title="Are you sure to delete this item?"
                                           onConfirm={() => handleDelete(record.SKU)}
                                           okText="Yes"
                                           cancelText="No"
                                       >
                                            <Button 
+                                           id="delect"
                                                type="link"
                                                 icon={<DeleteOutlined style={{ color: 'red' }} />} 
                                             />

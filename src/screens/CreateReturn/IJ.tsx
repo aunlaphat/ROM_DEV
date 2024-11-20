@@ -163,17 +163,21 @@ const IJPage: React.FC = () => {
         {
             title: 'SKU',
             dataIndex: 'SKU',
+            id:'SKU'
         },
         {
             title: 'Name',
             dataIndex: 'SKU_Name',
+            id:'SKU_Name'
         },
         {
             title: 'QTY',
             dataIndex: 'QTY',
+            id:'SKU_Name'
         },
         {
             title: "Warehouse Form",
+            id:'warehouse_form',
             dataIndex: "warehouse_form",
             render: (_: any, record: DataSourceItem) => (
                 <Select
@@ -190,6 +194,7 @@ const IJPage: React.FC = () => {
         },
         {
             title: "Location Form",
+            id:'location_form',
             dataIndex: "location_form",
             render: (_: any, record: DataSourceItem) => (
                 <Select
@@ -205,6 +210,7 @@ const IJPage: React.FC = () => {
         },
         {
             title: "Warehouse to",
+            id:'warehouse_to',
             dataIndex: "warehouse_to",
             render: (_: any, record: DataSourceItem) => (
                 <Select
@@ -220,6 +226,7 @@ const IJPage: React.FC = () => {
         },
         {
             title: "Action",
+            id:'Action',
             dataIndex: "Action",
             render: (_: any, record: DataSourceItem) => (
                 <DeleteOutlined

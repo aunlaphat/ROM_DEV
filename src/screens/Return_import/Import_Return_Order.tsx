@@ -11,13 +11,14 @@ const dataSource = [
 ];
 
 const columns = [
-  { title: 'Order', dataIndex: 'Order', key: 'Order' },
-  { title: 'SKU', dataIndex: 'SKU', key: 'SKU' },
-  { title: 'QTY', dataIndex: 'QTY', key: 'QTY' },
-  { title: 'Amount', dataIndex: 'Amount', key: 'Amount' },
-  { title: 'SO', dataIndex: 'SO', key: 'SO' },
+  { title: 'Order', dataIndex: 'Order', key: 'Order', id: 'Order' },
+  { title: 'SKU', dataIndex: 'SKU', key: 'SKU', id: 'SKU'  },
+  { title: 'QTY', dataIndex: 'QTY', key: 'QTY', id: 'QTY'  },
+  { title: 'Amount', dataIndex: 'Amount', key: 'Amount' , id: 'Amount' },
+  { title: 'SO', dataIndex: 'SO', key: 'SO', id: 'SO'  },
   {
     title: 'Order Status',
+    id: 'Order_status',
     dataIndex: 'Order_status',
     key: 'Order_status',
     render: (text: string) => (
@@ -36,6 +37,7 @@ const columns = [
   },
   {
     title: 'SO Status',
+    id:'SO_status',
     dataIndex: 'SO_status',
     key: 'SO_status',
     render: (text: string) => (
@@ -52,7 +54,7 @@ const columns = [
       </Button>
     ),
   },
-  { title: 'SR_Create', dataIndex: 'SR_Create', key: 'SR_Create' }
+  { title: 'SR_Create', dataIndex: 'SR_Create', key: 'SR_Create' , id:'SR_Create'}
 ];
 
 const ImportOrder = () => {

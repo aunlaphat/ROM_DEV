@@ -81,17 +81,17 @@ const Report = () => {
 
 
 const columns = [
-    { title: "SO", dataIndex: "SO", key: "SO" },
-    { title: "Tracking Order", dataIndex: "Tracking_Order", key: "Tracking_Order" },
-    { title: "SKU", dataIndex: "SKU", key: "SKU" },
-    { title: "SKU Name", dataIndex: "SKU_Name", key: "SKU_Name" },
-    { title: "QTY", dataIndex: "QTY", key: "QTY" },
-    { title: "Amount", dataIndex: "Amount", key: "Amount" },
-    { title: "Site", dataIndex: "Site", key: "Site" },
-    { title: "Warehouse", dataIndex: "Warehouse", key: "Warehouse" },
-    { title: "Location", dataIndex: "Location", key: "Location" },
-    { title: "Ship Date", dataIndex: "Ship_date", key: "Ship_date" },
-    { title: "Channel", dataIndex: "Channel", key: "Channel" },
+    { title: "SO", dataIndex: "SO", key: "SO",id:"SO" },
+    { title: "Tracking Order", dataIndex: "Tracking_Order", key: "Tracking_Order",id:"Tracking_Order" },
+    { title: "SKU", dataIndex: "SKU", key: "SKU" ,id:"SKU"},
+    { title: "SKU Name", dataIndex: "SKU_Name", key: "SKU_Name",id:"SKU_Name" },
+    { title: "QTY", dataIndex: "QTY", key: "QTY",id:"QTY" },
+    { title: "Amount", dataIndex: "Amount", key: "Amount",id:"Amount" },
+    { title: "Site", dataIndex: "Site", key: "Site",id:"Site" },
+    { title: "Warehouse", dataIndex: "Warehouse", key: "Warehouse" ,id:"Warehouse"},
+    { title: "Location", dataIndex: "Location", key: "Location" ,id:"Location"},
+    { title: "Ship Date", dataIndex: "Ship_date", key: "Ship_date" ,id:"Ship_date"},
+    { title: "Channel", dataIndex: "Channel", key: "Channel",id:"Channel" },
    
   ];
     

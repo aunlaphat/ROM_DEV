@@ -101,34 +101,29 @@ const SRPage = () => {
       message.error("กรุณาเลือก Sales Order ก่อน");
       return;
     }
-
-    const selectedOption = options.find(option => option.value === selectedSalesOrder);
-
-    if (!selectedOption) {
-      message.error("ไม่พบ Sales Order ที่เลือก");
+  
+    const relatedOrder = checkSR.find(order => order.Sales_Order === selectedSalesOrder);
+  
+    if (!relatedOrder) {
+      message.error("ไม่พบ Sales Order ที่ตรงกัน");
       return;
     }
-
-    const relatedOrder = checkSR.find(order => order.Sales_Order === selectedOption.label);
-    const relatedData = data[selectedOption.label] || []; // ดึงข้อมูลที่ตรงกันจาก data
-
-    if (relatedOrder) {
-      // ตั้งค่าฟิลด์ข้อมูลจาก checkSR และ data รวมกัน
-      form.setFieldsValue({
-        Sales_Order: relatedOrder.Sales_Order,
-        Tracking_Order: relatedOrder.Tracking_Order,
-        SR_Create: relatedOrder.SR_Create,
-        SO_Status: relatedOrder.SO_Status,
-        MKP_Status: relatedOrder.MKP_Status,
-        // อัปเดตฟิลด์เพิ่มเติมจาก relatedData
-        ...relatedData
-      });
-      setSelectedData(relatedData); // เก็บข้อมูลที่อัปเดตใน state
-      setIsChecked(true);
-    } else {
-      message.error("ไม่พบข้อมูลที่ตรงกัน");
-    }
+  
+    const relatedData = data[selectedSalesOrder] || []; // ใช้ selectedSalesOrder ตรงๆ
+  
+    form.setFieldsValue({
+      ...relatedOrder,
+      ...relatedData
+    });
+  
+    setSelectedData(relatedData); // อัปเดตข้อมูล
+    setIsChecked(true);
   };
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedSalesOrder(e.target.value.trim());
+  };
+  
 
 
 
@@ -183,15 +178,17 @@ const SRPage = () => {
   };
 
   const columns = [
-    { title: 'SKU', dataIndex: 'SKU' },
-    { title: 'SKU_Name', dataIndex: 'SKU_Name' },
-    { title: 'QTY', dataIndex: 'QTY', },
-    { title: 'Price', dataIndex: 'Price', },
+    { title: 'SKU', dataIndex: 'SKU',id:'SKU' },
+    { title: 'SKU_Name', dataIndex: 'SKU_Name' ,id:'SKU_Name'},
+    { title: 'QTY', dataIndex: 'QTY',id:'QTY' },
+    { title: 'Price', dataIndex: 'Price',id:'Price' },
 
     {
       title: 'Warehouse Form',
+      id:'Warehouse Form',
       dataIndex: 'Warehouse_Form',
       key: 'Warehouse_Formt',
+    
       render: (text: any, record: DataItem, index: number) => (
         <Form.Item
           name={['selectedData', index, 'Warehouse_Form']}
@@ -215,7 +212,7 @@ const SRPage = () => {
         </Form.Item>
       ),
     },
-    { title: 'Location_to', dataIndex: 'Location_to', },
+    { title: 'Location_to', dataIndex: 'Location_to', id:'Location_to'},
 
 
   ];
@@ -249,7 +246,7 @@ const SRPage = () => {
 
   interface FormValues {
     TransportType: any;
-    Date: any;
+    Date: any; 
     SKU: string;
     QTY: number;
     SKU_Name: string;
@@ -295,25 +292,30 @@ const SRPage = () => {
         >
           <Row gutter={30} justify="center" align="middle" style={{ width: '100%' }}>
             <Col>
-              <Form.Item
-                id="salesOrderFormItem"
-                label={<span style={{ color: '#657589' }}>กรอกเลข SO/Order ที่ต้องการสร้างSR</span>}
-                name="selectedSalesOrder"
-                rules={[{ required: true, message: 'กรุณากรอกเลข SO/Order ที่ต้องการสร้างSR!' }]}
-              >
-                <Select
-                  id="salesOrderSelect"
-                  showSearch
-                  style={{ height: 40, width: 300 }}
-                  placeholder="Search to Select"
-                  optionFilterProp="label"
-                  value={selectedSalesOrder}
-                  onChange={(value) => {
-                    setSelectedSalesOrder(value);
-                  }}
-                  options={options}
-                />
-              </Form.Item>
+            <Form.Item
+  id="salesOrderFormItem"
+  label={<span style={{ color: '#657589' }}>กรอกเลข SO/Order ที่ต้องการสร้าง SR</span>}
+  name="selectedSalesOrder"
+  rules={[
+    { required: true, message: 'กรุณากรอกเลข SO/Order ที่ต้องการสร้าง SR!' },
+    {
+      validator: (_, value) =>
+        options.some(option => option.label === value)
+          ? Promise.resolve()
+          : Promise.reject(new Error('กรุณากรอก SO/Order ที่มีอยู่ในรายการ!')),
+    },
+  ]}
+>
+<Input
+  id="salesOrderInput"
+  style={{ height: 40, width: 300 }}
+  placeholder="กรอก SO/Order"
+  value={selectedSalesOrder}
+  onChange={handleInputChange}
+/>
+
+</Form.Item>
+
             </Col>
             <Col>
               <Button id="checkButton" type="primary" style={{ width: 100, height: 40, marginTop: 4 }} onClick={handleCheck}>
@@ -512,4 +514,3 @@ const SRPage = () => {
 
 
 export default SRPage;
-

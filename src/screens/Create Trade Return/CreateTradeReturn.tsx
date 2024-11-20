@@ -254,11 +254,12 @@ const CreateTradeReturn = () => {
 
 
   const columns = [
-    { title: 'SKU', dataIndex: 'SKU', key: 'SKU' },
-    { title: 'Name', dataIndex: 'Name', key: 'Name' },
-    { title: 'QTY', dataIndex: 'QTY', key: 'QTY' },
+    { title: 'SKU', dataIndex: 'SKU', key: 'SKU' ,id:'SKU' },
+    { title: 'Name', dataIndex: 'Name', key: 'Name',id:'Name'  },
+    { title: 'QTY', dataIndex: 'QTY', key: 'QTY',id:'QTY'  },
     {
       title: 'Action',
+      id:'Action',
       dataIndex: 'Action',
       key: 'Action',
       render: (_: any, record: { key: number }) => (
