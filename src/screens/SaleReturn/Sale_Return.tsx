@@ -48,7 +48,13 @@ const SaleReturn: React.FC = () => {
     const onChange = (current: number) => {
         setCurrentStep(current);
     };
+    const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('environment');
 
+    const toggleCamera = () => {
+        setCameraFacingMode((prevMode) => (prevMode === 'user' ? 'environment' : 'user'));
+    };
+    
+    
    
     const handleSelectChange = (value: string) => {
         setShowSteps(true);
@@ -427,7 +433,9 @@ const SaleReturn: React.FC = () => {
 
                         <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
                         
-
+                        <Button onClick={toggleCamera} style={{ marginTop: 10 }}>
+            เปลี่ยนกล้อง
+        </Button>
                         {currentStep > 0 && (  // แสดงปุ่ม "ย้อนกลับ" เมื่อ currentStep > 0
                 <Button
                 id="back"
