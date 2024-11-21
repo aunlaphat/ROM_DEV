@@ -1,4 +1,4 @@
-// Log package
+// Log package บันทึกข้อมูลและ error ที่เกิดขั้นภายในระบบ
 package logs
 
 import (

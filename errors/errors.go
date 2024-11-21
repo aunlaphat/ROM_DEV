@@ -1,4 +1,4 @@
-// Http Error Wrapper Package
+// Http Error Wrapper Package เก็บข้อผิดพลาดที่ใช้ในระบบ
 package errors
 
 import (

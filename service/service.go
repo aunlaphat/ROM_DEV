@@ -8,13 +8,15 @@ import (
 )
 
 type service struct {
-	userRepo repository.UserRepository //Repository of service
-	logger   logs.Logger               //Logger of service
-	constant repository.Constants
+	userRepo  repository.UserRepository //Repository of service
+	logger    logs.Logger               //Logger of service
+	constant  repository.Constants
+	orderRepo repository.OrderRepository
 }
 type AllOfService struct {
 	User     UserService
 	Constant Constants
+	Order	 OrderService
 }
 
 func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
@@ -23,10 +25,12 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		userRepo: repo,
 		logger:   logger,
 		constant: repo,
+		orderRepo: repo,
 	}
 	return AllOfService{
 		User:     srv,
 		Constant: srv,
+		Order:    srv,
 	}
 }
 
