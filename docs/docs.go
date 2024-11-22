@@ -472,7 +472,7 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
+                    "200": {
                         "description": "Order Created",
                         "schema": {
                             "allOf": [
@@ -483,7 +483,10 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "type": "string"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.Order"
+                                            }
                                         }
                                     }
                                 }
@@ -532,7 +535,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Order Deleted",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "204": {
@@ -758,7 +773,7 @@ const docTemplate = `{
                 },
                 "custName": {
                     "type": "string",
-                    "example": "Num"
+                    "example": "Fa"
                 },
                 "custPhoneNum": {
                     "type": "string",
@@ -874,7 +889,7 @@ const docTemplate = `{
                 },
                 "custName": {
                     "type": "string",
-                    "example": "Num"
+                    "example": "Fa"
                 },
                 "custPhoneNum": {
                     "type": "string",
@@ -937,10 +952,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "เก้าอี้"
                 },
-                "orderNo": {
-                    "type": "string",
-                    "example": "AB0001"
-                },
                 "price": {
                     "type": "number",
                     "example": 199.05
@@ -965,9 +976,8 @@ const docTemplate = `{
                     "example": "บางกรวย"
                 },
                 "custName": {
-                    "description": "BrandName       *string ` + "`" + `json:\"brandName\" db:\"BrandName\" example:\"BEWELL\"` + "`" + `",
                     "type": "string",
-                    "example": "Num"
+                    "example": "Fa"
                 },
                 "custPhoneNum": {
                     "type": "string",
@@ -984,11 +994,6 @@ const docTemplate = `{
                 "custSubDistrict": {
                     "type": "string",
                     "example": "บางกรวย"
-                },
-                "userUpdates": {
-                    "description": "CreateDate     \t*time.Time  ` + "`" + `json:\"createDate\" db:\"CreateDate\" example:\"20/11/2567\"` + "`" + `\nUserCreated     *string \t` + "`" + `json:\"userCreated\" db:\"UserCreated\" example:\"intern\"` + "`" + `\nUpdateDate      *time.Time  ` + "`" + `json:\"updateDate\" db:\"UpdateDate\" example:\"20/11/2568\"` + "`" + `",
-                    "type": "string",
-                    "example": "intern"
                 }
             }
         }

@@ -1,13 +1,12 @@
+//ดึงค่าออกมาโดยตรงจาก db
 package entity
 
 import "time"
 
-//โครงสร้างข้อมูลคำสั่งซื้อ
-
 type Order struct {
 	OrderNo          string  	`json:"orderNo" db:"OrderNo" example:"AB0001"`
 	BrandName       *string  	`json:"brandName" db:"BrandName" example:"BEWELL"`
-	CustName        *string  	`json:"custName" db:"CustName" example:"Num"`
+	CustName        *string  	`json:"custName" db:"CustName" example:"Fa"`
 	CustAddress     *string  	`json:"custAddress" db:"CustAddress" example:"7/20 ซอย15/1"`
 	CustDistrict    *string  	`json:"custDistrict" db:"CustDistrict" example:"บางกรวย"`
 	CustSubDistrict *string  	`json:"custSubDistrict" db:"CustSubDistrict" example:"บางกรวย"`

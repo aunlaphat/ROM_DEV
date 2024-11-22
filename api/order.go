@@ -9,12 +9,12 @@ import (
 )
 
 func (app *Application) Orders(apiRouter *chi.Mux) {
-	apiRouter.Route("/orders", func(r chi.Router) {  
-		r.Get("/allgetorder", app.AllGetOrder)			// GET /orders/allgetorder
-		r.Get("/getbyID/{orderNo}", app.GetOrderID) 	// GET /orders/getbyID/{orderNo}
-		r.Post("/create-order", app.CreateOrder) 		// POST /orders
-		r.Put("/update/{orderNo}", app.UpdateOrder)     // PUT /orders/{orderNo}
-		r.Delete("/delete/{orderNo}", app.DeleteOrder)  // DELETE /orders/{orderNo}
+	apiRouter.Route("/orders", func(r chi.Router) {
+		r.Get("/allgetorder", app.AllGetOrder)         // GET /orders/allgetorder
+		r.Get("/getbyID/{orderNo}", app.GetOrderID)    // GET /orders/getbyID/{orderNo}
+		r.Post("/create-order", app.CreateOrder)       // POST /orders/create-order
+		r.Put("/update/{orderNo}", app.UpdateOrder)    // PUT /orders/update/{orderNo}
+		r.Delete("/delete/{orderNo}", app.DeleteOrder) // DELETE /orders/delete/{orderNo}
 	})
 }
 
@@ -59,7 +59,7 @@ func (app *Application) GetOrderID(w http.ResponseWriter, r *http.Request) {
 		HandleError(w, err)
 		return
 	}
-	
+
 	// ส่งคืนข้อมูลคำสั่งซื้อ
 	handleResponse(w, true, response, res, http.StatusOK)
 }
@@ -71,7 +71,7 @@ func (app *Application) GetOrderID(w http.ResponseWriter, r *http.Request) {
 // @Accept 		json
 // @Produce 	json
 // @Param 		order body request.CreateOrderRequest true "Order Data"
-// @Success 	200 {object} Response{result=entity.order} "Order Created"
+// @Success 	200 {object} Response{result=[]entity.Order} "Order Created"
 // @Failure 	400 {object} Response "Bad Request"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/orders/create-order [post]
@@ -139,8 +139,6 @@ func (api *Application) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
-
-
 
 // // @Summary 	Get Order
 // // @Description Get all Order

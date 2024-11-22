@@ -1,18 +1,18 @@
 package service
-
 // ใช้จัดการคำสั่งซื้อที่มีเข้ามา
 
 import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
-
+	"boilerplate-backend-go/errors"
+	"net/http"
 	"database/sql"
 	"fmt"
 )
 
 type OrderService interface {
-	GetOrderID(orderNo string) (response.OrderResponse, error)
 	AllGetOrder() ([]response.OrderResponse, error)
+	GetOrderID(orderNo string) (response.OrderResponse, error)
 	CreateOrder(req request.CreateOrderRequest) (response.OrderResponse, error)
 	UpdateOrder(req request.UpdateOrderRequest) error
 	DeleteOrder(orderNo string) error
@@ -30,98 +30,148 @@ func (srv service) AllGetOrder() ([]response.OrderResponse, error) {
 			return nil, fmt.Errorf("get order error: %w", err)
 		}
 	}
+
 	// ส่งออกข้อมูล
 	return allorder, nil
 }
 
-func (srv service) CreateOrder(req request.CreateOrderRequest) (response.OrderResponse, error) {
+func (srv service) GetOrderID(orderNo string) (response.OrderResponse, error) {
+    // ตรวจสอบ Input
+    res := response.OrderResponse{}
+    if orderNo == "" {
+        return res, errors.ValidationError("order number is required")
+    }
 
-	if req.OrderNo == "" {
-		err := fmt.Errorf("order number is required")
-		srv.logger.Error(err)
-		return response.OrderResponse{}, err
-	}
+    // เรียก repository เพื่อดึงข้อมูล
+    order, err := srv.orderRepo.GetOrderID(orderNo)
+    if err != nil {
+        switch e := err.(type) {
+        case errors.AppError:
+            if e.Code == http.StatusNotFound {
+                return res, errors.NotFoundError(fmt.Sprintf("OrderNo '%s'", orderNo))
+            }
+            return res, errors.UnexpectedError()
+        default:
+            srv.logger.Error(err)
+            return res, errors.UnexpectedError()
+        }
+    }
 
-	// สร้างคำสั่งซื้อในฐานข้อมูล
-	err := srv.orderRepo.CreateOrder(req)
-	if err != nil {
-		srv.logger.Error(err)
-		return response.OrderResponse{}, fmt.Errorf("failed to create order: %w", err)
-	}
+     // ตรวจสอบว่ามี OrderLines หรือไม่
+	 if len(order.OrderLines) == 0 {
+        // บันทึกข้อมูลใน Log โดยไม่ใช้ Warnf
+        srv.logger.Info(fmt.Sprintf("OrderNo '%s' has no order lines", orderNo))
+    }
 
-	// ดึงข้อมูลคำสั่งซื้อที่เพิ่งสร้าง
-	order, err := srv.GetOrderID(req.OrderNo)
-	if err != nil {
-		srv.logger.Error(err)
-		return response.OrderResponse{}, fmt.Errorf("failed to fetch created order: %w", err)
-	}
-
-	return order, nil
+    return order, nil
 }
 
-func (srv service) GetOrderID(orderNo string) (response.OrderResponse, error) {
-	orderID, err := srv.orderRepo.GetOrderID(orderNo)
-	if err != nil {
-		srv.logger.Error(err)
-		if err.Error() == "sql: no rows in result set" {
-			return response.OrderResponse{}, fmt.Errorf("order with OrderNo %s not found", orderNo)
-		}
-		return response.OrderResponse{}, fmt.Errorf("failed to fetch order: %w", err)
-	}
+func (srv service) CreateOrder(req request.CreateOrderRequest) (response.OrderResponse, error) {
+    if req.OrderNo == "" {
+        return response.OrderResponse{}, errors.ValidationError("order number is required")
+    }
 
-	return orderID, nil
+    // สร้างคำสั่งซื้อในฐานข้อมูล
+    err := srv.orderRepo.CreateOrder(req)
+    if err != nil {
+        switch err.(type) {
+        case errors.AppError:
+            appErr := err.(errors.AppError)
+            if appErr.Code == http.StatusConflict {
+                return response.OrderResponse{}, errors.ValidationError(fmt.Sprintf("OrderNo '%s' already exists. Use a different OrderNo.", req.OrderNo))
+            }
+            return response.OrderResponse{}, errors.UnexpectedError()
+        default:
+            srv.logger.Error(err)
+            return response.OrderResponse{}, errors.UnexpectedError()
+        }
+    }
+
+    // ดึงข้อมูลคำสั่งซื้อที่เพิ่งสร้าง
+    order, err := srv.GetOrderID(req.OrderNo)
+    if err != nil {
+        switch err.(type) {
+        case errors.AppError:
+            return response.OrderResponse{}, err
+        default:
+            srv.logger.Error(err)
+            return response.OrderResponse{}, errors.UnexpectedError()
+        }
+    }
+
+    return order, nil
 }
 
 func (srv service) UpdateOrder(req request.UpdateOrderRequest) error {
-	if req.OrderNo == "" {
-		return fmt.Errorf("order number is required")
-	}
+    if req.OrderNo == "" {
+        return errors.ValidationError("order number is required")
+    }
 
-	// ตรวจสอบว่ามี OrderNo อยู่ในฐานข้อมูลหรือไม่
-	orderExists, err := srv.orderRepo.CheckOrderExists(req.OrderNo)
-	if err != nil {
-		srv.logger.Error(err)
-		return fmt.Errorf("failed to check order existence: %w", err)
-	}
+    // ตรวจสอบว่ามี OrderNo อยู่ในฐานข้อมูลหรือไม่
+    orderExists, err := srv.orderRepo.CheckOrderExists(req.OrderNo)
+    if err != nil {
+        switch err.(type) {
+        case errors.AppError:
+            return err
+        default:
+            srv.logger.Error(err)
+            return errors.UnexpectedError()
+        }
+    }
 
-	if !orderExists {
-		return fmt.Errorf("no order data: %s", req.OrderNo)
-	}
+    if !orderExists {
+        return errors.NotFoundError(fmt.Sprintf("OrderNo '%s'", req.OrderNo))
+    }
 
-	// ดำเนินการอัปเดตข้อมูล
-	err = srv.orderRepo.UpdateOrder(req)
-	if err != nil {
-		srv.logger.Error(err)
-		return fmt.Errorf("failed to update order: %w", err)
-	}
+    // ดำเนินการอัปเดตข้อมูล
+    err = srv.orderRepo.UpdateOrder(req)
+    if err != nil {
+        switch err.(type) {
+        case errors.AppError:
+            return err
+        default:
+            srv.logger.Error(err)
+            return errors.UnexpectedError()
+        }
+    }
 
-	return nil
+    return nil
 }
 
 func (srv service) DeleteOrder(orderNo string) error {
-	if orderNo == "" {
-		return fmt.Errorf("order number is required")
-	}
+    if orderNo == "" {
+        return errors.ValidationError("order number is required")
+    }
 
-	// ตรวจสอบว่ามี OrderNo อยู่ในฐานข้อมูลหรือไม่
-	orderExists, err := srv.orderRepo.CheckOrderExists(orderNo)
-	if err != nil {
-		srv.logger.Error(err)
-		return fmt.Errorf("failed to check order existence: %w", err)
-	}
+    // ตรวจสอบว่ามี OrderNo อยู่ในฐานข้อมูลหรือไม่
+    orderExists, err := srv.orderRepo.CheckOrderExists(orderNo)
+    if err != nil {
+        switch err.(type) {
+        case errors.AppError:
+            return err
+        default:
+            srv.logger.Error(err)
+            return errors.UnexpectedError()
+        }
+    }
 
-	if !orderExists {
-		return fmt.Errorf("no order data: %s", orderNo)
-	}
+    if !orderExists {
+        return errors.NotFoundError(fmt.Sprintf("OrderNo '%s'", orderNo))
+    }
 
-	// ดำเนินการลบข้อมูล
-	err = srv.orderRepo.DeleteOrder(orderNo)
-	if err != nil {
-		srv.logger.Error(err)
-		return fmt.Errorf("failed to delete order: %w", err)
-	}
+    // ดำเนินการลบข้อมูล
+    err = srv.orderRepo.DeleteOrder(orderNo)
+    if err != nil {
+        switch err.(type) {
+        case errors.AppError:
+            return err
+        default:
+            srv.logger.Error(err)
+            return errors.UnexpectedError()
+        }
+    }
 
-	return nil
+    return nil
 }
 
 

@@ -3,6 +3,8 @@ package repository
 import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
+	"os"
+	"log"
 	"context"
 	"database/sql"
 	"fmt"
@@ -25,6 +27,7 @@ func (repo repositoryDB) AllGetOrder() ([]response.OrderResponse, error) {
 	defer cancel()
 
 	orders := []response.OrderResponse{}
+	
 	sqlQuery := ` SELECT *
 				  FROM OrderHead
 				  ORDER BY OrderNo
@@ -47,7 +50,7 @@ func (repo repositoryDB) AllGetOrder() ([]response.OrderResponse, error) {
 			return nil, err
 		}
 
-		// Fetch OrderLines
+		// Fetch OrderLine ออกมาเพื่อเพิ่มข้อมูลรายการสินค้าเข้ามารวมกับ OrderHead ข้อมูลลูกค้า
 		orderLines, err := repo.AllGetOrderLinesByOrderNo(order.OrderNo)
 		if err != nil {
 			return nil, err
@@ -69,8 +72,8 @@ func (repo repositoryDB) GetOrderID(orderNo string) (response.OrderResponse, err
 
 	var order response.OrderResponse
 	sqlQuery := ` SELECT *
-				   FROM OrderHead
-				   WHERE OrderNo = :OrderNo
+				  FROM OrderHead
+				  WHERE OrderNo = :OrderNo
     			`
 
 	// ใช้ NamedQueryContext เพื่อดึงข้อมูล
@@ -87,7 +90,7 @@ func (repo repositoryDB) GetOrderID(orderNo string) (response.OrderResponse, err
 			return response.OrderResponse{}, fmt.Errorf("failed to scan order: %w", err)
 		}
 	} else {
-		// ไม่มีข้อมูล
+
 		return response.OrderResponse{}, fmt.Errorf("order with OrderNo %s not found", orderNo)
 	}
 
@@ -112,7 +115,6 @@ func (repo repositoryDB) AllGetOrderLinesByOrderNo(orderNo string) ([]response.O
 				  WHERE OrderNo = :OrderNo
 			    `
 
-	// ใช้ map[string]interface{} เพื่อส่งพารามิเตอร์ออกไป
 	rows, err := repo.db.NamedQueryContext(ctx, sqlQuery, map[string]interface{}{"OrderNo": orderNo})
 	if err != nil {
 		return nil, err
@@ -132,7 +134,6 @@ func (repo repositoryDB) AllGetOrderLinesByOrderNo(orderNo string) ([]response.O
 		return nil, err
 	}
 
-
 	return orderLines, nil
 }
 
@@ -140,23 +141,35 @@ func (repo repositoryDB) CreateOrder(req request.CreateOrderRequest) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// ดึงชื่อเครื่อง
+	hostname, err := os.Hostname()
+	if err != nil {
+		return fmt.Errorf("failed to get hostname: %w", err)
+	}
+
 	// ตรวจสอบว่ามี OrderHead อยู่แล้วหรือไม่
 	var count int
-	checkQuery := `
-		SELECT COUNT(*) FROM OrderHead WHERE OrderNo = @OrderNo
-	`
-	err := repo.db.QueryRowContext(ctx, checkQuery, sql.Named("OrderNo", req.OrderNo)).Scan(&count)
+	checkQuery := ` SELECT COUNT(*) 
+					FROM OrderHead 
+					WHERE OrderNo = @OrderNo
+				  `
+	err = repo.db.QueryRowContext(ctx, checkQuery, sql.Named("OrderNo", req.OrderNo)).Scan(&count)
 	if err != nil {
 		return fmt.Errorf("failed to check OrderHead existence: %w", err)
 	}
+	log.Printf("OrderNo %s exists count: %d", req.OrderNo, count)
+
+	// หากมี OrderHead อยู่แล้ว ให้แจ้งเตือน
+	if count > 0 {
+		return fmt.Errorf("OrderNo %s already exists; Please use a unique OrderNo", req.OrderNo)
+	}
 
 	// หากไม่มี OrderHead ให้สร้างใหม่
-	if count == 0 {
 		insertOrderHeadQuery := `
-			INSERT INTO OrderHead (OrderNo, BrandName, CustName, CustAddress, CustDistrict, CustSubDistrict, CustProvince, CustPostCode, CustPhoneNum, CreateDate, UserCreated)
-			VALUES (@OrderNo, @BrandName, @CustName, @CustAddress, @CustDistrict, @CustSubDistrict, @CustProvince, @CustPostCode, @CustPhoneNum, @CreateDate, @UserCreated)
-		`
-		_, err := repo.db.ExecContext(ctx, insertOrderHeadQuery,
+				INSERT INTO OrderHead (OrderNo, BrandName, CustName, CustAddress, CustDistrict, CustSubDistrict, CustProvince, CustPostCode, CustPhoneNum, CreateDate, UserCreated)
+				VALUES (@OrderNo, @BrandName, @CustName, @CustAddress, @CustDistrict, @CustSubDistrict, @CustProvince, @CustPostCode, @CustPhoneNum, @CreateDate, @UserCreated)
+		    `
+		_, err = repo.db.ExecContext(ctx, insertOrderHeadQuery,
 			sql.Named("OrderNo", req.OrderNo),
 			sql.Named("BrandName", req.BrandName),
 			sql.Named("CustName", req.CustName),
@@ -166,19 +179,18 @@ func (repo repositoryDB) CreateOrder(req request.CreateOrderRequest) error {
 			sql.Named("CustProvince", req.CustProvince),
 			sql.Named("CustPostCode", req.CustPostCode),
 			sql.Named("CustPhoneNum", req.CustPhoneNum),
-			sql.Named("CreateDate", time.Now()), // ใช้เวลาปัจจุบัน
-			sql.Named("UserCreated", "system"),  // กำหนดค่าผู้สร้าง
+			sql.Named("CreateDate", time.Now()), // ดึงค่าเวลาปัจจุบันของเครื่อง
+			sql.Named("UserCreated", hostname),  // กำหนดค่าผู้สร้าง
 		)
 		if err != nil {
 			return fmt.Errorf("failed to insert OrderHead: %w", err)
 		}
-	}
+	
 
 	// เพิ่มข้อมูลใน OrderLine
-	insertOrderLineQuery := `
-		INSERT INTO OrderLine (OrderNo, SKU, ItemName, QTY, Price)
-		VALUES (@OrderNo, @SKU, @ItemName, @QTY, @Price)
-	`
+	insertOrderLineQuery := ` INSERT INTO OrderLine (OrderNo, SKU, ItemName, QTY, Price)
+							  VALUES (@OrderNo, @SKU, @ItemName, @QTY, @Price)
+	                        `
 	for _, line := range req.OrderLines {
 		_, err := repo.db.ExecContext(ctx, insertOrderLineQuery,
 			sql.Named("OrderNo", req.OrderNo),
@@ -196,10 +208,17 @@ func (repo repositoryDB) CreateOrder(req request.CreateOrderRequest) error {
 }
 
 func (repo repositoryDB) UpdateOrder(req request.UpdateOrderRequest) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
 
-	query := `	UPDATE OrderHead
+    // ดึงชื่อเครื่อง (hostname)
+    hostname, err := os.Hostname()
+    if err != nil {
+        return fmt.Errorf("failed to get hostname: %w", err)
+    }
+
+	// ขึ้นกับ frontend ว่าจะดึงตัวไหนไป เมื่อไม่ใส่ฟิลด์บางตัวในการเทสจึงยังเป็น null อยู่
+    query := `	UPDATE OrderHead
 				SET  CustName = @CustName
 					,CustAddress = @CustAddress
 					,CustDistrict = @CustDistrict
@@ -211,40 +230,42 @@ func (repo repositoryDB) UpdateOrder(req request.UpdateOrderRequest) error {
 					,UserUpdated = @UserUpdated
 				WHERE OrderNo = @OrderNo
 			`
+    // อัปเดตข้อมูลในฐานข้อมูล
+    _, err = repo.db.ExecContext(ctx, query,
+        sql.Named("CustName", req.CustName),
+        sql.Named("CustAddress", req.CustAddress),
+        sql.Named("CustDistrict", req.CustDistrict),
+        sql.Named("CustSubDistrict", req.CustSubDistrict),
+        sql.Named("CustProvince", req.CustProvince),
+        sql.Named("CustPostCode", req.CustPostCode),
+        sql.Named("CustPhoneNum", req.CustPhoneNum),
+        sql.Named("UpdateDate", time.Now()),
+        sql.Named("UserUpdated", hostname),
+        sql.Named("OrderNo", req.OrderNo),
+    )
 
-	_, err := repo.db.ExecContext(ctx, query,
-		sql.Named("CustName", req.CustName),
-		sql.Named("CustAddress", req.CustAddress),
-		sql.Named("CustDistrict", req.CustDistrict),
-		sql.Named("CustSubDistrict", req.CustSubDistrict),
-		sql.Named("CustProvince", req.CustProvince),
-		sql.Named("CustPostCode", req.CustPostCode),
-		sql.Named("CustPhoneNum", req.CustPhoneNum),
-		sql.Named("UpdateDate", time.Now()),
-		sql.Named("UserUpdated", req.UserUpdated),
-		sql.Named("OrderNo", req.OrderNo),
-	)
+    // ตรวจสอบข้อผิดพลาดจากการอัปเดต
+    if err != nil {
+        return fmt.Errorf("failed to update order: %w", err)
+    }
 
-	if err != nil {
-		return fmt.Errorf("failed to update order: %w", err)
-	}
-
-	return nil
+    return nil
 }
+
 
 func (repo repositoryDB) DeleteOrder(orderNo string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// ลบข้อมูลจาก OrderLine
-	deleteOrderLineQuery := `DELETE FROM OrderLine WHERE OrderNo = @OrderNo`
+	deleteOrderLineQuery := ` DELETE FROM OrderLine WHERE OrderNo = @OrderNo `
 	_, err := repo.db.ExecContext(ctx, deleteOrderLineQuery, sql.Named("OrderNo", orderNo))
 	if err != nil {
 		return fmt.Errorf("failed to delete from OrderLine: %w", err)
 	}
 
 	// ลบข้อมูลจาก OrderHead
-	deleteOrderHeadQuery := `DELETE FROM OrderHead WHERE OrderNo = @OrderNo`
+	deleteOrderHeadQuery := ` DELETE FROM OrderHead WHERE OrderNo = @OrderNo `
 	_, err = repo.db.ExecContext(ctx, deleteOrderHeadQuery, sql.Named("OrderNo", orderNo))
 	if err != nil {
 		return fmt.Errorf("failed to delete from OrderHead: %w", err)
@@ -255,12 +276,10 @@ func (repo repositoryDB) DeleteOrder(orderNo string) error {
 
 func (repo repositoryDB) CheckOrderExists(orderNo string) (bool, error) {
 	var exists bool
-	query := `
-		SELECT CASE 
-			WHEN EXISTS (
-				SELECT 1 FROM OrderHead WHERE OrderNo = @OrderNo
-			) THEN 1 ELSE 0 END
-	`
+	query := ` SELECT CASE 
+			   WHEN EXISTS (SELECT 1 FROM OrderHead WHERE OrderNo = @OrderNo) 
+			   THEN 1 ELSE 0 END
+	         `
 	err := repo.db.QueryRow(query, sql.Named("OrderNo", orderNo)).Scan(&exists)
 	if err != nil {
 		return false, err
