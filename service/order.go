@@ -10,13 +10,15 @@ import (
 	"fmt"
 )
 
-type OrderService interface {
-	AllGetOrder() ([]response.OrderResponse, error)
+type OrderService interface { // ตัวสื่อกลางในการรับส่งกับ api, ประมวลผลข้อมูลที่รับมาจาก api, 
 	GetOrderID(orderNo string) (response.OrderResponse, error)
+	AllGetOrder() ([]response.OrderResponse, error)
 	CreateOrder(req request.CreateOrderRequest) (response.OrderResponse, error)
 	UpdateOrder(req request.UpdateOrderRequest) error
 	DeleteOrder(orderNo string) error
 }
+
+// service เชื่อมกับ repo ต่อเพื่อดึงข้อมูลออกมา แต่ต้องมีการ validation ก่อนดึง
 
 func (srv service) AllGetOrder() ([]response.OrderResponse, error) {
 	allorder, err := srv.orderRepo.AllGetOrder()

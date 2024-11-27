@@ -761,15 +761,15 @@ const docTemplate = `{
                 },
                 "createDate": {
                     "type": "string",
-                    "example": "20/11/2567"
+                    "example": "2024-11-22 09:45:33.260"
                 },
                 "custAddress": {
                     "type": "string",
-                    "example": "7/20 ซอย15/1"
+                    "example": "7/20"
                 },
                 "custDistrict": {
                     "type": "string",
-                    "example": "บางกรวย"
+                    "example": "Bang-Kruay"
                 },
                 "custName": {
                     "type": "string",
@@ -777,7 +777,7 @@ const docTemplate = `{
                 },
                 "custPhoneNum": {
                     "type": "string",
-                    "example": "0921234567"
+                    "example": "0912345678"
                 },
                 "custPostCode": {
                     "type": "string",
@@ -785,11 +785,11 @@ const docTemplate = `{
                 },
                 "custProvince": {
                     "type": "string",
-                    "example": "นนทบุรี"
+                    "example": "Nonthaburi"
                 },
                 "custSubDistrict": {
                     "type": "string",
-                    "example": "บางกรวย"
+                    "example": "Bang-Kruay"
                 },
                 "orderLine": {
                     "type": "array",
@@ -799,11 +799,11 @@ const docTemplate = `{
                 },
                 "orderNo": {
                     "type": "string",
-                    "example": "AB0001"
+                    "example": "OD0001"
                 },
                 "updateDate": {
                     "type": "string",
-                    "example": "20/11/2568"
+                    "example": "2024-11-30 09:45:33.260"
                 },
                 "userCreated": {
                     "type": "string",
@@ -824,17 +824,19 @@ const docTemplate = `{
                 },
                 "orderNo": {
                     "type": "string",
-                    "example": "AB0001"
+                    "example": "OD0001"
                 },
                 "price": {
                     "type": "number",
-                    "example": 199.05
+                    "example": 5900
                 },
                 "qty": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 5
                 },
                 "sku": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "SKU12345"
                 }
             }
         },
@@ -881,11 +883,11 @@ const docTemplate = `{
                 },
                 "custAddress": {
                     "type": "string",
-                    "example": "7/20 ซอย15/1"
+                    "example": "7/20"
                 },
                 "custDistrict": {
                     "type": "string",
-                    "example": "บางกรวย"
+                    "example": "Bang-Kruay"
                 },
                 "custName": {
                     "type": "string",
@@ -893,7 +895,7 @@ const docTemplate = `{
                 },
                 "custPhoneNum": {
                     "type": "string",
-                    "example": "0921234567"
+                    "example": "0912345678"
                 },
                 "custPostCode": {
                     "type": "string",
@@ -901,11 +903,11 @@ const docTemplate = `{
                 },
                 "custProvince": {
                     "type": "string",
-                    "example": "นนทบุรี"
+                    "example": "Nonthaburi"
                 },
                 "custSubDistrict": {
                     "type": "string",
-                    "example": "บางกรวย"
+                    "example": "Bang-Kruay"
                 },
                 "orderLines": {
                     "type": "array",
@@ -915,7 +917,7 @@ const docTemplate = `{
                 },
                 "orderNo": {
                     "type": "string",
-                    "example": "AB0001"
+                    "example": "OD0001"
                 }
             }
         },
@@ -954,13 +956,15 @@ const docTemplate = `{
                 },
                 "price": {
                     "type": "number",
-                    "example": 199.05
+                    "example": 5900
                 },
                 "qty": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 5
                 },
                 "sku": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "SKU12345"
                 }
             }
         },
@@ -969,11 +973,11 @@ const docTemplate = `{
             "properties": {
                 "custAddress": {
                     "type": "string",
-                    "example": "7/20 ซอย15/1"
+                    "example": "1/12"
                 },
                 "custDistrict": {
                     "type": "string",
-                    "example": "บางกรวย"
+                    "example": "Bang-Plad"
                 },
                 "custName": {
                     "type": "string",
@@ -985,15 +989,15 @@ const docTemplate = `{
                 },
                 "custPostCode": {
                     "type": "string",
-                    "example": "11130"
+                    "example": "10600"
                 },
                 "custProvince": {
                     "type": "string",
-                    "example": "นนทบุรี"
+                    "example": "Bangkok"
                 },
                 "custSubDistrict": {
                     "type": "string",
-                    "example": "บางกรวย"
+                    "example": "Bang-Plad"
                 }
             }
         }

@@ -1,5 +1,7 @@
 package api
-
+// ตัวกลางของ http request ที่คอยรับส่งข้อมูลไปมา
+// รับมาในรูป request ส่งออกในรูป response
+// ส่งคำขอไปยัง service เพื่อทำการ validation เพื่อตรวจข้อผิดพลาดก่อนจะดึง query ออกมาจาก repo
 import (
 	request "boilerplate-backend-go/dto/request"
 	"encoding/json"
@@ -51,14 +53,14 @@ func (api *Application) AllGetOrder(w http.ResponseWriter, r *http.Request) {
 // @Failure      500      {object} Response "Internal Server Error"
 // @Router       /orders/getbyID/{orderNo} [get]
 func (app *Application) GetOrderID(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
+	orderNo := chi.URLParam(r, "orderNo") //รับค่าจากพาทเพื่อดึงข้อมูล Order ตาม orderNo
 
 	// เรียกใช้ Service เพื่อประมวลผล ตรวจสอบ ก่อนที่จะเข้า method query ตาม api ที่ส่งไป
 	res, err := app.Service.Order.GetOrderID(orderNo)
 	if err != nil {
 		HandleError(w, err)
 		return
-	}
+	} // ดักข้อผิดพลาดที่อาจเกิดตอนเข้าถึงพาทนั้นๆ
 
 	// ส่งคืนข้อมูลคำสั่งซื้อ
 	handleResponse(w, true, response, res, http.StatusOK)
@@ -76,7 +78,7 @@ func (app *Application) GetOrderID(w http.ResponseWriter, r *http.Request) {
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/orders/create-order [post]
 func (api *Application) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	var req request.CreateOrderRequest
+	var req request.CreateOrderRequest //แปลง json ที่ส่งมาจาก client เป็นรูปแบบ request (รับคำร้อง)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -105,7 +107,7 @@ func (api *Application) CreateOrder(w http.ResponseWriter, r *http.Request) {
 // @Router 		/orders/update/{orderNo} [put]
 func (api *Application) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	var req request.UpdateOrderRequest
-	orderNo := chi.URLParam(r, "orderNo")
+	orderNo := chi.URLParam(r, "orderNo") // รับ orderNo จาก path และ json body
 	req.OrderNo = orderNo
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -132,7 +134,7 @@ func (api *Application) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/orders/delete/{orderNo} [delete]
 func (api *Application) DeleteOrder(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
+	orderNo := chi.URLParam(r, "orderNo") // รับ orderNo จากพาทและส่งคำร้องไปยังฟังชันใน service
 	if err := api.Service.Order.DeleteOrder(orderNo); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

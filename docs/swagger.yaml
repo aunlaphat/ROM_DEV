@@ -25,38 +25,38 @@ definitions:
         example: BEWELL
         type: string
       createDate:
-        example: 20/11/2567
+        example: "2024-11-22 09:45:33.260"
         type: string
       custAddress:
-        example: 7/20 ซอย15/1
+        example: 7/20
         type: string
       custDistrict:
-        example: บางกรวย
+        example: Bang-Kruay
         type: string
       custName:
         example: Fa
         type: string
       custPhoneNum:
-        example: "0921234567"
+        example: "0912345678"
         type: string
       custPostCode:
         example: "11130"
         type: string
       custProvince:
-        example: นนทบุรี
+        example: Nonthaburi
         type: string
       custSubDistrict:
-        example: บางกรวย
+        example: Bang-Kruay
         type: string
       orderLine:
         items:
           $ref: '#/definitions/entity.OrderLine'
         type: array
       orderNo:
-        example: AB0001
+        example: OD0001
         type: string
       updateDate:
-        example: 20/11/2568
+        example: "2024-11-30 09:45:33.260"
         type: string
       userCreated:
         example: intern
@@ -71,14 +71,16 @@ definitions:
         example: เก้าอี้
         type: string
       orderNo:
-        example: AB0001
+        example: OD0001
         type: string
       price:
-        example: 199.05
+        example: 5900
         type: number
       qty:
+        example: 5
         type: integer
       sku:
+        example: SKU12345
         type: string
     type: object
   entity.Province:
@@ -109,32 +111,32 @@ definitions:
         example: BEWELL
         type: string
       custAddress:
-        example: 7/20 ซอย15/1
+        example: 7/20
         type: string
       custDistrict:
-        example: บางกรวย
+        example: Bang-Kruay
         type: string
       custName:
         example: Fa
         type: string
       custPhoneNum:
-        example: "0921234567"
+        example: "0912345678"
         type: string
       custPostCode:
         example: "11130"
         type: string
       custProvince:
-        example: นนทบุรี
+        example: Nonthaburi
         type: string
       custSubDistrict:
-        example: บางกรวย
+        example: Bang-Kruay
         type: string
       orderLines:
         items:
           $ref: '#/definitions/request.OrderLineRequest'
         type: array
       orderNo:
-        example: AB0001
+        example: OD0001
         type: string
     type: object
   request.LoginLark:
@@ -161,20 +163,22 @@ definitions:
         example: เก้าอี้
         type: string
       price:
-        example: 199.05
+        example: 5900
         type: number
       qty:
+        example: 5
         type: integer
       sku:
+        example: SKU12345
         type: string
     type: object
   request.UpdateOrderRequest:
     properties:
       custAddress:
-        example: 7/20 ซอย15/1
+        example: 1/12
         type: string
       custDistrict:
-        example: บางกรวย
+        example: Bang-Plad
         type: string
       custName:
         example: Fa
@@ -183,13 +187,13 @@ definitions:
         example: "0921234567"
         type: string
       custPostCode:
-        example: "11130"
+        example: "10600"
         type: string
       custProvince:
-        example: นนทบุรี
+        example: Bangkok
         type: string
       custSubDistrict:
-        example: บางกรวย
+        example: Bang-Plad
         type: string
     type: object
 info:
