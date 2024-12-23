@@ -41,6 +41,78 @@ definitions:
       zipCode:
         type: string
     type: object
+  request.BeforeReturnOrderLineRequest:
+    description: Line item details for return order
+    properties:
+      price:
+        type: number
+      qty:
+        minimum: 1
+        type: integer
+      returnQty:
+        minimum: 1
+        type: integer
+      sku:
+        type: string
+      trackingNo:
+        type: string
+    required:
+    - price
+    - qty
+    - returnQty
+    - sku
+    - trackingNo
+    type: object
+  request.BeforeReturnOrderRequest:
+    properties:
+      channelID:
+        type: integer
+      createBy:
+        type: string
+      customerID:
+        type: string
+      logistic:
+        type: string
+      orderNo:
+        type: string
+      returnDate:
+        type: string
+      returnLines:
+        items:
+          $ref: '#/definitions/request.BeforeReturnOrderLineRequest'
+        minItems: 1
+        type: array
+      returnType:
+        type: string
+      saleOrder:
+        type: string
+      saleReturn:
+        type: string
+      trackingNo:
+        type: string
+      warehouseID:
+        type: integer
+    required:
+    - channelID
+    - createBy
+    - customerID
+    - logistic
+    - orderNo
+    - returnDate
+    - returnLines
+    - returnType
+    - saleOrder
+    - saleReturn
+    - trackingNo
+    - warehouseID
+    type: object
+  request.CancelOrderRequest:
+    properties:
+      cancelBy:
+        type: string
+    required:
+    - cancelBy
+    type: object
   request.LoginLark:
     properties:
       userID:
@@ -58,6 +130,19 @@ definitions:
       userName:
         example: eknarin
         type: string
+    type: object
+  request.UpdateStatusRequest:
+    properties:
+      orderNo:
+        type: string
+      statusId:
+        type: integer
+      updateBy:
+        type: string
+    required:
+    - orderNo
+    - statusId
+    - updateBy
     type: object
 info:
   contact: {}
@@ -296,4 +381,166 @@ paths:
       summary: Get Thai SubDistrict
       tags:
       - Constants
+  /return-order/{orderNo}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of a specific return order by its order number
+      operationId: get-order
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get return order by order number
+      tags:
+      - Return Order
+  /return-order/{orderNo}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancel a specific return order
+      operationId: cancel-order
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: Cancel details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.CancelOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Cancel return order
+      tags:
+      - Return Order
+  /return-order/{orderNo}/status:
+    put:
+      consumes:
+      - application/json
+      description: Update the status of a specific return order
+      operationId: update-order-status
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: Status update details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Update return order status
+      tags:
+      - Return Order
+  /return-order/create-return-order:
+    post:
+      consumes:
+      - application/json
+      description: Create a new return order with the provided details
+      operationId: create-return-order
+      parameters:
+      - description: Return order details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.BeforeReturnOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Create a new return order
+      tags:
+      - Return Order
+  /return-order/list-orders:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all return orders with pagination
+      operationId: list-orders
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: List all return orders
+      tags:
+      - Return Order
 swagger: "2.0"
