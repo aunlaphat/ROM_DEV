@@ -17,8 +17,8 @@ func (app *Application) ReturnOrderRoute(apiRouter *chi.Mux) {
 		r.Get("/list-orders", app.ListOrders)
 		r.Post("/create-return-order", app.CreateOrder)
 		r.Get("/{orderNo}", app.GetOrder)
-		r.Put("/{orderNo}/status", app.UpdateStatus)
-		r.Post("/{orderNo}/cancel", app.CancelOrder)
+		//r.Put("/{orderNo}/status", app.UpdateStatus)
+		//r.Post("/{orderNo}/cancel", app.CancelOrder)
 	})
 }
 
@@ -84,14 +84,14 @@ func (app *Application) GetOrder(w http.ResponseWriter, r *http.Request) {
 // @Tags Return Order
 // @Accept json
 // @Produce json
-// @Param body body request.BeforeReturnOrderRequest true "Return order details"
+// @Param body body request.BeforeReturnOrder true "Return order details"
 // @Success 201 {object} api.Response
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
 // @Router /return-order/create-return-order [post]
 func (app *Application) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	requestID := uuid.New().String()
-	var req request.BeforeReturnOrderRequest
+	var req request.BeforeReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		app.Logger.Error("Failed to decode request",
 			zap.String("requestID", requestID),
@@ -125,7 +125,7 @@ func (app *Application) CreateOrder(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
 // @Router /return-order/{orderNo}/status [put]
-func (app *Application) UpdateStatus(w http.ResponseWriter, r *http.Request) {
+/* func (app *Application) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	var req request.UpdateStatusRequest
 
@@ -141,7 +141,7 @@ func (app *Application) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handleResponse(w, true, "Order status updated successfully", nil, http.StatusOK)
-}
+} */
 
 // CancelOrder godoc
 // @Summary Cancel return order
@@ -156,7 +156,7 @@ func (app *Application) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
 // @Router /return-order/{orderNo}/cancel [post]
-func (app *Application) CancelOrder(w http.ResponseWriter, r *http.Request) {
+/* func (app *Application) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	var req request.CancelOrderRequest
 
@@ -172,4 +172,4 @@ func (app *Application) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handleResponse(w, true, "Order cancelled successfully", nil, http.StatusOK)
-}
+} */

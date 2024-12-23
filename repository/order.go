@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -23,114 +24,92 @@ const (
 	StatusCancelled  = 4
 )
 
-type ReturnOrderRepository interface {
-	// Create
-	CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrderRequest) error
-	CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLineRequest) error
-
-	// Read
-	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderData, error)
-	GetBeforeReturnOrderLines(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineData, error)
-	ListBeforeReturnOrders(ctx context.Context, limit, offset int) ([]response.BeforeReturnOrderData, error)
-
-	// Update
-	UpdateBeforeReturnOrderStatus(ctx context.Context, orderNo string, statusID int, updateBy string) error
-
-	// Delete (Soft Delete)
-	CancelBeforeReturnOrder(ctx context.Context, orderNo string, cancelBy string) error
-
-	// เพิ่ม method สำหรับดึงข้อมูล ReturnOrder
-	GetOrderByReturnID(ctx context.Context, returnID string) (response.ReturnOrder, error)
+// ฟังก์ชันสำหรับ logging debug
+func debugLog(format string, v ...interface{}) {
+	log.Printf("🐞 DEBUG: "+format, v...)
 }
 
-// Implementation สำหรับ Create
-func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrderRequest) error {
-	tx, err := repo.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
+// ReturnOrderRepository interface กำหนด method สำหรับการทำงานกับฐานข้อมูล
+type ReturnOrderRepository interface {
+	// Create
+	CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
+	CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error
 
-	defer func() {
-		if p := recover(); p != nil {
-			tx.Rollback()
-			panic(p)
-		}
-	}()
+	// Read
+	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderData, error)
+	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderData, error)
+	ListBeforeReturnOrderLines(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineData, error)
+	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderLineData, error)
 
+	// Update
+	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
+	UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error
+
+	// Transaction
+	//BeginTransaction(ctx context.Context) (*sqlx.Tx, error)
+}
+
+// Implementation สำหรับ CreateBeforeReturnOrder
+func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error {
+	// เพิ่ม context timeout
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	// SQL query สำหรับสร้าง BeforeReturnOrder
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
-            OrderNo, CustomerID, TrackingNo, 
-            StatusReturnID, CreateBy, CreateDate, ChannelID, SaleOrder, SaleReturn, ReturnType, Logistic, WarehouseID, StatusConfID
+            OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         ) VALUES (
-            :OrderNo, :CustomerID, :TrackingNo,
-            :StatusReturnID, :CreateBy, GETDATE(), :ChannelID, :SaleOrder, :SaleReturn, :ReturnType, :Logistic, :WarehouseID, :StatusConfID
+            :OrderNo, :SaleOrder, :SaleReturn, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE(), :UpdateBy, :UpdateDate, :CancelID
         )
     `
+	// พารามิเตอร์สำหรับ SQL query
 	paramsOrder := map[string]interface{}{
 		"OrderNo":        order.OrderNo,
+		"SaleOrder":      order.SaleOrder,
+		"SaleReturn":     order.SaleReturn,
+		"ChannelID":      order.ChannelID,
+		"ReturnType":     order.ReturnType,
 		"CustomerID":     order.CustomerID,
 		"TrackingNo":     order.TrackingNo,
-		"StatusReturnID": StatusPending,
-		"CreateBy":       order.CreateBy,
-		"ChannelID":      order.ChannelID,
-		"SaleOrder":      sql.NullString{String: order.SaleOrder, Valid: order.SaleOrder != ""},
-		"SaleReturn":     sql.NullString{String: order.SaleReturn, Valid: order.SaleReturn != ""},
-		"ReturnType":     order.ReturnType,
 		"Logistic":       order.Logistic,
 		"WarehouseID":    order.WarehouseID,
-		"StatusConfID":   1,
+		"SoStatusID":     order.SoStatusID,
+		"MkpStatusID":    order.MkpStatusID,
+		"ReturnDate":     order.ReturnDate,
+		"StatusReturnID": order.StatusReturnID,
+		"StatusConfID":   order.StatusConfID,
+		"ConfirmBy":      order.ConfirmBy,
+		"CreateBy":       order.CreateBy,
+		"UpdateBy":       order.UpdateBy,
+		"UpdateDate":     order.UpdateDate,
+		"CancelID":       order.CancelID,
 	}
 
-	_, err = tx.NamedExecContext(ctx, queryOrder, paramsOrder)
+	// Execute SQL query สำหรับสร้าง BeforeReturnOrder
+	_, err := repo.db.NamedExecContext(ctx, queryOrder, paramsOrder)
 	if err != nil {
-		tx.Rollback()
 		return fmt.Errorf("failed to create BeforeReturnOrder: %w", err)
-	}
-
-	queryLine := `
-        INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, QTY, ReturnQTY, 
-            Price, CreateBy, TrackingNo
-        ) VALUES (
-            :OrderNo, :SKU, :QTY, :ReturnQTY, 
-            :Price, :CreateBy, :TrackingNo
-        )
-    `
-
-	for _, line := range order.ReturnLines {
-		paramsLine := map[string]interface{}{
-			"OrderNo":    order.OrderNo,
-			"SKU":        line.SKU,
-			"QTY":        line.QTY,
-			"ReturnQTY":  line.ReturnQTY,
-			"Price":      line.Price,
-			"CreateBy":   order.CreateBy,
-			"TrackingNo": line.TrackingNo,
-		}
-		_, err = tx.NamedExecContext(ctx, queryLine, paramsLine)
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to create BeforeReturnOrderLine: %w", err)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
 }
 
-func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLineRequest) error {
+// Implementation สำหรับ CreateBeforeReturnOrderLine
+func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error {
+	// เพิ่ม context timeout
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	// SQL query สำหรับสร้าง BeforeReturnOrderLine
 	query := `
         INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, QTY, ReturnQTY,
-            Price, CreateBy, TrackingNo
+            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
         ) VALUES (
-            :OrderNo, :SKU, :QTY, :ReturnQTY,
-            :Price, :CreateBy, :TrackingNo
+            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
         )
     `
+	// Loop ผ่านแต่ละ line และ execute SQL query สำหรับสร้าง BeforeReturnOrderLine
 	for _, line := range lines {
 		params := map[string]interface{}{
 			"OrderNo":    orderNo,
@@ -149,37 +128,99 @@ func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderN
 	return nil
 }
 
-func (repo repositoryDB) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderData, error) {
+// Implementation สำหรับ GetBeforeReturnOrderLineByOrderNo
+func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderLineData, error) {
+	// เพิ่ม context timeout
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	// SQL query สำหรับดึงข้อมูล BeforeReturnOrderLine
 	query := `
-        SELECT OrderNo, CustomerID, TrackingNo, StatusReturnID, CreateBy, CreateDate, ChannelID, SaleOrder, SaleReturn, ReturnType, Logistic, WarehouseID, StatusConfID
-        FROM BeforeReturnOrder WITH (NOLOCK)
+        SELECT 
+            OrderNo,
+            SKU,
+            QTY,
+            ReturnQTY,
+            Price,
+            TrackingNo,
+            CreateDate
+        FROM BeforeReturnOrderLine WITH (NOLOCK)
         WHERE OrderNo = :OrderNo
     `
-	order := new(response.BeforeReturnOrderData)
+
+	var line response.BeforeReturnOrderLineData
 	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare statement: %w", err)
 	}
 	defer nstmt.Close()
 
-	err = nstmt.GetContext(ctx, order, map[string]interface{}{"OrderNo": orderNo})
+	// Execute SQL query สำหรับดึงข้อมูล BeforeReturnOrderLine
+	err = nstmt.GetContext(ctx, &line, map[string]interface{}{"OrderNo": orderNo})
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get order: %w", err)
+		return nil, fmt.Errorf("failed to get order line: %w", err)
 	}
 
-	lines, err := repo.GetBeforeReturnOrderLines(ctx, orderNo)
+	return &line, nil
+}
+
+// Implementation สำหรับ GetBeforeReturnOrderByOrderNo
+func (repo repositoryDB) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderData, error) {
+	debugLog("🚀 Starting GetBeforeReturnOrderByOrderNo for OrderNo: %s", orderNo)
+	// เพิ่ม context timeout
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	// SQL query สำหรับดึงข้อมูล BeforeReturnOrder
+	query := `
+        SELECT OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
+        FROM BeforeReturnOrder WITH (NOLOCK)
+        WHERE OrderNo = :OrderNo
+    `
+	order := new(response.BeforeReturnOrderData)
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		debugLog("❌ Failed to prepare statement: %v", err)
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
+
+	debugLog("📦 Executing query to fetch BeforeReturnOrder for OrderNo: %s", orderNo)
+
+	// Execute SQL query สำหรับดึงข้อมูล BeforeReturnOrder
+	err = nstmt.GetContext(ctx, order, map[string]interface{}{"OrderNo": orderNo})
+	if err == sql.ErrNoRows {
+		debugLog("❗ No order found for OrderNo: %s", orderNo)
+		return nil, nil
+	}
+	if err != nil {
+		debugLog("❌ Failed to fetch BeforeReturnOrder: %v", err)
+		return nil, fmt.Errorf("failed to fetch BeforeReturnOrder: %w", err)
+	}
+	debugLog("✅ Successfully fetched BeforeReturnOrder for OrderNo: %s", orderNo)
+
+	// ดึงข้อมูล BeforeReturnOrderLine ที่เกี่ยวข้อง
+	lines, err := repo.ListBeforeReturnOrderLines(ctx, orderNo)
 	if err != nil {
 		return nil, err
 	}
 	order.ReturnLines = lines
 
+	debugLog("✅ Successfully fetched all lines for OrderNo: %s", orderNo)
 	return order, nil
 }
 
-func (repo repositoryDB) GetBeforeReturnOrderLines(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineData, error) {
+func (repo repositoryDB) ListBeforeReturnOrderLines(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineData, error) {
+	debugLog("🚀 Starting ListBeforeReturnOrderLines for OrderNo: %s", orderNo)
+
+	// เพิ่ม context timeout
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	// SQL query สำหรับดึงข้อมูล BeforeReturnOrderLine
 	query := `
         SELECT 
             OrderNo,
@@ -197,25 +238,33 @@ func (repo repositoryDB) GetBeforeReturnOrderLines(ctx context.Context, orderNo 
 	var lines []response.BeforeReturnOrderLineData
 	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
+		debugLog("❌ Failed to prepare statement: %v", err)
 		return nil, fmt.Errorf("failed to prepare statement: %w", err)
 	}
 	defer nstmt.Close()
 
+	debugLog("📦 Executing query to fetch BeforeReturnOrderLines for OrderNo: %s", orderNo)
+	// Execute SQL query สำหรับดึงข้อมูล BeforeReturnOrderLine
 	err = nstmt.SelectContext(ctx, &lines, map[string]interface{}{"OrderNo": orderNo})
 	if err != nil {
+		debugLog("❌ Failed to fetch BeforeReturnOrderLines: %v", err)
 		return nil, fmt.Errorf("failed to get order lines: %w", err)
 	}
+	debugLog("✅ Successfully fetched %d lines for OrderNo: %s", len(lines), orderNo)
 
 	return lines, nil
 }
 
-func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context, limit, offset int) ([]response.BeforeReturnOrderData, error) {
+func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderData, error) {
+	// เพิ่ม context timeout
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	// SQL query สำหรับดึงข้อมูล BeforeReturnOrder
 	query := `
-        SELECT OrderNo, CustomerID, TrackingNo, StatusReturnID, CreateBy, CreateDate, ChannelID, SaleOrder, SaleReturn, ReturnType, Logistic, WarehouseID, StatusConfID
+        SELECT OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         FROM BeforeReturnOrder WITH (NOLOCK)
         ORDER BY CreateDate DESC
-        OFFSET :Offset ROWS
-        FETCH NEXT :Limit ROWS ONLY
     `
 	var orders []response.BeforeReturnOrderData
 	nstmt, err := repo.db.PrepareNamed(query)
@@ -224,101 +273,123 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context, limit, offs
 	}
 	defer nstmt.Close()
 
-	err = nstmt.SelectContext(ctx, &orders, map[string]interface{}{
-		"Offset": offset,
-		"Limit":  limit,
-	})
+	// Execute SQL query สำหรับดึงข้อมูล BeforeReturnOrder
+	err = nstmt.SelectContext(ctx, &orders, map[string]interface{}{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list orders: %w", err)
 	}
 	return orders, nil
 }
 
-func (repo repositoryDB) UpdateBeforeReturnOrderStatus(ctx context.Context, orderNo string, statusID int, updateBy string) error {
+// Implementation สำหรับ UpdateBeforeReturnOrder
+func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error {
+	// เพิ่ม context timeout
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	// SQL query สำหรับอัปเดต BeforeReturnOrder
 	query := `
         UPDATE BeforeReturnOrder 
-        SET StatusReturnID = :StatusReturnID,
+        SET SaleOrder = :SaleOrder,
+            SaleReturn = :SaleReturn,
+            ChannelID = :ChannelID,
+            ReturnType = :ReturnType,
+            CustomerID = :CustomerID,
+            TrackingNo = :TrackingNo,
+            Logistic = :Logistic,
+            WarehouseID = :WarehouseID,
+            SoStatusID = :SoStatusID,
+            MkpStatusID = :MkpStatusID,
+            ReturnDate = :ReturnDate,
+            StatusReturnID = :StatusReturnID,
+            StatusConfID = :StatusConfID,
+            ConfirmBy = :ConfirmBy,
             UpdateBy = :UpdateBy,
-            UpdateDate = GETDATE()
+            UpdateDate = GETDATE(),
+            CancelID = :CancelID
         WHERE OrderNo = :OrderNo
     `
-	result, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{
-		"StatusReturnID": statusID,
-		"UpdateBy":       updateBy,
-		"OrderNo":        orderNo,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to update status: %w", err)
+	// พารามิเตอร์สำหรับ SQL query
+	params := map[string]interface{}{
+		"OrderNo":        order.OrderNo,
+		"SaleOrder":      order.SaleOrder,
+		"SaleReturn":     order.SaleReturn,
+		"ChannelID":      order.ChannelID,
+		"ReturnType":     order.ReturnType,
+		"CustomerID":     order.CustomerID,
+		"TrackingNo":     order.TrackingNo,
+		"Logistic":       order.Logistic,
+		"WarehouseID":    order.WarehouseID,
+		"SoStatusID":     order.SoStatusID,
+		"MkpStatusID":    order.MkpStatusID,
+		"ReturnDate":     order.ReturnDate,
+		"StatusReturnID": order.StatusReturnID,
+		"StatusConfID":   order.StatusConfID,
+		"ConfirmBy":      order.ConfirmBy,
+		"UpdateBy":       order.UpdateBy,
+		"CancelID":       order.CancelID,
 	}
 
-	rows, err := result.RowsAffected()
-	if err != nil || rows == 0 {
-		return fmt.Errorf("order not found: %s", orderNo)
+	// Execute SQL query สำหรับอัปเดต BeforeReturnOrder
+	_, err := repo.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		return fmt.Errorf("failed to update BeforeReturnOrder: %w", err)
 	}
+
 	return nil
 }
 
-func (repo repositoryDB) GetOrderByReturnID(ctx context.Context, returnID string) (response.ReturnOrder, error) {
+// Implementation สำหรับ UpdateBeforeReturnOrderLine
+func (repo repositoryDB) UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error {
+	// เพิ่ม context timeout
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	// SQL query สำหรับอัปเดต BeforeReturnOrderLine
 	query := `
-        SELECT 
-            ReturnID, OrderNo, SaleOrder, SaleReturn, TrackingNo,
-            PlatfID, ChannelID, OptStatusID, AxStatusID, PlatfStatusID,
-            Remark, CreateBy, CreateDate, UpdateBy, UpdateDate,
-            CancelID, StatusCheckID, CheckBy, Description
-        FROM ReturnOrder WITH (NOLOCK)
-        WHERE ReturnID = :ReturnID
-    `
-	var order response.ReturnOrder
-	nstmt, err := repo.db.PrepareNamed(query)
-	if err != nil {
-		return response.ReturnOrder{}, fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer nstmt.Close()
-
-	err = nstmt.GetContext(ctx, &order, map[string]interface{}{"ReturnID": returnID})
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return response.ReturnOrder{}, fmt.Errorf("order not found: %s", returnID)
-		}
-		return response.ReturnOrder{}, fmt.Errorf("failed to get order: %w", err)
-	}
-
-	queryLines := `
-        SELECT 
-            RecID, ReturnID, OrderNo, TrackingNo, SKU,
-            ReturnQTY, CheckQTY, Price, CreateBy, CreateDate,
-            AlterSKU, UpdateBy, UpdateDate
-        FROM ReturnOrderLine WITH (NOLOCK)
-        WHERE ReturnID = :ReturnID
-    `
-	err = repo.db.SelectContext(ctx, &order.ReturnOrderLines, queryLines, map[string]interface{}{"ReturnID": returnID})
-	if err != nil {
-		return response.ReturnOrder{}, fmt.Errorf("failed to get order lines: %w", err)
-	}
-
-	return order, nil
-}
-
-func (repo repositoryDB) CancelBeforeReturnOrder(ctx context.Context, orderNo string, cancelBy string) error {
-	query := `
-        UPDATE BeforeReturnOrder 
-        SET CancelID = 1,
-            UpdateBy = :CancelBy,
-            UpdateDate = GETDATE()
+        UPDATE BeforeReturnOrderLine 
+        SET SKU = :SKU,
+            QTY = :QTY,
+            ReturnQTY = :ReturnQTY,
+            Price = :Price,
+            UpdateBy = :UpdateBy,
+            UpdateDate = GETDATE(),
+            TrackingNo = :TrackingNo
         WHERE OrderNo = :OrderNo
-          AND CancelID IS NULL
+          AND SKU = :SKU
     `
-	result, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{
-		"CancelBy": cancelBy,
-		"OrderNo":  orderNo,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to cancel order: %w", err)
+	// พารามิเตอร์สำหรับ SQL query
+	params := map[string]interface{}{
+		"OrderNo":    orderNo,
+		"SKU":        line.SKU,
+		"QTY":        line.QTY,
+		"ReturnQTY":  line.ReturnQTY,
+		"Price":      line.Price,
+		"UpdateBy":   line.UpdateBy,
+		"TrackingNo": line.TrackingNo,
 	}
 
-	rows, err := result.RowsAffected()
-	if err != nil || rows == 0 {
-		return fmt.Errorf("order not found or already cancelled: %s", orderNo)
+	// Execute SQL query สำหรับอัปเดต BeforeReturnOrderLine
+	_, err := repo.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		return fmt.Errorf("failed to update BeforeReturnOrderLine: %w", err)
 	}
+
 	return nil
 }
+
+/* // Implementation สำหรับ BeginTransaction
+func (repo repositoryDB) BeginTransaction(ctx context.Context) (*sqlx.Tx, error) {
+	// เพิ่ม context timeout
+	ctx, cancel := context.WithTimeout(ctx, txTimeout)
+	defer cancel()
+
+	// เริ่มต้น transaction
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	return tx, nil
+}
+*/

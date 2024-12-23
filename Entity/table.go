@@ -14,30 +14,29 @@ type User struct {
 	FullNameEN   string `db:"FullNameEN" json:"fullNameEN"`
 }
 
-// BeforeReturnOrder คือตารางสำหรับเก็บข้อมูลการขอคืนสินค้าก่อนการตรวจสอบ
-// เป็นขั้นตอนแรกของกระบวนการคืนสินค้า
+// BeforeReturnOrder represents the structure of the BeforeReturnOrder table
 type BeforeReturnOrder struct {
-	RecID          int        `db:"RecID"`          // รหัสอ้างอิงอัตโนมัติ
-	OrderNo        string     `db:"OrderNo"`        // เลขที่ใบสั่งซื้อ
-	SaleOrder      string     `db:"SaleOrder"`      // เลขที่ใบกำกับภาษี/ใบส่งของ
-	SaleReturn     string     `db:"SaleReturn"`     // เลขที่ใบลดหนี้
-	ChannelID      int        `db:"ChannelID"`      // รหัสช่องทางการขาย
-	ReturnType     string     `db:"ReturnType"`     // ประเภทการคืน (เช่น คืนเงิน, เปลี่ยนสินค้า)
-	CustomerID     string     `db:"CustomerID"`     // รหัสลูกค้า
-	TrackingNo     string     `db:"TrackingNo"`     // เลขพัสดุ
-	Logistic       string     `db:"Logistic"`       // ขนส่ง
-	WarehouseID    int        `db:"WarehouseID"`    // รหัสคลังสินค้า
-	SoStatusID     *int       `db:"SoStatusID"`     // สถานะใบกำกับภาษี
-	MkpStatusID    *int       `db:"MkpStatusID"`    // สถานะในระบบ Marketplace
-	ReturnDate     *time.Time `db:"ReturnDate"`     // วันที่คืนสินค้า
-	StatusReturnID int        `db:"StatusReturnID"` // สถานะการคืน (FK -> StatusReturn)
-	StatusConfID   int        `db:"StatusConfID"`   // สถานะการยืนยัน (FK -> StatusConfirm)
-	ConfirmBy      *string    `db:"ConfirmBy"`      // ผู้ยืนยัน
-	CreateBy       string     `db:"CreateBy"`       // ผู้สร้างรายการ
-	CreateDate     time.Time  `db:"CreateDate"`     // วันที่สร้างรายการ
-	UpdateBy       *string    `db:"UpdateBy"`       // ผู้แก้ไขล่าสุด
-	UpdateDate     *time.Time `db:"UpdateDate"`     // วันที่แก้ไขล่าสุด
-	CancelID       *int       `db:"CancelID"`       // รหัสการยกเลิก (ถ้ามี)
+	RecID          int       `db:"RecID"`
+	OrderNo        string    `db:"OrderNo"`
+	SaleOrder      string    `db:"SaleOrder"`
+	SaleReturn     string    `db:"SaleReturn"`
+	ChannelID      int       `db:"ChannelID"`
+	ReturnType     string    `db:"ReturnType"`
+	CustomerID     string    `db:"CustomerID"`
+	TrackingNo     string    `db:"TrackingNo"`
+	Logistic       string    `db:"Logistic"`
+	WarehouseID    int       `db:"WarehouseID"`
+	SoStatusID     *int      `db:"SoStatusID"`
+	MkpStatusID    *int      `db:"MkpStatusID"`
+	ReturnDate     *time.Time `db:"ReturnDate"`
+	StatusReturnID int       `db:"StatusReturnID"`
+	StatusConfID   int       `db:"StatusConfID"`
+	ConfirmBy      *string   `db:"ConfirmBy"`
+	CreateBy       string    `db:"CreateBy"`
+	CreateDate     time.Time `db:"CreateDate"`
+	UpdateBy       *string   `db:"UpdateBy"`
+	UpdateDate     *time.Time `db:"UpdateDate"`
+	CancelID       *int      `db:"CancelID"`
 }
 
 // BeforeReturnOrderLine คือตารางสำหรับเก็บรายการสินค้าที่ต้องการคืน
