@@ -1,7 +1,7 @@
 package api
 // ตัวกลางของ http request ที่คอยรับส่งข้อมูลไปมา
 // รับมาในรูป request ส่งออกในรูป response
-// ส่งคำขอไปยัง service เพื่อทำการ validation เพื่อตรวจข้อผิดพลาดก่อนจะดึง query ออกมาจาก repo
+// ส่งคำขอไปยัง service เพื่อทำการ validation ตรวจข้อผิดพลาดก่อนจะดึง query ออกมาจาก repo
 import (
 	request "boilerplate-backend-go/dto/request"
 	"encoding/json"

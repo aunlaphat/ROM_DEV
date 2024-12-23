@@ -92,6 +92,47 @@ definitions:
       nameTH:
         type: string
     type: object
+  entity.ReturnOrder:
+    properties:
+      axStatusId:
+        type: integer
+      cancelId:
+        type: integer
+      channelId:
+        type: integer
+      checkBy:
+        type: string
+      createBy:
+        type: string
+      createDate:
+        type: string
+      description:
+        type: string
+      optStatusId:
+        type: integer
+      orderNo:
+        type: string
+      platfId:
+        type: integer
+      platfStatusId:
+        type: integer
+      remark:
+        type: string
+      returnId:
+        type: string
+      saleOrder:
+        type: string
+      saleReturn:
+        type: string
+      statusCheckId:
+        type: integer
+      trackingNo:
+        type: string
+      updateBy:
+        type: string
+      updateDate:
+        type: string
+    type: object
   entity.SubDistrict:
     properties:
       code:
@@ -139,6 +180,58 @@ definitions:
         example: OD0001
         type: string
     type: object
+  request.CreateReturnOrder:
+    properties:
+      ReturnOrderLine:
+        items:
+          $ref: '#/definitions/request.ReturnOrderLine'
+        type: array
+      axStatusId:
+        example: 1
+        type: integer
+      cancelId:
+        example: 1
+        type: integer
+      channelId:
+        example: 2
+        type: integer
+      checkBy:
+        example: dev03
+        type: string
+      description:
+        example: ""
+        type: string
+      optStatusId:
+        example: 1
+        type: integer
+      orderNo:
+        example: ORD0001
+        type: string
+      platfId:
+        example: 1
+        type: integer
+      platfStatusId:
+        example: 1
+        type: integer
+      remark:
+        example: ""
+        type: string
+      returnId:
+        example: RID0001
+        type: string
+      saleOrder:
+        example: SO0001
+        type: string
+      saleReturn:
+        example: SR0001
+        type: string
+      statusCheckId:
+        example: 1
+        type: integer
+      trackingNo:
+        example: 12345678TH
+        type: string
+    type: object
   request.LoginLark:
     properties:
       userID:
@@ -172,6 +265,21 @@ definitions:
         example: SKU12345
         type: string
     type: object
+  request.ReturnOrderLine:
+    properties:
+      checkQTY:
+        example: 5
+        type: integer
+      price:
+        example: 199.99
+        type: number
+      returnQTY:
+        example: 5
+        type: integer
+      sku:
+        example: SKU12345
+        type: string
+    type: object
   request.UpdateOrderRequest:
     properties:
       custAddress:
@@ -194,6 +302,54 @@ definitions:
         type: string
       custSubDistrict:
         example: Bang-Plad
+        type: string
+    type: object
+  request.UpdateReturnOrder:
+    properties:
+      axStatusId:
+        example: 1
+        type: integer
+      cancelId:
+        example: 1
+        type: integer
+      channelId:
+        example: 2
+        type: integer
+      checkBy:
+        example: dev03
+        type: string
+      description:
+        example: ""
+        type: string
+      optStatusId:
+        example: 1
+        type: integer
+      orderNo:
+        example: ORD0001
+        type: string
+      platfId:
+        example: 1
+        type: integer
+      platfStatusId:
+        example: 1
+        type: integer
+      remark:
+        example: ""
+        type: string
+      returnId:
+        example: RID0001
+        type: string
+      saleOrder:
+        example: SO0001
+        type: string
+      saleReturn:
+        example: SR0001
+        type: string
+      statusCheckId:
+        example: 1
+        type: integer
+      trackingNo:
+        example: 12345678TH
         type: string
     type: object
 info:
@@ -639,4 +795,201 @@ paths:
       summary: Update Order
       tags:
       - Orders
+  /reorder/allget:
+    get:
+      consumes:
+      - application/json
+      description: Get all Return Order
+      operationId: Allget-ReturnOrder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get All
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Order
+      tags:
+      - ReturnOrder
+  /reorder/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new order
+      operationId: Create-ReturnOrder
+      parameters:
+      - description: ReturnOrder Data
+        in: body
+        name: CreateReturnOrder
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: ReturnOrder Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/request.CreateReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Create Order
+      tags:
+      - ReturnOrder
+  /reorder/delete/{returnID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an order
+      operationId: delete-ReturnOrder
+      parameters:
+      - description: Return ID
+        in: path
+        name: returnID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ReturnOrder Deleted
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  type: string
+              type: object
+        "204":
+          description: No Content, Order Delete Successfully
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Order Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Delete Order
+      tags:
+      - ReturnOrder
+  /reorder/getbyID/{returnID}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of an order by its return id
+      operationId: GetByID-ReturnOrder
+      parameters:
+      - description: Return ID
+        in: path
+        name: returnID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get by ID
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Order by ID
+      tags:
+      - ReturnOrder
+  /reorder/update/{returnID}:
+    put:
+      consumes:
+      - application/json
+      description: Update an existing return order using returnID in the path
+      operationId: Update-ReturnOrder
+      parameters:
+      - description: Return ID
+        in: path
+        name: returnID
+        required: true
+        type: string
+      - description: Updated Order Data
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ReturnOrder Updated Successfully
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Order Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Update Order
+      tags:
+      - ReturnOrder
 swagger: "2.0"

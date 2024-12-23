@@ -12,11 +12,13 @@ type service struct {
 	logger    logs.Logger               //Logger of service
 	constant  repository.Constants
 	orderRepo repository.OrderRepository
+	returnOrderRepo repository.ReturnOrderRepository
 }
 type AllOfService struct {
 	User     UserService
 	Constant Constants
 	Order	 OrderService
+	ReturnOrder	 ReturnOrderService
 }
 
 func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
@@ -26,11 +28,13 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		logger:   logger,
 		constant: repo,
 		orderRepo: repo,
+		returnOrderRepo: repo,
 	}
 	return AllOfService{
 		User:     srv,
 		Constant: srv,
 		Order:    srv,
+		ReturnOrder: srv,
 	}
 }
 
