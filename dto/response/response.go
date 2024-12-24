@@ -79,27 +79,12 @@ type ReturnOrderLine struct {
 	UpdateDate      *time.Time 	  `json:"updateDate" db:"UpdateDate"`      
 }
 
-type Platforms struct {
-	PlatfID 		int    	  	  `json:"platfId" db:"PlatfID"` 
-	PlatfName		string    	  `json:"platfName" db:"PlatfName"` 
-}
-
-type Channel struct {
-	ChannelID 		int    	  	  `json:"channelId" db:"ChannelID"` 
-	ChannelName		string    	  `json:"channelName" db:"ChannelName"` 
-}
-
 type CancelReturnOrder struct {
 	CancelID 		*int    	  `json:"platfId" db:"PlatfID"` 
 	ReturnID		*string    	  `json:"returnId" db:"ReturnID"` 
 	Remark			*string    	  `json:"remark" db:"Remark"` 
 	CancelDate		*time.Time    `json:"cancelDate" db:"CancelDate"` 
 	CancelBy		*string    	  `json:"cancelBy" db:"CancelBy"` 
-}
-
-type StatusCheck struct {
-	StatusCheckID	    string    `json:"statusCheckId" db:"StatusCheckID"` 
-	StatusCheckName		string    `json:"statusCheckName" db:"StatusCheckName"` 
 }
 
 type ReturnOrderHead struct {

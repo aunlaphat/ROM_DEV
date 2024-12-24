@@ -976,7 +976,7 @@ const docTemplate = `{
             }
         },
         "/reorder/update/{returnID}": {
-            "put": {
+            "patch": {
                 "description": "Update an existing return order using returnID in the path",
                 "consumes": [
                     "application/json"
@@ -1496,10 +1496,6 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "orderNo": {
-                    "type": "string",
-                    "example": "ORD0001"
-                },
                 "platfId": {
                     "type": "integer",
                     "example": 1
@@ -1511,14 +1507,6 @@ const docTemplate = `{
                 "remark": {
                     "type": "string",
                     "example": ""
-                },
-                "returnId": {
-                    "type": "string",
-                    "example": "RID0001"
-                },
-                "saleOrder": {
-                    "type": "string",
-                    "example": "SO0001"
                 },
                 "saleReturn": {
                     "type": "string",

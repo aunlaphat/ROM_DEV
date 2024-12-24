@@ -13,13 +13,11 @@ import (
 
 func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
 	apiRouter.Route("/reorder", func(r chi.Router) {
-		r.Get("/allget", app.AllGetReturnOrder)               // GET /reorder/allget
-		r.Get("/getbyID/{returnID}", app.GetReturnOrderID)    // GET /reorder/getbyID/{returnID}
-		r.Post("/create", app.CreateReturnOrder)           	  // POST /reorder/create
-		r.Put("/update/{returnID}", app.UpdateReturnOrder)    // PUT /reorder/update/{returnID}
-		r.Delete("/delete/{returnID}", app.DeleteReturnOrder) // DELETE /reorder/delete/{returnID}
-
-		
+		r.Get("/allget", app.AllGetReturnOrder)                 // GET /reorder/allget
+		r.Get("/getbyID/{returnID}", app.GetReturnOrderID)      // GET /reorder/getbyID/{returnID}
+		r.Post("/create", app.CreateReturnOrder)           	    // POST /reorder/create
+		r.Patch("/update/{returnID}", app.UpdateReturnOrder)    // PUT /reorder/update/{returnID}
+		r.Delete("/delete/{returnID}", app.DeleteReturnOrder)   // DELETE /reorder/delete/{returnID}
 	})
 }
 
@@ -124,7 +122,7 @@ func (api *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 404 {object} Response "Order Not Found"
 // @Failure 500 {object} Response "Internal Server Error"
-// @Router /reorder/update/{returnID} [put]
+// @Router /reorder/update/{returnID} [patch]
 func (api *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request) {
     // ดึง ReturnID จากพาธ
     returnID := chi.URLParam(r, "returnID")

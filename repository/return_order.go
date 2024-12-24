@@ -3,6 +3,7 @@ package repository
 import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
+	// "boilerplate-backend-go/repository/transaction"
 	"context"
 	"database/sql"
 	"fmt"
@@ -110,87 +111,86 @@ func (repo repositoryDB) CreateReturnOrder(req request.CreateReturnOrder) error 
 	defer cancel()
 
 	// Start a transaction
-	tx, err := repo.db.BeginTx(ctx, nil)
+	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
+	defer handleTransaction(tx)() //หากเกิดข้อผิดพลาดอะไรสักจุดที่วางไว้ให้ rollback to start point ทันที
 
-	// Get hostname for the `CreateBy` field
 	hostname, err := os.Hostname()
 	if err != nil {
-		//หากเกิดข้อผิดพลาดอะไรสักจุดที่วางไว้ให้ rollback to start point ทันที
-		tx.Rollback()
 		return fmt.Errorf("failed to get hostname: %w", err)
 	}
 
-	// Insert into ReturnOrder
+	// Prepare data for `ReturnOrder`
+	returnOrderData := map[string]interface{}{
+		"ReturnID":      req.ReturnID,
+		"OrderNo":       req.OrderNo,
+		"SaleOrder":     req.SaleOrder,
+		"SaleReturn":    req.SaleReturn,
+		"TrackingNo":    req.TrackingNo,
+		"PlatfID":       req.PlatfID,
+		"ChannelID":     req.ChannelID,
+		"OptStatusID":   req.OptStatusID,
+		"AxStatusID":    req.AxStatusID,
+		"PlatfStatusID": req.PlatfStatusID,
+		"Remark":        req.Remark,
+		"CancelID":      req.CancelID,
+		"StatusCheckID": req.StatusCheckID,
+		"CheckBy":       req.CheckBy,
+		"Description":   req.Description,
+		"CreateBy":      hostname,
+		"CreateDate":    time.Now(),
+	}
+
+	// Insert `ReturnOrder` with NamedExec
 	insertReturnOrderQuery := `
-        INSERT INTO ReturnOrder (
-            ReturnID, OrderNo, SaleOrder, SaleReturn, TrackingNo, PlatfID, ChannelID, 
-            OptStatusID, AxStatusID, PlatfStatusID, Remark, CancelID, StatusCheckID, 
-            CheckBy, Description, CreateBy, CreateDate
-        ) VALUES (
-            @ReturnID, @OrderNo, @SaleOrder, @SaleReturn, @TrackingNo, @PlatfID, @ChannelID, 
-            @OptStatusID, @AxStatusID, @PlatfStatusID, @Remark, @CancelID, @StatusCheckID, 
-            @CheckBy, @Description, @CreateBy, @CreateDate
-        )
-    `
-	_, err = tx.ExecContext(ctx, insertReturnOrderQuery,
-		sql.Named("ReturnID", req.ReturnID),
-		sql.Named("OrderNo", req.OrderNo),
-		sql.Named("SaleOrder", req.SaleOrder),
-		sql.Named("SaleReturn", req.SaleReturn),
-		sql.Named("TrackingNo", req.TrackingNo),
-		sql.Named("PlatfID", req.PlatfID),
-		sql.Named("ChannelID", req.ChannelID),
-		sql.Named("OptStatusID", req.OptStatusID),
-		sql.Named("AxStatusID", req.AxStatusID),
-		sql.Named("PlatfStatusID", req.PlatfStatusID),
-		sql.Named("Remark", req.Remark),
-		sql.Named("CancelID", req.CancelID),
-		sql.Named("StatusCheckID", req.StatusCheckID),
-		sql.Named("CheckBy", req.CheckBy),
-		sql.Named("Description", req.Description),
-		sql.Named("CreateBy", hostname),
-		sql.Named("CreateDate", time.Now()),
-	)
+		INSERT INTO ReturnOrder (
+			ReturnID, OrderNo, SaleOrder, SaleReturn, TrackingNo, PlatfID, ChannelID, 
+			OptStatusID, AxStatusID, PlatfStatusID, Remark, CancelID, StatusCheckID, 
+			CheckBy, Description, CreateBy, CreateDate
+		) VALUES (
+			:ReturnID, :OrderNo, :SaleOrder, :SaleReturn, :TrackingNo, :PlatfID, :ChannelID, 
+			:OptStatusID, :AxStatusID, :PlatfStatusID, :Remark, :CancelID, :StatusCheckID, 
+			:CheckBy, :Description, :CreateBy, :CreateDate
+		)
+	`
+	_, err = tx.NamedExecContext(ctx, insertReturnOrderQuery, returnOrderData)
 	if err != nil {
-		tx.Rollback()
 		return fmt.Errorf("failed to insert into ReturnOrder: %w", err)
 	}
 
-	// Insert into ReturnOrderLine
+	// Insert `ReturnOrderLine` for each line item
 	insertReturnOrderLineQuery := `
-        INSERT INTO ReturnOrderLine (
-            ReturnID, OrderNo, TrackingNo, SKU, ReturnQTY, CheckQTY, Price, 
-            AlterSKU, CreateBy, CreateDate, UpdateBy, UpdateDate
-        ) VALUES (
-            @ReturnID, @OrderNo, @TrackingNo, @SKU, @ReturnQTY, @CheckQTY, @Price, 
-            @AlterSKU, @CreateBy, @CreateDate, NULL, NULL
-        )
-    `
-	for _, line := range req.ReturnOrderLine {
-		log.Printf("Inserting ReturnOrderLine: %+v", line)
-		_, err := tx.ExecContext(ctx, insertReturnOrderLineQuery,
-			sql.Named("ReturnID", req.ReturnID),
-			sql.Named("OrderNo", req.OrderNo),
-			sql.Named("TrackingNo", req.TrackingNo),
-			sql.Named("SKU", line.SKU),
-			sql.Named("ReturnQTY", line.ReturnQTY),
-			sql.Named("CheckQTY", line.CheckQTY),
-			sql.Named("Price", line.Price),
-			sql.Named("AlterSKU", line.AlterSKU),
-			sql.Named("CreateBy", hostname),
-			sql.Named("CreateDate", time.Now()),
+		INSERT INTO ReturnOrderLine (
+			ReturnID, OrderNo, TrackingNo, SKU, ReturnQTY, CheckQTY, Price, 
+			AlterSKU, CreateBy, CreateDate, UpdateBy, UpdateDate
+		) VALUES (
+			:ReturnID, :OrderNo, :TrackingNo, :SKU, :ReturnQTY, :CheckQTY, :Price, 
+			:AlterSKU, :CreateBy, :CreateDate, NULL, NULL
 		)
+	`
+	for _, line := range req.ReturnOrderLine {
+		lineData := map[string]interface{}{
+			"ReturnID":    req.ReturnID,
+			"OrderNo":     req.OrderNo,
+			"TrackingNo":  req.TrackingNo,
+			"SKU":         line.SKU,
+			"ReturnQTY":   line.ReturnQTY,
+			"CheckQTY":    line.CheckQTY,
+			"Price":       line.Price,
+			"AlterSKU":    line.AlterSKU,
+			"CreateBy":    hostname,
+			"CreateDate":  time.Now(),
+		}
+
+		_, err := tx.NamedExecContext(ctx, insertReturnOrderLineQuery, lineData)
 		if err != nil {
-			log.Printf("Error inserting ReturnOrderLine: %v", err)
-			tx.Rollback()
 			return fmt.Errorf("failed to insert into ReturnOrderLine: %w", err)
 		}
 	}
 
-	// Commit the transaction ยืนยันว่ามีการบันทึกข้อมูล
+	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
@@ -208,11 +208,10 @@ func (repo repositoryDB) UpdateReturnOrder(req request.UpdateReturnOrder) error 
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
+	defer handleTransaction(tx)()
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		//หากเกิดข้อผิดพลาดอะไรสักจุดที่วางไว้ให้ rollback to start point ทันที
-		tx.Rollback()
 		return fmt.Errorf("failed to get hostname: %w", err)
 	}
 
@@ -225,40 +224,55 @@ func (repo repositoryDB) UpdateReturnOrder(req request.UpdateReturnOrder) error 
     `
 	err = tx.GetContext(ctx, &currentData, selectQuery, sql.Named("ReturnID", req.ReturnID))
 	if err != nil {
-		tx.Rollback()
 		return fmt.Errorf("failed to fetch current data: %w", err)
+	}
+
+	// เตรียมข้อมูลสำหรับการอัปเดต
+	updateData := map[string]interface{}{
+		"SaleReturn":  req.SaleReturn,
+		"TrackingNo":  req.TrackingNo,
+		"PlatfID":     req.PlatfID,
+		"ChannelID":   req.ChannelID,
+		"Remark":      req.Remark,
+		"UpdateBy":    hostname,
+		"UpdateDate":  time.Now(),
+		"ReturnID":    req.ReturnID,
 	}
 
 	// ใช้ข้อมูลเก่าในกรณีที่ไม่มีการอัปเดต
 	updateQuery := `
-        UPDATE ReturnOrder
-        SET 
-            SaleReturn = COALESCE(@SaleReturn, SaleReturn),
-            TrackingNo = COALESCE(@TrackingNo, TrackingNo),
-            PlatfID = COALESCE(@PlatfID, PlatfID),
-            ChannelID = COALESCE(@ChannelID, ChannelID),
-            Remark = COALESCE(@Remark, Remark),
-            UpdateBy = @UpdateBy,
-            UpdateDate = @UpdateDate
-        WHERE ReturnID = @ReturnID
-    `
-	_, err = tx.ExecContext(ctx, updateQuery,
-		sql.Named("SaleReturn", req.SaleReturn),
-		sql.Named("TrackingNo", req.TrackingNo),
-		sql.Named("PlatfID", req.PlatfID),
-		sql.Named("ChannelID", req.ChannelID),
-		sql.Named("Remark", req.Remark),
-		sql.Named("UpdateBy", hostname),
-		sql.Named("UpdateDate", time.Now()),
-		sql.Named("ReturnID", req.ReturnID),
-	)
+		UPDATE ReturnOrder
+		SET 
+			SaleReturn = COALESCE(:SaleReturn, SaleReturn),
+			TrackingNo = COALESCE(:TrackingNo, TrackingNo),
+			PlatfID = COALESCE(:PlatfID, PlatfID),
+			ChannelID = COALESCE(:ChannelID, ChannelID),
+			Remark = COALESCE(:Remark, Remark),
+			UpdateBy = CASE
+                  WHEN :SaleReturn IS NOT NULL OR :TrackingNo IS NOT NULL OR :PlatfID IS NOT NULL 
+                       OR :ChannelID IS NOT NULL OR :Remark IS NOT NULL 
+                  THEN :UpdateBy 
+                  ELSE UpdateBy
+               END,
+			UpdateDate = CASE
+                    WHEN :SaleReturn IS NOT NULL OR :TrackingNo IS NOT NULL OR :PlatfID IS NOT NULL 
+                         OR :ChannelID IS NOT NULL OR :Remark IS NOT NULL 
+                    THEN :UpdateDate 
+                    ELSE UpdateDate
+                 END
+		WHERE ReturnID = :ReturnID
+	`
+	//ใช้เงื่อนไข CASE ใน SQL เพื่อกำหนดว่า UpdateDate จะอัปเดตเมื่อมีการเปลี่ยนแปลงข้อมูลเท่านั้น
+	_, err = tx.NamedExecContext(ctx, updateQuery, updateData)
 	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to update return order: %w", err)
+		log.Printf("Error updating ReturnOrder: %v", err)
+		return fmt.Errorf("failed to update ReturnOrder: %w", err)
 	}
 
-	// Commit Transaction
-	if err := tx.Commit(); err != nil {
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction: %v", err)
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
@@ -270,37 +284,43 @@ func (repo repositoryDB) DeleteReturnOrder(returnID string) error {
 	defer cancel()
 
 	// Start a transaction
-	tx, err := repo.db.BeginTx(ctx, nil)
+	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
+	defer handleTransaction(tx)()
 
-	// Delete from ReturnOrderLine
-	deleteOrderLineQuery := `
-		DELETE FROM ReturnOrderLine
-		WHERE ReturnID = @ReturnID
+	// ลบข้อมูลจากตาราง ReturnOrderLine ก่อน
+	deleteReturnOrderLineQuery := `
+	DELETE FROM ReturnOrderLine
+	WHERE ReturnID = :ReturnID
 	`
-	_, err = tx.ExecContext(ctx, deleteOrderLineQuery, sql.Named("ReturnID", returnID))
+	_, err = tx.NamedExecContext(ctx, deleteReturnOrderLineQuery, map[string]interface{}{
+	"ReturnID": returnID,
+	})
 	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to delete from ReturnOrderLine: %w", err)
+	log.Printf("Error deleting ReturnOrderLine: %v", err)
+	return fmt.Errorf("failed to delete from ReturnOrderLine: %w", err)
 	}
 
-	// Delete from ReturnOrder
-	deleteOrderQuery := `
-		DELETE FROM ReturnOrder
-		WHERE ReturnID = @ReturnID
+	// ลบข้อมูลจากตาราง ReturnOrder
+	deleteReturnOrderQuery := `
+	DELETE FROM ReturnOrder
+	WHERE ReturnID = :ReturnID
 	`
-	_, err = tx.ExecContext(ctx, deleteOrderQuery, sql.Named("ReturnID", returnID))
+	_, err = tx.NamedExecContext(ctx, deleteReturnOrderQuery, map[string]interface{}{
+	"ReturnID": returnID,
+	})
 	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to delete from ReturnOrder: %w", err)
+	log.Printf("Error deleting ReturnOrder: %v", err)
+	return fmt.Errorf("failed to delete from ReturnOrder: %w", err)
 	}
 
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+	log.Printf("Error committing transaction: %v", err)
+	return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil

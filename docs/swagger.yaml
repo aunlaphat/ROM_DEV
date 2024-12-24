@@ -324,9 +324,6 @@ definitions:
       optStatusId:
         example: 1
         type: integer
-      orderNo:
-        example: ORD0001
-        type: string
       platfId:
         example: 1
         type: integer
@@ -335,12 +332,6 @@ definitions:
         type: integer
       remark:
         example: ""
-        type: string
-      returnId:
-        example: RID0001
-        type: string
-      saleOrder:
-        example: SO0001
         type: string
       saleReturn:
         example: SR0001
@@ -953,7 +944,7 @@ paths:
       tags:
       - ReturnOrder
   /reorder/update/{returnID}:
-    put:
+    patch:
       consumes:
       - application/json
       description: Update an existing return order using returnID in the path

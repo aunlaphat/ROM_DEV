@@ -124,11 +124,11 @@ type CreateReturnOrder struct {
 }
 
 type UpdateReturnOrder struct {
-	ReturnID        string          `json:"returnId" db:"ReturnID" example:"RID0001"`                    
-	OrderNo         string          `json:"orderNo" db:"OrderNo" example:"ORD0001"`                         
-	SaleOrder       string          `json:"saleOrder" db:"SaleOrder" example:"SO0001"`           
-	SaleReturn      *string          `json:"saleReturn" db:"SaleReturn" example:"SR0001"`          
-	TrackingNo      *string          `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`         
+	ReturnID        string          `json:"-" db:"ReturnID"`                    
+	OrderNo         string          `json:"-" db:"OrderNo"`                         
+	SaleOrder       string          `json:"-" db:"SaleOrder"`           
+	SaleReturn      *string         `json:"saleReturn" db:"SaleReturn" example:"SR0001"`          
+	TrackingNo      *string         `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`         
 	PlatfID         *int            `json:"platfId" db:"PlatfID" example:"1"`              
 	ChannelID       *int            `json:"channelId" db:"ChannelID" example:"2"`          
 	OptStatusID     *int            `json:"optStatusId" db:"OptStatusID" example:"1"`       
