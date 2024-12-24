@@ -389,7 +389,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/return-order/create-return-order": {
+        "/return-order/create": {
             "post": {
                 "description": "Create a new return order with the provided details",
                 "consumes": [
@@ -401,8 +401,8 @@ const docTemplate = `{
                 "tags": [
                     "Return Order"
                 ],
-                "summary": "Create a new return order",
-                "operationId": "create-return-order",
+                "summary": "Create a new return order with lines",
+                "operationId": "create-return-order-with-lines",
                 "parameters": [
                     {
                         "description": "Return order details",
@@ -410,7 +410,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.BeforeReturnOrderRequest"
+                            "$ref": "#/definitions/request.BeforeReturnOrder"
                         }
                     }
                 ],
@@ -436,9 +436,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/return-order/list-orders": {
+        "/return-order/line/{orderNo}": {
             "get": {
-                "description": "Retrieve a list of all return orders with pagination",
+                "description": "Retrieve the details of a specific return order line by its order number and line number",
                 "consumes": [
                     "application/json"
                 ],
@@ -448,52 +448,8 @@ const docTemplate = `{
                 "tags": [
                     "Return Order"
                 ],
-                "summary": "List all return orders",
-                "operationId": "list-orders",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Number of items per page",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/return-order/{orderNo}": {
-            "get": {
-                "description": "Retrieve the details of a specific return order by its order number",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Return Order"
-                ],
-                "summary": "Get return order by order number",
-                "operationId": "get-order",
+                "summary": "Get return order line by order number and line number",
+                "operationId": "get-before-return-order-line-by-order-no",
                 "parameters": [
                     {
                         "type": "string",
@@ -525,9 +481,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/return-order/{orderNo}/cancel": {
-            "post": {
-                "description": "Cancel a specific return order",
+        "/return-order/list-lines/{orderNo}": {
+            "get": {
+                "description": "Retrieve a list of all return order lines by order number",
                 "consumes": [
                     "application/json"
                 ],
@@ -537,8 +493,8 @@ const docTemplate = `{
                 "tags": [
                     "Return Order"
                 ],
-                "summary": "Cancel return order",
-                "operationId": "cancel-order",
+                "summary": "List all return order lines by order number",
+                "operationId": "list-before-return-order-lines",
                 "parameters": [
                     {
                         "type": "string",
@@ -546,15 +502,6 @@ const docTemplate = `{
                         "name": "orderNo",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Cancel details",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.CancelOrderRequest"
-                        }
                     }
                 ],
                 "responses": {
@@ -564,8 +511,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/api.Response"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -579,9 +526,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/return-order/{orderNo}/status": {
-            "put": {
-                "description": "Update the status of a specific return order",
+        "/return-order/list-orders": {
+            "get": {
+                "description": "Retrieve a list of all return orders",
                 "consumes": [
                     "application/json"
                 ],
@@ -591,8 +538,38 @@ const docTemplate = `{
                 "tags": [
                     "Return Order"
                 ],
-                "summary": "Update return order status",
-                "operationId": "update-order-status",
+                "summary": "List all return orders",
+                "operationId": "list-return-orders",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/return-order/{orderNo}": {
+            "get": {
+                "description": "Retrieve the details of a specific return order by its order number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order"
+                ],
+                "summary": "Get return order by order number",
+                "operationId": "get-before-return-order-by-order-no",
                 "parameters": [
                     {
                         "type": "string",
@@ -600,15 +577,6 @@ const docTemplate = `{
                         "name": "orderNo",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Status update details",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.UpdateStatusRequest"
-                        }
                     }
                 ],
                 "responses": {
@@ -618,8 +586,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/api.Response"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -698,57 +666,22 @@ const docTemplate = `{
                 }
             }
         },
-        "request.BeforeReturnOrderLineRequest": {
-            "description": "Line item details for return order",
+        "request.BeforeReturnOrder": {
             "type": "object",
-            "required": [
-                "price",
-                "qty",
-                "returnQty",
-                "sku",
-                "trackingNo"
-            ],
             "properties": {
-                "price": {
-                    "type": "number"
+                "cancelID": {
+                    "type": "integer"
                 },
-                "qty": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "returnQty": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "sku": {
-                    "type": "string"
-                },
-                "trackingNo": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.BeforeReturnOrderRequest": {
-            "type": "object",
-            "required": [
-                "channelID",
-                "createBy",
-                "customerID",
-                "logistic",
-                "orderNo",
-                "returnDate",
-                "returnLines",
-                "returnType",
-                "saleOrder",
-                "saleReturn",
-                "trackingNo",
-                "warehouseID"
-            ],
-            "properties": {
                 "channelID": {
                     "type": "integer"
                 },
+                "confirmBy": {
+                    "type": "string"
+                },
                 "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
                     "type": "string"
                 },
                 "customerID": {
@@ -757,17 +690,19 @@ const docTemplate = `{
                 "logistic": {
                     "type": "string"
                 },
+                "mkpStatusID": {
+                    "type": "integer"
+                },
                 "orderNo": {
                     "type": "string"
                 },
                 "returnDate": {
                     "type": "string"
                 },
-                "returnLines": {
+                "returnOrderLines": {
                     "type": "array",
-                    "minItems": 1,
                     "items": {
-                        "$ref": "#/definitions/request.BeforeReturnOrderLineRequest"
+                        "$ref": "#/definitions/request.BeforeReturnOrderLine"
                     }
                 },
                 "returnType": {
@@ -779,7 +714,22 @@ const docTemplate = `{
                 "saleReturn": {
                     "type": "string"
                 },
+                "soStatusID": {
+                    "type": "integer"
+                },
+                "statusConfID": {
+                    "type": "integer"
+                },
+                "statusReturnID": {
+                    "type": "integer"
+                },
                 "trackingNo": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "type": "string"
+                },
+                "updateDate": {
                     "type": "string"
                 },
                 "warehouseID": {
@@ -787,13 +737,40 @@ const docTemplate = `{
                 }
             }
         },
-        "request.CancelOrderRequest": {
+        "request.BeforeReturnOrderLine": {
             "type": "object",
-            "required": [
-                "cancelBy"
-            ],
             "properties": {
-                "cancelBy": {
+                "alterSKU": {
+                    "type": "string"
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "type": "string"
+                },
+                "updateDate": {
                     "type": "string"
                 }
             }
@@ -821,25 +798,6 @@ const docTemplate = `{
                 "userName": {
                     "type": "string",
                     "example": "eknarin"
-                }
-            }
-        },
-        "request.UpdateStatusRequest": {
-            "type": "object",
-            "required": [
-                "orderNo",
-                "statusId",
-                "updateBy"
-            ],
-            "properties": {
-                "orderNo": {
-                    "type": "string"
-                },
-                "statusId": {
-                    "type": "integer"
-                },
-                "updateBy": {
-                    "type": "string"
                 }
             }
         }

@@ -16,27 +16,27 @@ type User struct {
 
 // BeforeReturnOrder represents the structure of the BeforeReturnOrder table
 type BeforeReturnOrder struct {
-	RecID          int       `db:"RecID"`
-	OrderNo        string    `db:"OrderNo"`
-	SaleOrder      string    `db:"SaleOrder"`
-	SaleReturn     string    `db:"SaleReturn"`
-	ChannelID      int       `db:"ChannelID"`
-	ReturnType     string    `db:"ReturnType"`
-	CustomerID     string    `db:"CustomerID"`
-	TrackingNo     string    `db:"TrackingNo"`
-	Logistic       string    `db:"Logistic"`
-	WarehouseID    int       `db:"WarehouseID"`
-	SoStatusID     *int      `db:"SoStatusID"`
-	MkpStatusID    *int      `db:"MkpStatusID"`
+	RecID          int        `db:"RecID"`
+	OrderNo        string     `db:"OrderNo"`
+	SaleOrder      string     `db:"SaleOrder"`
+	SaleReturn     string     `db:"SaleReturn"`
+	ChannelID      int        `db:"ChannelID"`
+	ReturnType     string     `db:"ReturnType"`
+	CustomerID     string     `db:"CustomerID"`
+	TrackingNo     string     `db:"TrackingNo"`
+	Logistic       string     `db:"Logistic"`
+	WarehouseID    int        `db:"WarehouseID"`
+	SoStatusID     *int       `db:"SoStatusID"`
+	MkpStatusID    *int       `db:"MkpStatusID"`
 	ReturnDate     *time.Time `db:"ReturnDate"`
-	StatusReturnID int       `db:"StatusReturnID"`
-	StatusConfID   int       `db:"StatusConfID"`
-	ConfirmBy      *string   `db:"ConfirmBy"`
-	CreateBy       string    `db:"CreateBy"`
-	CreateDate     time.Time `db:"CreateDate"`
-	UpdateBy       *string   `db:"UpdateBy"`
+	StatusReturnID int        `db:"StatusReturnID"`
+	StatusConfID   int        `db:"StatusConfID"`
+	ConfirmBy      *string    `db:"ConfirmBy"`
+	CreateBy       string     `db:"CreateBy"`
+	CreateDate     time.Time  `db:"CreateDate"`
+	UpdateBy       *string    `db:"UpdateBy"`
 	UpdateDate     *time.Time `db:"UpdateDate"`
-	CancelID       *int      `db:"CancelID"`
+	CancelID       *int       `db:"CancelID"`
 }
 
 // BeforeReturnOrderLine คือตารางสำหรับเก็บรายการสินค้าที่ต้องการคืน
