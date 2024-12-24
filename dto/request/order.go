@@ -23,7 +23,7 @@ type BeforeReturnOrder struct {
 	UpdateBy               *string                 `json:"updateBy" db:"UpdateBy"`
 	UpdateDate             *time.Time              `json:"updateDate" db:"UpdateDate"`
 	CancelID               *int                    `json:"cancelID" db:"CancelID"`
-	BeforeReturnOrderLines []BeforeReturnOrderLine `json:"returnOrderLines"`
+	BeforeReturnOrderLines []BeforeReturnOrderLine `json:"beforeReturnOrderLines"` // Corrected field name
 }
 
 type BeforeReturnOrderLine struct {

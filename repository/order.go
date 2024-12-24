@@ -42,6 +42,7 @@ type ReturnOrderRepository interface {
 
 	// Transaction
 	CreateReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
+	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
 
 	//Cancle
 	//CancelBeforeReturnOrder(ctx context.Context, orderNo string) error
@@ -119,7 +120,7 @@ func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderN
 			"ReturnQTY":  line.ReturnQTY,
 			"Price":      line.Price,
 			"CreateBy":   line.CreateBy,
-			"TrackingNo": line.TrackingNo,
+			"TrackingNo": trackingNo,
 		}
 		_, err := repo.db.NamedExecContext(ctx, query, params)
 		if err != nil {
@@ -289,101 +290,6 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 	return orders, nil
 }
 
-// Implementation สำหรับ UpdateBeforeReturnOrder
-func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error {
-	log.Printf("🚀 Starting UpdateBeforeReturnOrder for OrderNo: %s", order.OrderNo)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
-	query := `
-        UPDATE BeforeReturnOrder 
-        SET SaleOrder = :SaleOrder,
-            SaleReturn = :SaleReturn,
-            ChannelID = :ChannelID,
-            ReturnType = :ReturnType,
-            CustomerID = :CustomerID,
-            TrackingNo = :TrackingNo,
-            Logistic = :Logistic,
-            WarehouseID = :WarehouseID,
-            SoStatusID = :SoStatusID,
-            MkpStatusID = :MkpStatusID,
-            ReturnDate = :ReturnDate,
-            StatusReturnID = :StatusReturnID,
-            StatusConfID = :StatusConfID,
-            ConfirmBy = :ConfirmBy,
-            UpdateBy = :UpdateBy,
-            UpdateDate = GETDATE(),
-            CancelID = :CancelID
-        WHERE OrderNo = :OrderNo
-    `
-	params := map[string]interface{}{
-		"OrderNo":        order.OrderNo,
-		"SaleOrder":      order.SaleOrder,
-		"SaleReturn":     order.SaleReturn,
-		"ChannelID":      order.ChannelID,
-		"ReturnType":     order.ReturnType,
-		"CustomerID":     order.CustomerID,
-		"TrackingNo":     order.TrackingNo,
-		"Logistic":       order.Logistic,
-		"WarehouseID":    order.WarehouseID,
-		"SoStatusID":     order.SoStatusID,
-		"MkpStatusID":    order.MkpStatusID,
-		"ReturnDate":     order.ReturnDate,
-		"StatusReturnID": order.StatusReturnID,
-		"StatusConfID":   order.StatusConfID,
-		"ConfirmBy":      order.ConfirmBy,
-		"UpdateBy":       order.UpdateBy,
-		"CancelID":       order.CancelID,
-	}
-
-	_, err := repo.db.NamedExecContext(ctx, query, params)
-	if err != nil {
-		log.Printf("❌ Failed to update BeforeReturnOrder: %v", err)
-		return fmt.Errorf("failed to update BeforeReturnOrder: %w", err)
-	}
-
-	log.Printf("✅ Successfully updated BeforeReturnOrder for OrderNo: %s", order.OrderNo)
-	return nil
-}
-
-// Implementation สำหรับ UpdateBeforeReturnOrderLine
-func (repo repositoryDB) UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error {
-	log.Printf("🚀 Starting UpdateBeforeReturnOrderLine for OrderNo: %s, SKU: %s", orderNo, line.SKU)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
-	query := `
-        UPDATE BeforeReturnOrderLine 
-        SET SKU = :SKU,
-            QTY = :QTY,
-            ReturnQTY = :ReturnQTY,
-            Price = :Price,
-            UpdateBy = :UpdateBy,
-            UpdateDate = GETDATE(),
-            TrackingNo = :TrackingNo
-        WHERE OrderNo = :OrderNo
-          AND SKU = :SKU
-    `
-	params := map[string]interface{}{
-		"OrderNo":    orderNo,
-		"SKU":        line.SKU,
-		"QTY":        line.QTY,
-		"ReturnQTY":  line.ReturnQTY,
-		"Price":      line.Price,
-		"UpdateBy":   line.UpdateBy,
-		"TrackingNo": line.TrackingNo,
-	}
-
-	_, err := repo.db.NamedExecContext(ctx, query, params)
-	if err != nil {
-		log.Printf("❌ Failed to update BeforeReturnOrderLine: %v", err)
-		return fmt.Errorf("failed to update BeforeReturnOrderLine: %w", err)
-	}
-
-	log.Printf("✅ Successfully updated BeforeReturnOrderLine for OrderNo: %s, SKU: %s", orderNo, line.SKU)
-	return nil
-}
-
 // Implementation สำหรับ BeginTransaction CreateBeforeReturnOrder & CreateBeforeReturnOrderLine
 func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error {
 	log.Printf("🚀 Starting CreateReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
@@ -463,5 +369,208 @@ func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, o
 	}
 
 	log.Printf("✅ Successfully created ReturnOrder with transaction for OrderNo: %s", order.OrderNo)
+	return nil
+}
+
+func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error {
+	log.Printf("🚀 Starting UpdateBeforeReturnOrder for OrderNo: %s", order.OrderNo)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	query := `
+        UPDATE BeforeReturnOrder 
+        SET SaleOrder = COALESCE(:SaleOrder, SaleOrder),
+            SaleReturn = COALESCE(:SaleReturn, SaleReturn),
+            ChannelID = COALESCE(:ChannelID, ChannelID),
+            ReturnType = COALESCE(:ReturnType, ReturnType),
+            CustomerID = COALESCE(:CustomerID, CustomerID),
+            TrackingNo = COALESCE(:TrackingNo, TrackingNo),
+            Logistic = COALESCE(:Logistic, Logistic),
+            WarehouseID = COALESCE(:WarehouseID, WarehouseID),
+            SoStatusID = COALESCE(:SoStatusID, SoStatusID),
+            MkpStatusID = COALESCE(:MkpStatusID, MkpStatusID),
+            ReturnDate = COALESCE(:ReturnDate, ReturnDate),
+            StatusReturnID = COALESCE(:StatusReturnID, StatusReturnID),
+            StatusConfID = COALESCE(:StatusConfID, StatusConfID),
+            ConfirmBy = COALESCE(:ConfirmBy, ConfirmBy),
+            UpdateBy = COALESCE(:UpdateBy, UpdateBy),
+            UpdateDate = GETDATE(),
+            CancelID = COALESCE(:CancelID, CancelID)
+        WHERE OrderNo = :OrderNo
+    `
+	params := map[string]interface{}{
+		"OrderNo":        order.OrderNo,
+		"SaleOrder":      order.SaleOrder,
+		"SaleReturn":     order.SaleReturn,
+		"ChannelID":      order.ChannelID,
+		"ReturnType":     order.ReturnType,
+		"CustomerID":     order.CustomerID,
+		"TrackingNo":     order.TrackingNo,
+		"Logistic":       order.Logistic,
+		"WarehouseID":    order.WarehouseID,
+		"SoStatusID":     order.SoStatusID,
+		"MkpStatusID":    order.MkpStatusID,
+		"ReturnDate":     order.ReturnDate,
+		"StatusReturnID": order.StatusReturnID,
+		"StatusConfID":   order.StatusConfID,
+		"ConfirmBy":      order.ConfirmBy,
+		"UpdateBy":       order.UpdateBy,
+		"CancelID":       order.CancelID,
+	}
+
+	_, err := repo.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		log.Printf("❌ Failed to update BeforeReturnOrder: %v", err)
+		return fmt.Errorf("failed to update BeforeReturnOrder: %w", err)
+	}
+
+	log.Printf("✅ Successfully updated BeforeReturnOrder for OrderNo: %s", order.OrderNo)
+	return nil
+}
+
+func (repo repositoryDB) UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error {
+	log.Printf("🚀 Starting UpdateBeforeReturnOrderLine for OrderNo: %s, SKU: %s", orderNo, line.SKU)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	query := `
+        UPDATE BeforeReturnOrderLine 
+        SET QTY = COALESCE(:QTY, QTY),
+            ReturnQTY = COALESCE(:ReturnQTY, ReturnQTY),
+            Price = COALESCE(:Price, Price),
+            UpdateBy = COALESCE(:UpdateBy, UpdateBy),
+            UpdateDate = GETDATE(),
+            TrackingNo = COALESCE(:TrackingNo, TrackingNo)
+        WHERE OrderNo = :OrderNo
+          AND SKU = :SKU
+    `
+	params := map[string]interface{}{
+		"OrderNo":    orderNo,
+		"SKU":        line.SKU,
+		"QTY":        line.QTY,
+		"ReturnQTY":  line.ReturnQTY,
+		"Price":      line.Price,
+		"UpdateBy":   line.UpdateBy,
+		"TrackingNo": line.TrackingNo,
+	}
+
+	_, err := repo.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		log.Printf("❌ Failed to update BeforeReturnOrderLine: %v", err)
+		return fmt.Errorf("failed to update BeforeReturnOrderLine: %w", err)
+	}
+
+	log.Printf("✅ Successfully updated BeforeReturnOrderLine for OrderNo: %s, SKU: %s", orderNo, line.SKU)
+	return nil
+}
+
+// Implementation สำหรับ UpdateBeforeReturnOrderWithTransaction
+func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error {
+	log.Printf("🚀 Starting UpdateBeforeReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
+
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		log.Printf("❌ Failed to start transaction: %v", err)
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	// Update BeforeReturnOrderLine first
+	queryLine := `
+        UPDATE BeforeReturnOrderLine 
+        SET QTY = COALESCE(:QTY, QTY),
+            ReturnQTY = COALESCE(:ReturnQTY, ReturnQTY),
+            Price = COALESCE(:Price, Price),
+            UpdateBy = COALESCE(:UpdateBy, UpdateBy),
+            UpdateDate = GETDATE(),
+            TrackingNo = COALESCE(:TrackingNo, TrackingNo)
+        WHERE OrderNo = :OrderNo
+          AND SKU = :SKU
+    `
+
+	for _, line := range order.BeforeReturnOrderLines {
+		paramsLine := map[string]interface{}{
+			"OrderNo":    line.OrderNo,
+			"SKU":        line.SKU,
+			"QTY":        line.QTY,
+			"ReturnQTY":  line.ReturnQTY,
+			"Price":      line.Price,
+			"UpdateBy":   line.UpdateBy,
+			"TrackingNo": line.TrackingNo,
+		}
+
+		log.Printf("🔍 Updating BeforeReturnOrderLine with OrderNo: %s, SKU: %s", line.OrderNo, line.SKU)
+		result, err := tx.NamedExecContext(ctx, queryLine, paramsLine)
+		if err != nil {
+			log.Printf("❌ Failed to update BeforeReturnOrderLine: %v", err)
+			return fmt.Errorf("failed to update BeforeReturnOrderLine: %w", err)
+		}
+
+		rows, _ := result.RowsAffected()
+		if rows == 0 {
+			log.Printf("❗ No rows updated for OrderNo: %s, SKU: %s", line.OrderNo, line.SKU)
+			return fmt.Errorf("no rows updated for OrderNo: %s, SKU: %s", line.OrderNo, line.SKU)
+		}
+	}
+
+	// Update BeforeReturnOrder
+	queryOrder := `
+        UPDATE BeforeReturnOrder 
+        SET SaleOrder = COALESCE(:SaleOrder, SaleOrder),
+            SaleReturn = COALESCE(:SaleReturn, SaleReturn),
+            ChannelID = COALESCE(:ChannelID, ChannelID),
+            ReturnType = COALESCE(:ReturnType, ReturnType),
+            CustomerID = COALESCE(:CustomerID, CustomerID),
+            TrackingNo = COALESCE(:TrackingNo, TrackingNo),
+            Logistic = COALESCE(:Logistic, Logistic),
+            WarehouseID = COALESCE(:WarehouseID, WarehouseID),
+            SoStatusID = COALESCE(:SoStatusID, SoStatusID),
+            MkpStatusID = COALESCE(:MkpStatusID, MkpStatusID),
+            ReturnDate = COALESCE(:ReturnDate, ReturnDate),
+            StatusReturnID = COALESCE(:StatusReturnID, StatusReturnID),
+            StatusConfID = COALESCE(:StatusConfID, StatusConfID),
+            ConfirmBy = COALESCE(:ConfirmBy, ConfirmBy),
+            UpdateBy = COALESCE(:UpdateBy, UpdateBy),
+            UpdateDate = GETDATE(),
+            CancelID = COALESCE(:CancelID, CancelID)
+        WHERE OrderNo = :OrderNo
+    `
+
+	paramsOrder := map[string]interface{}{
+		"OrderNo":        order.OrderNo,
+		"SaleOrder":      order.SaleOrder,
+		"SaleReturn":     order.SaleReturn,
+		"ChannelID":      order.ChannelID,
+		"ReturnType":     order.ReturnType,
+		"CustomerID":     order.CustomerID,
+		"TrackingNo":     order.TrackingNo,
+		"Logistic":       order.Logistic,
+		"WarehouseID":    order.WarehouseID,
+		"SoStatusID":     order.SoStatusID,
+		"MkpStatusID":    order.MkpStatusID,
+		"ReturnDate":     order.ReturnDate,
+		"StatusReturnID": order.StatusReturnID,
+		"StatusConfID":   order.StatusConfID,
+		"ConfirmBy":      order.ConfirmBy,
+		"UpdateBy":       order.UpdateBy,
+		"CancelID":       order.CancelID,
+	}
+
+	_, err = tx.NamedExecContext(ctx, queryOrder, paramsOrder)
+	if err != nil {
+		log.Printf("❌ Failed to update BeforeReturnOrder: %v", err)
+		return fmt.Errorf("failed to update BeforeReturnOrder: %w", err)
+	}
+
+	log.Printf("✅ Successfully updated BeforeReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
 	return nil
 }

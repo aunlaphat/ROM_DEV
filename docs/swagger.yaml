@@ -43,6 +43,11 @@ definitions:
     type: object
   request.BeforeReturnOrder:
     properties:
+      beforeReturnOrderLines:
+        description: Corrected field name
+        items:
+          $ref: '#/definitions/request.BeforeReturnOrderLine'
+        type: array
       cancelID:
         type: integer
       channelID:
@@ -63,10 +68,6 @@ definitions:
         type: string
       returnDate:
         type: string
-      returnOrderLines:
-        items:
-          $ref: '#/definitions/request.BeforeReturnOrderLine'
-        type: array
       returnType:
         type: string
       saleOrder:
@@ -508,6 +509,42 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: List all return orders
+      tags:
+      - Return Order
+  /return-order/update/{orderNo}:
+    put:
+      consumes:
+      - application/json
+      description: Update an existing return order with the provided details
+      operationId: update-return-order-with-lines
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: Return order details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.BeforeReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Update an existing return order with lines
       tags:
       - Return Order
 swagger: "2.0"

@@ -12,7 +12,8 @@ import (
 func (app *Application) ReturnOrderRoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/return-order", func(r chi.Router) {
 		r.Get("/list-orders", app.ListReturnOrders)
-		r.Post("/create", app.CreateOrderWithLines)
+		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
+		r.Put("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines) // New route for updating return order with lines
 		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
 		r.Get("/list-lines/{orderNo}", app.ListBeforeReturnOrderLines)
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
@@ -51,20 +52,52 @@ func (app *Application) ListReturnOrders(w http.ResponseWriter, r *http.Request)
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
 // @Router /return-order/create [post]
-func (app *Application) CreateOrderWithLines(w http.ResponseWriter, r *http.Request) {
+func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, r *http.Request) {
 	var req request.BeforeReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, err)
 		return
 	}
 
-	result, err := app.Service.ReturnOrder.CreateOrderWithLines(r.Context(), req)
+	result, err := app.Service.ReturnOrder.CreateBeforeReturnOrderWithLines(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
 	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
+}
+
+// UpdateBeforeReturnOrderWithLines godoc
+// @Summary Update an existing return order with lines
+// @Description Update an existing return order with the provided details
+// @ID update-return-order-with-lines
+// @Tags Return Order
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order number"
+// @Param body body request.BeforeReturnOrder true "Return order details"
+// @Success 200 {object} api.Response
+// @Failure 400 {object} api.Response
+// @Failure 500 {object} api.Response
+// @Router /return-order/update/{orderNo} [put]
+func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, r *http.Request) {
+	orderNo := chi.URLParam(r, "orderNo")
+	var req request.BeforeReturnOrder
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	req.OrderNo = orderNo // Ensure the orderNo from the URL is used
+
+	result, err := app.Service.ReturnOrder.UpdateBeforeReturnOrderWithLines(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "Order updated successfully", result, http.StatusOK)
 }
 
 // GetBeforeReturnOrderByOrderNo godoc

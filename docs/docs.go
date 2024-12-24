@@ -556,6 +556,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/return-order/update/{orderNo}": {
+            "put": {
+                "description": "Update an existing return order with the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order"
+                ],
+                "summary": "Update an existing return order with lines",
+                "operationId": "update-return-order-with-lines",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Return order details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.BeforeReturnOrder"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/return-order/{orderNo}": {
             "get": {
                 "description": "Retrieve the details of a specific return order by its order number",
@@ -669,6 +723,13 @@ const docTemplate = `{
         "request.BeforeReturnOrder": {
             "type": "object",
             "properties": {
+                "beforeReturnOrderLines": {
+                    "description": "Corrected field name",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.BeforeReturnOrderLine"
+                    }
+                },
                 "cancelID": {
                     "type": "integer"
                 },
@@ -698,12 +759,6 @@ const docTemplate = `{
                 },
                 "returnDate": {
                     "type": "string"
-                },
-                "returnOrderLines": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/request.BeforeReturnOrderLine"
-                    }
                 },
                 "returnType": {
                     "type": "string"

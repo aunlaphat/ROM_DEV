@@ -9,14 +9,15 @@ import (
 )
 
 type ReturnOrderService interface {
-	CreateOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
+	CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
 	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
 	ListBeforeReturnOrderLines(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderLineResponse, error)
+	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 }
 
-func (srv service) CreateOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
+func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Debug("🚀 Starting CreateOrderWithLines", zap.String("OrderNo", req.OrderNo))
 	err := srv.returnOrderRepo.CreateReturnOrderWithTransaction(ctx, req)
 	if err != nil {
@@ -55,6 +56,25 @@ func (srv service) CreateOrderWithLines(ctx context.Context, req request.BeforeR
 
 	srv.logger.Debug("✅ Successfully created order with lines", zap.String("OrderNo", req.OrderNo))
 	return returnOrderResponse, nil
+}
+
+func (srv service) UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
+	srv.logger.Debug("🚀 Starting UpdateBeforeReturnOrderWithLines", zap.String("OrderNo", req.OrderNo))
+	err := srv.returnOrderRepo.UpdateBeforeReturnOrderWithTransaction(ctx, req)
+	if err != nil {
+		srv.logger.Error("❌ Failed to update order with lines", zap.Error(err))
+		return nil, err
+	}
+
+	// Fetch the updated order to ensure all fields are correctly populated
+	updatedOrder, err := srv.returnOrderRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to fetch updated order", zap.Error(err))
+		return nil, err
+	}
+
+	srv.logger.Debug("✅ Successfully updated order with lines", zap.String("OrderNo", req.OrderNo))
+	return updatedOrder, nil
 }
 
 func (srv service) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
