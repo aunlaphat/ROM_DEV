@@ -1027,6 +1027,65 @@
                     }
                 }
             }
+        },
+        "/test/login": {
+            "post": {
+                "description": "Handles user login requests and generates a token for the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LoginTest"
+                ],
+                "summary": "User Login",
+                "operationId": "usertest-login",
+                "parameters": [
+                    {
+                        "description": "User login credentials in JSON format",
+                        "name": "login-request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.Login"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "JWT token",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1358,6 +1417,19 @@
                 "trackingNo": {
                     "type": "string",
                     "example": "12345678TH"
+                }
+            }
+        },
+        "request.Login": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "string"
+                },
+                "userName": {
+                    "type": "string",
+                    "example": "DC53002"
                 }
             }
         },

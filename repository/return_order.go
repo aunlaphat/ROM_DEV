@@ -269,6 +269,21 @@ func (repo repositoryDB) UpdateReturnOrder(req request.UpdateReturnOrder) error 
 		return fmt.Errorf("failed to update ReturnOrder: %w", err)
 	}
 
+	// อัปเดต ReturnOrderLine
+	updateReturnOrderLineQuery := `
+		UPDATE ReturnOrderLine
+		SET 
+			TrackingNo = COALESCE(:TrackingNo, TrackingNo)
+			UpdateBy = :UpdateBy,
+    		UpdateDate = :UpdateDate
+		WHERE ReturnID = :ReturnID
+		AND (TrackingNo IS DISTINCT FROM :TrackingNo);
+		`
+	_, err = tx.NamedExecContext(ctx, updateReturnOrderLineQuery, req)
+	if err != nil {
+		return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
+	}
+
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {

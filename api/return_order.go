@@ -2,7 +2,9 @@ package api
 
 // ตัวกลางของ http request ที่คอยรับส่งข้อมูลไปมา
 // รับมาในรูป request ส่งออกในรูป response
-// ส่งคำขอไปยัง service เพื่อทำการ validation ตรวจข้อผิดพลาดก่อนจะดึง query ออกมาจาก repo
+// ส่งคำขอไปยัง service เพื่อขอให้ดึงข้อมูลที่ต้องการออกมา แต่ service จะทำการ validation ก่อนเพื่อตรวจข้อผิดพลาดก่อนจะดึง query ออกมาจาก repo ให้
+// api handle error about res req send error to client ex. 400 500 401
+// service handle error about business logic/ relation data send error to api
 import (
 	request "boilerplate-backend-go/dto/request"
 	"encoding/json"

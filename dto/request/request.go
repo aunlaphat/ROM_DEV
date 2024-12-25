@@ -7,9 +7,20 @@ type LoginWeb struct {
 	UserName string `json:"userName" db:"userID" example:"eknarin"`
 	Password string `json:"password," db:"password" example:"asdfhdskjf"`
 }
+
 type LoginLark struct {
 	UserName string `json:"userName" db:"userName" example:"eknarin"`
 	UserID   string `json:"userID" db:"userID" example:"DC99999"`
+}
+
+type Login struct {
+	UserID string `json:"userName" db:"UserID" example:"DC53002"`
+	Password string `json:"password," db:"Password" example:"string"`
+}
+
+type LoginJWT struct {
+	UserID string `json:"userID" db:"UserID" example:"DC53002"`
+	UserName string `json:"userName" db:"Username" example:"string"`
 }
 
 //ข้อมูลสำหรับคำสั่งซื้อ
