@@ -30,8 +30,8 @@ type BeforeReturnOrderResponse struct {
 	StatusReturnID         int                             `json:"statusReturnId" db:"StatusReturnID"`
 	StatusConfID           int                             `json:"statusConfId" db:"StatusConfID"`
 	ConfirmBy              *string                         `json:"confirmBy" db:"ConfirmBy"`
-	CreateDate             time.Time                       `json:"createDate" db:"CreateDate"`
 	CreateBy               string                          `json:"createBy" db:"CreateBy"`
+	CreateDate             time.Time                       `json:"createDate" db:"CreateDate"`
 	UpdateBy               *string                         `json:"updateBy" db:"UpdateBy"`
 	UpdateDate             *time.Time                      `json:"updateDate" db:"UpdateDate"`
 	CancelID               *int                            `json:"cancelId" db:"CancelID"`

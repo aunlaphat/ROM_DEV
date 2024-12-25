@@ -33,8 +33,9 @@ type ReturnOrderRepository interface {
 	// Read
 	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
 	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
-	ListBeforeReturnOrderLines(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
-	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderLineResponse, error)
+	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
+	ListBeforeReturnOrderLinesByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
+	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 
 	// Update
 	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
@@ -45,8 +46,6 @@ type ReturnOrderRepository interface {
 	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
 
 	//Cancle
-	//CancelBeforeReturnOrder(ctx context.Context, orderNo string) error
-	//CancleBeforeReturnOrderLine(ctx context.Context, orderNo string) error
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -57,9 +56,9 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order requ
 
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
-            OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
+            OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, CancelID
         ) VALUES (
-            :OrderNo, :SaleOrder, :SaleReturn, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE(), :UpdateBy, :UpdateDate, :CancelID
+            :OrderNo, :SaleOrder, :SaleReturn, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE(), :CancelID
         )
     `
 	paramsOrder := map[string]interface{}{
@@ -79,8 +78,6 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order requ
 		"StatusConfID":   order.StatusConfID,
 		"ConfirmBy":      order.ConfirmBy,
 		"CreateBy":       order.CreateBy,
-		"UpdateBy":       order.UpdateBy,
-		"UpdateDate":     order.UpdateDate,
 		"CancelID":       order.CancelID,
 	}
 
@@ -133,7 +130,7 @@ func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderN
 }
 
 // Implementation สำหรับ GetBeforeReturnOrderLineByOrderNo
-func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderLineResponse, error) {
+func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
 	log.Printf("🚀 Starting GetBeforeReturnOrderLineByOrderNo for OrderNo: %s", orderNo)
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -151,7 +148,7 @@ func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, 
         WHERE OrderNo = :OrderNo
     `
 
-	var line response.BeforeReturnOrderLineResponse
+	var lines []response.BeforeReturnOrderLineResponse
 	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
 		log.Printf("❌ Failed to prepare statement: %v", err)
@@ -159,18 +156,14 @@ func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, 
 	}
 	defer nstmt.Close()
 
-	err = nstmt.GetContext(ctx, &line, map[string]interface{}{"OrderNo": orderNo})
-	if err == sql.ErrNoRows {
-		log.Printf("❗ No order line found for OrderNo: %s", orderNo)
-		return nil, nil
-	}
+	err = nstmt.SelectContext(ctx, &lines, map[string]interface{}{"OrderNo": orderNo})
 	if err != nil {
-		log.Printf("❌ Failed to get order line: %v", err)
-		return nil, fmt.Errorf("failed to get order line: %w", err)
+		log.Printf("❌ Failed to get order lines: %v", err)
+		return nil, fmt.Errorf("failed to get order lines: %w", err)
 	}
 
-	log.Printf("✅ Successfully fetched BeforeReturnOrderLine for OrderNo: %s", orderNo)
-	return &line, nil
+	log.Printf("✅ Successfully fetched BeforeReturnOrderLines for OrderNo: %s", orderNo)
+	return lines, nil
 }
 
 // Implementation สำหรับ GetBeforeReturnOrderByOrderNo
@@ -205,7 +198,7 @@ func (repo repositoryDB) GetBeforeReturnOrderByOrderNo(ctx context.Context, orde
 	}
 	log.Printf("✅ Successfully fetched BeforeReturnOrder for OrderNo: %s", orderNo)
 
-	lines, err := repo.ListBeforeReturnOrderLines(ctx, orderNo)
+	lines, err := repo.ListBeforeReturnOrderLinesByOrderNo(ctx, orderNo)
 	if err != nil {
 		return nil, err
 	}
@@ -215,8 +208,8 @@ func (repo repositoryDB) GetBeforeReturnOrderByOrderNo(ctx context.Context, orde
 	return order, nil
 }
 
-func (repo repositoryDB) ListBeforeReturnOrderLines(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
-	log.Printf("🚀 Starting ListBeforeReturnOrderLines for OrderNo: %s", orderNo)
+func (repo repositoryDB) ListBeforeReturnOrderLinesByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
+	log.Printf("🚀 Starting ListBeforeReturnOrderLinesByOrderNo for OrderNo: %s", orderNo)
 
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -254,6 +247,44 @@ func (repo repositoryDB) ListBeforeReturnOrderLines(ctx context.Context, orderNo
 	return lines, nil
 }
 
+func (repo repositoryDB) ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error) {
+	log.Printf("🚀 Starting ListBeforeReturnOrderLines")
+
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	query := `
+        SELECT 
+            OrderNo,
+            SKU,
+            QTY,
+            ReturnQTY,
+            Price,
+            TrackingNo,
+            CreateDate
+        FROM BeforeReturnOrderLine WITH (NOLOCK)
+        ORDER BY RecID
+    `
+
+	var lines []response.BeforeReturnOrderLineResponse
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		log.Printf("❌ Failed to prepare statement: %v", err)
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
+
+	log.Printf("📦 Executing query to fetch BeforeReturnOrderLines")
+	err = nstmt.SelectContext(ctx, &lines, map[string]interface{}{})
+	if err != nil {
+		log.Printf("❌ Failed to fetch BeforeReturnOrderLines: %v", err)
+		return nil, fmt.Errorf("failed to get order lines: %w", err)
+	}
+	log.Printf("✅ Successfully fetched %d lines", len(lines))
+
+	return lines, nil
+}
+
 func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
 	log.Printf("🚀 Starting ListBeforeReturnOrders")
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
@@ -278,8 +309,8 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 		return nil, fmt.Errorf("failed to list orders: %w", err)
 	}
 
-	for i, order := range orders {
-		lines, err := repo.ListBeforeReturnOrderLines(ctx, order.OrderNo)
+	for i := range orders {
+		lines, err := repo.ListBeforeReturnOrderLinesByOrderNo(ctx, orders[i].OrderNo)
 		if err != nil {
 			return nil, err
 		}
@@ -294,7 +325,7 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error {
 	log.Printf("🚀 Starting CreateReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
 	tx, err := repo.db.BeginTxx(ctx, nil)
-	if err != nil {
+	if (err != nil) {
 		log.Printf("❌ Failed to start transaction: %v", err)
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
@@ -334,9 +365,9 @@ func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, o
 
 	queryLine := `
         INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo
+            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
         ) VALUES (
-            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), :TrackingNo
+            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
         )
     `
 	for _, line := range order.BeforeReturnOrderLines {
@@ -354,6 +385,7 @@ func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, o
 			"Price":      line.Price,
 			"CreateBy":   "SYSTEM",
 			"TrackingNo": trackingNo,
+			// "CreateDate": line.CreateDate, // MSSQL GetDate() function
 		})
 		if err != nil {
 			tx.Rollback()

@@ -44,19 +44,18 @@ definitions:
   request.BeforeReturnOrder:
     properties:
       beforeReturnOrderLines:
-        description: Corrected field name
         items:
           $ref: '#/definitions/request.BeforeReturnOrderLine'
         type: array
       cancelID:
+        description: UpdateDate             *time.Time              `json:"updateDate"
+          db:"UpdateDate"` // MSSQL GetDate() function
         type: integer
       channelID:
         type: integer
       confirmBy:
         type: string
       createBy:
-        type: string
-      createDate:
         type: string
       customerID:
         type: string
@@ -83,8 +82,8 @@ definitions:
       trackingNo:
         type: string
       updateBy:
-        type: string
-      updateDate:
+        description: CreateDate             *time.Time              `json:"createDate"
+          db:"CreateDate"` // MSSQL GetDate() function
         type: string
       warehouseID:
         type: integer
@@ -94,8 +93,6 @@ definitions:
       alterSKU:
         type: string
       createBy:
-        type: string
-      createDate:
         type: string
       orderNo:
         type: string
@@ -110,8 +107,6 @@ definitions:
       trackingNo:
         type: string
       updateBy:
-        type: string
-      updateDate:
         type: string
     type: object
   request.LoginLark:
@@ -434,8 +429,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve the details of a specific return order line by its order
-        number and line number
+      description: Retrieve the details of all return order lines by order number
       operationId: get-before-return-order-line-by-order-no
       parameters:
       - description: Order number
@@ -458,21 +452,15 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Get return order line by order number and line number
+      summary: Get return order lines by order number
       tags:
       - Return Order
-  /return-order/list-lines/{orderNo}:
+  /return-order/list-lines:
     get:
       consumes:
       - application/json
-      description: Retrieve a list of all return order lines by order number
+      description: Retrieve a list of all return order lines
       operationId: list-before-return-order-lines
-      parameters:
-      - description: Order number
-        in: path
-        name: orderNo
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -488,7 +476,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: List all return order lines by order number
+      summary: List all return order lines
       tags:
       - Return Order
   /return-order/list-orders:

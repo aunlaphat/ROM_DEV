@@ -12,8 +12,8 @@ type ReturnOrderService interface {
 	CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
 	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
-	ListBeforeReturnOrderLines(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
-	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderLineResponse, error)
+	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
+	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 }
 
@@ -25,37 +25,15 @@ func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req req
 		return nil, err
 	}
 
-	returnOrderResponse := &response.BeforeReturnOrderResponse{
-		OrderNo:                req.OrderNo,
-		SaleOrder:              req.SaleOrder,
-		SaleReturn:             req.SaleReturn,
-		ChannelID:              req.ChannelID,
-		ReturnType:             req.ReturnType,
-		CustomerID:             req.CustomerID,
-		TrackingNo:             req.TrackingNo,
-		Logistic:               req.Logistic,
-		WarehouseID:            req.WarehouseID,
-		StatusReturnID:         req.StatusReturnID,
-		StatusConfID:           req.StatusConfID,
-		CreateDate:             *req.CreateDate,
-		CreateBy:               req.CreateBy,
-		BeforeReturnOrderLines: make([]response.BeforeReturnOrderLineResponse, len(req.BeforeReturnOrderLines)),
-	}
-
-	for i, line := range req.BeforeReturnOrderLines {
-		returnOrderResponse.BeforeReturnOrderLines[i] = response.BeforeReturnOrderLineResponse{
-			OrderNo:    line.OrderNo,
-			SKU:        line.SKU,
-			QTY:        line.QTY,
-			ReturnQTY:  line.ReturnQTY,
-			Price:      line.Price,
-			TrackingNo: line.TrackingNo,
-			CreateDate: *line.CreateDate,
-		}
+	// Fetch the created order to ensure all fields are correctly populated
+	createdOrder, err := srv.returnOrderRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to fetch created order", zap.Error(err))
+		return nil, err
 	}
 
 	srv.logger.Debug("✅ Successfully created order with lines", zap.String("OrderNo", req.OrderNo))
-	return returnOrderResponse, nil
+	return createdOrder, nil
 }
 
 func (srv service) UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -99,9 +77,9 @@ func (srv service) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo st
 	return order, nil
 }
 
-func (srv service) ListBeforeReturnOrderLines(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
-	srv.logger.Debug("🚀 Starting ListBeforeReturnOrderLines", zap.String("OrderNo", orderNo))
-	lines, err := srv.returnOrderRepo.ListBeforeReturnOrderLines(ctx, orderNo)
+func (srv service) ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error) {
+	srv.logger.Debug("🚀 Starting ListBeforeReturnOrderLines")
+	lines, err := srv.returnOrderRepo.ListBeforeReturnOrderLines(ctx)
 	if err != nil {
 		srv.logger.Error("❌ Failed to list return order lines", zap.Error(err))
 		return nil, err
@@ -110,13 +88,13 @@ func (srv service) ListBeforeReturnOrderLines(ctx context.Context, orderNo strin
 	return lines, nil
 }
 
-func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderLineResponse, error) {
+func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
 	srv.logger.Debug("🚀 Starting GetBeforeReturnOrderLineByOrderNo", zap.String("OrderNo", orderNo))
-	line, err := srv.returnOrderRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)
+	lines, err := srv.returnOrderRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)
 	if err != nil {
-		srv.logger.Error("❌ Failed to get return order line by order number", zap.Error(err))
+		srv.logger.Error("❌ Failed to get return order lines by order number", zap.Error(err))
 		return nil, err
 	}
-	srv.logger.Debug("✅ Successfully fetched return order line", zap.String("OrderNo", orderNo))
-	return line, nil
+	srv.logger.Debug("✅ Successfully fetched return order lines", zap.String("OrderNo", orderNo))
+	return lines, nil
 }

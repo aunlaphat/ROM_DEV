@@ -39,6 +39,15 @@ type BeforeReturnOrder struct {
 	CancelID       *int       `db:"CancelID"`
 }
 
+// CancelReturnOrder represents the structure of the CancelReturnOrder table
+type CancelReturnOrder struct {
+	CancelID   int       `db:"CancelID"`   // รหัสการยกเลิก (Primary Key)
+	OrderNo    string    `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ (Foreign Key -> BeforeReturnOrder)
+	Remark     string    `db:"Remark"`     // เหตุผลในการยกเลิก
+	CancelBy   string    `db:"CancelBy"`   // ผู้ยกเลิก
+	CancelDate time.Time `db:"CancelDate"` // วันที่ยกเลิก
+}
+
 // BeforeReturnOrderLine คือตารางสำหรับเก็บรายการสินค้าที่ต้องการคืน
 // เป็นรายละเอียดของแต่ละรายการในใบคืนสินค้า
 type BeforeReturnOrderLine struct {

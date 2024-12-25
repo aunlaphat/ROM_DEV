@@ -438,7 +438,7 @@ const docTemplate = `{
         },
         "/return-order/line/{orderNo}": {
             "get": {
-                "description": "Retrieve the details of a specific return order line by its order number and line number",
+                "description": "Retrieve the details of all return order lines by order number",
                 "consumes": [
                     "application/json"
                 ],
@@ -448,7 +448,7 @@ const docTemplate = `{
                 "tags": [
                     "Return Order"
                 ],
-                "summary": "Get return order line by order number and line number",
+                "summary": "Get return order lines by order number",
                 "operationId": "get-before-return-order-line-by-order-no",
                 "parameters": [
                     {
@@ -481,9 +481,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/return-order/list-lines/{orderNo}": {
+        "/return-order/list-lines": {
             "get": {
-                "description": "Retrieve a list of all return order lines by order number",
+                "description": "Retrieve a list of all return order lines",
                 "consumes": [
                     "application/json"
                 ],
@@ -493,17 +493,8 @@ const docTemplate = `{
                 "tags": [
                     "Return Order"
                 ],
-                "summary": "List all return order lines by order number",
+                "summary": "List all return order lines",
                 "operationId": "list-before-return-order-lines",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Order number",
-                        "name": "orderNo",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -724,13 +715,13 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "beforeReturnOrderLines": {
-                    "description": "Corrected field name",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/request.BeforeReturnOrderLine"
                     }
                 },
                 "cancelID": {
+                    "description": "UpdateDate             *time.Time              ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + ` // MSSQL GetDate() function",
                     "type": "integer"
                 },
                 "channelID": {
@@ -740,9 +731,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "createBy": {
-                    "type": "string"
-                },
-                "createDate": {
                     "type": "string"
                 },
                 "customerID": {
@@ -782,9 +770,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updateBy": {
-                    "type": "string"
-                },
-                "updateDate": {
+                    "description": "CreateDate             *time.Time              ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate() function",
                     "type": "string"
                 },
                 "warehouseID": {
@@ -799,9 +785,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "createBy": {
-                    "type": "string"
-                },
-                "createDate": {
                     "type": "string"
                 },
                 "orderNo": {
@@ -823,9 +806,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updateBy": {
-                    "type": "string"
-                },
-                "updateDate": {
                     "type": "string"
                 }
             }

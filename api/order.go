@@ -15,7 +15,7 @@ func (app *Application) ReturnOrderRoute(apiRouter *chi.Mux) {
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
 		r.Put("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines) // New route for updating return order with lines
 		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
-		r.Get("/list-lines/{orderNo}", app.ListBeforeReturnOrderLines)
+		r.Get("/list-lines", app.ListBeforeReturnOrderLines) // Updated route for listing return order lines without orderNo
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
 	})
 }
@@ -124,20 +124,18 @@ func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *
 }
 
 // ListBeforeReturnOrderLines godoc
-// @Summary List all return order lines by order number
-// @Description Retrieve a list of all return order lines by order number
+// @Summary List all return order lines
+// @Description Retrieve a list of all return order lines
 // @ID list-before-return-order-lines
 // @Tags Return Order
 // @Accept json
 // @Produce json
-// @Param orderNo path string true "Order number"
 // @Success 200 {object} api.Response
 // @Failure 404 {object} api.Response
 // @Failure 500 {object} api.Response
-// @Router /return-order/list-lines/{orderNo} [get]
+// @Router /return-order/list-lines [get]
 func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
-	result, err := app.Service.ReturnOrder.ListBeforeReturnOrderLines(r.Context(), orderNo)
+	result, err := app.Service.ReturnOrder.ListBeforeReturnOrderLines(r.Context())
 	if err != nil {
 		handleError(w, err)
 		return
@@ -147,8 +145,8 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 }
 
 // GetBeforeReturnOrderLineByOrderNo godoc
-// @Summary Get return order line by order number and line number
-// @Description Retrieve the details of a specific return order line by its order number and line number
+// @Summary Get return order lines by order number
+// @Description Retrieve the details of all return order lines by order number
 // @ID get-before-return-order-line-by-order-no
 // @Tags Return Order
 // @Accept json
@@ -166,5 +164,5 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 		return
 	}
 
-	handleResponse(w, true, "Order line retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "Order lines retrieved successfully", result, http.StatusOK)
 }
