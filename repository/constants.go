@@ -4,6 +4,7 @@ import (
 	entity "boilerplate-backend-go/Entity"
 	"context"
 	"time"
+	"fmt"
 )
 
 type Constants interface {
@@ -11,6 +12,7 @@ type Constants interface {
 	GetThaiDistrict() ([]entity.District, error)
 	GetThaiSubDistrict() ([]entity.SubDistrict, error)
 	GetProductAll() ([]entity.ROM_V_ProductAll, error)
+	GetWarehouse() ([]entity.Warehouse, error)
 	// GetCustomer() ([]entity.SubDistrict, error)
 
 }
@@ -116,6 +118,35 @@ func (repo repositoryDB) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 
 	return subDistricts, nil
 }
+
+func (repo repositoryDB) GetWarehouse() ([]entity.Warehouse, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    warehouses := []entity.Warehouse{}
+    query := `
+        SELECT WarehouseID, WarehouseName, Location
+        FROM Warehouse
+        ORDER BY WarehouseName
+    `
+
+    rows, err := repo.db.QueryxContext(ctx, query)
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch warehouses: %w", err)
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var warehouse entity.Warehouse
+        if err := rows.StructScan(&warehouse); err != nil {
+            return nil, fmt.Errorf("failed to scan warehouse: %w", err)
+        }
+        warehouses = append(warehouses, warehouse)
+    }
+
+    return warehouses, nil
+}
+
 
 func (repo repositoryDB) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

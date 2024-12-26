@@ -211,6 +211,263 @@
                 }
             }
         },
+        "/before-return-order/create": {
+            "post": {
+                "description": "Create a new return order with the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Before Return Order"
+                ],
+                "summary": "Create a new return order with lines",
+                "operationId": "create-before-return-order-with-lines",
+                "parameters": [
+                    {
+                        "description": "Before return order details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.BeforeReturnOrder"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/before-return-order/line/{orderNo}": {
+            "get": {
+                "description": "Retrieve the details of all return order lines by order number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Before Return Order"
+                ],
+                "summary": "Get return order lines by order number",
+                "operationId": "get-before-return-order-line-by-order-no",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/before-return-order/list-lines": {
+            "get": {
+                "description": "Retrieve a list of all return order lines",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Before Return Order"
+                ],
+                "summary": "List all return order lines",
+                "operationId": "list-before-return-order-lines",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/before-return-order/list-orders": {
+            "get": {
+                "description": "Retrieve a list of all before return orders",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Before Return Order"
+                ],
+                "summary": "List all return orders",
+                "operationId": "list-before-return-orders",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/before-return-order/update/{orderNo}": {
+            "put": {
+                "description": "Update an existing return order with the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Before Return Order"
+                ],
+                "summary": "Update an existing return order with lines",
+                "operationId": "update-return-order-with-lines",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Before return order details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.BeforeReturnOrder"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/before-return-order/{orderNo}": {
+            "get": {
+                "description": "Retrieve the details of a specific return order by its order number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Before Return Order"
+                ],
+                "summary": "Get return order by order number",
+                "operationId": "get-before-return-order-by-order-no",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/constants/get-district": {
             "get": {
                 "description": "Get all Thai District.",
@@ -255,6 +512,63 @@
                     },
                     "404": {
                         "description": "District not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/constants/get-productAll": {
+            "get": {
+                "description": "Get all product",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get ProductAll",
+                "operationId": "get-productAll",
+                "responses": {
+                    "200": {
+                        "description": "Product",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.ROM_V_ProductAll"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "SubDistrict not found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -354,6 +668,63 @@
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/definitions/entity.SubDistrict"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "SubDistrict not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/constants/get-warehouse": {
+            "get": {
+                "description": "Get Warehouse",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get Warehouse",
+                "operationId": "get-warehouse",
+                "responses": {
+                    "200": {
+                        "description": "Warehouse",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.Warehouse"
                                             }
                                         }
                                     }
@@ -1220,64 +1591,112 @@
                 }
             }
         },
+        "entity.ROM_V_ProductAll": {
+            "type": "object",
+            "properties": {
+                "barcode": {
+                    "description": "บาร์โค้ดของสินค้า",
+                    "type": "string"
+                },
+                "nameAlias": {
+                    "description": "ชื่อย่อของสินค้า",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "ขนาดของสินค้า",
+                    "type": "string"
+                },
+                "sizeID": {
+                    "description": "รหัสขนาดของสินค้า",
+                    "type": "string"
+                },
+                "sku": {
+                    "description": "รหัสสินค้า",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "ประเภทของสินค้า",
+                    "type": "string"
+                }
+            }
+        },
         "entity.ReturnOrder": {
             "type": "object",
             "properties": {
-                "axStatusId": {
+                "axStatusID": {
+                    "description": "สถานะในระบบ AX",
                     "type": "integer"
                 },
-                "cancelId": {
+                "cancelID": {
+                    "description": "รหัสการยกเลิก",
                     "type": "integer"
                 },
-                "channelId": {
+                "channelID": {
+                    "description": "รหัสช่องทางการขาย (FK -\u003e Channel)",
                     "type": "integer"
                 },
                 "checkBy": {
+                    "description": "ผู้ตรวจสอบ",
                     "type": "string"
                 },
                 "createBy": {
+                    "description": "ผู้สร้างรายการ",
                     "type": "string"
                 },
                 "createDate": {
+                    "description": "วันที่สร้างรายการ",
                     "type": "string"
                 },
                 "description": {
+                    "description": "รายละเอียดเพิ่มเติม",
                     "type": "string"
                 },
-                "optStatusId": {
+                "optStatusID": {
+                    "description": "สถานะการดำเนินการ",
                     "type": "integer"
                 },
                 "orderNo": {
+                    "description": "เลขที่ใบสั่งซื้อ",
                     "type": "string"
                 },
-                "platfId": {
+                "platfID": {
+                    "description": "รหัสแพลตฟอร์ม (FK -\u003e Platforms)",
                     "type": "integer"
                 },
-                "platfStatusId": {
+                "platfStatusID": {
+                    "description": "สถานะในแพลตฟอร์ม",
                     "type": "integer"
                 },
                 "remark": {
+                    "description": "หมายเหตุ",
                     "type": "string"
                 },
-                "returnId": {
+                "returnID": {
+                    "description": "เลขที่ใบคืนสินค้า (Primary Key)",
                     "type": "string"
                 },
                 "saleOrder": {
+                    "description": "เลขที่ใบกำกับภาษี",
                     "type": "string"
                 },
                 "saleReturn": {
+                    "description": "เลขที่ใบลดหนี้",
                     "type": "string"
                 },
-                "statusCheckId": {
+                "statusCheckID": {
+                    "description": "สถานะการตรวจสอบ (FK -\u003e StatusCheck)",
                     "type": "integer"
                 },
                 "trackingNo": {
+                    "description": "เลขพัสดุ",
                     "type": "string"
                 },
                 "updateBy": {
+                    "description": "ผู้แก้ไขล่าสุด",
                     "type": "string"
                 },
                 "updateDate": {
+                    "description": "วันที่แก้ไขล่าสุด",
                     "type": "string"
                 }
             }
@@ -1298,6 +1717,122 @@
                     "type": "string"
                 },
                 "zipCode": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.Warehouse": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "description": "ที่ตั้งของคลังสินค้า",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "description": "รหัสคลังสินค้า",
+                    "type": "integer"
+                },
+                "warehouseName": {
+                    "description": "ชื่อคลังสินค้า",
+                    "type": "string"
+                }
+            }
+        },
+        "request.BeforeReturnOrder": {
+            "type": "object",
+            "properties": {
+                "beforeReturnOrderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.BeforeReturnOrderLine"
+                    }
+                },
+                "cancelID": {
+                    "description": "UpdateDate             *time.Time              `json:\"updateDate\" db:\"UpdateDate\"` // MSSQL GetDate() function",
+                    "type": "integer"
+                },
+                "channelID": {
+                    "type": "integer"
+                },
+                "confirmBy": {
+                    "type": "string"
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "customerID": {
+                    "type": "string"
+                },
+                "logistic": {
+                    "type": "string"
+                },
+                "mkpStatusID": {
+                    "type": "integer"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "returnDate": {
+                    "type": "string"
+                },
+                "returnType": {
+                    "type": "string"
+                },
+                "saleOrder": {
+                    "type": "string"
+                },
+                "saleReturn": {
+                    "type": "string"
+                },
+                "soStatusID": {
+                    "type": "integer"
+                },
+                "statusConfID": {
+                    "type": "integer"
+                },
+                "statusReturnID": {
+                    "type": "integer"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "description": "CreateDate             *time.Time              `json:\"createDate\" db:\"CreateDate\"` // MSSQL GetDate() function",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "type": "integer"
+                }
+            }
+        },
+        "request.BeforeReturnOrderLine": {
+            "type": "object",
+            "properties": {
+                "alterSKU": {
+                    "type": "string"
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "updateBy": {
                     "type": "string"
                 }
             }

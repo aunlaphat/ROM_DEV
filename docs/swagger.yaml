@@ -92,45 +92,85 @@ definitions:
       nameTH:
         type: string
     type: object
+  entity.ROM_V_ProductAll:
+    properties:
+      barcode:
+        description: บาร์โค้ดของสินค้า
+        type: string
+      nameAlias:
+        description: ชื่อย่อของสินค้า
+        type: string
+      size:
+        description: ขนาดของสินค้า
+        type: string
+      sizeID:
+        description: รหัสขนาดของสินค้า
+        type: string
+      sku:
+        description: รหัสสินค้า
+        type: string
+      type:
+        description: ประเภทของสินค้า
+        type: string
+    type: object
   entity.ReturnOrder:
     properties:
-      axStatusId:
+      axStatusID:
+        description: สถานะในระบบ AX
         type: integer
-      cancelId:
+      cancelID:
+        description: รหัสการยกเลิก
         type: integer
-      channelId:
+      channelID:
+        description: รหัสช่องทางการขาย (FK -> Channel)
         type: integer
       checkBy:
+        description: ผู้ตรวจสอบ
         type: string
       createBy:
+        description: ผู้สร้างรายการ
         type: string
       createDate:
+        description: วันที่สร้างรายการ
         type: string
       description:
+        description: รายละเอียดเพิ่มเติม
         type: string
-      optStatusId:
+      optStatusID:
+        description: สถานะการดำเนินการ
         type: integer
       orderNo:
+        description: เลขที่ใบสั่งซื้อ
         type: string
-      platfId:
+      platfID:
+        description: รหัสแพลตฟอร์ม (FK -> Platforms)
         type: integer
-      platfStatusId:
+      platfStatusID:
+        description: สถานะในแพลตฟอร์ม
         type: integer
       remark:
+        description: หมายเหตุ
         type: string
-      returnId:
+      returnID:
+        description: เลขที่ใบคืนสินค้า (Primary Key)
         type: string
       saleOrder:
+        description: เลขที่ใบกำกับภาษี
         type: string
       saleReturn:
+        description: เลขที่ใบลดหนี้
         type: string
-      statusCheckId:
+      statusCheckID:
+        description: สถานะการตรวจสอบ (FK -> StatusCheck)
         type: integer
       trackingNo:
+        description: เลขพัสดุ
         type: string
       updateBy:
+        description: ผู้แก้ไขล่าสุด
         type: string
       updateDate:
+        description: วันที่แก้ไขล่าสุด
         type: string
     type: object
   entity.SubDistrict:
@@ -144,6 +184,86 @@ definitions:
       nameTH:
         type: string
       zipCode:
+        type: string
+    type: object
+  entity.Warehouse:
+    properties:
+      location:
+        description: ที่ตั้งของคลังสินค้า
+        type: string
+      warehouseID:
+        description: รหัสคลังสินค้า
+        type: integer
+      warehouseName:
+        description: ชื่อคลังสินค้า
+        type: string
+    type: object
+  request.BeforeReturnOrder:
+    properties:
+      beforeReturnOrderLines:
+        items:
+          $ref: '#/definitions/request.BeforeReturnOrderLine'
+        type: array
+      cancelID:
+        description: UpdateDate             *time.Time              `json:"updateDate"
+          db:"UpdateDate"` // MSSQL GetDate() function
+        type: integer
+      channelID:
+        type: integer
+      confirmBy:
+        type: string
+      createBy:
+        type: string
+      customerID:
+        type: string
+      logistic:
+        type: string
+      mkpStatusID:
+        type: integer
+      orderNo:
+        type: string
+      returnDate:
+        type: string
+      returnType:
+        type: string
+      saleOrder:
+        type: string
+      saleReturn:
+        type: string
+      soStatusID:
+        type: integer
+      statusConfID:
+        type: integer
+      statusReturnID:
+        type: integer
+      trackingNo:
+        type: string
+      updateBy:
+        description: CreateDate             *time.Time              `json:"createDate"
+          db:"CreateDate"` // MSSQL GetDate() function
+        type: string
+      warehouseID:
+        type: integer
+    type: object
+  request.BeforeReturnOrderLine:
+    properties:
+      alterSKU:
+        type: string
+      createBy:
+        type: string
+      orderNo:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      returnQty:
+        type: integer
+      sku:
+        type: string
+      trackingNo:
+        type: string
+      updateBy:
         type: string
     type: object
   request.CreateOrderRequest:
@@ -484,6 +604,177 @@ paths:
       summary: User Logout
       tags:
       - Auth
+  /before-return-order/{orderNo}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of a specific return order by its order number
+      operationId: get-before-return-order-by-order-no
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get return order by order number
+      tags:
+      - Before Return Order
+  /before-return-order/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new return order with the provided details
+      operationId: create-before-return-order-with-lines
+      parameters:
+      - description: Before return order details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.BeforeReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Create a new return order with lines
+      tags:
+      - Before Return Order
+  /before-return-order/line/{orderNo}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of all return order lines by order number
+      operationId: get-before-return-order-line-by-order-no
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get return order lines by order number
+      tags:
+      - Before Return Order
+  /before-return-order/list-lines:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all return order lines
+      operationId: list-before-return-order-lines
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: List all return order lines
+      tags:
+      - Before Return Order
+  /before-return-order/list-orders:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all before return orders
+      operationId: list-before-return-orders
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: List all return orders
+      tags:
+      - Before Return Order
+  /before-return-order/update/{orderNo}:
+    put:
+      consumes:
+      - application/json
+      description: Update an existing return order with the provided details
+      operationId: update-return-order-with-lines
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: Before return order details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.BeforeReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Update an existing return order with lines
+      tags:
+      - Before Return Order
   /constants/get-district:
     get:
       consumes:
@@ -517,6 +808,41 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get Thai District
+      tags:
+      - Constants
+  /constants/get-productAll:
+    get:
+      consumes:
+      - application/json
+      description: Get all product
+      operationId: get-productAll
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ROM_V_ProductAll'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: SubDistrict not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get ProductAll
       tags:
       - Constants
   /constants/get-province:
@@ -587,6 +913,41 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get Thai SubDistrict
+      tags:
+      - Constants
+  /constants/get-warehouse:
+    get:
+      consumes:
+      - application/json
+      description: Get Warehouse
+      operationId: get-warehouse
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Warehouse
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.Warehouse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: SubDistrict not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Warehouse
       tags:
       - Constants
   /orders/allgetorder:

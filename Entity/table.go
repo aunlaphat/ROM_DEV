@@ -124,6 +124,8 @@ const (
 	StatusCheckCompleted  = 3 // ตรวจสอบเสร็จสิ้น
 	StatusCheckFailed     = 4 // ตรวจสอบพบปัญหา
 )
+
+
 type ROM_V_User struct {
 	UserID     string `json:"userID,omitempty" db:"UserID" example:"DC64205"`
 	UserName   string `json:"userName,omitempty" db:"Username" example:"aunlaphat.art"`
@@ -132,11 +134,17 @@ type ROM_V_User struct {
 	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo" example:"G01"`
 }
 
+type Warehouse struct {
+    WarehouseID   int    `db:"WarehouseID" json:"warehouseID"`     // รหัสคลังสินค้า
+    WarehouseName string `db:"WarehouseName" json:"warehouseName"` // ชื่อคลังสินค้า
+    Location      string `db:"Location" json:"location"`           // ที่ตั้งของคลังสินค้า
+}
+
 type ROM_V_ProductAll struct {
     SKU       string  `db:"SKU" json:"sku"`             // รหัสสินค้า
     NameAlias string  `db:"NAMEALIAS" json:"nameAlias"` // ชื่อย่อของสินค้า
     Size      string  `db:"Size" json:"size"`           // ขนาดของสินค้า
     SizeID    string  `db:"SizeID" json:"sizeID"`       // รหัสขนาดของสินค้า
-    Barcode   string  `db:"Barcode" json:"barcode"`     // บาร์โค้ดของสินค้า
-    Type      string  `db:"Type" json:"type"`           // ประเภทของสินค้า
+    Barcode   *string  `db:"Barcode" json:"barcode"`     // บาร์โค้ดของสินค้า
+    Type      *string  `db:"Type" json:"type"`           // ประเภทของสินค้า
 }

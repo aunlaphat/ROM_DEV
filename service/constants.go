@@ -10,6 +10,7 @@ type Constants interface {
 	GetThaiProvince() ([]entity.Province, error)
 	GetThaiDistrict() ([]entity.District, error)
 	GetThaiSubDistrict() ([]entity.SubDistrict, error)
+	GetWarehouse() ([]entity.Warehouse, error)
 	GetProductAll() ([]entity.ROM_V_ProductAll, error)
 	//GetCustomer() ([]entity.ROM_V_Customer, error)
 
@@ -61,6 +62,23 @@ func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 	}
 
 	return getSubDistrict, nil
+}
+
+
+func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
+	getWarehouse, err := srv.constant.GetWarehouse()
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			srv.logger.Error(err)
+			return nil, fmt.Errorf("no warehouse data: %w", err)
+		default:
+			srv.logger.Error(err)
+			return nil, fmt.Errorf("get warehouse error: %w", err)
+		}
+	}
+
+	return getWarehouse, nil
 }
 
 func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
