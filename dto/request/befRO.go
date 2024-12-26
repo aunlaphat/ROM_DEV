@@ -39,3 +39,7 @@ type BeforeReturnOrderLine struct {
 	//UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"`
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate() function
 }
+
+type SearchOrderRequest struct {
+	SoNo string `json:"soNo" db:"SoNo"`
+}

@@ -15,6 +15,7 @@ type BefROService interface {
 	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
+	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
 }
 
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -97,4 +98,20 @@ func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderN
 	}
 	srv.logger.Debug("✅ Successfully fetched return order lines", zap.String("OrderNo", orderNo))
 	return lines, nil
+}
+
+// Implementation สำหรับ SearchSaleOrder
+func (srv service) SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error) {
+	srv.logger.Debug("🚀 Starting SearchSaleOrder", zap.String("SoNo", soNo))
+	order, err := srv.befRORepo.SearchSaleOrder(ctx, soNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to search sale orders", zap.Error(err))
+		return nil, err
+	}
+	if order == nil {
+		srv.logger.Debug("❗ No sale order found", zap.String("SoNo", soNo))
+		return nil, nil
+	}
+	srv.logger.Debug("✅ Successfully searched sale orders", zap.String("SoNo", soNo))
+	return order, nil
 }

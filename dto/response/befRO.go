@@ -37,3 +37,19 @@ type BeforeReturnOrderResponse struct {
 	CancelID               *int                            `json:"cancelId" db:"CancelID"`
 	BeforeReturnOrderLines []BeforeReturnOrderLineResponse `json:"beforeReturnOrderLines"`
 }
+
+type SaleOrderResponse struct {
+	SoNo        string                  `json:"soNo" db:"SoNo"`
+	StatusMKP   string                  `json:"statusMKP" db:"StatusMKP"`
+	SalesStatus string                  `json:"salesStatus" db:"SalesStatus"`
+	CreateDate  *time.Time              `json:"createDate" db:"CreateDate"`
+	OrderLines  []SaleOrderLineResponse `json:"orderLines"`
+}
+
+type SaleOrderLineResponse struct {
+	SoNo     string  `json:"soNo" db:"SoNo"`
+	SKU      string  `json:"sku" db:"SKU"`
+	ItemName string  `json:"itemName" db:"ItemName"`
+	QTY      int     `json:"qty" db:"QTY"`
+	Price    float64 `json:"price" db:"Price"`
+}

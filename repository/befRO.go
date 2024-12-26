@@ -46,6 +46,9 @@ type BefRORepository interface {
 	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
 
 	//Cancle
+
+	//Search
+	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -325,7 +328,7 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error {
 	log.Printf("🚀 Starting CreateReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
 	tx, err := repo.db.BeginTxx(ctx, nil)
-	if err != nil {
+	if (err != nil) {
 		log.Printf("❌ Failed to start transaction: %v", err)
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
@@ -605,4 +608,46 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 
 	log.Printf("✅ Successfully updated BeforeReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
 	return nil
+}
+
+// Implementation สำหรับ SearchSaleOrder
+func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error) {
+	log.Printf("🚀 Starting SearchSaleOrder for SoNo: %s", soNo)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	queryHead := `
+        SELECT SoNo, StatusMKP, SalesStatus, CreateDate
+        FROM V_OrderHeadDetail
+        WHERE SoNo = :SoNo
+    `
+
+	queryLines := `
+        SELECT SoNo, SKU, ItemName, QTY, Price
+        FROM V_OrderLineDetail
+        WHERE SoNo = :SoNo
+    `
+
+	var orderHead response.SaleOrderResponse
+	err := repo.db.GetContext(ctx, &orderHead, queryHead, map[string]interface{}{"SoNo": soNo})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("❗ No order head found for SoNo: %s", soNo)
+			return nil, nil
+		}
+		log.Printf("❌ Failed to fetch order head: %v", err)
+		return nil, fmt.Errorf("failed to fetch order head: %w", err)
+	}
+
+	var orderLines []response.SaleOrderLineResponse
+	err = repo.db.SelectContext(ctx, &orderLines, queryLines, map[string]interface{}{"SoNo": soNo})
+	if err != nil {
+		log.Printf("❌ Failed to fetch order lines: %v", err)
+		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
+	}
+
+	orderHead.OrderLines = orderLines
+
+	log.Printf("✅ Successfully searched sale orders for SoNo: %s", soNo)
+	return &orderHead, nil
 }

@@ -16,36 +16,27 @@ type User struct {
 
 // BeforeReturnOrder represents the structure of the BeforeReturnOrder table
 type BeforeReturnOrder struct {
-	RecID          int        `db:"RecID"`
-	OrderNo        string     `db:"OrderNo"`
-	SaleOrder      string     `db:"SaleOrder"`
-	SaleReturn     string     `db:"SaleReturn"`
-	ChannelID      int        `db:"ChannelID"`
-	ReturnType     string     `db:"ReturnType"`
-	CustomerID     string     `db:"CustomerID"`
-	TrackingNo     string     `db:"TrackingNo"`
-	Logistic       string     `db:"Logistic"`
-	WarehouseID    int        `db:"WarehouseID"`
-	SoStatusID     *int       `db:"SoStatusID"`
-	MkpStatusID    *int       `db:"MkpStatusID"`
-	ReturnDate     *time.Time `db:"ReturnDate"`
-	StatusReturnID int        `db:"StatusReturnID"`
-	StatusConfID   int        `db:"StatusConfID"`
-	ConfirmBy      *string    `db:"ConfirmBy"`
-	CreateBy       string     `db:"CreateBy"`
-	CreateDate     time.Time  `db:"CreateDate"`
-	UpdateBy       *string    `db:"UpdateBy"`
-	UpdateDate     *time.Time `db:"UpdateDate"`
-	CancelID       *int       `db:"CancelID"`
-}
-
-// CancelReturnOrder represents the structure of the CancelReturnOrder table
-type CancelReturnOrder struct {
-	CancelID   int       `db:"CancelID"`   // รหัสการยกเลิก (Primary Key)
-	OrderNo    string    `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ (Foreign Key -> BeforeReturnOrder)
-	Remark     string    `db:"Remark"`     // เหตุผลในการยกเลิก
-	CancelBy   string    `db:"CancelBy"`   // ผู้ยกเลิก
-	CancelDate time.Time `db:"CancelDate"` // วันที่ยกเลิก
+	RecID          int        `db:"RecID" json:"recID"`
+	OrderNo        string     `db:"OrderNo" json:"orderNo"`
+	SaleOrder      string     `db:"SaleOrder" json:"saleOrder"`
+	SaleReturn     string     `db:"SaleReturn" json:"saleReturn"`
+	ChannelID      int        `db:"ChannelID" json:"channelID"`
+	ReturnType     string     `db:"ReturnType" json:"returnType"`
+	CustomerID     string     `db:"CustomerID" json:"customerID"`
+	TrackingNo     string     `db:"TrackingNo" json:"trackingNo"`
+	Logistic       string     `db:"Logistic" json:"logistic"`
+	WarehouseID    int        `db:"WarehouseID" json:"warehouseID"`
+	SoStatusID     *int       `db:"SoStatusID" json:"soStatusID"`
+	MkpStatusID    *int       `db:"MkpStatusID" json:"mkpStatusID"`
+	ReturnDate     *time.Time `db:"ReturnDate" json:"returnDate"`
+	StatusReturnID int        `db:"StatusReturnID" json:"statusReturnID"`
+	StatusConfID   int        `db:"StatusConfID" json:"statusConfID"`
+	ConfirmBy      *string    `db:"ConfirmBy" json:"confirmBy"`
+	CreateBy       string     `db:"CreateBy" json:"createBy"`
+	CreateDate     time.Time  `db:"CreateDate" json:"createDate"`
+	UpdateBy       *string    `db:"UpdateBy" json:"updateBy"`
+	UpdateDate     *time.Time `db:"UpdateDate" json:"updateDate"`
+	CancelID       *int       `db:"CancelID" json:"cancelID"`
 }
 
 // BeforeReturnOrderLine คือตารางสำหรับเก็บรายการสินค้าที่ต้องการคืน
@@ -63,6 +54,22 @@ type BeforeReturnOrderLine struct {
 	UpdateBy   *string    `db:"UpdateBy"`   // ผู้แก้ไขล่าสุด
 	UpdateDate *time.Time `db:"UpdateDate"` // วันที่แก้ไขล่าสุด
 	TrackingNo string     `db:"TrackingNo"` // เลขพัสดุ
+}
+
+type ROM_V_OrderHeadDetail struct {
+	SoNo        string                  `db:"SoNo" json:"soNo"`
+	OrderNo     string                  `db:"OrderNo" json:"orderNo"`
+	SalesStatus string                  `db:"SalesStatus" json:"salesStatus"`
+	StatusMKP   string                  `db:"StatusMKP" json:"statusMKP"`
+	OrderLines  []ROM_V_OrderLineDetail `json:"orderLinesDetail"`
+}
+
+type ROM_V_OrderLineDetail struct {
+	SoNo     string  `db:"SoNo" json:"soNo"`
+	SKU      string  `json:"sku"`
+	ItemName string  `json:"itemName"`
+	QTY      int     `json:"qty"`
+	Price    float64 `json:"price"`
 }
 
 // ReturnOrder คือตารางสำหรับเก็บข้อมูลการคืนสินค้าที่ผ่านการตรวจสอบแล้ว
@@ -124,10 +131,20 @@ const (
 	StatusCheckCompleted  = 3 // ตรวจสอบเสร็จสิ้น
 	StatusCheckFailed     = 4 // ตรวจสอบพบปัญหา
 )
+
+// CancelReturnOrder represents the structure of the CancelReturnOrder table
+type CancelReturnOrder struct {
+	CancelID   int       `db:"CancelID"`   // รหัสการยกเลิก (Primary Key)
+	RefID      string    `db:"RefID"`      // รหัสอ้างอิง
+	Remark     string    `db:"Remark"`     // เหตุผลในการยกเลิก
+	CancelBy   string    `db:"CancelBy"`   // ผู้ยกเลิก
+	CancelDate time.Time `db:"CancelDate"` // วันที่ยกเลิก
+}
+
 type DOM_V_User struct {
-	UserID     string `json:"userID,omitempty" db:"UserID" example:"DC64205"`
-	UserName   string `json:"userName,omitempty" db:"Username" example:"aunlaphat.art"`
-	NickName   string `json:"nickName,omitempty" db:"NickName" example:"fa"`
-	FullNameTH string `json:"fullNameTH,omitempty" db:"FullNameTH" example:"อัญญ์ลภัส อาจสุริยงค์"`
+	UserID       string `json:"userID,omitempty" db:"UserID" example:"DC64205"`
+	UserName     string `json:"userName,omitempty" db:"Username" example:"aunlaphat.art"`
+	NickName     string `json:"nickName,omitempty" db:"NickName" example:"fa"`
+	FullNameTH   string `json:"fullNameTH,omitempty" db:"FullNameTH" example:"อัญญ์ลภัส อาจสุริยงค์"`
 	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo" example:"G01"`
 }
