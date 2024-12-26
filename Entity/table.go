@@ -42,7 +42,7 @@ type BeforeReturnOrder struct {
 // CancelReturnOrder represents the structure of the CancelReturnOrder table
 type CancelReturnOrder struct {
 	CancelID   int       `db:"CancelID"`   // รหัสการยกเลิก (Primary Key)
-	OrderNo    string    `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ (Foreign Key -> BeforeReturnOrder)
+	RefID      string    `db:"RefID"`      // เลขที่ใบสั่งซื้อ (Foreign Key -> BeforeReturnOrder)
 	Remark     string    `db:"Remark"`     // เหตุผลในการยกเลิก
 	CancelBy   string    `db:"CancelBy"`   // ผู้ยกเลิก
 	CancelDate time.Time `db:"CancelDate"` // วันที่ยกเลิก
@@ -124,10 +124,19 @@ const (
 	StatusCheckCompleted  = 3 // ตรวจสอบเสร็จสิ้น
 	StatusCheckFailed     = 4 // ตรวจสอบพบปัญหา
 )
-type DOM_V_User struct {
+type ROM_V_User struct {
 	UserID     string `json:"userID,omitempty" db:"UserID" example:"DC64205"`
 	UserName   string `json:"userName,omitempty" db:"Username" example:"aunlaphat.art"`
 	NickName   string `json:"nickName,omitempty" db:"NickName" example:"fa"`
 	FullNameTH string `json:"fullNameTH,omitempty" db:"FullNameTH" example:"อัญญ์ลภัส อาจสุริยงค์"`
 	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo" example:"G01"`
+}
+
+type ROM_V_ProductAll struct {
+    SKU       string  `db:"SKU" json:"sku"`             // รหัสสินค้า
+    NameAlias string  `db:"NAMEALIAS" json:"nameAlias"` // ชื่อย่อของสินค้า
+    Size      string  `db:"Size" json:"size"`           // ขนาดของสินค้า
+    SizeID    string  `db:"SizeID" json:"sizeID"`       // รหัสขนาดของสินค้า
+    Barcode   string  `db:"Barcode" json:"barcode"`     // บาร์โค้ดของสินค้า
+    Type      string  `db:"Type" json:"type"`           // ประเภทของสินค้า
 }

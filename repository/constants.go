@@ -10,6 +10,9 @@ type Constants interface {
 	GetThaiProvince() ([]entity.Province, error)
 	GetThaiDistrict() ([]entity.District, error)
 	GetThaiSubDistrict() ([]entity.SubDistrict, error)
+	GetProductAll() ([]entity.ROM_V_ProductAll, error)
+	// GetCustomer() ([]entity.SubDistrict, error)
+
 }
 
 func (repo repositoryDB) GetThaiProvince() ([]entity.Province, error) {
@@ -113,3 +116,40 @@ func (repo repositoryDB) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 
 	return subDistricts, nil
 }
+
+func (repo repositoryDB) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    products := []entity.ROM_V_ProductAll{}
+
+    query := `
+        SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
+        FROM Data_WebReturn.dbo.ROM_V_ProductAll
+        ORDER BY SKU
+    `
+
+    rows, err := repo.db.QueryxContext(ctx, query)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var product entity.ROM_V_ProductAll
+        if err := rows.StructScan(&product); err != nil {
+            return nil, err
+        }
+        products = append(products, product)
+    }
+
+    return products, nil
+
+}
+
+// func (repo repositoryDB) GetCustomer() ([]entity.SubDistrict, error) {
+// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+// 	defer cancel()
+
+
+// }

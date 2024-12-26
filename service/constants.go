@@ -10,6 +10,9 @@ type Constants interface {
 	GetThaiProvince() ([]entity.Province, error)
 	GetThaiDistrict() ([]entity.District, error)
 	GetThaiSubDistrict() ([]entity.SubDistrict, error)
+	GetProductAll() ([]entity.ROM_V_ProductAll, error)
+	//GetCustomer() ([]entity.ROM_V_Customer, error)
+
 }
 
 func (srv service) GetThaiProvince() ([]entity.Province, error) {
@@ -59,3 +62,35 @@ func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 
 	return getSubDistrict, nil
 }
+
+func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
+	getProductAll, err := srv.constant.GetProductAll()
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			srv.logger.Error(err)
+			return nil, fmt.Errorf("no product data: %w", err)
+		default:
+			srv.logger.Error(err)
+			return nil, fmt.Errorf("get product error: %w", err)
+		}
+	}
+
+	return getProductAll, nil
+}
+
+// func (srv service) GetCustomer() ([]entity.ROM_V_Customer, error) {
+// 	getCustomer, err := srv.constant.GetCustomer()
+// 	if err != nil {
+// 		switch err {
+// 		case sql.ErrNoRows:
+// 			srv.logger.Error(err)
+// 			return nil, fmt.Errorf("no customer data: %w", err)
+// 		default:
+// 			srv.logger.Error(err)
+// 			return nil, fmt.Errorf("get customer error: %w", err)
+// 		}
+// 	}
+
+// 	return getCustomer, nil
+// }
