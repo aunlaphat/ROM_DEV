@@ -25,7 +25,7 @@ const (
 )
 
 // ReturnOrderRepository interface กำหนด method สำหรับการทำงานกับฐานข้อมูล
-type ReturnOrderRepository interface {
+type BefRORepository interface {
 	// Create
 	CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
 	CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error
@@ -325,7 +325,7 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error {
 	log.Printf("🚀 Starting CreateReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
 	tx, err := repo.db.BeginTxx(ctx, nil)
-	if (err != nil) {
+	if err != nil {
 		log.Printf("❌ Failed to start transaction: %v", err)
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}

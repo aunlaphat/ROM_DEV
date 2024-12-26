@@ -9,9 +9,9 @@ import (
 )
 
 // ReturnOrderRoute defines the routes for return order operations
-func (app *Application) ReturnOrderRoute(apiRouter *chi.Mux) {
-	apiRouter.Route("/return-order", func(r chi.Router) {
-		r.Get("/list-orders", app.ListReturnOrders)
+func (app *Application) BefRORoute(apiRouter *chi.Mux) {
+	apiRouter.Route("/before-return-order", func(r chi.Router) {
+		r.Get("/list-orders", app.ListBeforeReturnOrders)
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
 		r.Put("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines) // New route for updating return order with lines
 		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
@@ -22,16 +22,16 @@ func (app *Application) ReturnOrderRoute(apiRouter *chi.Mux) {
 
 // ListReturnOrders godoc
 // @Summary List all return orders
-// @Description Retrieve a list of all return orders
-// @ID list-return-orders
-// @Tags Return Order
+// @Description Retrieve a list of all before return orders
+// @ID list-before-return-orders
+// @Tags Before Return Order
 // @Accept json
 // @Produce json
 // @Success 200 {object} api.Response
 // @Failure 500 {object} api.Response
 // @Router /return-order/list-orders [get]
-func (app *Application) ListReturnOrders(w http.ResponseWriter, r *http.Request) {
-	result, err := app.Service.ReturnOrder.ListBeforeReturnOrders(r.Context())
+func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Request) {
+	result, err := app.Service.BefRO.ListBeforeReturnOrders(r.Context())
 	if err != nil {
 		handleError(w, err)
 		return
@@ -43,11 +43,11 @@ func (app *Application) ListReturnOrders(w http.ResponseWriter, r *http.Request)
 // CreateOrderWithLines godoc
 // @Summary Create a new return order with lines
 // @Description Create a new return order with the provided details
-// @ID create-return-order-with-lines
-// @Tags Return Order
+// @ID create-before-return-order-with-lines
+// @Tags Before Return Order
 // @Accept json
 // @Produce json
-// @Param body body request.BeforeReturnOrder true "Return order details"
+// @Param body body request.BeforeReturnOrder true "Before return order details"
 // @Success 201 {object} api.Response
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
@@ -59,7 +59,7 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 		return
 	}
 
-	result, err := app.Service.ReturnOrder.CreateBeforeReturnOrderWithLines(r.Context(), req)
+	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -72,11 +72,11 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Summary Update an existing return order with lines
 // @Description Update an existing return order with the provided details
 // @ID update-return-order-with-lines
-// @Tags Return Order
+// @Tags Before Return Order
 // @Accept json
 // @Produce json
 // @Param orderNo path string true "Order number"
-// @Param body body request.BeforeReturnOrder true "Return order details"
+// @Param body body request.BeforeReturnOrder true "Before return order details"
 // @Success 200 {object} api.Response
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
@@ -91,7 +91,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 
 	req.OrderNo = orderNo // Ensure the orderNo from the URL is used
 
-	result, err := app.Service.ReturnOrder.UpdateBeforeReturnOrderWithLines(r.Context(), req)
+	result, err := app.Service.BefRO.UpdateBeforeReturnOrderWithLines(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -104,7 +104,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Summary Get return order by order number
 // @Description Retrieve the details of a specific return order by its order number
 // @ID get-before-return-order-by-order-no
-// @Tags Return Order
+// @Tags Before Return Order
 // @Accept json
 // @Produce json
 // @Param orderNo path string true "Order number"
@@ -114,7 +114,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Router /return-order/{orderNo} [get]
 func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	result, err := app.Service.ReturnOrder.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
+	result, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -127,7 +127,7 @@ func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *
 // @Summary List all return order lines
 // @Description Retrieve a list of all return order lines
 // @ID list-before-return-order-lines
-// @Tags Return Order
+// @Tags Before Return Order
 // @Accept json
 // @Produce json
 // @Success 200 {object} api.Response
@@ -135,7 +135,7 @@ func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *
 // @Failure 500 {object} api.Response
 // @Router /return-order/list-lines [get]
 func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *http.Request) {
-	result, err := app.Service.ReturnOrder.ListBeforeReturnOrderLines(r.Context())
+	result, err := app.Service.BefRO.ListBeforeReturnOrderLines(r.Context())
 	if err != nil {
 		handleError(w, err)
 		return
@@ -148,7 +148,7 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 // @Summary Get return order lines by order number
 // @Description Retrieve the details of all return order lines by order number
 // @ID get-before-return-order-line-by-order-no
-// @Tags Return Order
+// @Tags Before Return Order
 // @Accept json
 // @Produce json
 // @Param orderNo path string true "Order number"
@@ -158,7 +158,7 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 // @Router /return-order/line/{orderNo} [get]
 func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	result, err := app.Service.ReturnOrder.GetBeforeReturnOrderLineByOrderNo(r.Context(), orderNo)
+	result, err := app.Service.BefRO.GetBeforeReturnOrderLineByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
