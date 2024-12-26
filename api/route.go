@@ -57,10 +57,13 @@ func (app *Application) routes() http.Handler {
 	filesDir := http.Dir(filepath.Join(workDir, "uploads"))
 	FileServer(apiRouter, "/uploads", filesDir)
 	app.AuthRoute(apiRouter)
+	app.UserTestRoute(apiRouter)
 	app.FileServerRoute(apiRouter)
 	app.Constants(apiRouter)
 	app.Excels(apiRouter)
 	app.BefRORoute(apiRouter)
+	app.Orders(apiRouter)
+	app.ReturnOrders(apiRouter)
 
 	router.Mount("/api", apiRouter)
 	return router

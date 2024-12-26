@@ -1,0 +1,55 @@
+package service
+
+import (
+	"boilerplate-backend-go/logs"
+	"boilerplate-backend-go/repository"
+
+	"github.com/jmoiron/sqlx"
+)
+
+type service struct {
+	userRepo        repository.UserRepository //Repository of service
+	usertestRepo    repository.UserTestRepository
+	logger          logs.Logger               //Logger of service
+	constant        repository.Constants
+	orderRepo       repository.OrderRepository
+	returnOrderRepo repository.ReturnOrderRepository
+}
+type AllOfService struct {
+	User        UserService
+	UserTest	UserTestService
+	Constant    Constants
+	Order       OrderService
+	ReturnOrder ReturnOrderService
+	// Login	    LoginService
+}
+
+func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
+	repo := repository.NewDB(db)
+	srv := service{
+		userRepo:        repo,
+		usertestRepo:    repo,
+		logger:          logger,
+		constant:        repo,
+		orderRepo:       repo,
+		returnOrderRepo: repo,
+	}
+	return AllOfService{
+		User:        srv,
+		UserTest: 	 srv,
+		Constant:    srv,
+		Order:       srv,
+		ReturnOrder: srv,
+	}
+}
+
+type Login struct {
+	UserID       string `json:"userID"`
+	RoleID       int    `json:"roleID"`
+	PermissionID string `json:"permissionID"`
+	DeptNo       string `json:"deptNo"`
+	NickName     string `json:"nickName"`
+	FullNameTH   string `json:"fullNameTH"`
+	FullNameEN   string `json:"fullNameEN"`
+	Platfrom     string `json:"platfrom"`
+}
