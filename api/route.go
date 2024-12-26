@@ -60,7 +60,7 @@ func (app *Application) routes() http.Handler {
 	app.FileServerRoute(apiRouter)
 	app.Constants(apiRouter)
 	app.Excels(apiRouter)
-	app.ReturnOrderRoute(apiRouter)
+	app.BefRORoute(apiRouter)
 
 	router.Mount("/api", apiRouter)
 	return router
