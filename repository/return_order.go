@@ -16,6 +16,8 @@ import (
 type ReturnOrderRepository interface {
 	AllGetReturnOrder() ([]response.ReturnOrder, error)
 	GetReturnOrderByID(returnID string) (*response.ReturnOrder, error)
+	GetAllReturnOrderLines() ([]response.ReturnOrderLine, error)
+	GetReturnOrderLinesByReturnID(returnID string) ([]response.ReturnOrderLine, error)
 	CreateReturnOrder(req request.CreateReturnOrder) error
 	UpdateReturnOrder(req request.UpdateReturnOrder) error
 	DeleteReturnOrder(returnID string) error
@@ -105,6 +107,54 @@ func (repo repositoryDB) GetReturnOrderByID(returnID string) (*response.ReturnOr
 	order.ReturnOrderLine = orderLines
 	return &order, nil
 }
+
+// Get All ReturnOrderLines
+func (repo repositoryDB) GetAllReturnOrderLines() ([]response.ReturnOrderLine, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var lines []response.ReturnOrderLine
+	query := `
+		SELECT RecID, ReturnID, OrderNo, TrackingNo, SKU, ReturnQTY, CheckQTY, Price, 
+		       CreateBy, CreateDate, AlterSKU, UpdateBy, UpdateDate
+		FROM ReturnOrderLine
+		ORDER BY RecID
+	`
+
+	err := repo.db.SelectContext(ctx, &lines, query)
+	if err != nil {
+		log.Printf("Error querying ReturnOrderLine: %v", err)
+		return nil, fmt.Errorf("get all return order lines error: %w", err)
+	}
+
+	return lines, nil
+}
+
+// Get ReturnOrderLines by ReturnID
+func (repo repositoryDB) GetReturnOrderLinesByReturnID(returnID string) ([]response.ReturnOrderLine, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var lines []response.ReturnOrderLine
+	query := `
+		SELECT RecID, ReturnID, OrderNo, TrackingNo, SKU, ReturnQTY, CheckQTY, Price, 
+		       CreateBy, CreateDate, AlterSKU, UpdateBy, UpdateDate
+		FROM ReturnOrderLine
+		WHERE ReturnID = @ReturnID
+	`
+
+	err := repo.db.SelectContext(ctx, &lines, query, sql.Named("ReturnID", returnID))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no return order lines found for ReturnID: %s", returnID)
+		}
+		log.Printf("Error querying ReturnOrderLine by ReturnID: %v", err)
+		return nil, fmt.Errorf("get return order lines by ReturnID error: %w", err)
+	}
+
+	return lines, nil
+}
+
 
 func (repo repositoryDB) CreateReturnOrder(req request.CreateReturnOrder) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

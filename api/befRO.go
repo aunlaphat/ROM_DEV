@@ -17,6 +17,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
 		r.Get("/list-lines", app.ListBeforeReturnOrderLines) // Updated route for listing return order lines without orderNo
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
+		r.Post("/create-trade", app.CreateTradeReturn)
 	})
 }
 
@@ -53,6 +54,33 @@ func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Re
 // @Failure 500 {object} api.Response
 // @Router /before-return-order/create [post]
 func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, r *http.Request) {
+	var req request.BeforeReturnOrder
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
+}
+
+// @Summary Create a new return order 
+// @Description Create a new return order 
+// @ID create-trade-return
+// @Tags Before Return Order
+// @Accept json
+// @Produce json
+// @Param body body request.BeforeReturnOrder true "Trade Return Detail"
+// @Success 201 {object} api.Response
+// @Failure 400 {object} api.Response
+// @Failure 500 {object} api.Response
+// @Router /before-return-order/create-trade [post]
+func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request) {
 	var req request.BeforeReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, err)

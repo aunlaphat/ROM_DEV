@@ -15,11 +15,13 @@ import (
 
 func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
 	apiRouter.Route("/reorder", func(r chi.Router) {
-		r.Get("/allget", app.AllGetReturnOrder)                 // GET /reorder/allget
-		r.Get("/getbyID/{returnID}", app.GetReturnOrderID)      // GET /reorder/getbyID/{returnID}
-		r.Post("/create", app.CreateReturnOrder)           	    // POST /reorder/create
-		r.Patch("/update/{returnID}", app.UpdateReturnOrder)    // PUT /reorder/update/{returnID}
-		r.Delete("/delete/{returnID}", app.DeleteReturnOrder)   // DELETE /reorder/delete/{returnID}
+		r.Get("/allget", app.AllGetReturnOrder)                 			// GET /reorder/allget
+		r.Get("/getbyID/{returnID}", app.GetReturnOrderID)      			// GET /reorder/getbyID/{returnID}
+		r.Get("/allgetline", app.GetAllReturnOrderLines)					// GET /reorder/allgetline
+		r.Get("/getlinebyID/{returnID}", app.GetReturnOrderLinesByReturnID) // GET /reorder/getlinebyID/{returnID}
+		r.Post("/create", app.CreateReturnOrder)           	    			// POST /reorder/create
+		r.Patch("/update/{returnID}", app.UpdateReturnOrder)    			// PUT /reorder/update/{returnID}
+		r.Delete("/delete/{returnID}", app.DeleteReturnOrder)   			// DELETE /reorder/delete/{returnID}
 	})
 }
 
@@ -65,6 +67,55 @@ func (app *Application) GetReturnOrderID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
+}
+
+// @Summary 	Get Return Order Line
+// @Description Get all Return Order Line 
+// @ID 			Allget-ReturnOrderLine
+// @Tags 		ReturnOrder
+// @Accept 		json
+// @Produce 	json
+// @Success 	200 {object} Response{result=[]entity.ReturnOrderLine} "Get Order Line All"
+// @Failure 	400 {object} Response "Bad Request"
+// @Failure 	404 {object} Response "not found endpoint"
+// @Failure 	500 {object} Response "Internal Server Error"
+// @Router 		/reorder/allgetline [get]
+func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Request) {
+	lines, err := app.Service.ReturnOrder.GetAllReturnOrderLines()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "return order lines fetched successfully", lines, http.StatusOK)
+}
+
+// @Summary      Get Return Order Line by ID
+// @Description  Get details of an order line by its return id
+// @ID           GetLineByID-ReturnOrder
+// @Tags         ReturnOrder
+// @Accept       json
+// @Produce      json
+// @Param        returnID  path     string  true  "Return ID"
+// @Success      200 	  {object} Response{result=[]entity.ReturnOrderLine} "Get by ID"
+// @Failure      400      {object} Response "Bad Request"
+// @Failure      404      {object} Response "not found endpoint"
+// @Failure      500      {object} Response "Internal Server Error"
+// @Router       /reorder/getlinebyID/{returnID} [get]
+func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *http.Request) {
+	returnID := chi.URLParam(r, "returnID")
+	if returnID == "" {
+		http.Error(w, "returnID is required", http.StatusBadRequest)
+		return
+	}
+
+	lines, err := app.Service.ReturnOrder.GetReturnOrderLinesByReturnID(returnID)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "return order lines fetched successfully", lines, http.StatusOK)
 }
 
 // @Summary 	Create Order

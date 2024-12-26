@@ -173,6 +173,48 @@ definitions:
         description: วันที่แก้ไขล่าสุด
         type: string
     type: object
+  entity.ReturnOrderLine:
+    properties:
+      alterSKU:
+        description: รหัสสินค้าทดแทน
+        type: string
+      checkQTY:
+        description: จำนวนที่ตรวจสอบแล้ว
+        type: integer
+      createBy:
+        description: ผู้สร้างรายการ
+        type: string
+      createDate:
+        description: วันที่สร้างรายการ
+        type: string
+      orderNo:
+        description: เลขที่ใบสั่งซื้อ
+        type: string
+      price:
+        description: ราคาต่อหน่วย
+        type: number
+      recID:
+        description: รหัสอ้างอิงอัตโนมัติ
+        type: integer
+      returnID:
+        description: เลขที่ใบคืนสินค้า (FK -> ReturnOrder)
+        type: string
+      returnQTY:
+        description: จำนวนที่คืน
+        type: integer
+      sku:
+        description: รหัสสินค้า
+        type: string
+      trackingNo:
+        description: เลขพัสดุ
+        type: string
+      updateBy:
+        description: ผู้แก้ไขล่าสุด
+        type: string
+      updateDate:
+        description: วันที่แก้ไขล่าสุด
+        type: string
+    type: object
   entity.SubDistrict:
     properties:
       code:
@@ -663,6 +705,37 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Create a new return order with lines
+      tags:
+      - Before Return Order
+  /before-return-order/create-trade:
+    post:
+      consumes:
+      - application/json
+      description: Create a new return order
+      operationId: create-trade-return
+      parameters:
+      - description: Trade Return Detail
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.BeforeReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Create a new return order
       tags:
       - Before Return Order
   /before-return-order/line/{orderNo}:
@@ -1191,6 +1264,41 @@ paths:
       summary: Get Return Order
       tags:
       - ReturnOrder
+  /reorder/allgetline:
+    get:
+      consumes:
+      - application/json
+      description: Get all Return Order Line
+      operationId: Allget-ReturnOrderLine
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get Order Line All
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ReturnOrderLine'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Order Line
+      tags:
+      - ReturnOrder
   /reorder/create:
     post:
       consumes:
@@ -1311,6 +1419,47 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get Return Order by ID
+      tags:
+      - ReturnOrder
+  /reorder/getlinebyID/{returnID}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of an order line by its return id
+      operationId: GetLineByID-ReturnOrder
+      parameters:
+      - description: Return ID
+        in: path
+        name: returnID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get by ID
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ReturnOrderLine'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Order Line by ID
       tags:
       - ReturnOrder
   /reorder/update/{returnID}:

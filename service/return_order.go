@@ -17,6 +17,8 @@ import (
 type ReturnOrderService interface { // ตัวสื่อกลางในการรับส่งกับ api, ประมวลผลข้อมูลที่รับมาจาก api,
 	AllGetReturnOrder() ([]response.ReturnOrder, error)
 	GetReturnOrderByID(returnID string) (*response.ReturnOrder, error)
+	GetAllReturnOrderLines() ([]response.ReturnOrderLine, error)
+	GetReturnOrderLinesByReturnID(returnID string) ([]response.ReturnOrderLine, error)
 	CreateReturnOrder(req request.CreateReturnOrder) error
 	UpdateReturnOrder(req request.UpdateReturnOrder) error
 	DeleteReturnOrder(returnID string) error
@@ -44,6 +46,24 @@ func (srv service) GetReturnOrderByID(returnID string) (*response.ReturnOrder, e
 		return nil, err
 	}
 	return idorder, nil
+}
+
+func (srv service) GetAllReturnOrderLines() ([]response.ReturnOrderLine, error) {
+	lines, err := srv.returnOrderRepo.GetAllReturnOrderLines()
+	if err != nil {
+		srv.logger.Error(err)
+		return nil, fmt.Errorf("get all return order lines error: %w", err)
+	}
+	return lines, nil
+}
+
+func (srv service) GetReturnOrderLinesByReturnID(returnID string) ([]response.ReturnOrderLine, error) {
+	lines, err := srv.returnOrderRepo.GetReturnOrderLinesByReturnID(returnID)
+	if err != nil {
+		srv.logger.Error(err)
+		return nil, fmt.Errorf("get return order lines by ReturnID error: %w", err)
+	}
+	return lines, nil
 }
 
 func (srv service) CreateReturnOrder(req request.CreateReturnOrder) error {

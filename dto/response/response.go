@@ -73,6 +73,7 @@ type ReturnOrder struct {
 }
 
 type ReturnOrderLine struct {
+	RecID      		int           `json:"recId" db:"RecID"`
 	ReturnID        string        `json:"returnId" db:"ReturnID"`                    
 	OrderNo         string     	  `json:"orderNo" db:"OrderNo"`                                  
 	TrackingNo      string    	  `json:"trackingNo" db:"TrackingNo"`   

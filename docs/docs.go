@@ -265,6 +265,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/before-return-order/create-trade": {
+            "post": {
+                "description": "Create a new return order",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Before Return Order"
+                ],
+                "summary": "Create a new return order",
+                "operationId": "create-trade-return",
+                "parameters": [
+                    {
+                        "description": "Trade Return Detail",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.BeforeReturnOrder"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/before-return-order/line/{orderNo}": {
             "get": {
                 "description": "Retrieve the details of all return order lines by order number",
@@ -1149,6 +1196,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/reorder/allgetline": {
+            "get": {
+                "description": "Get all Return Order Line",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReturnOrder"
+                ],
+                "summary": "Get Return Order Line",
+                "operationId": "Allget-ReturnOrderLine",
+                "responses": {
+                    "200": {
+                        "description": "Get Order Line All",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.ReturnOrderLine"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "not found endpoint",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/reorder/create": {
             "post": {
                 "description": "Create a new order",
@@ -1318,6 +1422,72 @@ const docTemplate = `{
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/definitions/entity.ReturnOrder"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "not found endpoint",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/reorder/getlinebyID/{returnID}": {
+            "get": {
+                "description": "Get details of an order line by its return id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReturnOrder"
+                ],
+                "summary": "Get Return Order Line by ID",
+                "operationId": "GetLineByID-ReturnOrder",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Return ID",
+                        "name": "returnID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Get by ID",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.ReturnOrderLine"
                                             }
                                         }
                                     }
@@ -1693,6 +1863,63 @@ const docTemplate = `{
                 "statusCheckID": {
                     "description": "สถานะการตรวจสอบ (FK -\u003e StatusCheck)",
                     "type": "integer"
+                },
+                "trackingNo": {
+                    "description": "เลขพัสดุ",
+                    "type": "string"
+                },
+                "updateBy": {
+                    "description": "ผู้แก้ไขล่าสุด",
+                    "type": "string"
+                },
+                "updateDate": {
+                    "description": "วันที่แก้ไขล่าสุด",
+                    "type": "string"
+                }
+            }
+        },
+        "entity.ReturnOrderLine": {
+            "type": "object",
+            "properties": {
+                "alterSKU": {
+                    "description": "รหัสสินค้าทดแทน",
+                    "type": "string"
+                },
+                "checkQTY": {
+                    "description": "จำนวนที่ตรวจสอบแล้ว",
+                    "type": "integer"
+                },
+                "createBy": {
+                    "description": "ผู้สร้างรายการ",
+                    "type": "string"
+                },
+                "createDate": {
+                    "description": "วันที่สร้างรายการ",
+                    "type": "string"
+                },
+                "orderNo": {
+                    "description": "เลขที่ใบสั่งซื้อ",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "ราคาต่อหน่วย",
+                    "type": "number"
+                },
+                "recID": {
+                    "description": "รหัสอ้างอิงอัตโนมัติ",
+                    "type": "integer"
+                },
+                "returnID": {
+                    "description": "เลขที่ใบคืนสินค้า (FK -\u003e ReturnOrder)",
+                    "type": "string"
+                },
+                "returnQTY": {
+                    "description": "จำนวนที่คืน",
+                    "type": "integer"
+                },
+                "sku": {
+                    "description": "รหัสสินค้า",
+                    "type": "string"
                 },
                 "trackingNo": {
                     "description": "เลขพัสดุ",
