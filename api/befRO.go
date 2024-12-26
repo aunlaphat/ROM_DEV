@@ -29,7 +29,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 // @Produce json
 // @Success 200 {object} api.Response
 // @Failure 500 {object} api.Response
-// @Router /return-order/list-orders [get]
+// @Router /before-return-order/list-orders [get]
 func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Request) {
 	result, err := app.Service.BefRO.ListBeforeReturnOrders(r.Context())
 	if err != nil {
@@ -51,7 +51,7 @@ func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Re
 // @Success 201 {object} api.Response
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
-// @Router /return-order/create [post]
+// @Router /before-return-order/create [post]
 func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, r *http.Request) {
 	var req request.BeforeReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -80,7 +80,7 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Success 200 {object} api.Response
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
-// @Router /return-order/update/{orderNo} [put]
+// @Router /before-return-order/update/{orderNo} [put]
 func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	var req request.BeforeReturnOrder
@@ -111,7 +111,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Success 200 {object} api.Response
 // @Failure 404 {object} api.Response
 // @Failure 500 {object} api.Response
-// @Router /return-order/{orderNo} [get]
+// @Router /before-return-order/{orderNo} [get]
 func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	result, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
@@ -133,7 +133,7 @@ func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *
 // @Success 200 {object} api.Response
 // @Failure 404 {object} api.Response
 // @Failure 500 {object} api.Response
-// @Router /return-order/list-lines [get]
+// @Router /before-return-order/list-lines [get]
 func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *http.Request) {
 	result, err := app.Service.BefRO.ListBeforeReturnOrderLines(r.Context())
 	if err != nil {
@@ -155,7 +155,7 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 // @Success 200 {object} api.Response
 // @Failure 404 {object} api.Response
 // @Failure 500 {object} api.Response
-// @Router /return-order/line/{orderNo} [get]
+// @Router /before-return-order/line/{orderNo} [get]
 func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	result, err := app.Service.BefRO.GetBeforeReturnOrderLineByOrderNo(r.Context(), orderNo)
