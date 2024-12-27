@@ -21,6 +21,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Post("/create-trade", app.CreateTradeReturn)
 		r.Get("/get-order", app.GetAllOrderDetail)
 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)
+		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine) 
 
 	})
 }
@@ -241,4 +242,36 @@ func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
+}
+
+// @Summary 	Delete Order line
+// @Description Delete an order line
+// @ID 			delete-BeforeReturnOrderLine
+// @Tags 		Before Return Order
+// @Accept 		json
+// @Produce 	json
+// @Param 		recID path string true "Rec ID"
+// @Success 	200 {object} Response{result=string} "Before ReturnOrderLine Deleted"
+// @Success 	204 {object} Response "No Content, Order Delete Successfully"
+// @Failure 	400 {object} Response "Bad Request"
+// @Failure 	404 {object} Response "Order Not Found"
+// @Failure 	500 {object} Response "Internal Server Error"
+// @Router 		/before-return-order/delete-befodline/{recID} [delete]
+func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *http.Request) {
+	recID := chi.URLParam(r, "recID")
+	if recID == "" {
+		http.Error(w, "RecID is required in the path", http.StatusBadRequest)
+		return
+	}
+
+	if err := api.Service.BefRO.DeleteBeforeReturnOrderLine(recID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Return order deleted successfully",
+	})
 }

@@ -20,6 +20,7 @@ type BefROService interface {
 
 	GetAllOrderDetail() ([]response.OrderDetail, error)
 	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
+	DeleteBeforeReturnOrderLine(recID string) error
 }
 
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -126,4 +127,18 @@ func (srv service) 	GetOrderDetailBySO(soNo string) (*response.OrderDetail, erro
 		return nil, err
 	}
 	return soOrder, nil
+}
+
+func (srv service) DeleteBeforeReturnOrderLine(recID string) error {
+	if recID == "" {
+		return fmt.Errorf("RecID is required")
+	}
+
+	// ส่งไปยัง Repository Layer
+	err := srv.befRORepo.DeleteBeforeReturnOrderLine(recID)
+	if err != nil {
+		return fmt.Errorf("failed to delete before return order line: %w", err)
+	}
+
+	return nil
 }

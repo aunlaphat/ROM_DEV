@@ -48,6 +48,7 @@ type BefRORepository interface {
 	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
 
 	//Cancle
+	DeleteBeforeReturnOrderLine(recID string) error
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -698,4 +699,37 @@ func (repo repositoryDB) GetOrderDetailBySO(soNo string) (*response.OrderDetail,
     return &response.OrderDetail{
         OrderHeadDetail: headDetails,
     }, nil
+}
+
+func (repo repositoryDB) DeleteBeforeReturnOrderLine(recID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+    tx, err := repo.db.BeginTxx(ctx, nil)
+    if err != nil {
+        return fmt.Errorf("failed to start transaction: %w", err)
+    }
+    defer handleTransaction(tx)()
+
+    // ลบ BeforeReturnOrderLine ตาม RecID
+    deleteQuery := `
+        DELETE FROM BeforeReturnOrderLine
+        WHERE RecID = :RecID
+    `
+    _, err = tx.NamedExecContext(ctx, deleteQuery, map[string]interface{}{
+        "RecID": recID,
+    })
+    if err != nil {
+        log.Printf("Error deleting BeforeReturnOrderLine by RecID: %v", err)
+        return fmt.Errorf("failed to delete BeforeReturnOrderLine: %w", err)
+    }
+
+    // Commit transaction
+    err = tx.Commit()
+    if err != nil {
+        log.Printf("Error committing transaction for DeleteBeforeReturnOrderLine: %v", err)
+        return fmt.Errorf("failed to commit transaction: %w", err)
+    }
+
+    return nil
 }

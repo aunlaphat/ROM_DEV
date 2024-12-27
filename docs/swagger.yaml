@@ -520,13 +520,13 @@ definitions:
         items:
           $ref: '#/definitions/response.OrderHeadDetail'
         type: array
+    type: object
+  response.OrderHeadDetail:
+    properties:
       OrderLineDetail:
         items:
           $ref: '#/definitions/response.OrderLineDetail'
         type: array
-    type: object
-  response.OrderHeadDetail:
-    properties:
       createDate:
         description: วันที่สร้างรายการ
         type: string
@@ -795,6 +795,49 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Create a new return order
+      tags:
+      - Before Return Order
+  /before-return-order/delete-befodline/{recID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an order line
+      operationId: delete-BeforeReturnOrderLine
+      parameters:
+      - description: Rec ID
+        in: path
+        name: recID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Before ReturnOrderLine Deleted
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  type: string
+              type: object
+        "204":
+          description: No Content, Order Delete Successfully
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Order Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Delete Order line
       tags:
       - Before Return Order
   /before-return-order/get-order:

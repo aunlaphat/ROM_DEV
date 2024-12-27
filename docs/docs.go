@@ -312,6 +312,75 @@ const docTemplate = `{
                 }
             }
         },
+        "/before-return-order/delete-befodline/{recID}": {
+            "delete": {
+                "description": "Delete an order line",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Before Return Order"
+                ],
+                "summary": "Delete Order line",
+                "operationId": "delete-BeforeReturnOrderLine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Rec ID",
+                        "name": "recID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Before ReturnOrderLine Deleted",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "204": {
+                        "description": "No Content, Order Delete Successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Order Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/before-return-order/get-order": {
             "get": {
                 "description": "Get all Before Return Order",
@@ -2487,18 +2556,18 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/response.OrderHeadDetail"
                     }
-                },
-                "OrderLineDetail": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.OrderLineDetail"
-                    }
                 }
             }
         },
         "response.OrderHeadDetail": {
             "type": "object",
             "properties": {
+                "OrderLineDetail": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.OrderLineDetail"
+                    }
+                },
                 "createDate": {
                     "description": "วันที่สร้างรายการ",
                     "type": "string"
