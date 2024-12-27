@@ -616,7 +616,7 @@ func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {
     var headDetails []response.OrderHeadDetail
     var lineDetails []response.OrderLineDetail
 
-    // Query for order head details
+    // Query Order Head
     headQuery := `
         SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
         FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
@@ -627,7 +627,7 @@ func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {
         return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
     }
 
-    // Query for order line details
+    // Query Order Line
     lineQuery := `
         SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
         FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
@@ -638,12 +638,18 @@ func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {
         return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
     }
 
-    // Combine head and line details into OrderDetail
+    // Map Order Lines to Order Heads
+    orderLineMap := make(map[string][]response.OrderLineDetail)
+    for _, line := range lineDetails {
+        orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
+    }
+
+    for i := range headDetails {
+        headDetails[i].OrderLineDetail = orderLineMap[headDetails[i].OrderNo]
+    }
+
     return []response.OrderDetail{
-        {
-            OrderHeadDetail: headDetails,
-            OrderLineDetail: lineDetails,
-        },
+        {OrderHeadDetail: headDetails},
     }, nil
 }
 
@@ -654,7 +660,7 @@ func (repo repositoryDB) GetOrderDetailBySO(soNo string) (*response.OrderDetail,
     var headDetails []response.OrderHeadDetail
     var lineDetails []response.OrderLineDetail
 
-    // Query for order head details
+    // Query Order Head
     headQuery := `
         SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
         FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
@@ -663,12 +669,12 @@ func (repo repositoryDB) GetOrderDetailBySO(soNo string) (*response.OrderDetail,
     err := repo.db.SelectContext(ctx, &headDetails, headQuery, sql.Named("SoNo", soNo))
     if err != nil {
         if err == sql.ErrNoRows {
-            return nil, fmt.Errorf("no order head details found for SoNo: %s", soNo)
+            return nil, fmt.Errorf("no order head found for SoNo: %s", soNo)
         }
         return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
     }
 
-    // Query for order line details
+    // Query Order Line
     lineQuery := `
         SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
         FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
@@ -676,14 +682,20 @@ func (repo repositoryDB) GetOrderDetailBySO(soNo string) (*response.OrderDetail,
     `
     err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("SoNo", soNo))
     if err != nil {
-        if err == sql.ErrNoRows {
-            return nil, fmt.Errorf("no order line details found for SoNo: %s", soNo)
-        }
         return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+    }
+
+    // Map Order Lines to Order Heads
+    orderLineMap := make(map[string][]response.OrderLineDetail)
+    for _, line := range lineDetails {
+        orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
+    }
+
+    for i := range headDetails {
+        headDetails[i].OrderLineDetail = orderLineMap[headDetails[i].OrderNo]
     }
 
     return &response.OrderDetail{
         OrderHeadDetail: headDetails,
-        OrderLineDetail: lineDetails,
     }, nil
 }
