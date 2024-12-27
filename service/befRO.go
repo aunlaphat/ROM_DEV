@@ -4,6 +4,8 @@ import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
 	"context"
+	"fmt"
+	"database/sql"
 
 	"go.uber.org/zap"
 )
@@ -15,6 +17,9 @@ type BefROService interface {
 	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
+
+	GetAllOrderDetail() ([]response.OrderDetail, error)
+	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
 }
 
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -97,4 +102,28 @@ func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderN
 	}
 	srv.logger.Debug("✅ Successfully fetched return order lines", zap.String("OrderNo", orderNo))
 	return lines, nil
+}
+
+// service เชื่อมกับ repo ต่อเพื่อดึงข้อมูลออกมา แต่ต้องมีการ validation ก่อนดึง
+func (srv service) 	GetAllOrderDetail() ([]response.OrderDetail, error) {
+	allorder, err := srv.befRORepo.GetAllOrderDetail()
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			srv.logger.Error(err)
+			return nil, fmt.Errorf("no order data: %w", err)
+		default:
+			srv.logger.Error(err)
+			return nil, fmt.Errorf("get order error: %w", err)
+		}
+	}
+	return allorder, nil
+}
+
+func (srv service) 	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error) {
+	soOrder, err := srv.befRORepo.GetOrderDetailBySO(soNo)
+	if err != nil {
+		return nil, err
+	}
+	return soOrder, nil
 }

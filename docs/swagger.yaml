@@ -514,6 +514,65 @@ definitions:
         example: 12345678TH
         type: string
     type: object
+  response.OrderDetail:
+    properties:
+      OrderHeadDetail:
+        items:
+          $ref: '#/definitions/response.OrderHeadDetail'
+        type: array
+      OrderLineDetail:
+        items:
+          $ref: '#/definitions/response.OrderLineDetail'
+        type: array
+    type: object
+  response.OrderHeadDetail:
+    properties:
+      createDate:
+        description: วันที่สร้างรายการ
+        type: string
+      orderNo:
+        description: เลขที่ใบสั่งซื้อ
+        type: string
+      salesStatus:
+        description: สถานะการขาย
+        type: string
+      soNo:
+        description: เลขที่ใบสั่งขาย
+        type: string
+      statusMKP:
+        description: สถานะในตลาด
+        type: string
+    type: object
+  response.OrderLineDetail:
+    properties:
+      createDate:
+        description: วันที่สร้างรายการ
+        type: string
+      itemName:
+        description: ชื่อสินค้า
+        type: string
+      orderNo:
+        description: เลขที่ใบสั่งซื้อ
+        type: string
+      price:
+        description: ราคาต่อหน่วย
+        type: number
+      qty:
+        description: จำนวนสินค้า
+        type: integer
+      salesStatus:
+        description: สถานะการขาย
+        type: string
+      sku:
+        description: รหัสสินค้า
+        type: string
+      soNo:
+        description: เลขที่ใบสั่งขาย
+        type: string
+      statusMKP:
+        description: สถานะในตลาด
+        type: string
+    type: object
 info:
   contact: {}
   description: This is a sample server for Boilerplate project .
@@ -736,6 +795,82 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Create a new return order
+      tags:
+      - Before Return Order
+  /before-return-order/get-order:
+    get:
+      consumes:
+      - application/json
+      description: Get all Before Return Order
+      operationId: Allget-BefReturnOrder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get All
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.OrderDetail'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Before Return Order
+      tags:
+      - Before Return Order
+  /before-return-order/get-orderbySO/{soNo}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of an order by its SO number
+      operationId: GetBySO-BefReturnOrder
+      parameters:
+      - description: soNo
+        in: path
+        name: soNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get by SO
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.OrderDetail'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Before Return Order by SO
       tags:
       - Before Return Order
   /before-return-order/line/{orderNo}:

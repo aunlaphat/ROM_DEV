@@ -17,7 +17,11 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
 		r.Get("/list-lines", app.ListBeforeReturnOrderLines) // Updated route for listing return order lines without orderNo
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
+
 		r.Post("/create-trade", app.CreateTradeReturn)
+		r.Get("/get-order", app.GetAllOrderDetail)
+		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)
+
 	})
 }
 
@@ -193,4 +197,48 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 	}
 
 	handleResponse(w, true, "Order lines retrieved successfully", result, http.StatusOK)
+}
+
+// @Summary 	Get Before Return Order
+// @Description Get all Before Return Order
+// @ID 			Allget-BefReturnOrder
+// @Tags 		Before Return Order
+// @Accept 		json
+// @Produce 	json
+// @Success 	200 {object} Response{result=[]response.OrderDetail} "Get All"
+// @Failure 	400 {object} Response "Bad Request"
+// @Failure 	404 {object} Response "not found endpoint"
+// @Failure 	500 {object} Response "Internal Server Error"
+// @Router 		/before-return-order/get-order [get]
+func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request) {
+
+	res, err := api.Service.BefRO.GetAllOrderDetail()
+	if err != nil {
+		HandleError(w, err)
+		return
+	}
+	handleResponse(w, true, response, res, http.StatusOK)
+}
+
+// @Summary      Get Before Return Order by SO
+// @Description  Get details of an order by its SO number
+// @ID           GetBySO-BefReturnOrder
+// @Tags         Before Return Order
+// @Accept       json
+// @Produce      json
+// @Param        soNo  path     string  true  "soNo"
+// @Success      200 	  {object} Response{result=[]response.OrderDetail} "Get by SO"
+// @Failure      400      {object} Response "Bad Request"
+// @Failure      404      {object} Response "not found endpoint"
+// @Failure      500      {object} Response "Internal Server Error"
+// @Router       /before-return-order/get-orderbySO/{soNo} [get]
+func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Request) {
+
+	soNo := chi.URLParam(r, "soNo") //รับค่าจากพาทเพื่อดึงข้อมูล returnid ตาม ReturnID in db
+	res, err := app.Service.BefRO.GetOrderDetailBySO(soNo)
+	if err != nil {
+		HandleError(w, err)
+		return
+	}
+	handleResponse(w, true, response, res, http.StatusOK)
 }

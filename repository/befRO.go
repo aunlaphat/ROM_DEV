@@ -36,6 +36,8 @@ type BefRORepository interface {
 	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
 	ListBeforeReturnOrderLinesByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
+	GetAllOrderDetail() ([]response.OrderDetail, error)
+	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
 
 	// Update
 	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
@@ -605,4 +607,83 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 
 	log.Printf("✅ Successfully updated BeforeReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
 	return nil
+}
+
+func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    var headDetails []response.OrderHeadDetail
+    var lineDetails []response.OrderLineDetail
+
+    // Query for order head details
+    headQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
+        ORDER BY OrderNo
+    `
+    err := repo.db.SelectContext(ctx, &headDetails, headQuery)
+    if err != nil {
+        return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
+    }
+
+    // Query for order line details
+    lineQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
+        ORDER BY OrderNo
+    `
+    err = repo.db.SelectContext(ctx, &lineDetails, lineQuery)
+    if err != nil {
+        return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+    }
+
+    // Combine head and line details into OrderDetail
+    return []response.OrderDetail{
+        {
+            OrderHeadDetail: headDetails,
+            OrderLineDetail: lineDetails,
+        },
+    }, nil
+}
+
+func (repo repositoryDB) GetOrderDetailBySO(soNo string) (*response.OrderDetail, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    var headDetails []response.OrderHeadDetail
+    var lineDetails []response.OrderLineDetail
+
+    // Query for order head details
+    headQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
+        WHERE SoNo = @SoNo
+    `
+    err := repo.db.SelectContext(ctx, &headDetails, headQuery, sql.Named("SoNo", soNo))
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, fmt.Errorf("no order head details found for SoNo: %s", soNo)
+        }
+        return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
+    }
+
+    // Query for order line details
+    lineQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
+        WHERE SoNo = @SoNo
+    `
+    err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("SoNo", soNo))
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, fmt.Errorf("no order line details found for SoNo: %s", soNo)
+        }
+        return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+    }
+
+    return &response.OrderDetail{
+        OrderHeadDetail: headDetails,
+        OrderLineDetail: lineDetails,
+    }, nil
 }

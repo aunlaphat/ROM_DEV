@@ -99,3 +99,28 @@ type CancelReturnOrder struct {
 type ReturnOrderHead struct {
 	ReturnOrder		   ReturnOrder		  `json:"ReturnOrder"`
 }
+
+type OrderLineDetail struct {
+    OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
+    SoNo        *string    `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
+    StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
+    SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
+    SKU         string    `db:"SKU" json:"sku"`                 // รหัสสินค้า
+    ItemName    string    `db:"ItemName" json:"itemName"`       // ชื่อสินค้า
+    QTY         int       `db:"QTY" json:"qty"`                 // จำนวนสินค้า
+    Price       float64   `db:"Price" json:"price"`             // ราคาต่อหน่วย
+    CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
+}
+
+type OrderHeadDetail struct {
+    OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
+    SoNo        *string    `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
+    StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
+    SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
+    CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
+}
+
+type OrderDetail struct {
+	OrderHeadDetail		[]OrderHeadDetail		  `json:"OrderHeadDetail"`
+	OrderLineDetail		[]OrderLineDetail		  `json:"OrderLineDetail"`
+}
