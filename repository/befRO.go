@@ -48,7 +48,7 @@ type BefRORepository interface {
 	//Cancle
 
 	//Search
-	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
+	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -328,7 +328,7 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error {
 	log.Printf("🚀 Starting CreateReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
 	tx, err := repo.db.BeginTxx(ctx, nil)
-	if (err != nil) {
+	if err != nil {
 		log.Printf("❌ Failed to start transaction: %v", err)
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
@@ -611,25 +611,32 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 }
 
 // Implementation สำหรับ SearchSaleOrder
-func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error) {
+func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error) {
 	log.Printf("🚀 Starting SearchSaleOrder for SoNo: %s", soNo)
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
 	queryHead := `
         SELECT SoNo, StatusMKP, SalesStatus, CreateDate
-        FROM V_OrderHeadDetail
+        FROM ROM_V_OrderHeadDetail
         WHERE SoNo = :SoNo
     `
 
 	queryLines := `
         SELECT SoNo, SKU, ItemName, QTY, Price
-        FROM V_OrderLineDetail
+        FROM ROM_V_OrderLineDetail
         WHERE SoNo = :SoNo
     `
 
 	var orderHead response.SaleOrderResponse
-	err := repo.db.GetContext(ctx, &orderHead, queryHead, map[string]interface{}{"SoNo": soNo})
+	nstmtHead, err := repo.db.PrepareNamed(queryHead)
+	if err != nil {
+		log.Printf("❌ Failed to prepare statement for order head: %v", err)
+		return nil, fmt.Errorf("failed to prepare statement for order head: %w", err)
+	}
+	defer nstmtHead.Close()
+
+	err = nstmtHead.GetContext(ctx, &orderHead, map[string]interface{}{"SoNo": soNo})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("❗ No order head found for SoNo: %s", soNo)
@@ -640,7 +647,14 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*res
 	}
 
 	var orderLines []response.SaleOrderLineResponse
-	err = repo.db.SelectContext(ctx, &orderLines, queryLines, map[string]interface{}{"SoNo": soNo})
+	nstmtLines, err := repo.db.PrepareNamed(queryLines)
+	if err != nil {
+		log.Printf("❌ Failed to prepare statement for order lines: %v", err)
+		return nil, fmt.Errorf("failed to prepare statement for order lines: %w", err)
+	}
+	defer nstmtLines.Close()
+
+	err = nstmtLines.SelectContext(ctx, &orderLines, map[string]interface{}{"SoNo": soNo})
 	if err != nil {
 		log.Printf("❌ Failed to fetch order lines: %v", err)
 		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
@@ -649,5 +663,5 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*res
 	orderHead.OrderLines = orderLines
 
 	log.Printf("✅ Successfully searched sale orders for SoNo: %s", soNo)
-	return &orderHead, nil
+	return []response.SaleOrderResponse{orderHead}, nil
 }

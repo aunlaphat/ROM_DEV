@@ -101,17 +101,17 @@ func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderN
 }
 
 // Implementation สำหรับ SearchSaleOrder
-func (srv service) SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error) {
+func (srv service) SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error) {
 	srv.logger.Debug("🚀 Starting SearchSaleOrder", zap.String("SoNo", soNo))
-	order, err := srv.befRORepo.SearchSaleOrder(ctx, soNo)
+	orders, err := srv.befRORepo.SearchSaleOrder(ctx, soNo)
 	if err != nil {
 		srv.logger.Error("❌ Failed to search sale orders", zap.Error(err))
 		return nil, err
 	}
-	if order == nil {
+	if orders == nil {
 		srv.logger.Debug("❗ No sale order found", zap.String("SoNo", soNo))
 		return nil, nil
 	}
 	srv.logger.Debug("✅ Successfully searched sale orders", zap.String("SoNo", soNo))
-	return order, nil
+	return orders, nil
 }

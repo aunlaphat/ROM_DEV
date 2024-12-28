@@ -5,6 +5,7 @@ package service
 import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
+
 	//"boilerplate-backend-go/errors"
 	"database/sql"
 	"fmt"
@@ -48,33 +49,33 @@ func (srv service) GetReturnOrderByID(returnID string) (*response.ReturnOrder, e
 
 func (srv service) CreateReturnOrder(req request.CreateReturnOrder) error {
 
-    // Validate input
-    if req.ReturnID == "" || req.OrderNo == "" {
-        return fmt.Errorf("ReturnID and OrderNo are required")
-    }
+	// Validate input
+	if req.ReturnID == "" || req.OrderNo == "" {
+		return fmt.Errorf("ReturnID and OrderNo are required")
+	}
 
-    // Call the repository to create the return order
-    err := srv.returnOrderRepo.CreateReturnOrder(req)
-    if err != nil {
-        log.Printf("Error: failed to create return order: %v\n", err)
-        return fmt.Errorf("could not create return order: %w", err)
-    }
+	// Call the repository to create the return order
+	err := srv.returnOrderRepo.CreateReturnOrder(req)
+	if err != nil {
+		log.Printf("Error: failed to create return order: %v\n", err)
+		return fmt.Errorf("could not create return order: %w", err)
+	}
 
-    return nil
+	return nil
 }
 
 func (srv service) UpdateReturnOrder(req request.UpdateReturnOrder) error {
-    if req.ReturnID == "" {
-        return fmt.Errorf("ReturnID is required")
-    }
+	if req.ReturnID == "" {
+		return fmt.Errorf("ReturnID is required")
+	}
 
-    // ส่งไปยัง Repository Layer
-    err := srv.returnOrderRepo.UpdateReturnOrder(req)
-    if err != nil {
-        return fmt.Errorf("failed to update return order: %w", err)
-    }
+	// ส่งไปยัง Repository Layer
+	err := srv.returnOrderRepo.UpdateReturnOrder(req)
+	if err != nil {
+		return fmt.Errorf("failed to update return order: %w", err)
+	}
 
-    return nil
+	return nil
 }
 
 func (srv service) DeleteReturnOrder(returnID string) error {
