@@ -92,6 +92,27 @@ definitions:
       nameTH:
         type: string
     type: object
+  entity.ROM_V_ProductAll:
+    properties:
+      barcode:
+        description: บาร์โค้ดของสินค้า
+        type: string
+      nameAlias:
+        description: ชื่อย่อของสินค้า
+        type: string
+      size:
+        description: ขนาดของสินค้า
+        type: string
+      sizeID:
+        description: รหัสขนาดของสินค้า
+        type: string
+      sku:
+        description: รหัสสินค้า
+        type: string
+      type:
+        description: ประเภทของสินค้า
+        type: string
+    type: object
   entity.ReturnOrder:
     properties:
       axStatusID:
@@ -152,6 +173,48 @@ definitions:
         description: วันที่แก้ไขล่าสุด
         type: string
     type: object
+  entity.ReturnOrderLine:
+    properties:
+      alterSKU:
+        description: รหัสสินค้าทดแทน
+        type: string
+      checkQTY:
+        description: จำนวนที่ตรวจสอบแล้ว
+        type: integer
+      createBy:
+        description: ผู้สร้างรายการ
+        type: string
+      createDate:
+        description: วันที่สร้างรายการ
+        type: string
+      orderNo:
+        description: เลขที่ใบสั่งซื้อ
+        type: string
+      price:
+        description: ราคาต่อหน่วย
+        type: number
+      recID:
+        description: รหัสอ้างอิงอัตโนมัติ
+        type: integer
+      returnID:
+        description: เลขที่ใบคืนสินค้า (FK -> ReturnOrder)
+        type: string
+      returnQTY:
+        description: จำนวนที่คืน
+        type: integer
+      sku:
+        description: รหัสสินค้า
+        type: string
+      trackingNo:
+        description: เลขพัสดุ
+        type: string
+      updateBy:
+        description: ผู้แก้ไขล่าสุด
+        type: string
+      updateDate:
+        description: วันที่แก้ไขล่าสุด
+        type: string
+    type: object
   entity.SubDistrict:
     properties:
       code:
@@ -163,6 +226,18 @@ definitions:
       nameTH:
         type: string
       zipCode:
+        type: string
+    type: object
+  entity.Warehouse:
+    properties:
+      location:
+        description: ที่ตั้งของคลังสินค้า
+        type: string
+      warehouseID:
+        description: รหัสคลังสินค้า
+        type: integer
+      warehouseName:
+        description: ชื่อคลังสินค้า
         type: string
     type: object
   request.BeforeReturnOrder:
@@ -439,6 +514,65 @@ definitions:
         example: 12345678TH
         type: string
     type: object
+  response.OrderDetail:
+    properties:
+      OrderHeadDetail:
+        items:
+          $ref: '#/definitions/response.OrderHeadDetail'
+        type: array
+    type: object
+  response.OrderHeadDetail:
+    properties:
+      OrderLineDetail:
+        items:
+          $ref: '#/definitions/response.OrderLineDetail'
+        type: array
+      createDate:
+        description: วันที่สร้างรายการ
+        type: string
+      orderNo:
+        description: เลขที่ใบสั่งซื้อ
+        type: string
+      salesStatus:
+        description: สถานะการขาย
+        type: string
+      soNo:
+        description: เลขที่ใบสั่งขาย
+        type: string
+      statusMKP:
+        description: สถานะในตลาด
+        type: string
+    type: object
+  response.OrderLineDetail:
+    properties:
+      createDate:
+        description: วันที่สร้างรายการ
+        type: string
+      itemName:
+        description: ชื่อสินค้า
+        type: string
+      orderNo:
+        description: เลขที่ใบสั่งซื้อ
+        type: string
+      price:
+        description: ราคาต่อหน่วย
+        type: number
+      qty:
+        description: จำนวนสินค้า
+        type: integer
+      salesStatus:
+        description: สถานะการขาย
+        type: string
+      sku:
+        description: รหัสสินค้า
+        type: string
+      soNo:
+        description: เลขที่ใบสั่งขาย
+        type: string
+      statusMKP:
+        description: สถานะในตลาด
+        type: string
+    type: object
 info:
   contact: {}
   description: This is a sample server for Boilerplate project .
@@ -632,6 +766,156 @@ paths:
       summary: Create a new return order with lines
       tags:
       - Before Return Order
+  /before-return-order/create-trade:
+    post:
+      consumes:
+      - application/json
+      description: Create a new return order
+      operationId: create-trade-return
+      parameters:
+      - description: Trade Return Detail
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.BeforeReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Create a new return order
+      tags:
+      - Before Return Order
+  /before-return-order/delete-befodline/{recID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an order line
+      operationId: delete-BeforeReturnOrderLine
+      parameters:
+      - description: Rec ID
+        in: path
+        name: recID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Before ReturnOrderLine Deleted
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  type: string
+              type: object
+        "204":
+          description: No Content, Order Delete Successfully
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Order Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Delete Order line
+      tags:
+      - Before Return Order
+  /before-return-order/get-order:
+    get:
+      consumes:
+      - application/json
+      description: Get all Before Return Order
+      operationId: Allget-BefReturnOrder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get All
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.OrderDetail'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Before Return Order
+      tags:
+      - Before Return Order
+  /before-return-order/get-orderbySO/{soNo}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of an order by its SO number
+      operationId: GetBySO-BefReturnOrder
+      parameters:
+      - description: soNo
+        in: path
+        name: soNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get by SO
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.OrderDetail'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Before Return Order by SO
+      tags:
+      - Before Return Order
   /before-return-order/line/{orderNo}:
     get:
       consumes:
@@ -706,36 +990,6 @@ paths:
       summary: List all return orders
       tags:
       - Before Return Order
-  /before-return-order/search/{soNo}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve the details of a sale order by its SO number
-      operationId: search-sale-order
-      parameters:
-      - description: SO number
-        in: path
-        name: soNo
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Search sale order by SO number
-      tags:
-      - Search Sale Order
   /before-return-order/update/{orderNo}:
     put:
       consumes:
@@ -807,6 +1061,41 @@ paths:
       summary: Get Thai District
       tags:
       - Constants
+  /constants/get-productAll:
+    get:
+      consumes:
+      - application/json
+      description: Get all product
+      operationId: get-productAll
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ROM_V_ProductAll'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: SubDistrict not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get ProductAll
+      tags:
+      - Constants
   /constants/get-province:
     get:
       consumes:
@@ -875,6 +1164,41 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get Thai SubDistrict
+      tags:
+      - Constants
+  /constants/get-warehouse:
+    get:
+      consumes:
+      - application/json
+      description: Get Warehouse
+      operationId: get-warehouse
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Warehouse
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.Warehouse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: SubDistrict not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Warehouse
       tags:
       - Constants
   /orders/allgetorder:
@@ -1118,6 +1442,41 @@ paths:
       summary: Get Return Order
       tags:
       - ReturnOrder
+  /reorder/allgetline:
+    get:
+      consumes:
+      - application/json
+      description: Get all Return Order Line
+      operationId: Allget-ReturnOrderLine
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get Order Line All
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ReturnOrderLine'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Order Line
+      tags:
+      - ReturnOrder
   /reorder/create:
     post:
       consumes:
@@ -1238,6 +1597,47 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get Return Order by ID
+      tags:
+      - ReturnOrder
+  /reorder/getlinebyID/{returnID}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of an order line by its return id
+      operationId: GetLineByID-ReturnOrder
+      parameters:
+      - description: Return ID
+        in: path
+        name: returnID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get by ID
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ReturnOrderLine'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Order Line by ID
       tags:
       - ReturnOrder
   /reorder/update/{returnID}:

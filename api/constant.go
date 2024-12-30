@@ -13,6 +13,9 @@ func (app *Application) Constants(apiRouter *chi.Mux) {
 		r.Get("/get-province", app.GetThaiProvince)
 		r.Get("/get-district", app.GetThaiDistrict)
 		r.Get("/get-sub-district", app.GetThaiSubDistrict)
+		r.Get("/get-warehouse", app.GetWarehouse)
+		r.Get("/get-productAll", app.GetProductAll)
+		//r.Get("/get-customer", app.GetCustomer)
 	})
 }
 
@@ -75,3 +78,63 @@ func (app *Application) GetThaiSubDistrict(w http.ResponseWriter, r *http.Reques
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
 }
+
+// @Summary Get Warehouse
+// @Description Get Warehouse
+// @ID get-warehouse
+// @Tags Constants
+// @Accept json
+// @Produce json
+// @Success 200 {object} Response{result=[]entity.Warehouse} "Warehouse"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 404 {object} Response "SubDistrict not found"
+// @Failure 500 {object} Response "Internal Server Error"
+// @Router /constants/get-warehouse [get]
+func (app *Application) GetWarehouse(w http.ResponseWriter, r *http.Request) {
+	res, err := app.Service.Constant.GetWarehouse()
+	if err != nil {
+		HandleError(w, err)
+		return
+	}
+	handleResponse(w, true, response, res, http.StatusOK)
+}
+
+// @Summary Get ProductAll
+// @Description Get all product
+// @ID get-productAll
+// @Tags Constants
+// @Accept json
+// @Produce json
+// @Success 200 {object} Response{result=[]entity.ROM_V_ProductAll} "Product"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 404 {object} Response "SubDistrict not found"
+// @Failure 500 {object} Response "Internal Server Error"
+// @Router /constants/get-productAll [get]
+func (app *Application) GetProductAll(w http.ResponseWriter, r *http.Request) {
+	res, err := app.Service.Constant.GetProductAll()
+	if err != nil {
+		HandleError(w, err)
+		return
+	}
+	handleResponse(w, true, response, res, http.StatusOK)
+}
+
+// // @Summary Get Customer
+// // @Description Get inform customer
+// // @ID get-customer
+// // @Tags Constants
+// // @Accept json
+// // @Produce json
+// // @Success 200 {object} Response{result=[]entity.ROM_V_Customer} "Customer"
+// // @Failure 400 {object} Response "Bad Request"
+// // @Failure 404 {object} Response "SubDistrict not found"
+// // @Failure 500 {object} Response "Internal Server Error"
+// // @Router /constants/get-customer [get]
+// func (app *Application) GetCustomer(w http.ResponseWriter, r *http.Request) {
+// 	res, err := app.Service.Constant.GetThaiSubDistrict()
+// 	if err != nil {
+// 		HandleError(w, err)
+// 		return
+// 	}
+// 	handleResponse(w, true, response, res, http.StatusOK)
+// }
