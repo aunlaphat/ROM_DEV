@@ -1747,4 +1747,39 @@ paths:
       summary: User Login
       tags:
       - LoginTest
+  /user/get-user:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of a user by their username and password
+      operationId: get-user
+      parameters:
+      - description: Username
+        in: query
+        name: username
+        required: true
+        type: string
+      - description: Password
+        in: query
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get user by username and password
+      tags:
+      - User
 swagger: "2.0"

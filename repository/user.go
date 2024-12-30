@@ -4,11 +4,13 @@ import (
 	response "boilerplate-backend-go/dto/response"
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 )
 
+// UserRepository interface กำหนด method สำหรับการทำงานกับฐานข้อมูลผู้ใช้
 type UserRepository interface {
-	GetUser(username, password string) (response.Login, error)
+	GetUser(ctx context.Context, username, password string) (response.Login, error)
 	GetUserFromLark(username, userID string) (response.Login, error)
 }
 
@@ -32,6 +34,23 @@ func (repo repositoryDB) GetUserFromLark(username, userID string) (response.Logi
 	return user, nil
 }
 
-func (repo repositoryDB) GetUser(username, password string) (response.Login, error) {
-	return response.Login{}, nil
+// Implementation สำหรับ GetUser
+func (repo repositoryDB) GetUser(ctx context.Context, username, password string) (response.Login, error) {
+	var user response.Login
+	query := `
+        SELECT UserID, UserName, NickName, FullNameTH, DepartmentNo
+        FROM ROM_V_User
+        WHERE UserName = :username AND Password = :password
+    `
+	params := map[string]interface{}{
+		"username": username,
+		"password": password,
+	}
+
+	err := repo.db.GetContext(ctx, &user, query, params)
+	if err != nil {
+		return response.Login{}, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return user, nil
 }

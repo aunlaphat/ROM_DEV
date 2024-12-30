@@ -162,3 +162,15 @@ FROM         Data_WEBChecker.dbo.[Order] INNER JOIN
                       DFIXAX63LIVE_2019.dbo.SALESTABLE ON Data_WEBChecker.dbo.[Order].SoNo = DFIXAX63LIVE_2019.dbo.SALESTABLE.SALESID
 WHERE     (Data_WEBChecker.dbo.[Order].CreateDate > CONVERT(DATETIME, '2024-11-01 00:00:00', 102)) AND (Data_WEBChecker.dbo.[Order].OptStatusID <> 8)
 GO
+
+--------------------------
+
+CREATE VIEW [db_owner].[ROM_V_UserPermission]
+AS
+SELECT        TOP (100) PERCENT db_owner.UserRole.UserID, dbo.ROM_V_User.Username, dbo.ROM_V_User.Password, dbo.ROM_V_User.NickName, dbo.ROM_V_User.FullNameTH, dbo.ROM_V_User.DepartmentNo, 
+                         db_owner.UserRole.RoleID, db_owner.Role.RoleName, db_owner.Role.Description, db_owner.Role.Permission
+FROM            db_owner.UserRole INNER JOIN
+                         db_owner.Role ON db_owner.UserRole.RoleID = db_owner.Role.RoleID INNER JOIN
+                         dbo.ROM_V_User ON db_owner.UserRole.UserID = dbo.ROM_V_User.UserID
+ORDER BY db_owner.UserRole.UserID
+GO

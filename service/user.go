@@ -4,14 +4,19 @@ import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
+	"context"
 	"crypto/md5"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
+
+	"go.uber.org/zap"
 )
 
 type UserService interface {
 	Login(req request.LoginWeb) (response.Login, error)
 	LoginLark(req request.LoginLark) (response.Login, error)
+	GetUser(ctx context.Context, username, password string) (response.Login, error)
 }
 
 func (srv service) Login(req request.LoginWeb) (response.Login, error) {
@@ -23,7 +28,8 @@ func (srv service) Login(req request.LoginWeb) (response.Login, error) {
 	hasher := md5.New()
 	hasher.Write([]byte(req.Password))
 	hashedPassword := hex.EncodeToString(hasher.Sum(nil))
-	res, err := srv.userRepo.GetUser(req.UserName, hashedPassword)
+	ctx := context.Background()
+	res, err := srv.userRepo.GetUser(ctx, req.UserName, hashedPassword)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -54,4 +60,17 @@ func (srv service) LoginLark(req request.LoginLark) (response.Login, error) {
 		}
 	}
 	return res, nil
+}
+
+func (srv service) GetUser(ctx context.Context, username, password string) (response.Login, error) {
+	srv.logger.Debug("🚀 Starting GetUser", zap.String("username", username))
+
+	user, err := srv.userRepo.GetUser(ctx, username, password)
+	if err != nil {
+		srv.logger.Error("❌ Failed to get user", zap.Error(err))
+		return response.Login{}, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	srv.logger.Debug("✅ Successfully retrieved user", zap.String("username", username))
+	return user, nil
 }

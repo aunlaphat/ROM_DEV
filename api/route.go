@@ -61,6 +61,7 @@ func (app *Application) routes() http.Handler {
 	app.FileServerRoute(apiRouter)
 	app.Constants(apiRouter)
 	app.Excels(apiRouter)
+	app.UserRoute(apiRouter)
 	app.BefRORoute(apiRouter)
 	app.Orders(apiRouter)
 	app.ReturnOrders(apiRouter)
