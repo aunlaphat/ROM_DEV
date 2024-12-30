@@ -17,7 +17,7 @@ type BefROService interface {
 	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
-
+	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
 	GetAllOrderDetail() ([]response.OrderDetail, error)
 	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
 	DeleteBeforeReturnOrderLine(recID string) error
@@ -103,6 +103,18 @@ func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderN
 	}
 	srv.logger.Debug("✅ Successfully fetched return order lines", zap.String("OrderNo", orderNo))
 	return lines, nil
+}
+
+// Implementation สำหรับ SearchSaleOrder
+func (srv service) SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error) {
+	srv.logger.Debug("🚀 Starting SearchSaleOrder", zap.String("SoNo", soNo))
+	order, err := srv.befRORepo.SearchSaleOrder(ctx, soNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to search sale order", zap.Error(err))
+		return nil, err
+	}
+	srv.logger.Debug("✅ Successfully searched sale order", zap.String("SoNo", soNo))
+	return order, nil
 }
 
 // service เชื่อมกับ repo ต่อเพื่อดึงข้อมูลออกมา แต่ต้องมีการ validation ก่อนดึง

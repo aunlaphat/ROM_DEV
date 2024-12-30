@@ -22,6 +22,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Get("/get-order", app.GetAllOrderDetail)
 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)
 		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine)
+		r.Get("/search/{soNo}", app.SearchSaleOrder) // New route for searching sale order by SO number
 
 	})
 }
@@ -274,4 +275,32 @@ func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *ht
 		"success": true,
 		"message": "Return order deleted successfully",
 	})
+}
+
+// SearchSaleOrder godoc
+// @Summary Search sale order by SO number
+// @Description Retrieve the details of a sale order by its SO number
+// @ID search-sale-order
+// @Tags Before Return Order
+// @Accept json
+// @Produce json
+// @Param soNo path string true "SO number"
+// @Success 200 {object} api.Response
+// @Failure 404 {object} api.Response
+// @Failure 500 {object} api.Response
+// @Router /before-return-order/search/{soNo} [get]
+func (app *Application) SearchSaleOrder(w http.ResponseWriter, r *http.Request) {
+	soNo := chi.URLParam(r, "soNo")
+	result, err := app.Service.BefRO.SearchSaleOrder(r.Context(), soNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if result == nil {
+		handleResponse(w, false, "Sale order not found", nil, http.StatusNotFound)
+		return
+	}
+
+	handleResponse(w, true, "Sale order retrieved successfully", result, http.StatusOK)
 }

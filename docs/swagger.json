@@ -608,6 +608,51 @@
                 }
             }
         },
+        "/before-return-order/search/{soNo}": {
+            "get": {
+                "description": "Retrieve the details of a sale order by its SO number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Before Return Order"
+                ],
+                "summary": "Search sale order by SO number",
+                "operationId": "search-sale-order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SO number",
+                        "name": "soNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/before-return-order/update/{orderNo}": {
             "put": {
                 "description": "Update an existing return order with the provided details",

@@ -49,6 +49,9 @@ type BefRORepository interface {
 
 	//Cancle
 	DeleteBeforeReturnOrderLine(recID string) error
+
+	// Search
+	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -608,6 +611,62 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 
 	log.Printf("✅ Successfully updated BeforeReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
 	return nil
+}
+
+// Implementation สำหรับ SearchSaleOrder
+func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error) {
+	log.Printf("🚀 Starting SearchSaleOrder for SoNo: %s", soNo)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	queryHead := `
+        SELECT SoNo, StatusMKP, SalesStatus, CreateDate
+        FROM ROM_V_OrderHeadDetail
+        WHERE SoNo = :SoNo
+    `
+
+	queryLines := `
+        SELECT SKU, ItemName, QTY, Price
+        FROM ROM_V_OrderLineDetail
+        WHERE SoNo = :SoNo
+    `
+
+	var orderHead response.SaleOrderResponse
+	nstmtHead, err := repo.db.PrepareNamed(queryHead)
+	if err != nil {
+		log.Printf("❌ Failed to prepare statement for order head: %v", err)
+		return nil, fmt.Errorf("failed to prepare statement for order head: %w", err)
+	}
+	defer nstmtHead.Close()
+
+	err = nstmtHead.GetContext(ctx, &orderHead, map[string]interface{}{"SoNo": soNo})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("❗ No order head found for SoNo: %s", soNo)
+			return nil, nil
+		}
+		log.Printf("❌ Failed to fetch order head: %v", err)
+		return nil, fmt.Errorf("failed to fetch order head: %w", err)
+	}
+
+	var orderLines []response.SaleOrderLineResponse
+	nstmtLines, err := repo.db.PrepareNamed(queryLines)
+	if err != nil {
+		log.Printf("❌ Failed to prepare statement for order lines: %v", err)
+		return nil, fmt.Errorf("failed to prepare statement for order lines: %w", err)
+	}
+	defer nstmtLines.Close()
+
+	err = nstmtLines.SelectContext(ctx, &orderLines, map[string]interface{}{"SoNo": soNo})
+	if err != nil {
+		log.Printf("❌ Failed to fetch order lines: %v", err)
+		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
+	}
+
+	orderHead.OrderLines = orderLines
+
+	log.Printf("✅ Successfully searched sale orders for SoNo: %s", soNo)
+	return []response.SaleOrderResponse{orderHead}, nil
 }
 
 func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {

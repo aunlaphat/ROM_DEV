@@ -990,6 +990,36 @@ paths:
       summary: List all return orders
       tags:
       - Before Return Order
+  /before-return-order/search/{soNo}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of a sale order by its SO number
+      operationId: search-sale-order
+      parameters:
+      - description: SO number
+        in: path
+        name: soNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search sale order by SO number
+      tags:
+      - Before Return Order
   /before-return-order/update/{orderNo}:
     put:
       consumes:

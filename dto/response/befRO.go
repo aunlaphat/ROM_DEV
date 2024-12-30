@@ -47,7 +47,7 @@ type SaleOrderResponse struct {
 }
 
 type SaleOrderLineResponse struct {
-	SoNo     string  `json:"soNo" db:"SoNo"`
+	//SoNo     string  `json:"soNo" db:"SoNo"`
 	SKU      string  `json:"sku" db:"SKU"`
 	ItemName string  `json:"itemName" db:"ItemName"`
 	QTY      int     `json:"qty" db:"QTY"`
