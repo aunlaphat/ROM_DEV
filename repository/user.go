@@ -47,7 +47,13 @@ func (repo repositoryDB) GetUser(ctx context.Context, username, password string)
 		"password": password,
 	}
 
-	err := repo.db.GetContext(ctx, &user, query, params)
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return response.Login{}, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
+
+	err = nstmt.GetContext(ctx, &user, params)
 	if err != nil {
 		return response.Login{}, fmt.Errorf("failed to get user: %w", err)
 	}
