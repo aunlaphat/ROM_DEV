@@ -21,7 +21,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Post("/create-trade", app.CreateTradeReturn)
 		r.Get("/get-order", app.GetAllOrderDetail)
 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)
-		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine) 
+		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine)
 
 	})
 }
@@ -74,8 +74,8 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
 }
 
-// @Summary Create a new return order 
-// @Description Create a new return order 
+// @Summary Create a new return order
+// @Description Create a new return order
 // @ID create-trade-return
 // @Tags Before Return Order
 // @Accept json
