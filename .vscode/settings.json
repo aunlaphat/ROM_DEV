@@ -1,3 +1,14 @@
 {
-    "CodeGPT.apiKey": "CodeGPT Plus Beta"
+        "CodeGPT.apiKey": "CodeGPT Plus Beta",
+        "terminal.integrated.defaultProfile.windows": "Command Prompt",
+        "git.ignoreMissingGitWarning": true,
+        "editor.accessibilityPageSize": 12,
+        "editor.fontLigatures": "'calt', 'liga', 'ss01', 'ss02', 'ss03', 'ss04', 'ss05', 'ss06', 'ss07', 'ss08', 'ss09'",
+        "terminal.integrated.fontSize": 16,
+        "explorer.confirmDelete": false,
+        "go.toolsManagement.autoUpdate": true,
+        "diffEditor.ignoreTrimWhitespace": true,
+        "git.autofetch": true,
+        "chat.editing.confirmEditRequestRetry": false,
+        "files.autoSave": "afterDelay",
 }

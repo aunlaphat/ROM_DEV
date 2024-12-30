@@ -2,6 +2,57 @@ package entity
 
 import "time"
 
+// BeforeReturnOrder represents the structure of the BeforeReturnOrder table
+type BeforeReturnOrder struct {
+	RecID          int        `db:"RecID"`
+	OrderNo        string     `db:"OrderNo"`
+	SaleOrder      string     `db:"SaleOrder"`
+	SaleReturn     string     `db:"SaleReturn"`
+	ChannelID      int        `db:"ChannelID"`
+	ReturnType     string     `db:"ReturnType"`
+	CustomerID     string     `db:"CustomerID"`
+	TrackingNo     string     `db:"TrackingNo"`
+	Logistic       string     `db:"Logistic"`
+	WarehouseID    int        `db:"WarehouseID"`
+	SoStatusID     *int       `db:"SoStatusID"`
+	MkpStatusID    *int       `db:"MkpStatusID"`
+	ReturnDate     *time.Time `db:"ReturnDate"`
+	StatusReturnID int        `db:"StatusReturnID"`
+	StatusConfID   int        `db:"StatusConfID"`
+	ConfirmBy      *string    `db:"ConfirmBy"`
+	CreateBy       string     `db:"CreateBy"`
+	CreateDate     time.Time  `db:"CreateDate"`
+	UpdateBy       *string    `db:"UpdateBy"`
+	UpdateDate     *time.Time `db:"UpdateDate"`
+	CancelID       *int       `db:"CancelID"`
+}
+
+// BeforeReturnOrderLine คือตารางสำหรับเก็บรายการสินค้าที่ต้องการคืน
+// เป็นรายละเอียดของแต่ละรายการในใบคืนสินค้า
+type BeforeReturnOrderLine struct {
+	RecID      int        `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ
+	OrderNo    string     `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ (FK -> BeforeReturnOrder)
+	SKU        string     `db:"SKU"`        // รหัสสินค้า
+	QTY        *int       `db:"QTY"`        // จำนวนสินค้าที่ซื้อ
+	ReturnQTY  *int       `db:"ReturnQTY"`  // จำนวนที่ต้องการคืน
+	Price      *float64   `db:"Price"`      // ราคาต่อหน่วย
+	CreateBy   string     `db:"CreateBy"`   // ผู้สร้างรายการ
+	CreateDate time.Time  `db:"CreateDate"` // วันที่สร้างรายการ
+	AlterSKU   *string    `db:"AlterSKU"`   // รหัสสินค้าทดแทน (ถ้ามี)
+	UpdateBy   *string    `db:"UpdateBy"`   // ผู้แก้ไขล่าสุด
+	UpdateDate *time.Time `db:"UpdateDate"` // วันที่แก้ไขล่าสุด
+	TrackingNo string     `db:"TrackingNo"` // เลขพัสดุ
+}
+
+type CancelStatus struct {
+	CancelID     int       `db:"CancelID"` // รหัสการยกเลิก (Primary Key)
+	RefID        string    `db:"RefID"`    // เลขที่ใบสั่งซื้อ (Foreign Key -> BeforeReturnOrder)
+	CancelStatus bool      `db:"CancelStatus"`
+	Remark       string    `db:"Remark"`     // เหตุผลในการยกเลิก
+	CancelBy     string    `db:"CancelBy"`   // ผู้ยกเลิก
+	CancelDate   time.Time `db:"CancelDate"` // วันที่ยกเลิก
+}
+
 type Order struct {
 	OrderNo         string     `json:"orderNo" db:"OrderNo" example:"OD0001"`
 	BrandName       *string    `json:"brandName" db:"BrandName" example:"BEWELL"`
@@ -26,70 +77,6 @@ type OrderLine struct {
 	ItemName *string  `json:"itemName" db:"ItemName" example:"เก้าอี้"`
 	QTY      *int     `json:"qty" db:"QTY" example:"5"`
 	Price    *float64 `json:"price" db:"Price" example:"5900.00"`
-}
-
-// User schema
-type User struct {
-	UserID       string `db:"UserID" json:"userID"`
-	UserName     string `db:"UserName" json:"userName"`
-	RoleID       int    `db:"RoleID" json:"roleID"`
-	PermissionID string `db:"PermissionID" json:"permissionID"`
-	DeptNo       string `db:"DeptNo" json:"deptNo"`
-	NickName     string `db:"NickName" json:"nickName"`
-	FullNameTH   string `db:"FullNameTH" json:"fullNameTH"`
-	FullNameEN   string `db:"FullNameEN" json:"fullNameEN"`
-}
-
-// BeforeReturnOrder represents the structure of the BeforeReturnOrder table
-type BeforeReturnOrder struct {
-	RecID          int        `db:"RecID"`
-	OrderNo        string     `db:"OrderNo"`
-	SaleOrder      string     `db:"SaleOrder"`
-	SaleReturn     string     `db:"SaleReturn"`
-	ChannelID      int        `db:"ChannelID"`
-	ReturnType     string     `db:"ReturnType"`
-	CustomerID     string     `db:"CustomerID"`
-	TrackingNo     string     `db:"TrackingNo"`
-	Logistic       string     `db:"Logistic"`
-	WarehouseID    int        `db:"WarehouseID"`
-	SoStatusID     *int       `db:"SoStatusID"`
-	MkpStatusID    *int       `db:"MkpStatusID"`
-	ReturnDate     *time.Time `db:"ReturnDate"`
-	StatusReturnID int        `db:"StatusReturnID"`
-	StatusConfID   int        `db:"StatusConfID"`
-	ConfirmBy      *string    `db:"ConfirmBy"`
-	CreateBy       string     `db:"CreateBy"`
-	CreateDate     time.Time  `db:"CreateDate"`
-	UpdateBy       *string    `db:"UpdateBy"`
-	UpdateDate     *time.Time `db:"UpdateDate"`
-	CancelID       *int       `db:"CancelID"`
-
-}
-
-type CancelStatus struct {
-	CancelID   		int       `db:"CancelID"`   // รหัสการยกเลิก (Primary Key)
-	RefID      		string    `db:"RefID"`      // เลขที่ใบสั่งซื้อ (Foreign Key -> BeforeReturnOrder)
-	CancelStatus 	bool	  `db:"CancelStatus"` 
-	Remark     		string    `db:"Remark"`     // เหตุผลในการยกเลิก
-	CancelBy   		string    `db:"CancelBy"`   // ผู้ยกเลิก
-	CancelDate 		time.Time `db:"CancelDate"` // วันที่ยกเลิก
-}
-
-// BeforeReturnOrderLine คือตารางสำหรับเก็บรายการสินค้าที่ต้องการคืน
-// เป็นรายละเอียดของแต่ละรายการในใบคืนสินค้า
-type BeforeReturnOrderLine struct {
-	RecID      int        `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ
-	OrderNo    string     `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ (FK -> BeforeReturnOrder)
-	SKU        string     `db:"SKU"`        // รหัสสินค้า
-	QTY        *int       `db:"QTY"`        // จำนวนสินค้าที่ซื้อ
-	ReturnQTY  *int       `db:"ReturnQTY"`  // จำนวนที่ต้องการคืน
-	Price      *float64   `db:"Price"`      // ราคาต่อหน่วย
-	CreateBy   string     `db:"CreateBy"`   // ผู้สร้างรายการ
-	CreateDate time.Time  `db:"CreateDate"` // วันที่สร้างรายการ
-	AlterSKU   *string    `db:"AlterSKU"`   // รหัสสินค้าทดแทน (ถ้ามี)
-	UpdateBy   *string    `db:"UpdateBy"`   // ผู้แก้ไขล่าสุด
-	UpdateDate *time.Time `db:"UpdateDate"` // วันที่แก้ไขล่าสุด
-	TrackingNo string     `db:"TrackingNo"` // เลขพัสดุ
 }
 
 // ReturnOrder คือตารางสำหรับเก็บข้อมูลการคืนสินค้าที่ผ่านการตรวจสอบแล้ว
@@ -152,46 +139,57 @@ const (
 	StatusCheckFailed     = 4 // ตรวจสอบพบปัญหา
 )
 
-
-type ROM_V_User struct {
-	UserID     string `json:"userID,omitempty" db:"UserID" example:"DC64205"`
-	UserName   string `json:"userName,omitempty" db:"Username" example:"aunlaphat.art"`
-	NickName   string `json:"nickName,omitempty" db:"NickName" example:"fa"`
-	FullNameTH string `json:"fullNameTH,omitempty" db:"FullNameTH" example:"อัญญ์ลภัส อาจสุริยงค์"`
-	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo" example:"G01"`
-}
-
 type Warehouse struct {
-    WarehouseID   int    `db:"WarehouseID" json:"warehouseID"`     // รหัสคลังสินค้า
-    WarehouseName string `db:"WarehouseName" json:"warehouseName"` // ชื่อคลังสินค้า
-    Location      string `db:"Location" json:"location"`           // ที่ตั้งของคลังสินค้า
+	WarehouseID   int    `db:"WarehouseID" json:"warehouseID"`     // รหัสคลังสินค้า
+	WarehouseName string `db:"WarehouseName" json:"warehouseName"` // ชื่อคลังสินค้า
+	Location      string `db:"Location" json:"location"`           // ที่ตั้งของคลังสินค้า
 }
 
 type ROM_V_ProductAll struct {
-    SKU       string  `db:"SKU" json:"sku"`             // รหัสสินค้า
-    NameAlias string  `db:"NAMEALIAS" json:"nameAlias"` // ชื่อย่อของสินค้า
-    Size      string  `db:"Size" json:"size"`           // ขนาดของสินค้า
-    SizeID    string  `db:"SizeID" json:"sizeID"`       // รหัสขนาดของสินค้า
-    Barcode   *string  `db:"Barcode" json:"barcode"`     // บาร์โค้ดของสินค้า
-    Type      *string  `db:"Type" json:"type"`           // ประเภทของสินค้า
+	SKU       string  `db:"SKU" json:"sku"`             // รหัสสินค้า
+	NameAlias string  `db:"NAMEALIAS" json:"nameAlias"` // ชื่อย่อของสินค้า
+	Size      string  `db:"Size" json:"size"`           // ขนาดของสินค้า
+	SizeID    string  `db:"SizeID" json:"sizeID"`       // รหัสขนาดของสินค้า
+	Barcode   *string `db:"Barcode" json:"barcode"`     // บาร์โค้ดของสินค้า
+	Type      *string `db:"Type" json:"type"`           // ประเภทของสินค้า
 }
 
 type ROM_V_OrderLineDetail struct {
-    OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
-    SoNo        *string    `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
-    StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
-    SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
-    SKU         string    `db:"SKU" json:"sku"`                 // รหัสสินค้า
-    ItemName    string    `db:"ItemName" json:"itemName"`       // ชื่อสินค้า
-    QTY         int       `db:"QTY" json:"qty"`                 // จำนวนสินค้า
-    Price       float64   `db:"Price" json:"price"`             // ราคาต่อหน่วย
-    CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
+	OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
+	SoNo        *string   `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
+	StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
+	SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
+	SKU         string    `db:"SKU" json:"sku"`                 // รหัสสินค้า
+	ItemName    string    `db:"ItemName" json:"itemName"`       // ชื่อสินค้า
+	QTY         int       `db:"QTY" json:"qty"`                 // จำนวนสินค้า
+	Price       float64   `db:"Price" json:"price"`             // ราคาต่อหน่วย
+	CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
 }
 
 type ROM_V_OrderHeadDetail struct {
-    OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
-    SoNo        *string    `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
-    StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
-    SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
-    CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
+	OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
+	SoNo        *string   `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
+	StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
+	SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
+	CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
+}
+
+type ROM_V_User struct {
+	UserID       string `json:"userID,omitempty" db:"UserID" example:"DC64205"`
+	UserName     string `json:"userName,omitempty" db:"Username" example:"aunlaphat.art"`
+	NickName     string `json:"nickName,omitempty" db:"NickName" example:"fa"`
+	FullNameTH   string `json:"fullNameTH,omitempty" db:"FullNameTH" example:"อัญญ์ลภัส อาจสุริยงค์"`
+	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo" example:"G01"`
+}
+
+// User schema
+type User struct {
+	UserID       string `db:"UserID" json:"userID"`
+	UserName     string `db:"UserName" json:"userName"`
+	RoleID       int    `db:"RoleID" json:"roleID"`
+	PermissionID string `db:"PermissionID" json:"permissionID"`
+	DeptNo       string `db:"DeptNo" json:"deptNo"`
+	NickName     string `db:"NickName" json:"nickName"`
+	FullNameTH   string `db:"FullNameTH" json:"fullNameTH"`
+	FullNameEN   string `db:"FullNameEN" json:"fullNameEN"`
 }

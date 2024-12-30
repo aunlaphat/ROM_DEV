@@ -147,3 +147,18 @@ CREATE TABLE [ReturnOrderLine](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+
+----------------------------
+
+CREATE VIEW [dbo].[V_DetailOrder]
+AS
+SELECT    Data_WEBChecker.dbo.[Order].OrderNo, Data_WEBChecker.dbo.[Order].SoNo, Data_WEBChecker.dbo.OperationStatus.StatusName AS StatusMKP, 
+                      CASE WHEN DFIXAX63LIVE_2019.dbo.SALESTABLE.SALESSTATUS = 1 THEN 'open order' WHEN DFIXAX63LIVE_2019.dbo.SALESTABLE.SALESSTATUS = 3 THEN 'invoiced' WHEN DFIXAX63LIVE_2019.dbo.SALESTABLE.SALESSTATUS
+                       = 2 THEN 'Delivered' ELSE 'unknown' END AS SalesStatus, Data_WEBChecker.dbo.OrderLine.SKU, Data_WEBChecker.dbo.OrderLine.ItemName, Data_WEBChecker.dbo.OrderLine.QTY, 
+                      Data_WEBChecker.dbo.OrderLine.Price, Data_WEBChecker.dbo.[Order].CreateDate
+FROM         Data_WEBChecker.dbo.[Order] INNER JOIN
+                      Data_WEBChecker.dbo.OrderLine ON Data_WEBChecker.dbo.[Order].OrderNo = Data_WEBChecker.dbo.OrderLine.OrderNo INNER JOIN
+                      Data_WEBChecker.dbo.OperationStatus ON Data_WEBChecker.dbo.[Order].OptStatusID = Data_WEBChecker.dbo.OperationStatus.OptStatusID LEFT OUTER JOIN
+                      DFIXAX63LIVE_2019.dbo.SALESTABLE ON Data_WEBChecker.dbo.[Order].SoNo = DFIXAX63LIVE_2019.dbo.SALESTABLE.SALESID
+WHERE     (Data_WEBChecker.dbo.[Order].CreateDate > CONVERT(DATETIME, '2024-11-01 00:00:00', 102)) AND (Data_WEBChecker.dbo.[Order].OptStatusID <> 8)
+GO
