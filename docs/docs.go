@@ -265,245 +265,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/before-return-order/create-trade": {
-            "post": {
-                "description": "Create a new return order",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Before Return Order"
-                ],
-                "summary": "Create a new return order",
-                "operationId": "create-trade-return",
-                "parameters": [
-                    {
-                        "description": "Trade Return Detail",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.BeforeReturnOrder"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/before-return-order/delete-befodline/{recID}": {
-            "delete": {
-                "description": "Delete an order line",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Before Return Order"
-                ],
-                "summary": "Delete Order line",
-                "operationId": "delete-BeforeReturnOrderLine",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Rec ID",
-                        "name": "recID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Before ReturnOrderLine Deleted",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "204": {
-                        "description": "No Content, Order Delete Successfully",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Order Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/before-return-order/get-order": {
-            "get": {
-                "description": "Get all Before Return Order",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Before Return Order"
-                ],
-                "summary": "Get Before Return Order",
-                "operationId": "Allget-BefReturnOrder",
-                "responses": {
-                    "200": {
-                        "description": "Get All",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/response.OrderDetail"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "not found endpoint",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/before-return-order/get-orderbySO/{soNo}": {
-            "get": {
-                "description": "Get details of an order by its SO number",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Before Return Order"
-                ],
-                "summary": "Get Before Return Order by SO",
-                "operationId": "GetBySO-BefReturnOrder",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "soNo",
-                        "name": "soNo",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Get by SO",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/response.OrderDetail"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "not found endpoint",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/before-return-order/line/{orderNo}": {
             "get": {
                 "description": "Retrieve the details of all return order lines by order number",
@@ -625,7 +386,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Before Return Order"
+                    "Search Sale Order"
                 ],
                 "summary": "Search sale order by SO number",
                 "operationId": "search-sale-order",
@@ -1904,13 +1665,101 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "User retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.Login"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/get-user-with-permission": {
+            "get": {
+                "description": "Retrieve the details of a user with permissions by their username and password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get user with permissions by username and password",
+                "operationId": "get-user-with-permission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password",
+                        "name": "password",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User with permissions retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.UserPermission"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2645,85 +2494,63 @@ const docTemplate = `{
                 }
             }
         },
-        "response.OrderDetail": {
+        "response.Login": {
             "type": "object",
             "properties": {
-                "OrderHeadDetail": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.OrderHeadDetail"
-                    }
+                "fullNameTH": {
+                    "type": "string",
+                    "example": "test1234"
+                },
+                "nickName": {
+                    "type": "string",
+                    "example": "test1234"
+                },
+                "platform": {
+                    "type": "string",
+                    "example": "test1234"
+                },
+                "roleID": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "userID": {
+                    "type": "string",
+                    "example": "userID"
+                },
+                "userName": {
+                    "type": "string",
+                    "example": "userName"
                 }
             }
         },
-        "response.OrderHeadDetail": {
+        "response.UserPermission": {
             "type": "object",
             "properties": {
-                "OrderLineDetail": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.OrderLineDetail"
-                    }
-                },
-                "createDate": {
-                    "description": "วันที่สร้างรายการ",
+                "departmentNo": {
                     "type": "string"
                 },
-                "orderNo": {
-                    "description": "เลขที่ใบสั่งซื้อ",
+                "description": {
                     "type": "string"
                 },
-                "salesStatus": {
-                    "description": "สถานะการขาย",
+                "fullNameTH": {
                     "type": "string"
                 },
-                "soNo": {
-                    "description": "เลขที่ใบสั่งขาย",
+                "nickName": {
                     "type": "string"
                 },
-                "statusMKP": {
-                    "description": "สถานะในตลาด",
-                    "type": "string"
-                }
-            }
-        },
-        "response.OrderLineDetail": {
-            "type": "object",
-            "properties": {
-                "createDate": {
-                    "description": "วันที่สร้างรายการ",
+                "permission": {
                     "type": "string"
                 },
-                "itemName": {
-                    "description": "ชื่อสินค้า",
-                    "type": "string"
-                },
-                "orderNo": {
-                    "description": "เลขที่ใบสั่งซื้อ",
-                    "type": "string"
-                },
-                "price": {
-                    "description": "ราคาต่อหน่วย",
-                    "type": "number"
-                },
-                "qty": {
-                    "description": "จำนวนสินค้า",
+                "roleID": {
                     "type": "integer"
                 },
-                "salesStatus": {
-                    "description": "สถานะการขาย",
+                "roleName": {
                     "type": "string"
                 },
-                "sku": {
-                    "description": "รหัสสินค้า",
+                "userID": {
                     "type": "string"
                 },
-                "soNo": {
-                    "description": "เลขที่ใบสั่งขาย",
-                    "type": "string"
-                },
-                "statusMKP": {
-                    "description": "สถานะในตลาด",
+                "userName": {
                     "type": "string"
                 }
             }
