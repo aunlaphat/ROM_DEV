@@ -1,4 +1,5 @@
 package api
+//for dropdown
 
 import (
 	"net/http"
@@ -13,6 +14,7 @@ func (app *Application) Constants(apiRouter *chi.Mux) {
 		r.Get("/get-province", app.GetThaiProvince)
 		r.Get("/get-district", app.GetThaiDistrict)
 		r.Get("/get-sub-district", app.GetThaiSubDistrict)
+		// r.Get("/get-postcode", app.GetPostCode)
 		r.Get("/get-warehouse", app.GetWarehouse)
 		r.Get("/get-productAll", app.GetProductAll)
 		//r.Get("/get-customer", app.GetCustomer)
@@ -78,6 +80,26 @@ func (app *Application) GetThaiSubDistrict(w http.ResponseWriter, r *http.Reques
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
 }
+
+// // @Summary Get Thai GetPostCode
+// // @Description Get all Thai GetPostCode.
+// // @ID get-post-code
+// // @Tags Constants
+// // @Accept json
+// // @Produce json
+// // @Success 200 {object} Response{result=[]entity.GetPostCode} "GetPostCode"
+// // @Failure 400 {object} Response "Bad Request"
+// // @Failure 404 {object} Response "SubDistrict not found"
+// // @Failure 500 {object} Response "Internal Server Error"
+// // @Router /constants/get-sub-district [get]
+// func (app *Application) GetPostCode(w http.ResponseWriter, r *http.Request) {
+// 	res, err := app.Service.Constant.GetPostCode()
+// 	if err != nil {
+// 		HandleError(w, err)
+// 		return
+// 	}
+// 	handleResponse(w, true, response, res, http.StatusOK)
+// }
 
 // @Summary Get Warehouse
 // @Description Get Warehouse

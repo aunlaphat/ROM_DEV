@@ -77,9 +77,8 @@ func (srv service) CreateOrder(req request.CreateOrderRequest) (response.OrderRe
 	// สร้างคำสั่งซื้อในฐานข้อมูล
 	err := srv.orderRepo.CreateOrder(req)
 	if err != nil {
-		switch err.(type) {
+		switch appErr := err.(type) {
 		case errors.AppError:
-			appErr := err.(errors.AppError)
 			if appErr.Code == http.StatusConflict {
 				return response.OrderResponse{}, errors.ValidationError(fmt.Sprintf("OrderNo '%s' already exists. Use a different OrderNo.", req.OrderNo))
 			}

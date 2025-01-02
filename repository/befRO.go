@@ -56,87 +56,6 @@ type BefRORepository interface {
 	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
 }
 
-// Implementation สำหรับ CreateBeforeReturnOrder
-func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error {
-	log.Printf("🚀 Starting CreateBeforeReturnOrder for OrderNo: %s", order.OrderNo)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
-	queryOrder := `
-        INSERT INTO BeforeReturnOrder (
-            OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, CancelID
-        ) VALUES (
-            :OrderNo, :SaleOrder, :SaleReturn, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE(), :CancelID
-        )
-    `
-	paramsOrder := map[string]interface{}{
-		"OrderNo":        order.OrderNo,
-		"SaleOrder":      order.SaleOrder,
-		"SaleReturn":     order.SaleReturn,
-		"ChannelID":      order.ChannelID,
-		"ReturnType":     order.ReturnType,
-		"CustomerID":     order.CustomerID,
-		"TrackingNo":     order.TrackingNo,
-		"Logistic":       order.Logistic,
-		"WarehouseID":    order.WarehouseID,
-		"SoStatusID":     order.SoStatusID,
-		"MkpStatusID":    order.MkpStatusID,
-		"ReturnDate":     order.ReturnDate,
-		"StatusReturnID": order.StatusReturnID,
-		"StatusConfID":   order.StatusConfID,
-		"ConfirmBy":      order.ConfirmBy,
-		"CreateBy":       order.CreateBy,
-		"CancelID":       order.CancelID,
-	}
-
-	_, err := repo.db.NamedExecContext(ctx, queryOrder, paramsOrder)
-	if err != nil {
-		log.Printf("❌ Failed to create BeforeReturnOrder: %v", err)
-		return fmt.Errorf("failed to create BeforeReturnOrder: %w", err)
-	}
-
-	log.Printf("✅ Successfully created BeforeReturnOrder for OrderNo: %s", order.OrderNo)
-	return nil
-}
-
-// Implementation สำหรับ CreateBeforeReturnOrderLine
-func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error {
-	log.Printf("🚀 Starting CreateBeforeReturnOrderLine for OrderNo: %s", orderNo)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
-	query := `
-        INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
-        ) VALUES (
-            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
-        )
-    `
-	for _, line := range lines {
-		trackingNo := line.TrackingNo
-		if trackingNo == "" {
-			trackingNo = "N/A"
-		}
-
-		params := map[string]interface{}{
-			"OrderNo":    orderNo,
-			"SKU":        line.SKU,
-			"QTY":        line.QTY,
-			"ReturnQTY":  line.ReturnQTY,
-			"Price":      line.Price,
-			"CreateBy":   line.CreateBy,
-			"TrackingNo": trackingNo,
-		}
-		_, err := repo.db.NamedExecContext(ctx, query, params)
-		if err != nil {
-			log.Printf("❌ Failed to create order line: %v", err)
-			return fmt.Errorf("failed to create order line: %w", err)
-		}
-	}
-	log.Printf("✅ Successfully created BeforeReturnOrderLine for OrderNo: %s", orderNo)
-	return nil
-}
-
 // Implementation สำหรับ GetBeforeReturnOrderLineByOrderNo
 func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
 	log.Printf("🚀 Starting GetBeforeReturnOrderLineByOrderNo for OrderNo: %s", orderNo)
@@ -327,6 +246,234 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 
 	log.Printf("✅ Successfully listed %d orders", len(orders))
 	return orders, nil
+}
+
+func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var headDetails []response.OrderHeadDetail
+	var lineDetails []response.OrderLineDetail
+
+	// Query Order Head
+	headQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
+        ORDER BY OrderNo
+    `
+	err := repo.db.SelectContext(ctx, &headDetails, headQuery)
+	if err != nil {
+		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
+	}
+
+	// Query Order Line
+	lineQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
+        ORDER BY OrderNo
+    `
+	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery)
+	if err != nil {
+		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+	}
+
+	// Map Order Lines to Order Heads
+	orderLineMap := make(map[string][]response.OrderLineDetail)
+	for _, line := range lineDetails {
+		orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
+	}
+
+	for i := range headDetails {
+		headDetails[i].OrderLineDetail = orderLineMap[headDetails[i].OrderNo]
+	}
+
+	return []response.OrderDetail{
+		{OrderHeadDetail: headDetails},
+	}, nil
+}
+
+func (repo repositoryDB) GetOrderDetailBySO(soNo string) (*response.OrderDetail, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var headDetails []response.OrderHeadDetail
+	var lineDetails []response.OrderLineDetail
+
+	// Query Order Head
+	headQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
+        WHERE SoNo = @SoNo
+    `
+	err := repo.db.SelectContext(ctx, &headDetails, headQuery, sql.Named("SoNo", soNo))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no order head found for SoNo: %s", soNo)
+		}
+		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
+	}
+
+	// Query Order Line
+	lineQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
+        WHERE SoNo = @SoNo
+    `
+	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("SoNo", soNo))
+	if err != nil {
+		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+	}
+
+	// Map Order Lines to Order Heads
+	orderLineMap := make(map[string][]response.OrderLineDetail)
+	for _, line := range lineDetails {
+		orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
+	}
+
+	for i := range headDetails {
+		headDetails[i].OrderLineDetail = orderLineMap[headDetails[i].OrderNo]
+	}
+
+	return &response.OrderDetail{
+		OrderHeadDetail: headDetails,
+	}, nil
+}
+
+// Implementation สำหรับ SearchSaleOrder
+func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error) {
+	log.Printf("🚀 Starting SearchSaleOrder for SoNo: %s", soNo)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	queryHead := `
+        SELECT SoNo, StatusMKP, SalesStatus, CreateDate
+        FROM ROM_V_OrderHeadDetail
+        WHERE SoNo = :SoNo
+    `
+
+	queryLines := `
+        SELECT SKU, ItemName, QTY, Price
+        FROM ROM_V_OrderLineDetail
+        WHERE SoNo = :SoNo
+    `
+
+	var orderHead response.SaleOrderResponse
+	nstmtHead, err := repo.db.PrepareNamed(queryHead)
+	if err != nil {
+		log.Printf("❌ Failed to prepare statement for order head: %v", err)
+		return nil, fmt.Errorf("failed to prepare statement for order head: %w", err)
+	}
+	defer nstmtHead.Close()
+
+	err = nstmtHead.GetContext(ctx, &orderHead, map[string]interface{}{"SoNo": soNo})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("❗ No order head found for SoNo: %s", soNo)
+			return nil, nil
+		}
+		log.Printf("❌ Failed to fetch order head: %v", err)
+		return nil, fmt.Errorf("failed to fetch order head: %w", err)
+	}
+
+	var orderLines []response.SaleOrderLineResponse
+	nstmtLines, err := repo.db.PrepareNamed(queryLines)
+	if err != nil {
+		log.Printf("❌ Failed to prepare statement for order lines: %v", err)
+		return nil, fmt.Errorf("failed to prepare statement for order lines: %w", err)
+	}
+	defer nstmtLines.Close()
+
+	err = nstmtLines.SelectContext(ctx, &orderLines, map[string]interface{}{"SoNo": soNo})
+	if err != nil {
+		log.Printf("❌ Failed to fetch order lines: %v", err)
+		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
+	}
+
+	orderHead.OrderLines = orderLines
+
+	log.Printf("✅ Successfully searched sale orders for SoNo: %s", soNo)
+	return &orderHead, nil
+}
+
+// Implementation สำหรับ CreateBeforeReturnOrder
+func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error {
+	log.Printf("🚀 Starting CreateBeforeReturnOrder for OrderNo: %s", order.OrderNo)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	queryOrder := `
+        INSERT INTO BeforeReturnOrder (
+            OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, CancelID
+        ) VALUES (
+            :OrderNo, :SaleOrder, :SaleReturn, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE(), :CancelID
+        )
+    `
+	paramsOrder := map[string]interface{}{
+		"OrderNo":        order.OrderNo,
+		"SaleOrder":      order.SaleOrder,
+		"SaleReturn":     order.SaleReturn,
+		"ChannelID":      order.ChannelID,
+		"ReturnType":     order.ReturnType,
+		"CustomerID":     order.CustomerID,
+		"TrackingNo":     order.TrackingNo,
+		"Logistic":       order.Logistic,
+		"WarehouseID":    order.WarehouseID,
+		"SoStatusID":     order.SoStatusID,
+		"MkpStatusID":    order.MkpStatusID,
+		"ReturnDate":     order.ReturnDate,
+		"StatusReturnID": order.StatusReturnID,
+		"StatusConfID":   order.StatusConfID,
+		"ConfirmBy":      order.ConfirmBy,
+		"CreateBy":       order.CreateBy,
+		"CancelID":       order.CancelID,
+	}
+
+	_, err := repo.db.NamedExecContext(ctx, queryOrder, paramsOrder)
+	if err != nil {
+		log.Printf("❌ Failed to create BeforeReturnOrder: %v", err)
+		return fmt.Errorf("failed to create BeforeReturnOrder: %w", err)
+	}
+
+	log.Printf("✅ Successfully created BeforeReturnOrder for OrderNo: %s", order.OrderNo)
+	return nil
+}
+
+// Implementation สำหรับ CreateBeforeReturnOrderLine
+func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error {
+	log.Printf("🚀 Starting CreateBeforeReturnOrderLine for OrderNo: %s", orderNo)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	query := `
+        INSERT INTO BeforeReturnOrderLine (
+            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
+        ) VALUES (
+            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
+        )
+    `
+	for _, line := range lines {
+		trackingNo := line.TrackingNo
+		if trackingNo == "" {
+			trackingNo = "N/A"
+		}
+
+		params := map[string]interface{}{
+			"OrderNo":    orderNo,
+			"SKU":        line.SKU,
+			"QTY":        line.QTY,
+			"ReturnQTY":  line.ReturnQTY,
+			"Price":      line.Price,
+			"CreateBy":   line.CreateBy,
+			"TrackingNo": trackingNo,
+		}
+		_, err := repo.db.NamedExecContext(ctx, query, params)
+		if err != nil {
+			log.Printf("❌ Failed to create order line: %v", err)
+			return fmt.Errorf("failed to create order line: %w", err)
+		}
+	}
+	log.Printf("✅ Successfully created BeforeReturnOrderLine for OrderNo: %s", orderNo)
+	return nil
 }
 
 // Implementation สำหรับ BeginTransaction CreateBeforeReturnOrder & CreateBeforeReturnOrderLine
@@ -613,153 +760,6 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 
 	log.Printf("✅ Successfully updated BeforeReturnOrderWithTransaction for OrderNo: %s", order.OrderNo)
 	return nil
-}
-
-// Implementation สำหรับ SearchSaleOrder
-func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error) {
-	log.Printf("🚀 Starting SearchSaleOrder for SoNo: %s", soNo)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
-	queryHead := `
-        SELECT SoNo, StatusMKP, SalesStatus, CreateDate
-        FROM ROM_V_OrderHeadDetail
-        WHERE SoNo = :SoNo
-    `
-
-	queryLines := `
-        SELECT SKU, ItemName, QTY, Price
-        FROM ROM_V_OrderLineDetail
-        WHERE SoNo = :SoNo
-    `
-
-	var orderHead response.SaleOrderResponse
-	nstmtHead, err := repo.db.PrepareNamed(queryHead)
-	if err != nil {
-		log.Printf("❌ Failed to prepare statement for order head: %v", err)
-		return nil, fmt.Errorf("failed to prepare statement for order head: %w", err)
-	}
-	defer nstmtHead.Close()
-
-	err = nstmtHead.GetContext(ctx, &orderHead, map[string]interface{}{"SoNo": soNo})
-	if err != nil {
-		if err == sql.ErrNoRows {
-			log.Printf("❗ No order head found for SoNo: %s", soNo)
-			return nil, nil
-		}
-		log.Printf("❌ Failed to fetch order head: %v", err)
-		return nil, fmt.Errorf("failed to fetch order head: %w", err)
-	}
-
-	var orderLines []response.SaleOrderLineResponse
-	nstmtLines, err := repo.db.PrepareNamed(queryLines)
-	if err != nil {
-		log.Printf("❌ Failed to prepare statement for order lines: %v", err)
-		return nil, fmt.Errorf("failed to prepare statement for order lines: %w", err)
-	}
-	defer nstmtLines.Close()
-
-	err = nstmtLines.SelectContext(ctx, &orderLines, map[string]interface{}{"SoNo": soNo})
-	if err != nil {
-		log.Printf("❌ Failed to fetch order lines: %v", err)
-		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
-	}
-
-	orderHead.OrderLines = orderLines
-
-	log.Printf("✅ Successfully searched sale orders for SoNo: %s", soNo)
-	return &orderHead, nil
-}
-
-func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var headDetails []response.OrderHeadDetail
-	var lineDetails []response.OrderLineDetail
-
-	// Query Order Head
-	headQuery := `
-        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
-        FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
-        ORDER BY OrderNo
-    `
-	err := repo.db.SelectContext(ctx, &headDetails, headQuery)
-	if err != nil {
-		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
-	}
-
-	// Query Order Line
-	lineQuery := `
-        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
-        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
-        ORDER BY OrderNo
-    `
-	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery)
-	if err != nil {
-		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
-	}
-
-	// Map Order Lines to Order Heads
-	orderLineMap := make(map[string][]response.OrderLineDetail)
-	for _, line := range lineDetails {
-		orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
-	}
-
-	for i := range headDetails {
-		headDetails[i].OrderLineDetail = orderLineMap[headDetails[i].OrderNo]
-	}
-
-	return []response.OrderDetail{
-		{OrderHeadDetail: headDetails},
-	}, nil
-}
-
-func (repo repositoryDB) GetOrderDetailBySO(soNo string) (*response.OrderDetail, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var headDetails []response.OrderHeadDetail
-	var lineDetails []response.OrderLineDetail
-
-	// Query Order Head
-	headQuery := `
-        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
-        FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
-        WHERE SoNo = @SoNo
-    `
-	err := repo.db.SelectContext(ctx, &headDetails, headQuery, sql.Named("SoNo", soNo))
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("no order head found for SoNo: %s", soNo)
-		}
-		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
-	}
-
-	// Query Order Line
-	lineQuery := `
-        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
-        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
-        WHERE SoNo = @SoNo
-    `
-	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("SoNo", soNo))
-	if err != nil {
-		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
-	}
-
-	// Map Order Lines to Order Heads
-	orderLineMap := make(map[string][]response.OrderLineDetail)
-	for _, line := range lineDetails {
-		orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
-	}
-
-	for i := range headDetails {
-		headDetails[i].OrderLineDetail = orderLineMap[headDetails[i].OrderNo]
-	}
-
-	return &response.OrderDetail{
-		OrderHeadDetail: headDetails,
-	}, nil
 }
 
 func (repo repositoryDB) DeleteBeforeReturnOrderLine(recID string) error {
