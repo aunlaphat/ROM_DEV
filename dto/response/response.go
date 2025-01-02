@@ -118,9 +118,11 @@ type OrderHeadDetail struct {
     StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
     SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
     CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
+
+	OrderLineDetail []OrderLineDetail `json:"OrderLineDetail"`
 }
 
 type OrderDetail struct {
 	OrderHeadDetail		[]OrderHeadDetail		  `json:"OrderHeadDetail"`
-	OrderLineDetail		[]OrderLineDetail		  `json:"OrderLineDetail"`
+	//OrderLineDetail		[]OrderLineDetail		  `json:"OrderLineDetail"`
 }
