@@ -13,15 +13,6 @@ import (
 // เพิ่ม constant สำหรับ timeout
 const (
 	defaultTimeout = 10 * time.Second
-	txTimeout      = 30 * time.Second
-)
-
-// เพิ่ม constants สำหรับ status
-const (
-	StatusPending    = 1
-	StatusInProgress = 2
-	StatusCompleted  = 3
-	StatusCancelled  = 4
 )
 
 // ReturnOrderRepository interface กำหนด method สำหรับการทำงานกับฐานข้อมูล
