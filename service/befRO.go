@@ -4,6 +4,8 @@ import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
 	"context"
+	"database/sql"
+	"fmt"
 
 	"go.uber.org/zap"
 )
@@ -16,6 +18,9 @@ type BefROService interface {
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
+	GetAllOrderDetail() ([]response.OrderDetail, error)
+	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
+	DeleteBeforeReturnOrderLine(recID string) error
 }
 
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -114,4 +119,42 @@ func (srv service) SearchSaleOrder(ctx context.Context, soNo string) ([]response
 	}
 	srv.logger.Debug("✅ Successfully searched sale orders", zap.String("SoNo", soNo))
 	return []response.SaleOrderResponse{*order}, nil
+}
+
+// service เชื่อมกับ repo ต่อเพื่อดึงข้อมูลออกมา แต่ต้องมีการ validation ก่อนดึง
+func (srv service) GetAllOrderDetail() ([]response.OrderDetail, error) {
+	allorder, err := srv.befRORepo.GetAllOrderDetail()
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			srv.logger.Error(err)
+			return nil, fmt.Errorf("no order data: %w", err)
+		default:
+			srv.logger.Error(err)
+			return nil, fmt.Errorf("get order error: %w", err)
+		}
+	}
+	return allorder, nil
+}
+
+func (srv service) GetOrderDetailBySO(soNo string) (*response.OrderDetail, error) {
+	soOrder, err := srv.befRORepo.GetOrderDetailBySO(soNo)
+	if err != nil {
+		return nil, err
+	}
+	return soOrder, nil
+}
+
+func (srv service) DeleteBeforeReturnOrderLine(recID string) error {
+	if recID == "" {
+		return fmt.Errorf("RecID is required")
+	}
+
+	// ส่งไปยัง Repository Layer
+	err := srv.befRORepo.DeleteBeforeReturnOrderLine(recID)
+	if err != nil {
+		return fmt.Errorf("failed to delete before return order line: %w", err)
+	}
+
+	return nil
 }

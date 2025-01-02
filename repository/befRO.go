@@ -37,6 +37,10 @@ type BefRORepository interface {
 	ListBeforeReturnOrderLinesByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 
+	//SO
+	GetAllOrderDetail() ([]response.OrderDetail, error)
+	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
+
 	// Update
 	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
 	UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error
@@ -46,6 +50,7 @@ type BefRORepository interface {
 	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
 
 	//Cancle
+	DeleteBeforeReturnOrderLine(recID string) error
 
 	//Search
 	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
@@ -664,4 +669,128 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*res
 
 	log.Printf("✅ Successfully searched sale orders for SoNo: %s", soNo)
 	return &orderHead, nil
+}
+
+func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var headDetails []response.OrderHeadDetail
+	var lineDetails []response.OrderLineDetail
+
+	// Query Order Head
+	headQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
+        ORDER BY OrderNo
+    `
+	err := repo.db.SelectContext(ctx, &headDetails, headQuery)
+	if err != nil {
+		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
+	}
+
+	// Query Order Line
+	lineQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
+        ORDER BY OrderNo
+    `
+	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery)
+	if err != nil {
+		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+	}
+
+	// Map Order Lines to Order Heads
+	orderLineMap := make(map[string][]response.OrderLineDetail)
+	for _, line := range lineDetails {
+		orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
+	}
+
+	for i := range headDetails {
+		headDetails[i].OrderLineDetail = orderLineMap[headDetails[i].OrderNo]
+	}
+
+	return []response.OrderDetail{
+		{OrderHeadDetail: headDetails},
+	}, nil
+}
+
+func (repo repositoryDB) GetOrderDetailBySO(soNo string) (*response.OrderDetail, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var headDetails []response.OrderHeadDetail
+	var lineDetails []response.OrderLineDetail
+
+	// Query Order Head
+	headQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
+        WHERE SoNo = @SoNo
+    `
+	err := repo.db.SelectContext(ctx, &headDetails, headQuery, sql.Named("SoNo", soNo))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no order head found for SoNo: %s", soNo)
+		}
+		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
+	}
+
+	// Query Order Line
+	lineQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
+        WHERE SoNo = @SoNo
+    `
+	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("SoNo", soNo))
+	if err != nil {
+		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+	}
+
+	// Map Order Lines to Order Heads
+	orderLineMap := make(map[string][]response.OrderLineDetail)
+	for _, line := range lineDetails {
+		orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
+	}
+
+	for i := range headDetails {
+		headDetails[i].OrderLineDetail = orderLineMap[headDetails[i].OrderNo]
+	}
+
+	return &response.OrderDetail{
+		OrderHeadDetail: headDetails,
+	}, nil
+}
+
+func (repo repositoryDB) DeleteBeforeReturnOrderLine(recID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer handleTransaction(tx)()
+
+	// ลบ BeforeReturnOrderLine ตาม RecID
+	deleteQuery := `
+        DELETE FROM BeforeReturnOrderLine
+        WHERE RecID = :RecID
+    `
+	_, err = tx.NamedExecContext(ctx, deleteQuery, map[string]interface{}{
+		"RecID": recID,
+	})
+	if err != nil {
+		log.Printf("Error deleting BeforeReturnOrderLine by RecID: %v", err)
+		return fmt.Errorf("failed to delete BeforeReturnOrderLine: %w", err)
+	}
+
+	// Commit transaction
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction for DeleteBeforeReturnOrderLine: %v", err)
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
