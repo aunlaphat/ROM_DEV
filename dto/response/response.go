@@ -88,9 +88,10 @@ type ReturnOrderLine struct {
 	UpdateDate      *time.Time 	  `json:"updateDate" db:"UpdateDate"`      
 }
 
-type CancelReturnOrder struct {
+type CancelStatus struct {
 	CancelID 		*int    	  `json:"platfId" db:"PlatfID"` 
-	ReturnID		*string    	  `json:"returnId" db:"ReturnID"` 
+	RefID		*string    	  `json:"refId" db:"RefID"`
+	CancelStatus	 bool         `db:"CancelStatus"` 
 	Remark			*string    	  `json:"remark" db:"Remark"` 
 	CancelDate		*time.Time    `json:"cancelDate" db:"CancelDate"` 
 	CancelBy		*string    	  `json:"cancelBy" db:"CancelBy"` 

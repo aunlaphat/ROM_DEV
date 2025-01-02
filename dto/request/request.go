@@ -93,9 +93,10 @@ type Channel struct {
 	ChannelName		string    	  `json:"channelName" db:"ChannelName"` 
 }
 
-type CancelReturnOrder struct {
+type CancelStatus struct {
 	CancelID 		*int    	  `json:"platfId" db:"PlatfID"` 
-	ReturnID		*string    	  `json:"returnId" db:"ReturnID"` 
+	RefID		    *string    	  `json:"refId" db:"RefID"`
+	CancelStatus	 bool         `db:"CancelStatus"` 
 	Remark			*string    	  `json:"remark" db:"Remark"` 
 	CancelDate		*time.Time    `json:"cancelDate" db:"CancelDate"` 
 	CancelBy		*string    	  `json:"cancelBy" db:"CancelBy"` 
@@ -110,7 +111,7 @@ type ReturnOrderHead struct {
 	ReturnOrder
 	Platform           *Platforms         `json:"platform"`
 	Channel            *Channel           `json:"channel"`
-	CancelReturnOrder  *CancelReturnOrder `json:"cancelReturnOrder"`
+	CancelStatus       *CancelStatus      `json:"cancelStatus"`
 	StatusCheck        *StatusCheck       `json:"statusCheck"`
 }
 
