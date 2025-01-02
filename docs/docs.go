@@ -376,51 +376,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/before-return-order/search/{soNo}": {
-            "get": {
-                "description": "Retrieve the details of a sale order by its SO number",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Search Sale Order"
-                ],
-                "summary": "Search sale order by SO number",
-                "operationId": "search-sale-order",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SO number",
-                        "name": "soNo",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/before-return-order/update/{orderNo}": {
             "put": {
                 "description": "Update an existing return order with the provided details",
@@ -1574,6 +1529,187 @@ const docTemplate = `{
                 }
             }
         },
+        "/sale-return/confirm": {
+            "post": {
+                "description": "Confirm a sale return order based on the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sale Return"
+                ],
+                "summary": "Confirm a sale return order",
+                "operationId": "confirm-sale-return",
+                "parameters": [
+                    {
+                        "description": "Sale Return Order",
+                        "name": "saleReturn",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.BeforeReturnOrder"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sale return order confirmed successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/sale-return/create": {
+            "post": {
+                "description": "Create a new sale return order based on the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sale Return"
+                ],
+                "summary": "Create a new sale return order",
+                "operationId": "create-sale-return",
+                "parameters": [
+                    {
+                        "description": "Sale Return Order",
+                        "name": "saleReturn",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.BeforeReturnOrder"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sale return order created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/sale-return/search/{soNo}": {
+            "get": {
+                "description": "Retrieve the details of a sale order by its SO number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sale Return"
+                ],
+                "summary": "Search sale order by SO number",
+                "operationId": "search-sale-order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SO number",
+                        "name": "soNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sale order retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.SaleOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Sale order not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/test/login": {
             "post": {
                 "description": "Handles user login requests and generates a token for the authenticated user.",
@@ -1808,60 +1944,74 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "brandName": {
+                    "description": "ชื่อแบรนด์",
                     "type": "string",
                     "example": "BEWELL"
                 },
                 "createDate": {
+                    "description": "วันที่สร้างรายการ",
                     "type": "string",
                     "example": "2024-11-22 09:45:33.260"
                 },
                 "custAddress": {
+                    "description": "ที่อยู่ลูกค้า",
                     "type": "string",
                     "example": "7/20"
                 },
                 "custDistrict": {
+                    "description": "เขต",
                     "type": "string",
                     "example": "Bang-Kruay"
                 },
                 "custName": {
+                    "description": "ชื่อลูกค้า",
                     "type": "string",
                     "example": "Fa"
                 },
                 "custPhoneNum": {
+                    "description": "เบอร์โทรศัพท์",
                     "type": "string",
                     "example": "0912345678"
                 },
                 "custPostCode": {
+                    "description": "รหัสไปรษณีย์",
                     "type": "string",
                     "example": "11130"
                 },
                 "custProvince": {
+                    "description": "จังหวัด",
                     "type": "string",
                     "example": "Nonthaburi"
                 },
                 "custSubDistrict": {
+                    "description": "แขวง",
                     "type": "string",
                     "example": "Bang-Kruay"
                 },
                 "orderLine": {
+                    "description": "รายการสินค้าที่สั่งซื้อ",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/entity.OrderLine"
                     }
                 },
                 "orderNo": {
+                    "description": "เลขที่ใบสั่งซื้อ",
                     "type": "string",
                     "example": "OD0001"
                 },
                 "updateDate": {
+                    "description": "วันที่แก้ไขล่าสุด",
                     "type": "string",
                     "example": "2024-11-30 09:45:33.260"
                 },
                 "userCreated": {
+                    "description": "ผู้สร้างรายการ",
                     "type": "string",
                     "example": "intern"
                 },
                 "userUpdates": {
+                    "description": "ผู้แก้ไขล่าสุด",
                     "type": "string",
                     "example": "intern"
                 }
@@ -1871,22 +2021,27 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "itemName": {
+                    "description": "ชื่อสินค้า",
                     "type": "string",
                     "example": "เก้าอี้"
                 },
                 "orderNo": {
+                    "description": "เลขที่ใบสั่งซื้อ",
                     "type": "string",
                     "example": "OD0001"
                 },
                 "price": {
+                    "description": "ราคาต่อหน่วย",
                     "type": "number",
                     "example": 5900
                 },
                 "qty": {
+                    "description": "จำนวนสินค้า",
                     "type": "integer",
                     "example": 5
                 },
                 "sku": {
+                    "description": "รหัสสินค้า",
                     "type": "string",
                     "example": "SKU12345"
                 }
@@ -2494,9 +2649,110 @@ const docTemplate = `{
                 }
             }
         },
+        "response.BeforeReturnOrderLineResponse": {
+            "type": "object",
+            "properties": {
+                "createDate": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.BeforeReturnOrderResponse": {
+            "type": "object",
+            "properties": {
+                "beforeReturnOrderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.BeforeReturnOrderLineResponse"
+                    }
+                },
+                "cancelId": {
+                    "type": "integer"
+                },
+                "channelId": {
+                    "type": "integer"
+                },
+                "confirmBy": {
+                    "type": "string"
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "customerId": {
+                    "type": "string"
+                },
+                "logistic": {
+                    "type": "string"
+                },
+                "mkpStatusId": {
+                    "type": "integer"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "returnDate": {
+                    "type": "string"
+                },
+                "returnType": {
+                    "type": "string"
+                },
+                "saleOrder": {
+                    "type": "string"
+                },
+                "saleReturn": {
+                    "type": "string"
+                },
+                "soStatusId": {
+                    "type": "integer"
+                },
+                "statusConfId": {
+                    "type": "integer"
+                },
+                "statusReturnId": {
+                    "type": "integer"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "type": "string"
+                },
+                "updateDate": {
+                    "type": "string"
+                },
+                "warehouseId": {
+                    "type": "integer"
+                }
+            }
+        },
         "response.Login": {
             "type": "object",
             "properties": {
+                "department": {
+                    "type": "string",
+                    "example": "G07"
+                },
                 "fullNameTH": {
                     "type": "string",
                     "example": "test1234"
@@ -2520,6 +2776,49 @@ const docTemplate = `{
                 "userName": {
                     "type": "string",
                     "example": "userName"
+                }
+            }
+        },
+        "response.SaleOrderLineResponse": {
+            "type": "object",
+            "properties": {
+                "itemName": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.SaleOrderResponse": {
+            "type": "object",
+            "properties": {
+                "createDate": {
+                    "type": "string"
+                },
+                "orderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.SaleOrderLineResponse"
+                    }
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "salesStatus": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "statusMKP": {
+                    "type": "string"
                 }
             }
         },

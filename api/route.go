@@ -62,6 +62,7 @@ func (app *Application) routes() http.Handler {
 	app.Constants(apiRouter)
 	app.Excels(apiRouter)
 	app.UserRoute(apiRouter)
+	app.SaleReturnRoute(apiRouter)
 	app.BefRORoute(apiRouter)
 	app.Orders(apiRouter)
 	app.ReturnOrders(apiRouter)

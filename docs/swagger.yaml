@@ -22,64 +22,83 @@ definitions:
   entity.Order:
     properties:
       brandName:
+        description: ชื่อแบรนด์
         example: BEWELL
         type: string
       createDate:
+        description: วันที่สร้างรายการ
         example: "2024-11-22 09:45:33.260"
         type: string
       custAddress:
+        description: ที่อยู่ลูกค้า
         example: 7/20
         type: string
       custDistrict:
+        description: เขต
         example: Bang-Kruay
         type: string
       custName:
+        description: ชื่อลูกค้า
         example: Fa
         type: string
       custPhoneNum:
+        description: เบอร์โทรศัพท์
         example: "0912345678"
         type: string
       custPostCode:
+        description: รหัสไปรษณีย์
         example: "11130"
         type: string
       custProvince:
+        description: จังหวัด
         example: Nonthaburi
         type: string
       custSubDistrict:
+        description: แขวง
         example: Bang-Kruay
         type: string
       orderLine:
+        description: รายการสินค้าที่สั่งซื้อ
         items:
           $ref: '#/definitions/entity.OrderLine'
         type: array
       orderNo:
+        description: เลขที่ใบสั่งซื้อ
         example: OD0001
         type: string
       updateDate:
+        description: วันที่แก้ไขล่าสุด
         example: "2024-11-30 09:45:33.260"
         type: string
       userCreated:
+        description: ผู้สร้างรายการ
         example: intern
         type: string
       userUpdates:
+        description: ผู้แก้ไขล่าสุด
         example: intern
         type: string
     type: object
   entity.OrderLine:
     properties:
       itemName:
+        description: ชื่อสินค้า
         example: เก้าอี้
         type: string
       orderNo:
+        description: เลขที่ใบสั่งซื้อ
         example: OD0001
         type: string
       price:
+        description: ราคาต่อหน่วย
         example: 5900
         type: number
       qty:
+        description: จำนวนสินค้า
         example: 5
         type: integer
       sku:
+        description: รหัสสินค้า
         example: SKU12345
         type: string
     type: object
@@ -514,8 +533,75 @@ definitions:
         example: 12345678TH
         type: string
     type: object
+  response.BeforeReturnOrderLineResponse:
+    properties:
+      createDate:
+        type: string
+      orderNo:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      returnQty:
+        type: integer
+      sku:
+        type: string
+      trackingNo:
+        type: string
+    type: object
+  response.BeforeReturnOrderResponse:
+    properties:
+      beforeReturnOrderLines:
+        items:
+          $ref: '#/definitions/response.BeforeReturnOrderLineResponse'
+        type: array
+      cancelId:
+        type: integer
+      channelId:
+        type: integer
+      confirmBy:
+        type: string
+      createBy:
+        type: string
+      createDate:
+        type: string
+      customerId:
+        type: string
+      logistic:
+        type: string
+      mkpStatusId:
+        type: integer
+      orderNo:
+        type: string
+      returnDate:
+        type: string
+      returnType:
+        type: string
+      saleOrder:
+        type: string
+      saleReturn:
+        type: string
+      soStatusId:
+        type: integer
+      statusConfId:
+        type: integer
+      statusReturnId:
+        type: integer
+      trackingNo:
+        type: string
+      updateBy:
+        type: string
+      updateDate:
+        type: string
+      warehouseId:
+        type: integer
+    type: object
   response.Login:
     properties:
+      department:
+        example: G07
+        type: string
       fullNameTH:
         example: test1234
         type: string
@@ -533,6 +619,34 @@ definitions:
         type: string
       userName:
         example: userName
+        type: string
+    type: object
+  response.SaleOrderLineResponse:
+    properties:
+      itemName:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      sku:
+        type: string
+    type: object
+  response.SaleOrderResponse:
+    properties:
+      createDate:
+        type: string
+      orderLines:
+        items:
+          $ref: '#/definitions/response.SaleOrderLineResponse'
+        type: array
+      orderNo:
+        type: string
+      salesStatus:
+        type: string
+      soNo:
+        type: string
+      statusMKP:
         type: string
     type: object
   response.UserPermission:
@@ -823,36 +937,6 @@ paths:
       summary: List all return orders
       tags:
       - Before Return Order
-  /before-return-order/search/{soNo}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve the details of a sale order by its SO number
-      operationId: search-sale-order
-      parameters:
-      - description: SO number
-        in: path
-        name: soNo
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Search sale order by SO number
-      tags:
-      - Search Sale Order
   /before-return-order/update/{orderNo}:
     put:
       consumes:
@@ -1543,6 +1627,117 @@ paths:
       summary: Update Order
       tags:
       - ReturnOrder
+  /sale-return/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm a sale return order based on the provided details
+      operationId: confirm-sale-return
+      parameters:
+      - description: Sale Return Order
+        in: body
+        name: saleReturn
+        required: true
+        schema:
+          $ref: '#/definitions/request.BeforeReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sale return order confirmed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.BeforeReturnOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Confirm a sale return order
+      tags:
+      - Sale Return
+  /sale-return/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new sale return order based on the provided details
+      operationId: create-sale-return
+      parameters:
+      - description: Sale Return Order
+        in: body
+        name: saleReturn
+        required: true
+        schema:
+          $ref: '#/definitions/request.BeforeReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sale return order created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.BeforeReturnOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Create a new sale return order
+      tags:
+      - Sale Return
+  /sale-return/search/{soNo}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of a sale order by its SO number
+      operationId: search-sale-order
+      parameters:
+      - description: SO number
+        in: path
+        name: soNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sale order retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.SaleOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Sale order not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search sale order by SO number
+      tags:
+      - Sale Return
   /test/login:
     post:
       consumes:

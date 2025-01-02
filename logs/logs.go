@@ -13,9 +13,8 @@ type Logger struct {
 	logger *zap.Logger
 }
 
-// New Logger instance with save to error.json for view error log when service is on server production
+// NewLogger creates a new Logger instance with file rotation
 func NewLogger(logPath string, maxSize, maxBackups, maxAge int) (*Logger, func(), error) {
-
 	hook := &lumberjack.Logger{
 		Filename:   logPath,
 		MaxSize:    maxSize,
@@ -25,17 +24,16 @@ func NewLogger(logPath string, maxSize, maxBackups, maxAge int) (*Logger, func()
 	}
 
 	config := zap.NewProductionEncoderConfig()
-
 	config.EncodeTime = zapcore.ISO8601TimeEncoder
 	fileEncoder := zapcore.NewJSONEncoder(config)
 	consoleEncoder := zapcore.NewConsoleEncoder(config)
 
-	filePiority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+	filePriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return lvl >= zapcore.ErrorLevel
 	})
 
 	core := zapcore.NewTee(
-		zapcore.NewCore(fileEncoder, zapcore.AddSync(hook), filePiority),
+		zapcore.NewCore(fileEncoder, zapcore.AddSync(hook), filePriority),
 		zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), zapcore.DebugLevel),
 	)
 
@@ -46,7 +44,6 @@ func NewLogger(logPath string, maxSize, maxBackups, maxAge int) (*Logger, func()
 	}
 
 	return &Logger{logger: logger}, close, nil
-
 }
 
 func (l *Logger) Info(msg string, fields ...zap.Field) {

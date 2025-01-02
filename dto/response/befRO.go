@@ -2,17 +2,6 @@ package response
 
 import "time"
 
-// BeforeReturnOrderLineResponse represents the response structure for return order line
-type BeforeReturnOrderLineResponse struct {
-	OrderNo    string    `json:"orderNo" db:"OrderNo"`
-	SKU        string    `json:"sku" db:"SKU"`
-	QTY        int       `json:"qty" db:"QTY"`
-	ReturnQTY  int       `json:"returnQty" db:"ReturnQTY"`
-	Price      float64   `json:"price" db:"Price"`
-	TrackingNo string    `json:"trackingNo" db:"TrackingNo"`
-	CreateDate time.Time `json:"createDate" db:"CreateDate"`
-}
-
 // BeforeReturnOrderResponse represents the response structure for a return order before processing
 type BeforeReturnOrderResponse struct {
 	OrderNo                string                          `json:"orderNo" db:"OrderNo"`
@@ -38,8 +27,20 @@ type BeforeReturnOrderResponse struct {
 	BeforeReturnOrderLines []BeforeReturnOrderLineResponse `json:"beforeReturnOrderLines"`
 }
 
+// BeforeReturnOrderLineResponse represents the response structure for return order line
+type BeforeReturnOrderLineResponse struct {
+	OrderNo    string    `json:"orderNo" db:"OrderNo"`
+	SKU        string    `json:"sku" db:"SKU"`
+	QTY        int       `json:"qty" db:"QTY"`
+	ReturnQTY  int       `json:"returnQty" db:"ReturnQTY"`
+	Price      float64   `json:"price" db:"Price"`
+	TrackingNo string    `json:"trackingNo" db:"TrackingNo"`
+	CreateDate time.Time `json:"createDate" db:"CreateDate"`
+}
+
 type SaleOrderResponse struct {
 	SoNo        string                  `json:"soNo" db:"SoNo"`
+	OrderNo     string                  `json:"orderNo" db:"OrderNo"`
 	StatusMKP   string                  `json:"statusMKP" db:"StatusMKP"`
 	SalesStatus string                  `json:"salesStatus" db:"SalesStatus"`
 	CreateDate  *time.Time              `json:"createDate" db:"CreateDate"`
@@ -47,7 +48,6 @@ type SaleOrderResponse struct {
 }
 
 type SaleOrderLineResponse struct {
-	//SoNo     string  `json:"soNo" db:"SoNo"`
 	SKU      string  `json:"sku" db:"SKU"`
 	ItemName string  `json:"itemName" db:"ItemName"`
 	QTY      int     `json:"qty" db:"QTY"`

@@ -2,10 +2,13 @@ package api
 
 import (
 	"boilerplate-backend-go/dto/request"
+	res "boilerplate-backend-go/dto/response"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 // ReturnOrderRoute defines the routes for return order operations
@@ -13,11 +16,10 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/before-return-order", func(r chi.Router) {
 		r.Get("/list-orders", app.ListBeforeReturnOrders)
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
-		r.Put("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines) // New route for updating return order with lines
+		r.Put("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
 		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
-		r.Get("/list-lines", app.ListBeforeReturnOrderLines) // Updated route for listing return order lines without orderNo
+		r.Get("/list-lines", app.ListBeforeReturnOrderLines)
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
-		r.Get("/search/{soNo}", app.SearchSaleOrder) // New route for searching sale order
 	})
 }
 
@@ -38,7 +40,16 @@ func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
+	fmt.Printf("\n📋 ========== All Orders (%d) ==========\n", len(result))
+	for i, order := range result {
+		fmt.Printf("\n📦 Order #%d:\n", i+1)
+		printOrderDetails(&order)
+	}
+	// fmt.Println("=====================================")
+
+	app.Logger.Info("✅ Successfully retrieved all orders",
+		zap.Int("totalOrders", len(result)))
+	handleResponse(w, true, "📚 Orders retrieved successfully", result, http.StatusOK)
 }
 
 // CreateOrderWithLines godoc
@@ -66,6 +77,12 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 		return
 	}
 
+	fmt.Printf("\n📋 ========== Created Order ==========\n")
+	printOrderDetails(result)
+	// fmt.Println("=====================================")
+
+	app.Logger.Info("✅ Successfully created order",
+		zap.String("OrderNo", result.OrderNo))
 	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
 }
 
@@ -98,6 +115,12 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 		return
 	}
 
+	fmt.Printf("\n📋 ========== Updated Order ==========\n")
+	printOrderDetails(result)
+	// fmt.Println("=====================================")
+
+	app.Logger.Info("✅ Successfully updated order",
+		zap.String("OrderNo", result.OrderNo))
 	handleResponse(w, true, "Order updated successfully", result, http.StatusOK)
 }
 
@@ -121,6 +144,12 @@ func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *
 		return
 	}
 
+	fmt.Printf("\n📋 ========== Order Details ==========\n")
+	printOrderDetails(result)
+	// fmt.Println("=====================================")
+
+	app.Logger.Info("✅ Successfully retrieved order",
+		zap.String("OrderNo", result.OrderNo))
 	handleResponse(w, true, "Order retrieved successfully", result, http.StatusOK)
 }
 
@@ -142,6 +171,15 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 		return
 	}
 
+	fmt.Printf("\n📋 ========== All Order Lines (%d) ==========\n", len(result))
+	for i, line := range result {
+		fmt.Printf("\n📦 Order Line #%d:\n", i+1)
+		printOrderLineDetails(&line)
+	}
+	// fmt.Println("=====================================")
+
+	app.Logger.Info("✅ Successfully retrieved all order lines",
+		zap.Int("totalOrderLines", len(result)))
 	handleResponse(w, true, "Order lines retrieved successfully", result, http.StatusOK)
 }
 
@@ -165,33 +203,49 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 		return
 	}
 
+	fmt.Printf("\n📋 ========== Order Lines for OrderNo: %s ==========\n", orderNo)
+	for i, line := range result {
+		fmt.Printf("\n📦 Order Line #%d:\n", i+1)
+		printOrderLineDetails(&line)
+	}
+	// fmt.Println("=====================================")
+
+	app.Logger.Info("✅ Successfully retrieved order lines",
+		zap.String("OrderNo", orderNo),
+		zap.Int("totalOrderLines", len(result)))
 	handleResponse(w, true, "Order lines retrieved successfully", result, http.StatusOK)
 }
 
-// SearchSaleOrder godoc
-// @Summary Search sale order by SO number
-// @Description Retrieve the details of a sale order by its SO number
-// @ID search-sale-order
-// @Tags Search Sale Order
-// @Accept json
-// @Produce json
-// @Param soNo path string true "SO number"
-// @Success 200 {object} api.Response
-// @Failure 404 {object} api.Response
-// @Failure 500 {object} api.Response
-// @Router /before-return-order/search/{soNo} [get]
-func (app *Application) SearchSaleOrder(w http.ResponseWriter, r *http.Request) {
-	soNo := chi.URLParam(r, "soNo")
-	result, err := app.Service.BefRO.SearchSaleOrder(r.Context(), soNo)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
+func printOrderDetails(order *res.BeforeReturnOrderResponse) {
+	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
+	fmt.Printf("🛒 SaleOrder: %s\n", order.SaleOrder)
+	fmt.Printf("🔄 SaleReturn: %s\n", order.SaleReturn)
+	fmt.Printf("📡 ChannelID: %d\n", order.ChannelID)
+	fmt.Printf("🔙 ReturnType: %s\n", order.ReturnType)
+	fmt.Printf("👤 CustomerID: %s\n", order.CustomerID)
+	fmt.Printf("📦 TrackingNo: %s\n", order.TrackingNo)
+	fmt.Printf("🚚 Logistic: %s\n", order.Logistic)
+	fmt.Printf("🏢 WarehouseID: %d\n", order.WarehouseID)
+	fmt.Printf("📄 SoStatusID: %v\n", order.SoStatusID)
+	fmt.Printf("📊 MkpStatusID: %v\n", order.MkpStatusID)
+	fmt.Printf("📅 ReturnDate: %v\n", order.ReturnDate)
+	fmt.Printf("🔖 StatusReturnID: %d\n", order.StatusReturnID)
+	fmt.Printf("✅ StatusConfID: %d\n", order.StatusConfID)
+	fmt.Printf("👤 ConfirmBy: %v\n", order.ConfirmBy)
+	fmt.Printf("👤 CreateBy: %s\n", order.CreateBy)
+	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate)
+	fmt.Printf("👤 UpdateBy: %v\n", order.UpdateBy)
+	fmt.Printf("📅 UpdateDate: %v\n", order.UpdateDate)
+	fmt.Printf("❌ CancelID: %v\n", order.CancelID)
+	fmt.Printf("📦 BeforeReturnOrderLines: %v\n", order.BeforeReturnOrderLines)
+}
 
-	if result == nil {
-		handleResponse(w, false, "Sale order not found", nil, http.StatusNotFound)
-		return
-	}
-
-	handleResponse(w, true, "Sale order retrieved successfully", result, http.StatusOK)
+func printOrderLineDetails(line *res.BeforeReturnOrderLineResponse) {
+	fmt.Printf("📦 OrderNo: %s\n", line.OrderNo)
+	fmt.Printf("🔢 SKU: %s\n", line.SKU)
+	fmt.Printf("🔢 QTY: %d\n", line.QTY)
+	fmt.Printf("🔢 ReturnQTY: %d\n", line.ReturnQTY)
+	fmt.Printf("💲 Price: %.2f\n", line.Price)
+	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
+	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate)
 }
