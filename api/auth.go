@@ -36,7 +36,7 @@ func (app *Application) GenerateToken(tokenData res.Login) string {
 		"roleID":     tokenData.RoleID,
 		"nickName":   tokenData.NickName,
 		"fullNameTH": tokenData.FullNameTH,
-		"plateform":  tokenData.Platfrom,
+		"plateform":  tokenData.Platform,
 	}
 	_, tokenString, _ := app.TokenAuth.Encode(data)
 	return tokenString
@@ -75,7 +75,7 @@ func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
 		RoleID:     user.RoleID,
 		NickName:   user.NickName,
 		FullNameTH: user.FullNameTH,
-		Platfrom:   user.Platfrom,
+		Platform:   user.Platform,
 	}
 	fmt.Println("token data", tokenData)
 	token := app.GenerateToken(tokenData)
@@ -124,7 +124,7 @@ func (app *Application) LoginFromLark(w http.ResponseWriter, r *http.Request) {
 		RoleID:     user.RoleID,
 		NickName:   user.NickName,
 		FullNameTH: user.FullNameTH,
-		Platfrom:   user.Platfrom,
+		Platform:   user.Platform,
 	}
 	token := app.GenerateToken(tokenData)
 

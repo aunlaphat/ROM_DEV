@@ -11,6 +11,7 @@ import (
 // UserRepository interface กำหนด method สำหรับการทำงานกับฐานข้อมูลผู้ใช้
 type UserRepository interface {
 	GetUser(ctx context.Context, username, password string) (response.Login, error)
+	GetUserWithPermission(ctx context.Context, username, password string) (response.UserPermission, error)
 	GetUserFromLark(username, userID string) (response.Login, error)
 }
 
@@ -56,6 +57,33 @@ func (repo repositoryDB) GetUser(ctx context.Context, username, password string)
 	err = nstmt.GetContext(ctx, &user, params)
 	if err != nil {
 		return response.Login{}, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return user, nil
+}
+
+// Implementation สำหรับ GetUserWithPermission
+func (repo repositoryDB) GetUserWithPermission(ctx context.Context, username, password string) (response.UserPermission, error) {
+	var user response.UserPermission
+	query := `
+        SELECT UserID, UserName, NickName, FullNameTH, DepartmentNo, RoleID, RoleName, Description, Permission 
+        FROM ROM_V_UserPermission
+        WHERE UserName = :username AND Password = :password
+    `
+	params := map[string]interface{}{
+		"username": username,
+		"password": password,
+	}
+
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return response.UserPermission{}, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
+
+	err = nstmt.GetContext(ctx, &user, params)
+	if err != nil {
+		return response.UserPermission{}, fmt.Errorf("failed to get user: %w", err)
 	}
 
 	return user, nil
