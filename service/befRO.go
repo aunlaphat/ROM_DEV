@@ -110,11 +110,15 @@ func (srv service) SearchSaleOrder(ctx context.Context, soNo string) ([]response
 	srv.logger.Debug("🚀 Starting SearchSaleOrder", zap.String("SoNo", soNo))
 	order, err := srv.befRORepo.SearchSaleOrder(ctx, soNo)
 	if err != nil {
-		srv.logger.Error("❌ Failed to search sale order", zap.Error(err))
+		srv.logger.Error("❌ Failed to search sale orders", zap.Error(err))
 		return nil, err
 	}
-	srv.logger.Debug("✅ Successfully searched sale order", zap.String("SoNo", soNo))
-	return order, nil
+	if order == nil {
+		srv.logger.Debug("❗ No sale order found", zap.String("SoNo", soNo))
+		return nil, nil
+	}
+	srv.logger.Debug("✅ Successfully searched sale orders", zap.String("SoNo", soNo))
+	return []response.SaleOrderResponse{*order}, nil
 }
 
 // service เชื่อมกับ repo ต่อเพื่อดึงข้อมูลออกมา แต่ต้องมีการ validation ก่อนดึง

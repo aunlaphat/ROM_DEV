@@ -155,12 +155,24 @@ type ROM_V_OrderHeadDetail struct {
 	CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
 }
 
-type ROM_V_User struct {
+/* type ROM_V_User struct {
 	UserID       string `json:"userID,omitempty" db:"UserID"`
 	UserName     string `json:"userName,omitempty" db:"Username"`
 	NickName     string `json:"nickName,omitempty" db:"NickName"`
 	FullNameTH   string `json:"fullNameTH,omitempty" db:"FullNameTH"`
 	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo"`
+} */
+
+type ROM_V_UserPermission struct {
+	UserID       string `json:"userID,omitempty" db:"UserID"`
+	UserName     string `json:"userName,omitempty" db:"Username"`
+	NickName     string `json:"nickName,omitempty" db:"NickName"`
+	FullNameTH   string `json:"fullNameTH,omitempty" db:"FullNameTH"`
+	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo"`
+	RoleID       int    `json:"roleID,omitempty" db:"RoleID"`
+	RoleName     string `json:"roleName,omitempty" db:"RoleName"`
+	Description  string `json:"description,omitempty" db:"Description"`
+	Permission   string `json:"permission,omitempty" db:"Permission"`
 }
 
 /* // User schema

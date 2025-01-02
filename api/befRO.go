@@ -17,13 +17,11 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
 		r.Get("/list-lines", app.ListBeforeReturnOrderLines) // Updated route for listing return order lines without orderNo
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
-
 		r.Post("/create-trade", app.CreateTradeReturn)
 		r.Get("/get-order", app.GetAllOrderDetail)
 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)
 		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine)
-		r.Get("/search/{soNo}", app.SearchSaleOrder) // New route for searching sale order by SO number
-
+		r.Get("/search/{soNo}", app.SearchSaleOrder) // New route for searching sale order
 	})
 }
 
@@ -60,33 +58,6 @@ func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Re
 // @Failure 500 {object} api.Response
 // @Router /before-return-order/create [post]
 func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, r *http.Request) {
-	var req request.BeforeReturnOrder
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleError(w, err)
-		return
-	}
-
-	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
-}
-
-// @Summary Create a new return order
-// @Description Create a new return order
-// @ID create-trade-return
-// @Tags Before Return Order
-// @Accept json
-// @Produce json
-// @Param body body request.BeforeReturnOrder true "Trade Return Detail"
-// @Success 201 {object} api.Response
-// @Failure 400 {object} api.Response
-// @Failure 500 {object} api.Response
-// @Router /before-return-order/create-trade [post]
-func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request) {
 	var req request.BeforeReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, err)
@@ -201,6 +172,33 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 	handleResponse(w, true, "Order lines retrieved successfully", result, http.StatusOK)
 }
 
+// @Summary Create a new return order
+// @Description Create a new return order
+// @ID create-trade-return
+// @Tags Before Return Order
+// @Accept json
+// @Produce json
+// @Param body body request.BeforeReturnOrder true "Trade Return Detail"
+// @Success 201 {object} api.Response
+// @Failure 400 {object} api.Response
+// @Failure 500 {object} api.Response
+// @Router /before-return-order/create-trade [post]
+func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request) {
+	var req request.BeforeReturnOrder
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
+}
+
 // @Summary 	Get Before Return Order
 // @Description Get all Before Return Order
 // @ID 			Allget-BefReturnOrder
@@ -281,7 +279,7 @@ func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *ht
 // @Summary Search sale order by SO number
 // @Description Retrieve the details of a sale order by its SO number
 // @ID search-sale-order
-// @Tags Before Return Order
+// @Tags Search Sale Order
 // @Accept json
 // @Produce json
 // @Param soNo path string true "SO number"

@@ -13,6 +13,15 @@ import (
 // เพิ่ม constant สำหรับ timeout
 const (
 	defaultTimeout = 10 * time.Second
+	txTimeout      = 30 * time.Second
+)
+
+// เพิ่ม constants สำหรับ status
+const (
+	StatusPending    = 1
+	StatusInProgress = 2
+	StatusCompleted  = 3
+	StatusCancelled  = 4
 )
 
 // ReturnOrderRepository interface กำหนด method สำหรับการทำงานกับฐานข้อมูล
@@ -27,6 +36,8 @@ type BefRORepository interface {
 	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
 	ListBeforeReturnOrderLinesByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
+
+	//SO
 	GetAllOrderDetail() ([]response.OrderDetail, error)
 	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
 
@@ -41,8 +52,8 @@ type BefRORepository interface {
 	//Cancle
 	DeleteBeforeReturnOrderLine(recID string) error
 
-	// Search
-	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
+	//Search
+	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -605,7 +616,7 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 }
 
 // Implementation สำหรับ SearchSaleOrder
-func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error) {
+func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error) {
 	log.Printf("🚀 Starting SearchSaleOrder for SoNo: %s", soNo)
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -657,7 +668,7 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) ([]re
 	orderHead.OrderLines = orderLines
 
 	log.Printf("✅ Successfully searched sale orders for SoNo: %s", soNo)
-	return []response.SaleOrderResponse{orderHead}, nil
+	return &orderHead, nil
 }
 
 func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {

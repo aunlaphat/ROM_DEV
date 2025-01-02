@@ -37,7 +37,7 @@ type BeforeReturnOrderLine struct {
 	AlterSKU   *string `json:"alterSKU" db:"AlterSKU"`
 	UpdateBy   *string `json:"updateBy" db:"UpdateBy"`
 	//UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"`
-	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate() function
+	//CreateDate *time.Time `json:"createDate" db:"CreateDate"`
 }
 
 type SearchOrderRequest struct {
