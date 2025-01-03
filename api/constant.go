@@ -151,8 +151,8 @@ func (app *Application) GetProductAll(w http.ResponseWriter, r *http.Request) {
 // @Tags Constants
 // @Accept json
 // @Produce json
-// @Param page query int true "Page number"
-// @Param limit query int true "Limit per page"
+// @Param page query int true "Page number" default(1)
+// @Param limit query int true "Limit per page" default(10)
 // @Success 200 {object} Response{result=[]entity.ROM_V_ProductAll, total=int} "Paginated Product List"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
@@ -184,7 +184,6 @@ func (app *Application) GetProductAlls(w http.ResponseWriter, r *http.Request) {
         "limit":    limit,
     }, http.StatusOK)
 }
-
 
 // // @Summary Get Customer
 // // @Description Get inform customer

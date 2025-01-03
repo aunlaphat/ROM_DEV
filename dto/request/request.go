@@ -168,4 +168,12 @@ type ReturnOrderLine struct {
 	AlterSKU        *string         `json:"-" db:"AlterSKU" `  
 }
 
+type Image struct {
+    ReturnID    string `json:"returnID" db:"ReturnID"`
+    SKU         string `json:"sku" db:"SKU"`
+    FilePath    string `json:"filePath" db:"FilePath"`
+    ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"`
+    CreateBy    string `json:"createBy" db:"CreateBy"`
+    OrderNo     string `json:"orderNo" db:"OrderNo"` 
+}
 

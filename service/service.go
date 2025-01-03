@@ -15,6 +15,7 @@ type service struct {
 	befRORepo       repository.BefRORepository
 	orderRepo       repository.OrderRepository
 	returnOrderRepo repository.ReturnOrderRepository
+	importOrderRepo repository.ImportOrderRepository
 }
 type AllOfService struct {
 	User        UserService
@@ -23,6 +24,7 @@ type AllOfService struct {
 	BefRO       BefROService
 	Order       OrderService
 	ReturnOrder ReturnOrderService
+	ImportOrder ImportOrderService
 	// Login	    LoginService
 }
 
@@ -36,6 +38,7 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		befRORepo:       repo,
 		orderRepo:       repo,
 		returnOrderRepo: repo,
+		importOrderRepo: repo,
 	}
 	return AllOfService{
 		User:        srv,
@@ -44,6 +47,7 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		BefRO:       srv,
 		Order:       srv,
 		ReturnOrder: srv,
+		ImportOrder: 	 srv,
 	}
 }
 

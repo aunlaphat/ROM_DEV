@@ -514,6 +514,14 @@ definitions:
         example: 12345678TH
         type: string
     type: object
+  response.BaseResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
   response.Login:
     properties:
       department:
@@ -1206,12 +1214,14 @@ paths:
       description: Get paginated products
       operationId: get-productAll-paginated
       parameters:
-      - description: Page number
+      - default: 1
+        description: Page number
         in: query
         name: page
         required: true
         type: integer
-      - description: Limit per page
+      - default: 10
+        description: Limit per page
         in: query
         name: limit
         required: true
@@ -1348,6 +1358,50 @@ paths:
       summary: Get Warehouse
       tags:
       - Constants
+  /images/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Handle image upload for return process
+      operationId: upload-images
+      parameters:
+      - description: Image files to upload
+        in: formData
+        name: files
+        required: true
+        type: file
+      - description: Return ID
+        in: formData
+        name: returnID
+        required: true
+        type: string
+      - description: Comma-separated SKUs for product images
+        in: formData
+        name: skus
+        type: string
+      - description: Image Type ID
+        in: formData
+        name: imageTypeID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.BaseResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.BaseResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.BaseResponse'
+      summary: Upload images for product return
+      tags:
+      - Images
   /orders/allgetorder:
     get:
       consumes:

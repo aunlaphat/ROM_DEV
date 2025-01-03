@@ -963,6 +963,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Page number",
                         "name": "page",
                         "in": "query",
@@ -970,6 +971,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "default": 10,
                         "description": "Limit per page",
                         "name": "limit",
                         "in": "query",
@@ -1182,6 +1184,71 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/images/upload": {
+            "post": {
+                "description": "Handle image upload for return process",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Images"
+                ],
+                "summary": "Upload images for product return",
+                "operationId": "upload-images",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Image files to upload",
+                        "name": "files",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Return ID",
+                        "name": "returnID",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated SKUs for product images",
+                        "name": "skus",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Image Type ID",
+                        "name": "imageTypeID",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.BaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.BaseResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.BaseResponse"
                         }
                     }
                 }
@@ -2873,6 +2940,18 @@ const docTemplate = `{
                 "trackingNo": {
                     "type": "string",
                     "example": "12345678TH"
+                }
+            }
+        },
+        "response.BaseResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         },
