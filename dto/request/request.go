@@ -3,6 +3,8 @@ package request
 
 import "time"
 
+/********** Login ***************/
+
 type LoginWeb struct {
 	UserName string `json:"userName" db:"userID" example:"eknarin"`
 	Password string `json:"password," db:"password" example:"asdfhdskjf"`
@@ -14,7 +16,7 @@ type LoginLark struct {
 }
 
 type Login struct {
-	UserID string `json:"userName" db:"UserID" example:"DC53002"`
+	UserID string `json:"userID" db:"UserID" example:"DC53002"`
 	Password string `json:"password," db:"Password" example:"string"`
 }
 
@@ -22,6 +24,8 @@ type LoginJWT struct {
 	UserID string `json:"userID" db:"UserID" example:"DC53002"`
 	UserName string `json:"userName" db:"Username" example:"string"`
 }
+
+/********** Order ***************/
 
 //ข้อมูลสำหรับคำสั่งซื้อ
 //ข้อมูลลูกค้า แบรนด์/บริษัทในเครือที่สั่ง เชื่อมกับจน. รหัสสินค้าด้วย OrderNo ด้านล่าง
@@ -151,8 +155,6 @@ type UpdateReturnOrder struct {
 	StatusCheckID   *int            `json:"statusCheckId" db:"StatusCheckID" example:"1"`    
 	CheckBy         *string         `json:"checkBy" db:"CheckBy" example:"dev03"`                
 	Description     *string         `json:"description" db:"Description" example:""`
-
-	//ReturnOrderLine	[]ReturnOrderLine `json:"ReturnOrderLine"`
 }
 
 type ReturnOrderLine struct {       

@@ -399,7 +399,7 @@ definitions:
       password:
         example: string
         type: string
-      userName:
+      userID:
         example: DC53002
         type: string
     type: object
@@ -516,6 +516,9 @@ definitions:
     type: object
   response.Login:
     properties:
+      department:
+        example: G07
+        type: string
       fullNameTH:
         example: test1234
         type: string
@@ -533,6 +536,47 @@ definitions:
         type: string
       userName:
         example: userName
+        type: string
+    type: object
+  response.OrderDetail:
+    properties:
+      OrderHeadDetail:
+        items:
+          $ref: '#/definitions/response.OrderHeadDetail'
+        type: array
+    type: object
+  response.OrderHeadDetail:
+    properties:
+      OrderLineDetail:
+        items:
+          $ref: '#/definitions/response.OrderLineDetail'
+        type: array
+      orderNo:
+        description: เลขที่ใบสั่งซื้อ
+        type: string
+      salesStatus:
+        description: สถานะการขาย
+        type: string
+      soNo:
+        description: เลขที่ใบสั่งขาย
+        type: string
+      statusMKP:
+        description: สถานะในตลาด
+        type: string
+    type: object
+  response.OrderLineDetail:
+    properties:
+      itemName:
+        description: ชื่อสินค้า
+        type: string
+      price:
+        description: ราคาต่อหน่วย
+        type: number
+      qty:
+        description: จำนวนสินค้า
+        type: integer
+      sku:
+        description: รหัสสินค้า
         type: string
     type: object
   response.UserPermission:
@@ -749,6 +793,202 @@ paths:
       summary: Create a new return order with lines
       tags:
       - Before Return Order
+  /before-return-order/create-trade:
+    post:
+      consumes:
+      - application/json
+      description: Create a new return order
+      operationId: create-trade-return
+      parameters:
+      - description: Trade Return Detail
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.BeforeReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Create a new return order
+      tags:
+      - Before Return Order
+  /before-return-order/delete-befodline/{recID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an order line
+      operationId: delete-BeforeReturnOrderLine
+      parameters:
+      - description: Rec ID
+        in: path
+        name: recID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Before ReturnOrderLine Deleted
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  type: string
+              type: object
+        "204":
+          description: No Content, Order Delete Successfully
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Order Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Delete Order line
+      tags:
+      - Before Return Order
+  /before-return-order/get-order:
+    get:
+      consumes:
+      - application/json
+      description: Get all Before Return Order
+      operationId: Allget-BefReturnOrder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get All
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.OrderDetail'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Before Return Order
+      tags:
+      - Before Return Order
+  /before-return-order/get-orderbySO/{soNo}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of an order by its SO number
+      operationId: GetBySO-BefReturnOrder
+      parameters:
+      - description: soNo
+        in: path
+        name: soNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get by SO
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.OrderDetail'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Before Return Order by SO
+      tags:
+      - Before Return Order
+  /before-return-order/get-orders:
+    get:
+      consumes:
+      - application/json
+      description: Get all Before Return Order with pagination
+      operationId: Get-BefReturnOrder-Paginated
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get Paginated Orders
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.OrderDetail'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Paginated Before Return Order
+      tags:
+      - Before Return Order
   /before-return-order/line/{orderNo}:
     get:
       consumes:
@@ -854,7 +1094,7 @@ paths:
       tags:
       - Search Sale Order
   /before-return-order/update/{orderNo}:
-    put:
+    patch:
       consumes:
       - application/json
       description: Update an existing return order with the provided details
@@ -957,6 +1197,50 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get ProductAll
+      tags:
+      - Constants
+  /constants/get-productAlls:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated products
+      operationId: get-productAll-paginated
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Limit per page
+        in: query
+        name: limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated Product List
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                ' total':
+                  type: integer
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ROM_V_ProductAll'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get ProductAll with Pagination
       tags:
       - Constants
   /constants/get-province:
@@ -1577,7 +1861,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: User Login
+      summary: User Login with UserID
       tags:
       - LoginTest
   /user/get-user:

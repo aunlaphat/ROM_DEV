@@ -39,6 +39,7 @@ type BefRORepository interface {
 
 	//SO
 	GetAllOrderDetail() ([]response.OrderDetail, error)
+	GetAllOrderDetails(offset, limit int) ([]response.OrderDetail, error)
 	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
 
 	// Update
@@ -273,6 +274,57 @@ func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {
         ORDER BY OrderNo
     `
 	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery)
+	if err != nil {
+		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+	}
+
+	// Map Order Lines to Order Heads
+	orderLineMap := make(map[string][]response.OrderLineDetail)
+	for _, line := range lineDetails {
+		orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
+	}
+
+	for i := range headDetails {
+		headDetails[i].OrderLineDetail = orderLineMap[headDetails[i].OrderNo]
+	}
+
+	return []response.OrderDetail{
+		{OrderHeadDetail: headDetails},
+	}, nil
+}
+
+func (repo repositoryDB) GetAllOrderDetails(offset, limit int) ([]response.OrderDetail, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var headDetails []response.OrderHeadDetail
+	var lineDetails []response.OrderLineDetail
+
+	// Query Order Head with Pagination
+	headQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
+        ORDER BY OrderNo
+        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+    `
+	err := repo.db.SelectContext(ctx, &headDetails, headQuery, sql.Named("offset", offset), sql.Named("limit", limit))
+	if err != nil {
+		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
+	}
+
+	// Query Order Line
+	lineQuery := `
+        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
+        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
+        WHERE OrderNo IN (
+            SELECT OrderNo 
+            FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
+            ORDER BY OrderNo
+            OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+        )
+        ORDER BY OrderNo
+    `
+	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("offset", offset), sql.Named("limit", limit))
 	if err != nil {
 		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
 	}

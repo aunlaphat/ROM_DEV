@@ -2,6 +2,8 @@ package entity
 
 import "time"
 
+/**********Before Return Order ***************/
+
 // BeforeReturnOrder represents the structure of the BeforeReturnOrder table
 type BeforeReturnOrder struct {
 	RecID          int        `db:"RecID"`
@@ -53,6 +55,8 @@ type CancelStatus struct {
 	CancelDate   time.Time `db:"CancelDate"` // วันที่ยกเลิก
 }
 
+/********** Order ***************/
+
 type Order struct {
 	OrderNo         string     `json:"orderNo" db:"OrderNo" example:"OD0001"`
 	BrandName       *string    `json:"brandName" db:"BrandName" example:"BEWELL"`
@@ -78,6 +82,8 @@ type OrderLine struct {
 	QTY      *int     `json:"qty" db:"QTY" example:"5"`
 	Price    *float64 `json:"price" db:"Price" example:"5900.00"`
 }
+
+/********** Return Order ***************/
 
 // ReturnOrder คือตารางสำหรับเก็บข้อมูลการคืนสินค้าที่ผ่านการตรวจสอบแล้ว
 // เป็นขั้นตอนสุดท้ายของกระบวนการคืนสินค้า
@@ -120,6 +126,8 @@ type ReturnOrderLine struct {
 	UpdateDate *time.Time `db:"UpdateDate"` // วันที่แก้ไขล่าสุด
 }
 
+/********** Constants for dropdown ***************/
+
 type Warehouse struct {
 	WarehouseID   int    `db:"WarehouseID" json:"warehouseID"`     // รหัสคลังสินค้า
 	WarehouseName string `db:"WarehouseName" json:"warehouseName"` // ชื่อคลังสินค้า
@@ -134,6 +142,8 @@ type ROM_V_ProductAll struct {
 	Barcode   *string `db:"Barcode" json:"barcode"`     // บาร์โค้ดของสินค้า
 	Type      *string `db:"Type" json:"type"`           // ประเภทของสินค้า
 }
+
+/********** OrderHead + Line data Project ***************/
 
 type ROM_V_OrderLineDetail struct {
 	OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
@@ -154,6 +164,8 @@ type ROM_V_OrderHeadDetail struct {
 	SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
 	CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
 }
+
+/********** Login ***************/
 
 /* type ROM_V_User struct {
 	UserID       string `json:"userID,omitempty" db:"UserID"`

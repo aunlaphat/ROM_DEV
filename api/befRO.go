@@ -4,6 +4,7 @@ import (
 	"boilerplate-backend-go/dto/request"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -14,6 +15,8 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Get("/list-orders", app.ListBeforeReturnOrders)
 		r.Get("/list-lines", app.ListBeforeReturnOrderLines) // Updated route for listing return order lines without orderNo
 		r.Get("/get-order", app.GetAllOrderDetail)
+		r.Get("/get-orders", app.GetAllOrderDetails) //with paginate
+
 
 		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
@@ -137,6 +140,51 @@ func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
 }
+
+// @Summary 	Get Paginated Before Return Order
+// @Description Get all Before Return Order with pagination
+// @ID 			Get-BefReturnOrder-Paginated
+// @Tags 		Before Return Order
+// @Accept 		json
+// @Produce 	json
+// @Param       page  query int false "Page number" default(1)
+// @Param       limit query int false "Page size" default(10)
+// @Success 	200 {object} Response{result=[]response.OrderDetail} "Get Paginated Orders"
+// @Failure 	400 {object} Response "Bad Request"
+// @Failure 	404 {object} Response "Not Found"
+// @Failure 	500 {object} Response "Internal Server Error"
+// @Router 		/before-return-order/get-orders [get]
+func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Request) {
+	page, limit := parsePagination(r) // ฟังก์ชันช่วยดึง page และ limit จาก Query Parameters
+
+	res, err := api.Service.BefRO.GetAllOrderDetails(page, limit)
+	if err != nil {
+		HandleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, response, res, http.StatusOK)
+}
+
+// Helper function: parsePagination
+func parsePagination(r *http.Request) (int, int) {
+	query := r.URL.Query()
+	page := parseInt(query.Get("page"), 1)   // Default page = 1
+	limit := parseInt(query.Get("limit"), 10) // Default limit = 10
+	return page, limit
+}
+
+func parseInt(value string, defaultValue int) int {
+	if value == "" {
+		return defaultValue
+	}
+	result, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return result
+}
+
 
 // @Summary      Get Before Return Order by SO
 // @Description  Get details of an order by its SO number

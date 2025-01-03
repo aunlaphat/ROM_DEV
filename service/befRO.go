@@ -17,6 +17,7 @@ type BefROService interface {
 	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	GetAllOrderDetail() ([]response.OrderDetail, error)
+	GetAllOrderDetails(page, limit int) ([]response.OrderDetail, error)
 
 	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
 	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
@@ -85,6 +86,24 @@ func (srv service) GetAllOrderDetail() ([]response.OrderDetail, error) {
 	}
 	return allorder, nil
 }
+
+func (srv service) GetAllOrderDetails(page, limit int) ([]response.OrderDetail, error) {
+	offset := (page - 1) * limit // คำนวณ Offset
+
+	allorder, err := srv.befRORepo.GetAllOrderDetails(offset, limit)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			srv.logger.Error(err)
+			return nil, fmt.Errorf("no order data: %w", err)
+		default:
+			srv.logger.Error(err)
+			return nil, fmt.Errorf("get order error: %w", err)
+		}
+	}
+	return allorder, nil
+}
+
 
 func (srv service) GetOrderDetailBySO(soNo string) (*response.OrderDetail, error) {
 	soOrder, err := srv.befRORepo.GetOrderDetailBySO(soNo)

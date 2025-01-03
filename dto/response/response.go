@@ -3,6 +3,8 @@ package response
 
 import "time"
 
+/********** Login ***************/
+
 type Login struct {
 	UserName     string `json:"userName,omitempty" db:"UserName" example:"userName"`
 	UserID       string `json:"userID,omitempty" db:"UserID" example:"userID"`
@@ -20,6 +22,8 @@ type UserInform struct {
 	FullNameTH string `json:"fullNameTH,omitempty" db:"FullNameTH" example:"อัญญ์ลภัส อาจสุริยงค์"`
 	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo" example:"G01"`
 }
+
+/********** Order ***************/
 
 type OrderResponse struct {
 	OrderNo         string     `json:"orderNo" db:"OrderNo" example:"OD0001"`
@@ -91,7 +95,7 @@ type ReturnOrderLine struct {
 
 type CancelStatus struct {
 	CancelID 		*int    	  `json:"platfId" db:"PlatfID"` 
-	RefID		*string    	  `json:"refId" db:"RefID"`
+	RefID		    *string    	  `json:"refId" db:"RefID"` //fk of table beforeod and returnod with pk-RecID
 	CancelStatus	 bool         `db:"CancelStatus"` 
 	Remark			*string    	  `json:"remark" db:"Remark"` 
 	CancelDate		*time.Time    `json:"cancelDate" db:"CancelDate"` 
@@ -102,24 +106,26 @@ type ReturnOrderHead struct {
 	ReturnOrder		   ReturnOrder		  `json:"ReturnOrder"`
 }
 
+/********** OrderHead + Line data Project ***************/
+
 type OrderLineDetail struct {
-    OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
-    SoNo        *string    `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
-    StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
-    SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
+    OrderNo     string    `db:"OrderNo" json:"-"`               // เลขที่ใบสั่งซื้อ
+    SoNo        *string    `db:"SoNo" json:"-"`                 // เลขที่ใบสั่งขาย
+    StatusMKP   string    `db:"StatusMKP" json:"-"`             // สถานะ Market Place
+    SalesStatus string    `db:"SalesStatus" json:"-"`           // สถานะการขาย
     SKU         string    `db:"SKU" json:"sku"`                 // รหัสสินค้า
     ItemName    string    `db:"ItemName" json:"itemName"`       // ชื่อสินค้า
     QTY         int       `db:"QTY" json:"qty"`                 // จำนวนสินค้า
     Price       float64   `db:"Price" json:"price"`             // ราคาต่อหน่วย
-    CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
+    CreateDate  time.Time `db:"CreateDate" json:"-"`            // วันที่สร้างรายการ
 }
 
 type OrderHeadDetail struct {
-    OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
+    OrderNo     string    `db:"OrderNo" json:"orderNo"`          // เลขที่ใบสั่งซื้อ
     SoNo        *string    `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
-    StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
-    SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
-    CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
+    StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`      // สถานะในตลาด
+    SalesStatus string    `db:"SalesStatus" json:"salesStatus"`  // สถานะการขาย
+    CreateDate  time.Time `db:"CreateDate" json:"-"`             // วันที่สร้างรายการ
 
 	OrderLineDetail []OrderLineDetail `json:"OrderLineDetail"`
 }

@@ -46,7 +46,7 @@ func (repo repositoryDB) AllGetReturnOrder() ([]response.ReturnOrder, error) {
 	// ดึงข้อมูล ReturnOrderLine ทั้งหมด
 	queryOrderLines := `
 		SELECT 
-			ReturnID, OrderNo, TrackingNo, SKU, ReturnQTY, CheckQTY, Price, CreateBy, 
+			RecID, ReturnID, OrderNo, TrackingNo, SKU, ReturnQTY, CheckQTY, Price, CreateBy, 
 			CreateDate, AlterSKU, UpdateBy, UpdateDate
 		FROM ReturnOrderLine
 	`
@@ -93,7 +93,7 @@ func (repo repositoryDB) GetReturnOrderByID(returnID string) (*response.ReturnOr
 	var orderLines []response.ReturnOrderLine
 	queryOrderLines := `
 		SELECT 
-			ReturnID, OrderNo, TrackingNo, SKU, ReturnQTY, CheckQTY, Price, CreateBy, 
+			RecID, ReturnID, OrderNo, TrackingNo, SKU, ReturnQTY, CheckQTY, Price, CreateBy, 
 			CreateDate, AlterSKU, UpdateBy, UpdateDate
 		FROM ReturnOrderLine
 		WHERE ReturnID = @returnID

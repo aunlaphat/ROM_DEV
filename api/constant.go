@@ -1,8 +1,10 @@
 package api
+
 //for dropdown
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -17,6 +19,8 @@ func (app *Application) Constants(apiRouter *chi.Mux) {
 		// r.Get("/get-postcode", app.GetPostCode)
 		r.Get("/get-warehouse", app.GetWarehouse)
 		r.Get("/get-productAll", app.GetProductAll)
+		r.Get("/get-productAlls", app.GetProductAlls)
+		
 		//r.Get("/get-customer", app.GetCustomer)
 	})
 }
@@ -140,6 +144,47 @@ func (app *Application) GetProductAll(w http.ResponseWriter, r *http.Request) {
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
 }
+
+// @Summary Get ProductAll with Pagination
+// @Description Get paginated products
+// @ID get-productAll-paginated
+// @Tags Constants
+// @Accept json
+// @Produce json
+// @Param page query int true "Page number"
+// @Param limit query int true "Limit per page"
+// @Success 200 {object} Response{result=[]entity.ROM_V_ProductAll, total=int} "Paginated Product List"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 500 {object} Response "Internal Server Error"
+// @Router /constants/get-productAlls [get]
+func (app *Application) GetProductAlls(w http.ResponseWriter, r *http.Request) {
+    pageStr := r.URL.Query().Get("page")
+    limitStr := r.URL.Query().Get("limit")
+
+    page, err := strconv.Atoi(pageStr)
+    if err != nil || page < 1 {
+        page = 1 // Default page
+    }
+
+    limit, err := strconv.Atoi(limitStr)
+    if err != nil || limit < 1 {
+        limit = 10 // Default limit
+    }
+
+    products, total, err := app.Service.Constant.GetProductAllWithPagination(page, limit)
+    if err != nil {
+        HandleError(w, err)
+        return
+    }
+
+    handleResponse(w, true, response, map[string]interface{}{
+        "products": products,
+        "total":    total,
+        "page":     page,
+        "limit":    limit,
+    }, http.StatusOK)
+}
+
 
 // // @Summary Get Customer
 // // @Description Get inform customer

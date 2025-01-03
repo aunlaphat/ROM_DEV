@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-//	"time"
+
+	//	"time"
 
 	"github.com/go-chi/chi/v5"
 	//"github.com/go-chi/jwtauth"
@@ -16,7 +17,7 @@ func (app *Application) UserTestRoute(apiRouter *chi.Mux) {
 
 	apiRouter.Route("/test", func(r chi.Router) {
 		r.Post("/login", app.LoginTest)
-	 })
+	})
 }
 
 func (app *Application) GenerateTokenLogin(user res.UserInform) string {
@@ -25,10 +26,11 @@ func (app *Application) GenerateTokenLogin(user res.UserInform) string {
 		"userName": user.UserName,
 	}
 	_, tokenString, _ := app.TokenAuth.Encode(data) // ใช้ `TokenAuth` สำหรับ JWT
+	
 	return tokenString
 }
 
-// @Summary User Login
+// @Summary User Login with UserID
 // @Description Handles user login requests and generates a token for the authenticated user.
 // @ID usertest-login
 // @Tags LoginTest
@@ -65,6 +67,11 @@ func (app *Application) LoginTest(w http.ResponseWriter, r *http.Request) {
 
 	// สร้าง JWT Token (ถ้าต้องการ)
 	token := app.GenerateTokenLogin(user)
+	// if err != nil {
+	// 	err := fmt.Errorf("failed to generate token: %v", err)
+	// 	handleError(w, err)
+	// 	return
+	// }
 
 	// ส่งกลับข้อมูล
 	response := map[string]interface{}{
@@ -72,8 +79,9 @@ func (app *Application) LoginTest(w http.ResponseWriter, r *http.Request) {
 		"token":   token,
 		"user":    user,
 	}
+	handleResponse(w, true, "Login successful", response, http.StatusOK)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
-
