@@ -3,6 +3,7 @@ package api
 import (
 	"boilerplate-backend-go/dto/request"
 	res "boilerplate-backend-go/dto/response"
+	"boilerplate-backend-go/middleware"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 // ReturnOrderRoute defines the routes for return order operations
 func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/before-return-order", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
 		r.Get("/list-orders", app.ListBeforeReturnOrders)
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
 		r.Put("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
@@ -23,6 +25,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
 		r.Get("/search/{soNo}", app.SearchSaleOrder)
 		r.Post("/create", app.CreateSaleReturn)
 		r.Post("/confirm", app.ConfirmSaleReturn)
@@ -46,7 +49,7 @@ func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	fmt.Printf("\n📋 ========== All Orders (%d) ==========\n", len(result))
+	fmt.Printf("\n📋 ========== All Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
 		fmt.Printf("\n📦 Order #%d:\n", i+1)
 		printOrderDetails(&order)
@@ -83,7 +86,7 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Created Order ==========\n")
+	fmt.Printf("\n📋 ========== Created Order ========== 📋\n")
 	printOrderDetails(result)
 	// fmt.Println("=====================================")
 
@@ -121,7 +124,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Updated Order ==========\n")
+	fmt.Printf("\n📋 ========== Updated Order ========== 📋\n")
 	printOrderDetails(result)
 	// fmt.Println("=====================================")
 
@@ -150,7 +153,7 @@ func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Order Details ==========\n")
+	fmt.Printf("\n📋 ========== Order Details ========== 📋\n")
 	printOrderDetails(result)
 	// fmt.Println("=====================================")
 
@@ -177,7 +180,7 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 		return
 	}
 
-	fmt.Printf("\n📋 ========== All Order Lines (%d) ==========\n", len(result))
+	fmt.Printf("\n📋 ========== All Order Lines (%d) ========== 📋\n", len(result))
 	for i, line := range result {
 		fmt.Printf("\n📦 Order Line #%d:\n", i+1)
 		printOrderLineDetails(&line)
@@ -209,7 +212,7 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Order Lines for OrderNo: %s ==========\n", orderNo)
+	fmt.Printf("\n📋 ========== Order Lines for OrderNo: %s ========== 📋\n", orderNo)
 	for i, line := range result {
 		fmt.Printf("\n📦 Order Line #%d:\n", i+1)
 		printOrderLineDetails(&line)
@@ -280,6 +283,84 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Validation
+	if req.OrderNo == "" {
+		http.Error(w, "OrderNo is required", http.StatusBadRequest)
+		return
+	}
+	if req.SoNo == "" {
+		http.Error(w, "SoNo is required", http.StatusBadRequest)
+		return
+	}
+	if req.ChannelID == 0 {
+		http.Error(w, "ChannelID is required", http.StatusBadRequest)
+		return
+	}
+	if req.CustomerID == "" {
+		http.Error(w, "CustomerID is required", http.StatusBadRequest)
+		return
+	}
+	if req.WarehouseID == 0 {
+		http.Error(w, "WarehouseID is required", http.StatusBadRequest)
+		return
+	}
+	if req.ReturnType == "" {
+		http.Error(w, "ReturnType is required", http.StatusBadRequest)
+		return
+	}
+	if req.TrackingNo == "" {
+		http.Error(w, "TrackingNo is required", http.StatusBadRequest)
+		return
+	}
+	if len(req.BeforeReturnOrderLines) == 0 {
+		http.Error(w, "At least one order line is required", http.StatusBadRequest)
+		return
+	}
+	for _, line := range req.BeforeReturnOrderLines {
+		if line.SKU == "" {
+			http.Error(w, "SKU is required for all order lines", http.StatusBadRequest)
+			return
+		}
+		if line.QTY <= 0 {
+			http.Error(w, "QTY must be greater than 0 for all order lines", http.StatusBadRequest)
+			return
+		}
+		if line.ReturnQTY < 0 {
+			http.Error(w, "ReturnQTY cannot be negative for all order lines", http.StatusBadRequest)
+			return
+		}
+		if line.Price < 0 {
+			http.Error(w, "Price cannot be negative for all order lines", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Check if the order already exists
+	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if existingOrder != nil {
+		// If the order already exists, update the SR number
+		srNo := "SR123456" // Generate SR number (this is a placeholder, replace with actual SR number generation logic)
+		err = app.Service.BefRO.UpdateDynamicFields(r.Context(), req.OrderNo, map[string]interface{}{"SrNo": srNo})
+		if err != nil {
+			handleError(w, err)
+			return
+		}
+
+		// Update the result with the new SR number
+		existingOrder.SrNo = srNo
+
+		fmt.Printf("\n📋 ========== Updated Sale Return Order ========== 📋\n")
+		printOrderDetails(existingOrder)
+		handleResponse(w, true, "Sale return order updated successfully", existingOrder, http.StatusOK)
+		return
+	}
+
+	// If the order does not exist, create a new one
 	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
@@ -290,7 +371,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	srNo := "SR123456"
 
 	// Update the SR number in the database
-	err = app.Service.BefRO.UpdateSrNo(r.Context(), result.OrderNo, srNo)
+	err = app.Service.BefRO.UpdateDynamicFields(r.Context(), result.OrderNo, map[string]interface{}{"SrNo": srNo})
 	if err != nil {
 		handleError(w, err)
 		return
@@ -299,11 +380,15 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	// Update the result with the new SR number
 	result.SrNo = srNo
 
-	fmt.Printf("\n📋 ========== Created Sale Return Order ==========\n")
-	printOrderDetails(result)
-	// fmt.Println("=====================================")
-
-	handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
+	// Check user role
+	userRole := r.Context().Value(middleware.ContextUserRole).(string)
+	if userRole == "ACCOUNTING" {
+		// Show "Create CN" button for accounting role
+		handleResponse(w, true, "Sale return order created successfully. You can create CN.", result, http.StatusOK)
+	} else {
+		// Do not show "Create CN" button for other roles
+		handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
+	}
 }
 
 // ConfirmSaleReturn godoc
@@ -325,7 +410,19 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	result, err := app.Service.BefRO.ConfirmSaleReturn(r.Context(), req)
+	fields := map[string]interface{}{
+		"StatusConfID": req.StatusConfID,
+		"ConfirmBy":    req.ConfirmBy,
+		"UpdateBy":     req.UpdateBy,
+	}
+
+	err := app.Service.BefRO.UpdateDynamicFields(r.Context(), req.OrderNo, fields)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	result, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
 	if err != nil {
 		handleError(w, err)
 		return

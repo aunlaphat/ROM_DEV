@@ -18,6 +18,7 @@ type BefROService interface {
 	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
 	ConfirmSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	UpdateSrNo(ctx context.Context, orderNo string, srNo string) error
+	UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error
 }
 
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -149,7 +150,13 @@ func (srv service) UpdateSrNo(ctx context.Context, orderNo string, srNo string) 
 func (srv service) ConfirmSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("🏁 Starting to confirm sale return", zap.String("OrderNo", req.OrderNo))
 
-	err := srv.befRORepo.CreateReturnOrderWithTransaction(ctx, req)
+	fields := map[string]interface{}{
+		"StatusConfID": req.StatusConfID,
+		"ConfirmBy":    req.ConfirmBy,
+		"UpdateBy":     req.UpdateBy,
+	}
+
+	err := srv.befRORepo.UpdateDynamicFields(ctx, req.OrderNo, fields)
 	if err != nil {
 		srv.logger.Error("❌ Failed to confirm sale return", zap.Error(err))
 		return nil, err
@@ -165,4 +172,17 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, req request.BeforeRetu
 		zap.String("OrderNo", req.OrderNo),
 		zap.Any("ConfirmedOrder", confirmedOrder))
 	return confirmedOrder, nil
+}
+
+func (srv service) UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error {
+	srv.logger.Info("🏁 Starting to update dynamic fields", zap.String("OrderNo", orderNo), zap.Any("Fields", fields))
+
+	err := srv.befRORepo.UpdateDynamicFields(ctx, orderNo, fields)
+	if err != nil {
+		srv.logger.Error("❌ Failed to update dynamic fields", zap.Error(err))
+		return err
+	}
+
+	srv.logger.Info("✅ Successfully updated dynamic fields", zap.String("OrderNo", orderNo), zap.Any("Fields", fields))
+	return nil
 }

@@ -31,6 +31,7 @@ type BefRORepository interface {
 	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
 	UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error
 	UpdateSrNo(ctx context.Context, orderNo string, srNo string) error
+	UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error
 
 	// Transaction
 	CreateReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
@@ -601,7 +602,7 @@ func (repo repositoryDB) UpdateSrNo(ctx context.Context, orderNo string, srNo st
 
 	query := `
         UPDATE BeforeReturnOrder
-        SET SrNorNo = :SaleReturn
+        SET SrNo = :SrNo
         WHERE OrderNo = :OrderNo
     `
 	params := map[string]interface{}{
@@ -612,6 +613,56 @@ func (repo repositoryDB) UpdateSrNo(ctx context.Context, orderNo string, srNo st
 	_, err := repo.db.NamedExecContext(ctx, query, params)
 	if err != nil {
 		return fmt.Errorf("failed to update SaleReturn SR number: %w", err)
+	}
+
+	return nil
+}
+
+// ConfirmSaleReturn confirms a sale return order
+func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, order request.BeforeReturnOrder) error {
+	query := `
+        UPDATE BeforeReturnOrder
+        SET StatusConfID = :StatusConfID,
+            ConfirmBy = :ConfirmBy,
+            UpdateBy = :UpdateBy,
+            UpdateDate = GETDATE()
+        WHERE OrderNo = :OrderNo
+    `
+	_, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{
+		"OrderNo":      order.OrderNo,
+		"StatusConfID": order.StatusConfID,
+		"ConfirmBy":    order.ConfirmBy,
+		"UpdateBy":     order.UpdateBy,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to confirm BeforeReturnOrder: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateDynamicFields updates specified fields for a given order
+func (repo repositoryDB) UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	setClause := ""
+	params := map[string]interface{}{"OrderNo": orderNo}
+	for key, value := range fields {
+		setClause += fmt.Sprintf("%s = :%s, ", key, key)
+		params[key] = value
+	}
+	setClause = setClause[:len(setClause)-2] // Remove trailing comma and space
+
+	query := fmt.Sprintf(`
+        UPDATE BeforeReturnOrder
+        SET %s
+        WHERE OrderNo = :OrderNo
+    `, setClause)
+
+	_, err := repo.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		return fmt.Errorf("failed to update dynamic fields: %w", err)
 	}
 
 	return nil
