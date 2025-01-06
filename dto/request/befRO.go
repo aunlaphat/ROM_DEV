@@ -4,8 +4,8 @@ import "time"
 
 type BeforeReturnOrder struct {
 	OrderNo        string     `json:"orderNo" db:"OrderNo"`
-	SaleOrder      string     `json:"saleOrder" db:"SaleOrder"`
-	SaleReturn     string     `json:"saleReturn" db:"SaleReturn"`
+	SoNo           string     `json:"soNo" db:"SoNo"`
+	SrNo           string     `json:"srNo" db:"SrNo"`
 	ChannelID      int        `json:"channelID" db:"ChannelID"`
 	ReturnType     string     `json:"returnType" db:"ReturnType"`
 	CustomerID     string     `json:"customerID" db:"CustomerID"`

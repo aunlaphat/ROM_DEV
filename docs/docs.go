@@ -2305,14 +2305,14 @@ const docTemplate = `{
                 "returnType": {
                     "type": "string"
                 },
-                "saleOrder": {
-                    "type": "string"
-                },
-                "saleReturn": {
+                "soNo": {
                     "type": "string"
                 },
                 "soStatusID": {
                     "type": "integer"
+                },
+                "srNo": {
+                    "type": "string"
                 },
                 "statusConfID": {
                     "type": "integer"
@@ -2717,14 +2717,14 @@ const docTemplate = `{
                 "returnType": {
                     "type": "string"
                 },
-                "saleOrder": {
-                    "type": "string"
-                },
-                "saleReturn": {
+                "soNo": {
                     "type": "string"
                 },
                 "soStatusId": {
                     "type": "integer"
+                },
+                "srNo": {
+                    "type": "string"
                 },
                 "statusConfId": {
                     "type": "integer"

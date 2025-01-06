@@ -5,8 +5,8 @@ import "time"
 // BeforeReturnOrderResponse represents the response structure for a return order before processing
 type BeforeReturnOrderResponse struct {
 	OrderNo                string                          `json:"orderNo" db:"OrderNo"`
-	SaleOrder              string                          `json:"saleOrder" db:"SaleOrder"`
-	SaleReturn             string                          `json:"saleReturn" db:"SaleReturn"`
+	SoNo                   string                          `json:"soNo" db:"SoNo"`
+	SrNo                   string                            `json:"srNo" db:"SrNo"`
 	ChannelID              int                             `json:"channelId" db:"ChannelID"`
 	ReturnType             string                          `json:"returnType" db:"ReturnType"`
 	CustomerID             string                          `json:"customerId" db:"CustomerID"`

@@ -30,6 +30,7 @@ type BefRORepository interface {
 	// Update
 	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
 	UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error
+	UpdateSrNo(ctx context.Context, orderNo string, srNo string) error
 
 	// Transaction
 	CreateReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
@@ -48,15 +49,15 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order requ
 
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
-            OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, CancelID
+            OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, CancelID
         ) VALUES (
-            :OrderNo, :SaleOrder, :SaleReturn, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE(), :CancelID
+            :OrderNo, :SoNo, :SrNo, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE(), :CancelID
         )
     `
 	paramsOrder := map[string]interface{}{
 		"OrderNo":        order.OrderNo,
-		"SaleOrder":      order.SaleOrder,
-		"SaleReturn":     order.SaleReturn,
+		"SoNo":           order.SoNo,
+		"SrNo":           order.SrNo,
 		"ChannelID":      order.ChannelID,
 		"ReturnType":     order.ReturnType,
 		"CustomerID":     order.CustomerID,
@@ -155,7 +156,7 @@ func (repo repositoryDB) GetBeforeReturnOrderByOrderNo(ctx context.Context, orde
 	defer cancel()
 
 	query := `
-        SELECT OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
+        SELECT OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         FROM BeforeReturnOrder WITH (NOLOCK)
         WHERE OrderNo = :OrderNo
     `
@@ -253,7 +254,7 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 	defer cancel()
 
 	query := `
-        SELECT OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
+        SELECT OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         FROM BeforeReturnOrder WITH (NOLOCK)
         ORDER BY CreateDate ASC
     `
@@ -289,17 +290,17 @@ func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, o
 
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
-            OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, 
+            OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, 
             SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate
         ) VALUES (
-            :OrderNo, :SaleOrder, :SaleReturn, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
+            :OrderNo, :SoNo, :SrNo, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
             :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE()
         )
     `
 	_, err = tx.NamedExecContext(ctx, queryOrder, map[string]interface{}{
 		"OrderNo":        order.OrderNo,
-		"SaleOrder":      order.SaleOrder,
-		"SaleReturn":     order.SaleReturn,
+		"SoNo":           order.SoNo,
+		"SrNo":           order.SrNo,
 		"ChannelID":      order.ChannelID,
 		"ReturnType":     order.ReturnType,
 		"CustomerID":     order.CustomerID,
@@ -362,8 +363,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order requ
 
 	query := `
         UPDATE BeforeReturnOrder 
-        SET SaleOrder = COALESCE(:SaleOrder, SaleOrder),
-            SaleReturn = COALESCE(:SaleReturn, SaleReturn),
+        SET SoNo = COALESCE(:SoNo, SoNo),
+            SrNo = COALESCE(:SrNo, SrNo),
             ChannelID = COALESCE(:ChannelID, ChannelID),
             ReturnType = COALESCE(:ReturnType, ReturnType),
             CustomerID = COALESCE(:CustomerID, CustomerID),
@@ -383,8 +384,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order requ
     `
 	params := map[string]interface{}{
 		"OrderNo":        order.OrderNo,
-		"SaleOrder":      order.SaleOrder,
-		"SaleReturn":     order.SaleReturn,
+		"SoNo":           order.SoNo,
+		"SrNo":           order.SrNo,
 		"ChannelID":      order.ChannelID,
 		"ReturnType":     order.ReturnType,
 		"CustomerID":     order.CustomerID,
@@ -497,8 +498,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 	// Update BeforeReturnOrder
 	queryOrder := `
         UPDATE BeforeReturnOrder 
-        SET SaleOrder = COALESCE(:SaleOrder, SaleOrder),
-            SaleReturn = COALESCE(:SaleReturn, SaleReturn),
+        SET SoNo = COALESCE(:SoNo, SoNo),
+            SrNo = COALESCE(:SrNo, SrNo),
             ChannelID = COALESCE(:ChannelID, ChannelID),
             ReturnType = COALESCE(:ReturnType, ReturnType),
             CustomerID = COALESCE(:CustomerID, CustomerID),
@@ -519,8 +520,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 
 	paramsOrder := map[string]interface{}{
 		"OrderNo":        order.OrderNo,
-		"SaleOrder":      order.SaleOrder,
-		"SaleReturn":     order.SaleReturn,
+		"SoNo":           order.SoNo,
+		"SrNo":           order.SrNo,
 		"ChannelID":      order.ChannelID,
 		"ReturnType":     order.ReturnType,
 		"CustomerID":     order.CustomerID,
@@ -545,7 +546,6 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 	return nil
 }
 
-// Implementation สำหรับ SearchSaleOrder
 func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -592,4 +592,27 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*res
 	orderHead.OrderLines = orderLines
 
 	return &orderHead, nil
+}
+
+// UpdateSaleReturnSR updates the SR(Sale Return) number for a given order
+func (repo repositoryDB) UpdateSrNo(ctx context.Context, orderNo string, srNo string) error {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	query := `
+        UPDATE BeforeReturnOrder
+        SET SrNorNo = :SaleReturn
+        WHERE OrderNo = :OrderNo
+    `
+	params := map[string]interface{}{
+		"OrderNo": orderNo,
+		"SrNo":    srNo,
+	}
+
+	_, err := repo.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		return fmt.Errorf("failed to update SaleReturn SR number: %w", err)
+	}
+
+	return nil
 }

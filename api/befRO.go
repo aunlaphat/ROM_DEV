@@ -21,6 +21,12 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Get("/list-lines", app.ListBeforeReturnOrderLines)
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
 	})
+
+	apiRouter.Route("/sale-return", func(r chi.Router) {
+		r.Get("/search/{soNo}", app.SearchSaleOrder)
+		r.Post("/create", app.CreateSaleReturn)
+		r.Post("/confirm", app.ConfirmSaleReturn)
+	})
 }
 
 // ListReturnOrders godoc
@@ -216,10 +222,126 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 	handleResponse(w, true, "Order lines retrieved successfully", result, http.StatusOK)
 }
 
+// SearchSaleOrder godoc
+// @Summary Search sale order by SO number
+// @Description Retrieve the details of a sale order by its SO number
+// @ID search-sale-order
+// @Tags Sale Return
+// @Accept json
+// @Produce json
+// @Param soNo path string true "SO number"
+// @Success 200 {object} api.Response{data=response.SaleOrderResponse} "Sale order retrieved successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 404 {object} api.Response "Sale order not found"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /sale-return/search/{soNo} [get]
+func (app *Application) SearchSaleOrder(w http.ResponseWriter, r *http.Request) {
+	soNo := chi.URLParam(r, "soNo")
+	result, err := app.Service.BefRO.SearchSaleOrder(r.Context(), soNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if result == nil {
+		handleResponse(w, false, "Sale order not found", nil, http.StatusNotFound)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== Sale Order Details ========== 📋\n")
+	for _, order := range result {
+		printSaleOrderDetails(&order)
+		fmt.Printf("\n📋 ========== Sale Order Line Details ========== 📋\n")
+		for _, line := range order.OrderLines {
+			printSaleOrderLineDetails(&line)
+		}
+	}
+	// fmt.Println("=====================================")
+
+	handleResponse(w, true, "Sale order retrieved successfully", result, http.StatusOK)
+}
+
+// CreateSaleReturn godoc
+// @Summary Create a new sale return order
+// @Description Create a new sale return order based on the provided details
+// @ID create-sale-return
+// @Tags Sale Return
+// @Accept json
+// @Produce json
+// @Param saleReturn body request.BeforeReturnOrder true "Sale Return Order"
+// @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "Sale return order created successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /sale-return/create [post]
+func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request) {
+	var req request.BeforeReturnOrder
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	// Generate SR number (this is a placeholder, replace with actual SR number generation logic)
+	srNo := "SR123456"
+
+	// Update the SR number in the database
+	err = app.Service.BefRO.UpdateSrNo(r.Context(), result.OrderNo, srNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	// Update the result with the new SR number
+	result.SrNo = srNo
+
+	fmt.Printf("\n📋 ========== Created Sale Return Order ==========\n")
+	printOrderDetails(result)
+	// fmt.Println("=====================================")
+
+	handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
+}
+
+// ConfirmSaleReturn godoc
+// @Summary Confirm a sale return order
+// @Description Confirm a sale return order based on the provided details
+// @ID confirm-sale-return
+// @Tags Sale Return
+// @Accept json
+// @Produce json
+// @Param saleReturn body request.BeforeReturnOrder true "Sale Return Order"
+// @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "Sale return order confirmed successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /sale-return/confirm [post]
+func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request) {
+	var req request.BeforeReturnOrder
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	result, err := app.Service.BefRO.ConfirmSaleReturn(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== Confirmed Sale Return Order ========== 📋\n")
+	printOrderDetails(result)
+	// fmt.Println("=====================================")
+
+	handleResponse(w, true, "Sale return order confirmed successfully", result, http.StatusOK)
+}
+
 func printOrderDetails(order *res.BeforeReturnOrderResponse) {
 	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
-	fmt.Printf("🛒 SaleOrder: %s\n", order.SaleOrder)
-	fmt.Printf("🔄 SaleReturn: %s\n", order.SaleReturn)
+	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
+	fmt.Printf("🔄 SrNo: %s\n", order.SrNo)
 	fmt.Printf("📡 ChannelID: %d\n", order.ChannelID)
 	fmt.Printf("🔙 ReturnType: %s\n", order.ReturnType)
 	fmt.Printf("👤 CustomerID: %s\n", order.CustomerID)
@@ -248,4 +370,19 @@ func printOrderLineDetails(line *res.BeforeReturnOrderLineResponse) {
 	fmt.Printf("💲 Price: %.2f\n", line.Price)
 	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
 	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate)
+}
+
+func printSaleOrderDetails(order *res.SaleOrderResponse) {
+	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
+	fmt.Printf("🔢 SoNo: %s\n", order.SoNo)
+	fmt.Printf("📊 StatusMKP: %s\n", order.StatusMKP)
+	fmt.Printf("📊 SalesStatus: %s\n", order.SalesStatus)
+	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate)
+}
+
+func printSaleOrderLineDetails(line *res.SaleOrderLineResponse) {
+	fmt.Printf("🔢 SKU: %s\n", line.SKU)
+	fmt.Printf("🚩 ItemName: %s\n", line.ItemName)
+	fmt.Printf("🔢 QTY: %d\n", line.QTY)
+	fmt.Printf("💲 Price: %.2f\n", line.Price)
 }

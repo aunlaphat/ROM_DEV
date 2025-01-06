@@ -17,11 +17,12 @@ type BefROService interface {
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
 	ConfirmSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
+	UpdateSrNo(ctx context.Context, orderNo string, srNo string) error
 }
 
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("🏁 Starting order creation process", zap.String("OrderNo", req.OrderNo))
-	srv.logger.Debug("Creating order head", zap.String("OrderNo", req.OrderNo), zap.String("SaleOrder", req.SaleOrder))
+	srv.logger.Debug("Creating order head", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo))
 
 	err := srv.befRORepo.CreateReturnOrderWithTransaction(ctx, req)
 	if err != nil {
@@ -35,15 +36,15 @@ func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req req
 		return nil, err
 	}
 
-	srv.logger.Info("✅ Successfully created order with lines", 
-		zap.String("OrderNo", req.OrderNo), 
+	srv.logger.Info("✅ Successfully created order with lines",
+		zap.String("OrderNo", req.OrderNo),
 		zap.Any("CreatedOrder", createdOrder))
 	return createdOrder, nil
 }
 
 func (srv service) UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("🏁 Starting order update process", zap.String("OrderNo", req.OrderNo))
-	srv.logger.Debug("Updating order head", zap.String("OrderNo", req.OrderNo), zap.String("SaleOrder", req.SaleOrder))
+	srv.logger.Debug("Updating order head", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo))
 
 	err := srv.befRORepo.UpdateBeforeReturnOrderWithTransaction(ctx, req)
 	if err != nil {
@@ -57,8 +58,8 @@ func (srv service) UpdateBeforeReturnOrderWithLines(ctx context.Context, req req
 		return nil, err
 	}
 
-	srv.logger.Info("✅ Successfully updated order with lines", 
-		zap.String("OrderNo", req.OrderNo), 
+	srv.logger.Info("✅ Successfully updated order with lines",
+		zap.String("OrderNo", req.OrderNo),
 		zap.Any("UpdatedOrder", updatedOrder))
 	return updatedOrder, nil
 }
@@ -70,8 +71,8 @@ func (srv service) ListBeforeReturnOrders(ctx context.Context) ([]response.Befor
 		srv.logger.Error("❌ Failed to list return orders", zap.Error(err))
 		return nil, err
 	}
-	srv.logger.Info("✅ Successfully listed return orders", 
-		zap.Int("Count", len(orders)), 
+	srv.logger.Info("✅ Successfully listed return orders",
+		zap.Int("Count", len(orders)),
 		zap.Any("Orders", orders))
 	return orders, nil
 }
@@ -83,8 +84,8 @@ func (srv service) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo st
 		srv.logger.Error("❌ Failed to get return order by order number", zap.Error(err))
 		return nil, err
 	}
-	srv.logger.Info("✅ Successfully fetched return order", 
-		zap.String("OrderNo", orderNo), 
+	srv.logger.Info("✅ Successfully fetched return order",
+		zap.String("OrderNo", orderNo),
 		zap.Any("Order", order))
 	return order, nil
 }
@@ -96,8 +97,8 @@ func (srv service) ListBeforeReturnOrderLines(ctx context.Context) ([]response.B
 		srv.logger.Error("❌ Failed to list return order lines", zap.Error(err))
 		return nil, err
 	}
-	srv.logger.Info("✅ Successfully listed return order lines", 
-		zap.Int("Count", len(lines)), 
+	srv.logger.Info("✅ Successfully listed return order lines",
+		zap.Int("Count", len(lines)),
 		zap.Any("Lines", lines))
 	return lines, nil
 }
@@ -109,8 +110,8 @@ func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderN
 		srv.logger.Error("❌ Failed to get return order lines by order number", zap.Error(err))
 		return nil, err
 	}
-	srv.logger.Info("✅ Successfully fetched return order lines", 
-		zap.String("OrderNo", orderNo), 
+	srv.logger.Info("✅ Successfully fetched return order lines",
+		zap.String("OrderNo", orderNo),
 		zap.Any("Lines", lines))
 	return lines, nil
 }
@@ -126,10 +127,23 @@ func (srv service) SearchSaleOrder(ctx context.Context, soNo string) ([]response
 		srv.logger.Info("❗ No sale order found", zap.String("SoNo", soNo))
 		return nil, nil
 	}
-	srv.logger.Info("✅ Successfully searched sale orders", 
-		zap.String("SoNo", soNo), 
+	srv.logger.Info("✅ Successfully searched sale orders",
+		zap.String("SoNo", soNo),
 		zap.Any("Order", order))
 	return []response.SaleOrderResponse{*order}, nil
+}
+
+func (srv service) UpdateSrNo(ctx context.Context, orderNo string, srNo string) error {
+	srv.logger.Info("🏁 Starting to update SR number", zap.String("OrderNo", orderNo), zap.String("SrNo", srNo))
+
+	err := srv.befRORepo.UpdateSrNo(ctx, orderNo, srNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to update SR number", zap.Error(err))
+		return err
+	}
+
+	srv.logger.Info("✅ Successfully updated SR number", zap.String("OrderNo", orderNo), zap.String("SrNo", srNo))
+	return nil
 }
 
 func (srv service) ConfirmSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -147,8 +161,8 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, req request.BeforeRetu
 		return nil, err
 	}
 
-	srv.logger.Info("✅ Successfully confirmed sale return", 
-		zap.String("OrderNo", req.OrderNo), 
+	srv.logger.Info("✅ Successfully confirmed sale return",
+		zap.String("OrderNo", req.OrderNo),
 		zap.Any("ConfirmedOrder", confirmedOrder))
 	return confirmedOrder, nil
 }
