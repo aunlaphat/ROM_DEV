@@ -4,6 +4,7 @@ import (
 	"boilerplate-backend-go/dto/request"
 	res "boilerplate-backend-go/dto/response"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -15,58 +16,46 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// ImageRoute สำหรับกำหนดเส้นทาง API
+const UploadDir = "uploads"
+
 func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/images", func(r chi.Router) {
-		r.Post("/upload", app.UploadImages) // API สำหรับอัปโหลดภาพ
+		r.Post("/upload", app.UploadImages)
 	})
 }
 
 // UploadImages godoc
-// @Summary Upload images for product return
+// @Summary Upload images for return order
 // @Description Handle image upload for return process
 // @ID upload-images
-// @Tags Images
+// @Tags Import Order
 // @Accept multipart/form-data
 // @Produce json
 // @Param files formData file true "Image files to upload"
-// @Param returnID formData string true "Return ID"
-// @Param skus formData string false "Comma-separated SKUs for product images"
-// @Param imageTypeID formData int true "Image Type ID"
+// @Param returnID formData string true "number of order"
+// @Param skus formData string false "SKU for one same model in img"
+// @Param imageTypeID formData int true "type image"
 // @Success 200 {object} response.BaseResponse
-// @Failure 400 {object} response.BaseResponse
-// @Failure 500 {object} response.BaseResponse
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 500 {object} Response "Internal Server Error"
 // @Router /images/upload [post]
 func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
-	// ตรวจสอบโฟลเดอร์สำหรับบันทึกไฟล์
-	if _, err := os.Stat("uploads"); os.IsNotExist(err) {
-		if mkdirErr := os.Mkdir("uploads", os.ModePerm); mkdirErr != nil {
-			log.Printf("Error creating uploads directory: %v", mkdirErr)
-			http.Error(w, "Failed to create uploads directory", http.StatusInternalServerError)
-			return
-		}
+	if err := app.createUploadDir(); err != nil {
+		log.Printf("Error setting up upload directory: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
-	// Parse Form Data
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		log.Printf("Error parsing form data: %v", err)
-		http.Error(w, "Unable to parse form data", http.StatusBadRequest)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	returnID := r.FormValue("returnID")
-	imageTypeID, err := strconv.Atoi(r.FormValue("imageTypeID"))
+	returnID, imageTypeID, skus, err := app.validateUploadRequest(r)
 	if err != nil {
-		log.Printf("Invalid imageTypeID: %v", err)
-		http.Error(w, "Invalid Image Type ID", http.StatusBadRequest)
-		return
-	}
-	skus := r.FormValue("skus")
-	log.Printf("Received Upload Request: ReturnID=%s, ImageTypeID=%d, SKUs=%s", returnID, imageTypeID, skus)
-
-	// ตรวจสอบว่า ReturnID มีอยู่ในระบบหรือไม่
-	if !app.Service.ImportOrder.ValidateReturnID(returnID) {
-		http.Error(w, "Invalid Return ID", http.StatusBadRequest)
+		log.Printf("Validation error: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -86,34 +75,25 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer src.Close()
-	
-		filename := time.Now().Format("20060102_150405") + "_" + filepath.Base(file.Filename)
-		filePath := filepath.Join("uploads", filename)
+
+		originalFileName := filepath.Base(file.Filename)
+		if err := app.Service.ImportOrder.ValidateDuplicateFileName(returnID, originalFileName); err != nil {
+			log.Printf("Duplicate file name error: %v", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		filename := time.Now().Format("20060102_150405") + "_" + originalFileName
+		filePath := filepath.Join(UploadDir, filename)
 		filePath = filepath.ToSlash(filePath)
-	
-		dst, err := os.Create(filePath)
-		if err != nil {
-			log.Printf("Error creating file: %v", err)
-			http.Error(w, "Failed to create file", http.StatusInternalServerError)
-			return
-		}
-	
-		// เพิ่ม defer ลบไฟล์เมื่อเกิดข้อผิดพลาด
-		defer func() {
-			if err != nil {
-				os.Remove(filePath)
-			}
-		}()
-	
-		_, err = io.Copy(dst, src)
-		if err != nil {
+
+		if err := app.saveUploadedFile(src, filePath); err != nil {
 			log.Printf("Error saving file: %v", err)
-			http.Error(w, "Failed to save file data", http.StatusInternalServerError)
+			http.Error(w, "Failed to save file", http.StatusInternalServerError)
 			return
 		}
-		dst.Close()
-	
-		// Save Metadata to Database
+
+		log.Printf("File uploaded successfully: %s", filePath)
 		image := request.Image{
 			ReturnID:    returnID,
 			SKU:         skus,
@@ -124,20 +104,18 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 		imageID, err := app.Service.ImportOrder.SaveImageMetadata(image)
 		if err != nil {
 			log.Printf("Error saving image metadata: %v", err)
-	
-			// ลบไฟล์เมื่อบันทึกฐานข้อมูลล้มเหลว
 			if removeErr := os.Remove(filePath); removeErr != nil {
 				log.Printf("Error removing file: %v", removeErr)
 			}
-	
 			http.Error(w, "Failed to save image metadata", http.StatusInternalServerError)
 			return
 		}
-	
+
 		uploadedImages = append(uploadedImages, res.ImageResponse{
 			ImageID:  imageID,
 			FilePath: filePath,
 		})
+	}
 
 	response := res.BaseResponse{
 		Success: true,
@@ -148,5 +126,36 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error encoding response: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
-    }
+}
+
+func (app *Application) createUploadDir() error {
+	if _, err := os.Stat(UploadDir); os.IsNotExist(err) {
+		if mkdirErr := os.Mkdir(UploadDir, os.ModePerm); mkdirErr != nil {
+			return fmt.Errorf("failed to create uploads directory: %w", mkdirErr)
+		}
+	}
+	return nil
+}
+
+func (app *Application) saveUploadedFile(file io.ReadCloser, filePath string) error {
+	dst, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("error creating file: %w", err)
+	}
+	defer dst.Close()
+
+	if _, err = io.Copy(dst, file); err != nil {
+		return fmt.Errorf("error saving file: %w", err)
+	}
+	return nil
+}
+
+func (app *Application) validateUploadRequest(r *http.Request) (string, int, string, error) {
+	returnID := r.FormValue("returnID")
+	imageTypeID, err := strconv.Atoi(r.FormValue("imageTypeID"))
+	if err != nil || imageTypeID < 1 || imageTypeID > 3 {
+		return "", 0, "", fmt.Errorf("invalid imageTypeID: %v", err)
+	}
+	skus := r.FormValue("skus")
+	return returnID, imageTypeID, skus, nil
 }

@@ -1370,16 +1370,16 @@ paths:
         name: files
         required: true
         type: file
-      - description: Return ID
+      - description: number of order
         in: formData
         name: returnID
         required: true
         type: string
-      - description: Comma-separated SKUs for product images
+      - description: SKU for one same model in img
         in: formData
         name: skus
         type: string
-      - description: Image Type ID
+      - description: type image
         in: formData
         name: imageTypeID
         required: true
@@ -1394,14 +1394,14 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.BaseResponse'
+            $ref: '#/definitions/api.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.BaseResponse'
-      summary: Upload images for product return
+            $ref: '#/definitions/api.Response'
+      summary: Upload images for return order
       tags:
-      - Images
+      - Import Order
   /orders/allgetorder:
     get:
       consumes:

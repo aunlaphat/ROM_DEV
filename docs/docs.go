@@ -1199,9 +1199,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Images"
+                    "Import Order"
                 ],
-                "summary": "Upload images for product return",
+                "summary": "Upload images for return order",
                 "operationId": "upload-images",
                 "parameters": [
                     {
@@ -1213,20 +1213,20 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Return ID",
+                        "description": "number of order",
                         "name": "returnID",
                         "in": "formData",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Comma-separated SKUs for product images",
+                        "description": "SKU for one same model in img",
                         "name": "skus",
                         "in": "formData"
                     },
                     {
                         "type": "integer",
-                        "description": "Image Type ID",
+                        "description": "type image",
                         "name": "imageTypeID",
                         "in": "formData",
                         "required": true
@@ -1242,13 +1242,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/response.BaseResponse"
+                            "$ref": "#/definitions/api.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/response.BaseResponse"
+                            "$ref": "#/definitions/api.Response"
                         }
                     }
                 }
