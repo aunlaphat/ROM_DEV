@@ -41,6 +41,10 @@ type BefRORepository interface {
 
 	//Search
 	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
+
+	// Draft & Confirm
+	ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
+	EditOrder(ctx context.Context, req request.EditOrderRequest) error
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -663,6 +667,127 @@ func (repo repositoryDB) UpdateDynamicFields(ctx context.Context, orderNo string
 	_, err := repo.db.NamedExecContext(ctx, query, params)
 	if err != nil {
 		return fmt.Errorf("failed to update dynamic fields: %w", err)
+	}
+
+	return nil
+}
+
+// Implementation สำหรับ ListDrafts
+func (repo repositoryDB) ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	query := `
+        SELECT OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
+        FROM BeforeReturnOrder WITH (NOLOCK)
+        WHERE StatusConfID = 1 -- Draft status
+        ORDER BY CreateDate ASC
+    `
+	var drafts []response.BeforeReturnOrderResponse
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
+
+	err = nstmt.SelectContext(ctx, &drafts, map[string]interface{}{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list drafts: %w", err)
+	}
+
+	for i := range drafts {
+		lines, err := repo.ListBeforeReturnOrderLinesByOrderNo(ctx, drafts[i].OrderNo)
+		if err != nil {
+			return nil, err
+		}
+		drafts[i].BeforeReturnOrderLines = lines
+	}
+
+	return drafts, nil
+}
+
+// Implementation สำหรับ EditOrder
+func (repo repositoryDB) EditOrder(ctx context.Context, req request.EditOrderRequest) error {
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+
+	queryOrder := `
+        UPDATE BeforeReturnOrder 
+        SET SoNo = COALESCE(:SoNo, SoNo),
+            SrNo = COALESCE(:SrNo, SrNo),
+            ChannelID = COALESCE(:ChannelID, ChannelID),
+            ReturnType = COALESCE(:ReturnType, ReturnType),
+            CustomerID = COALESCE(:CustomerID, CustomerID),
+            TrackingNo = COALESCE(:TrackingNo, TrackingNo),
+            Logistic = COALESCE(:Logistic, Logistic),
+            WarehouseID = COALESCE(:WarehouseID, WarehouseID),
+            SoStatusID = COALESCE(:SoStatusID, SoStatusID),
+            MkpStatusID = COALESCE(:MkpStatusID, MkpStatusID),
+            ReturnDate = COALESCE(:ReturnDate, ReturnDate),
+            StatusReturnID = COALESCE(:StatusReturnID, StatusReturnID),
+            StatusConfID = COALESCE(:StatusConfID, StatusConfID),
+            ConfirmBy = COALESCE(:ConfirmBy, ConfirmBy),
+            UpdateBy = COALESCE(:UpdateBy, UpdateBy),
+            UpdateDate = GETDATE(),
+            CancelID = COALESCE(:CancelID, CancelID)
+        WHERE OrderNo = :OrderNo
+    `
+	_, err = tx.NamedExecContext(ctx, queryOrder, map[string]interface{}{
+		"OrderNo":        req.OrderNo,
+		"SoNo":           req.SoNo,
+		"SrNo":           req.SrNo,
+		"ChannelID":      req.ChannelID,
+		"ReturnType":     req.ReturnType,
+		"CustomerID":     req.CustomerID,
+		"TrackingNo":     req.TrackingNo,
+		"Logistic":       req.Logistic,
+		"WarehouseID":    req.WarehouseID,
+		"SoStatusID":     req.SoStatusID,
+		"MkpStatusID":    req.MkpStatusID,
+		"ReturnDate":     req.ReturnDate,
+		"StatusReturnID": req.StatusReturnID,
+		"StatusConfID":   req.StatusConfID,
+		"ConfirmBy":      req.ConfirmBy,
+		"UpdateBy":       req.UpdateBy,
+		"CancelID":       req.CancelID,
+	})
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to update BeforeReturnOrder: %w", err)
+	}
+
+	queryLine := `
+        UPDATE BeforeReturnOrderLine 
+        SET QTY = COALESCE(:QTY, QTY),
+            ReturnQTY = COALESCE(:ReturnQTY, ReturnQTY),
+            Price = COALESCE(:Price, Price),
+            UpdateBy = COALESCE(:UpdateBy, UpdateBy),
+            UpdateDate = GETDATE(),
+            TrackingNo = COALESCE(:TrackingNo, TrackingNo)
+        WHERE OrderNo = :OrderNo
+          AND SKU = :SKU
+    `
+	for _, line := range req.BeforeReturnOrderLines {
+		_, err = tx.NamedExecContext(ctx, queryLine, map[string]interface{}{
+			"OrderNo":    req.OrderNo,
+			"SKU":        line.SKU,
+			"QTY":        line.QTY,
+			"ReturnQTY":  line.ReturnQTY,
+			"Price":      line.Price,
+			"UpdateBy":   line.UpdateBy,
+			"TrackingNo": line.TrackingNo,
+		})
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to update BeforeReturnOrderLine: %w", err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil

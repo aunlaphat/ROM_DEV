@@ -30,6 +30,13 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Post("/create", app.CreateSaleReturn)
 		r.Post("/confirm", app.ConfirmSaleReturn)
 	})
+
+	apiRouter.Route("/draft-confirm", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
+		r.Get("/list-drafts", app.ListDrafts)
+		r.Put("/edit-order/{orderNo}", app.EditDraftCF)
+		r.Post("/confirm-order", app.ConfirmOrder)
+	})
 }
 
 // ListReturnOrders godoc
@@ -435,6 +442,105 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 	handleResponse(w, true, "Sale return order confirmed successfully", result, http.StatusOK)
 }
 
+// ListDrafts godoc
+// @Summary List all draft orders
+// @Description Retrieve a list of all draft orders
+// @ID list-drafts
+// @Tags Draft & Confirm
+// @Accept json
+// @Produce json
+// @Success 200 {object} api.Response
+// @Failure 500 {object} api.Response
+// @Router /draft-confirm/list-drafts [get]
+func (app *Application) ListDrafts(w http.ResponseWriter, r *http.Request) {
+	result, err := app.Service.BefRO.ListDrafts(r.Context())
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== All Drafts (%d) ========== 📋\n", len(result))
+	for i, draft := range result {
+		fmt.Printf("\n📦 Draft #%d:\n", i+1)
+		printDraftDetails(&draft)
+	}
+	// fmt.Println("=====================================")
+
+	app.Logger.Info("✅ Successfully retrieved all drafts",
+		zap.Int("totalDrafts", len(result)))
+	handleResponse(w, true, "📚 Drafts retrieved successfully", result, http.StatusOK)
+}
+
+// EditOrder godoc
+// @Summary Edit an existing order
+// @Description Edit an existing order with the provided details
+// @ID edit-order
+// @Tags Draft & Confirm
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order number"
+// @Param body body request.EditOrderRequest true "Edit order details"
+// @Success 200 {object} api.Response
+// @Failure 400 {object} api.Response
+// @Failure 500 {object} api.Response
+// @Router /draft-confirm/edit-order/{orderNo} [put]
+func (app *Application) EditDraftCF(w http.ResponseWriter, r *http.Request) {
+	orderNo := chi.URLParam(r, "orderNo")
+	var req request.EditOrderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	req.OrderNo = orderNo // Ensure the orderNo from the URL is used
+
+	result, err := app.Service.BefRO.EditOrder(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== Edited Order ========== 📋\n")
+	printOrderDetails(result)
+	// fmt.Println("=====================================")
+
+	app.Logger.Info("✅ Successfully edited order",
+		zap.String("OrderNo", result.OrderNo))
+	handleResponse(w, true, "Order edited successfully", result, http.StatusOK)
+}
+
+// ConfirmOrder godoc
+// @Summary Confirm an order
+// @Description Confirm an order based on the provided details
+// @ID confirm-order
+// @Tags Draft & Confirm
+// @Accept json
+// @Produce json
+// @Param confirmOrder body request.ConfirmOrderRequest true "Confirm order details"
+// @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "Order confirmed successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /draft-confirm/confirm-order [post]
+func (app *Application) ConfirmOrder(w http.ResponseWriter, r *http.Request) {
+	var req request.ConfirmOrderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	result, err := app.Service.BefRO.ConfirmOrder(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== Confirmed Order ========== 📋\n")
+	printOrderDetails(result)
+	// fmt.Println("=====================================")
+
+	handleResponse(w, true, "Order confirmed successfully", result, http.StatusOK)
+}
+
 func printOrderDetails(order *res.BeforeReturnOrderResponse) {
 	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
 	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
@@ -482,4 +588,16 @@ func printSaleOrderLineDetails(line *res.SaleOrderLineResponse) {
 	fmt.Printf("🚩 ItemName: %s\n", line.ItemName)
 	fmt.Printf("🔢 QTY: %d\n", line.QTY)
 	fmt.Printf("💲 Price: %.2f\n", line.Price)
+}
+
+func printDraftDetails(draft *res.BeforeReturnOrderResponse) {
+	fmt.Printf("📦 OrderNo: %s\n", draft.OrderNo)
+	fmt.Printf("🛒 SoNo: %s\n", draft.SoNo)
+	fmt.Printf("👤 Customer: %s\n", draft.CustomerID)
+	fmt.Printf("🔄 SrNo: %s\n", draft.SrNo)
+	fmt.Printf("📦 TrackingNo: %s\n", draft.TrackingNo)
+	fmt.Printf("📡 Channel: %d\n", draft.ChannelID)
+	fmt.Printf("📅 CreateDate: %v\n", draft.CreateDate)
+	fmt.Printf("🏢 Warehouse: %d\n", draft.WarehouseID)
+	fmt.Printf("📦 BeforeReturnOrderLines: %v\n", draft.BeforeReturnOrderLines)
 }

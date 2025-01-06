@@ -19,6 +19,9 @@ type BefROService interface {
 	ConfirmSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	UpdateSrNo(ctx context.Context, orderNo string, srNo string) error
 	UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error
+	ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
+	EditOrder(ctx context.Context, req request.EditOrderRequest) (*response.BeforeReturnOrderResponse, error)
+	ConfirmOrder(ctx context.Context, req request.ConfirmOrderRequest) (*response.BeforeReturnOrderResponse, error)
 }
 
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -185,4 +188,65 @@ func (srv service) UpdateDynamicFields(ctx context.Context, orderNo string, fiel
 
 	srv.logger.Info("✅ Successfully updated dynamic fields", zap.String("OrderNo", orderNo), zap.Any("Fields", fields))
 	return nil
+}
+
+func (srv service) ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
+	srv.logger.Info("🏁 Starting to list all drafts")
+	drafts, err := srv.befRORepo.ListDrafts(ctx)
+	if err != nil {
+		srv.logger.Error("❌ Failed to list drafts", zap.Error(err))
+		return nil, err
+	}
+	srv.logger.Info("✅ Successfully listed drafts",
+		zap.Int("Count", len(drafts)),
+		zap.Any("Drafts", drafts))
+	return drafts, nil
+}
+
+func (srv service) EditOrder(ctx context.Context, req request.EditOrderRequest) (*response.BeforeReturnOrderResponse, error) {
+	srv.logger.Info("🏁 Starting order edit process", zap.String("OrderNo", req.OrderNo))
+	srv.logger.Debug("Editing order", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo))
+
+	err := srv.befRORepo.EditOrder(ctx, req)
+	if err != nil {
+		srv.logger.Error("❌ Failed to edit order", zap.Error(err))
+		return nil, err
+	}
+
+	editedOrder, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to fetch edited order", zap.Error(err))
+		return nil, err
+	}
+
+	srv.logger.Info("✅ Successfully edited order",
+		zap.String("OrderNo", req.OrderNo),
+		zap.Any("EditedOrder", editedOrder))
+	return editedOrder, nil
+}
+
+func (srv service) ConfirmOrder(ctx context.Context, req request.ConfirmOrderRequest) (*response.BeforeReturnOrderResponse, error) {
+	srv.logger.Info("🏁 Starting to confirm order", zap.String("OrderNo", req.OrderNo))
+
+	fields := map[string]interface{}{
+		"StatusConfID": req.StatusConfID,
+		"ConfirmBy":    req.ConfirmBy,
+	}
+
+	err := srv.befRORepo.UpdateDynamicFields(ctx, req.OrderNo, fields)
+	if err != nil {
+		srv.logger.Error("❌ Failed to confirm order", zap.Error(err))
+		return nil, err
+	}
+
+	confirmedOrder, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to fetch confirmed order", zap.Error(err))
+		return nil, err
+	}
+
+	srv.logger.Info("✅ Successfully confirmed order",
+		zap.String("OrderNo", req.OrderNo),
+		zap.Any("ConfirmedOrder", confirmedOrder))
+	return confirmedOrder, nil
 }
