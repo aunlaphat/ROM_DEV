@@ -3,7 +3,6 @@ package api
 import (
 	"boilerplate-backend-go/dto/request"
 	res "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/middleware"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,7 +14,7 @@ import (
 // ReturnOrderRoute defines the routes for return order operations
 func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/before-return-order", func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
+		//r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
 		r.Get("/list-orders", app.ListBeforeReturnOrders)
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
 		r.Put("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
@@ -25,14 +24,14 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
+		//r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
 		r.Get("/search/{soNo}", app.SearchSaleOrder)
 		r.Post("/create", app.CreateSaleReturn)
 		r.Post("/confirm", app.ConfirmSaleReturn)
 	})
 
 	apiRouter.Route("/draft-confirm", func(r chi.Router) {
-		r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
+		//r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
 		r.Get("/list-drafts", app.ListDrafts)
 		r.Put("/edit-order/{orderNo}", app.EditDraftCF)
 		r.Post("/confirm-order", app.ConfirmOrder)
@@ -388,14 +387,14 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	result.SrNo = srNo
 
 	// Check user role
-	userRole := r.Context().Value(middleware.ContextUserRole).(string)
+	/* userRole := r.Context().Value(middleware.ContextUserRole).(string)
 	if userRole == "ACCOUNTING" {
 		// Show "Create CN" button for accounting role
 		handleResponse(w, true, "Sale return order created successfully. You can create CN.", result, http.StatusOK)
 	} else {
 		// Do not show "Create CN" button for other roles
 		handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
-	}
+	} */
 }
 
 // ConfirmSaleReturn godoc
