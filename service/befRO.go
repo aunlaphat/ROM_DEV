@@ -198,8 +198,7 @@ func (srv service) ListDrafts(ctx context.Context) ([]response.BeforeReturnOrder
 		return nil, err
 	}
 	srv.logger.Info("✅ Successfully listed drafts",
-		zap.Int("Count", len(drafts)),
-		zap.Any("Drafts", drafts))
+		zap.Int("Count", len(drafts)))
 	return drafts, nil
 }
 

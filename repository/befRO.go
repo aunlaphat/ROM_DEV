@@ -254,15 +254,18 @@ func (repo repositoryDB) ListBeforeReturnOrderLines(ctx context.Context) ([]resp
 	return lines, nil
 }
 
-func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
+// ฟังก์ชันพื้นฐานสำหรับการดึงข้อมูล
+func (repo repositoryDB) listBeforeReturnOrders(ctx context.Context, condition string, params map[string]interface{}) ([]response.BeforeReturnOrderResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
-	query := `
+	query := fmt.Sprintf(`
         SELECT OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         FROM BeforeReturnOrder WITH (NOLOCK)
+        WHERE %s
         ORDER BY CreateDate ASC
-    `
+    `, condition)
+
 	var orders []response.BeforeReturnOrderResponse
 	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
@@ -270,7 +273,7 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 	}
 	defer nstmt.Close()
 
-	err = nstmt.SelectContext(ctx, &orders, map[string]interface{}{})
+	err = nstmt.SelectContext(ctx, &orders, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list orders: %w", err)
 	}
@@ -284,6 +287,16 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 	}
 
 	return orders, nil
+}
+
+// ฟังก์ชันสำหรับดึงข้อมูล BeforeReturnOrders ทั้งหมด
+func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
+	return repo.listBeforeReturnOrders(ctx, "1=1", map[string]interface{}{})
+}
+
+// ฟังก์ชันสำหรับดึงข้อมูล Drafts
+func (repo repositoryDB) ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
+	return repo.listBeforeReturnOrders(ctx, "StatusConfID = 1", map[string]interface{}{})
 }
 
 // Implementation สำหรับ BeginTransaction CreateBeforeReturnOrder & CreateBeforeReturnOrderLine
@@ -670,40 +683,6 @@ func (repo repositoryDB) UpdateDynamicFields(ctx context.Context, orderNo string
 	}
 
 	return nil
-}
-
-// Implementation สำหรับ ListDrafts
-func (repo repositoryDB) ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
-	query := `
-        SELECT OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
-        FROM BeforeReturnOrder WITH (NOLOCK)
-        WHERE StatusConfID = 1 -- Draft status
-        ORDER BY CreateDate ASC
-    `
-	var drafts []response.BeforeReturnOrderResponse
-	nstmt, err := repo.db.PrepareNamed(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer nstmt.Close()
-
-	err = nstmt.SelectContext(ctx, &drafts, map[string]interface{}{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list drafts: %w", err)
-	}
-
-	for i := range drafts {
-		lines, err := repo.ListBeforeReturnOrderLinesByOrderNo(ctx, drafts[i].OrderNo)
-		if err != nil {
-			return nil, err
-		}
-		drafts[i].BeforeReturnOrderLines = lines
-	}
-
-	return drafts, nil
 }
 
 // Implementation สำหรับ EditOrder

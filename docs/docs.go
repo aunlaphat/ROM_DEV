@@ -760,6 +760,149 @@ const docTemplate = `{
                 }
             }
         },
+        "/draft-confirm/confirm-order": {
+            "post": {
+                "description": "Confirm an order based on the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Confirm an order",
+                "operationId": "confirm-order",
+                "parameters": [
+                    {
+                        "description": "Confirm order details",
+                        "name": "confirmOrder",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ConfirmOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order confirmed successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/edit-order/{orderNo}": {
+            "put": {
+                "description": "Edit an existing order with the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Edit an existing order",
+                "operationId": "edit-order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Edit order details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.EditOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/list-drafts": {
+            "get": {
+                "description": "Retrieve a list of all draft orders",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "List all draft orders",
+                "operationId": "list-drafts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/orders/allgetorder": {
             "get": {
                 "description": "Get all Order",
@@ -1710,65 +1853,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/test/login": {
-            "post": {
-                "description": "Handles user login requests and generates a token for the authenticated user.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "LoginTest"
-                ],
-                "summary": "User Login",
-                "operationId": "usertest-login",
-                "parameters": [
-                    {
-                        "description": "User login credentials in JSON format",
-                        "name": "login-request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.Login"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "JWT token",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/user/get-user": {
             "get": {
                 "description": "Retrieve the details of a user by their username and password",
@@ -2364,6 +2448,20 @@ const docTemplate = `{
                 }
             }
         },
+        "request.ConfirmOrderRequest": {
+            "type": "object",
+            "properties": {
+                "confirmBy": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "statusConfID": {
+                    "type": "integer"
+                }
+            }
+        },
         "request.CreateOrderRequest": {
             "type": "object",
             "properties": {
@@ -2482,16 +2580,65 @@ const docTemplate = `{
                 }
             }
         },
-        "request.Login": {
+        "request.EditOrderRequest": {
             "type": "object",
             "properties": {
-                "password": {
-                    "type": "string",
-                    "example": "string"
+                "beforeReturnOrderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.BeforeReturnOrderLine"
+                    }
                 },
-                "userName": {
-                    "type": "string",
-                    "example": "DC53002"
+                "cancelID": {
+                    "type": "integer"
+                },
+                "channelID": {
+                    "type": "integer"
+                },
+                "confirmBy": {
+                    "type": "string"
+                },
+                "customerID": {
+                    "type": "string"
+                },
+                "logistic": {
+                    "type": "string"
+                },
+                "mkpStatusID": {
+                    "type": "integer"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "returnDate": {
+                    "type": "string"
+                },
+                "returnType": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "soStatusID": {
+                    "type": "integer"
+                },
+                "srNo": {
+                    "type": "string"
+                },
+                "statusConfID": {
+                    "type": "integer"
+                },
+                "statusReturnID": {
+                    "type": "integer"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "type": "integer"
                 }
             }
         },

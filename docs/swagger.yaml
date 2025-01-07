@@ -327,6 +327,15 @@ definitions:
       updateBy:
         type: string
     type: object
+  request.ConfirmOrderRequest:
+    properties:
+      confirmBy:
+        type: string
+      orderNo:
+        type: string
+      statusConfID:
+        type: integer
+    type: object
   request.CreateOrderRequest:
     properties:
       brandName:
@@ -413,14 +422,46 @@ definitions:
         example: 12345678TH
         type: string
     type: object
-  request.Login:
+  request.EditOrderRequest:
     properties:
-      password:
-        example: string
+      beforeReturnOrderLines:
+        items:
+          $ref: '#/definitions/request.BeforeReturnOrderLine'
+        type: array
+      cancelID:
+        type: integer
+      channelID:
+        type: integer
+      confirmBy:
         type: string
-      userName:
-        example: DC53002
+      customerID:
         type: string
+      logistic:
+        type: string
+      mkpStatusID:
+        type: integer
+      orderNo:
+        type: string
+      returnDate:
+        type: string
+      returnType:
+        type: string
+      soNo:
+        type: string
+      soStatusID:
+        type: integer
+      srNo:
+        type: string
+      statusConfID:
+        type: integer
+      statusReturnID:
+        type: integer
+      trackingNo:
+        type: string
+      updateBy:
+        type: string
+      warehouseID:
+        type: integer
     type: object
   request.LoginLark:
     properties:
@@ -1148,6 +1189,98 @@ paths:
       summary: Get Warehouse
       tags:
       - Constants
+  /draft-confirm/confirm-order:
+    post:
+      consumes:
+      - application/json
+      description: Confirm an order based on the provided details
+      operationId: confirm-order
+      parameters:
+      - description: Confirm order details
+        in: body
+        name: confirmOrder
+        required: true
+        schema:
+          $ref: '#/definitions/request.ConfirmOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order confirmed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.BeforeReturnOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Confirm an order
+      tags:
+      - Draft & Confirm
+  /draft-confirm/edit-order/{orderNo}:
+    put:
+      consumes:
+      - application/json
+      description: Edit an existing order with the provided details
+      operationId: edit-order
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: Edit order details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.EditOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Edit an existing order
+      tags:
+      - Draft & Confirm
+  /draft-confirm/list-drafts:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all draft orders
+      operationId: list-drafts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: List all draft orders
+      tags:
+      - Draft & Confirm
   /orders/allgetorder:
     get:
       consumes:
@@ -1738,43 +1871,6 @@ paths:
       summary: Search sale order by SO number
       tags:
       - Sale Return
-  /test/login:
-    post:
-      consumes:
-      - application/json
-      description: Handles user login requests and generates a token for the authenticated
-        user.
-      operationId: usertest-login
-      parameters:
-      - description: User login credentials in JSON format
-        in: body
-        name: login-request
-        required: true
-        schema:
-          $ref: '#/definitions/request.Login'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: JWT token
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  type: string
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: User Login
-      tags:
-      - LoginTest
   /user/get-user:
     get:
       consumes:

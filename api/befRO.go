@@ -59,6 +59,10 @@ func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Re
 	for i, order := range result {
 		fmt.Printf("\n📦 Order #%d:\n", i+1)
 		printOrderDetails(&order)
+		for j, line := range order.BeforeReturnOrderLines {
+			fmt.Printf("\n📦 Order Line #%d:\n", j+1)
+			printOrderLineDetails(&line)
+		}
 	}
 	// fmt.Println("=====================================")
 
@@ -462,12 +466,16 @@ func (app *Application) ListDrafts(w http.ResponseWriter, r *http.Request) {
 	for i, draft := range result {
 		fmt.Printf("\n📦 Draft #%d:\n", i+1)
 		printDraftDetails(&draft)
+		for i := range draft.BeforeReturnOrderLines {
+			fmt.Printf("\n📦 Order Line #%d:\n", i+1)
+			printDraftLineDetails(&draft.BeforeReturnOrderLines[i])
+		}
 	}
 	// fmt.Println("=====================================")
 
 	app.Logger.Info("✅ Successfully retrieved all drafts",
 		zap.Int("totalDrafts", len(result)))
-	handleResponse(w, true, "📚 Drafts retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "Drafts retrieved successfully", result, http.StatusOK)
 }
 
 // EditOrder godoc
@@ -561,11 +569,9 @@ func printOrderDetails(order *res.BeforeReturnOrderResponse) {
 	fmt.Printf("👤 UpdateBy: %v\n", order.UpdateBy)
 	fmt.Printf("📅 UpdateDate: %v\n", order.UpdateDate)
 	fmt.Printf("❌ CancelID: %v\n", order.CancelID)
-	fmt.Printf("📦 BeforeReturnOrderLines: %v\n", order.BeforeReturnOrderLines)
 }
 
 func printOrderLineDetails(line *res.BeforeReturnOrderLineResponse) {
-	fmt.Printf("📦 OrderNo: %s\n", line.OrderNo)
 	fmt.Printf("🔢 SKU: %s\n", line.SKU)
 	fmt.Printf("🔢 QTY: %d\n", line.QTY)
 	fmt.Printf("🔢 ReturnQTY: %d\n", line.ReturnQTY)
@@ -598,5 +604,13 @@ func printDraftDetails(draft *res.BeforeReturnOrderResponse) {
 	fmt.Printf("📡 Channel: %d\n", draft.ChannelID)
 	fmt.Printf("📅 CreateDate: %v\n", draft.CreateDate)
 	fmt.Printf("🏢 Warehouse: %d\n", draft.WarehouseID)
-	fmt.Printf("📦 BeforeReturnOrderLines: %v\n", draft.BeforeReturnOrderLines)
+}
+
+func printDraftLineDetails(line *res.BeforeReturnOrderLineResponse) {
+	fmt.Printf("🔢 SKU: %s\n", line.SKU)
+	fmt.Printf("🔢 QTY: %d\n", line.QTY)
+	fmt.Printf("🔢 ReturnQTY: %d\n", line.ReturnQTY)
+	fmt.Printf("💲 Price: %.2f\n", line.Price)
+	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
+	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate)
 }
