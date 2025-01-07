@@ -16,10 +16,6 @@ const (
 
 // ReturnOrderRepository interface กำหนด method สำหรับการทำงานกับฐานข้อมูล
 type BefRORepository interface {
-	// Create
-	CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
-	CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error
-
 	// Read
 	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
 	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
@@ -28,19 +24,25 @@ type BefRORepository interface {
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 
 	// Update
-	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
-	UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error
-	UpdateSrNo(ctx context.Context, orderNo string, srNo string) error
 	UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error
-
-	// Transaction
-	CreateReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
-	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
 
 	//Cancle
 
-	//Search
+	// ************************ Create Sale Return ************************ //
+	//Search SoNo (Sale Order from Order - MKP)
 	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
+	//Create
+	CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
+	CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error
+	CreateReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
+	//Update
+	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
+	UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error
+	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
+	//Insert SrNo (SR Create from AX)
+	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string) error
+
+	//ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
 
 	// Draft & Confirm
 	ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
@@ -49,9 +51,6 @@ type BefRORepository interface {
 
 // Implementation สำหรับ CreateBeforeReturnOrder
 func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error {
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
             OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, CancelID
@@ -89,9 +88,6 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order requ
 
 // Implementation สำหรับ CreateBeforeReturnOrderLine
 func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error {
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
 	query := `
         INSERT INTO BeforeReturnOrderLine (
             OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
@@ -124,9 +120,6 @@ func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderN
 
 // Implementation สำหรับ GetBeforeReturnOrderLineByOrderNo
 func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
 	query := `
         SELECT 
             OrderNo,
@@ -157,9 +150,6 @@ func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, 
 
 // Implementation สำหรับ GetBeforeReturnOrderByOrderNo
 func (repo repositoryDB) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
 	query := `
         SELECT OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         FROM BeforeReturnOrder WITH (NOLOCK)
@@ -190,9 +180,6 @@ func (repo repositoryDB) GetBeforeReturnOrderByOrderNo(ctx context.Context, orde
 }
 
 func (repo repositoryDB) ListBeforeReturnOrderLinesByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
 	query := `
         SELECT 
             OrderNo,
@@ -223,9 +210,6 @@ func (repo repositoryDB) ListBeforeReturnOrderLinesByOrderNo(ctx context.Context
 }
 
 func (repo repositoryDB) ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
 	query := `
         SELECT 
             OrderNo,
@@ -256,9 +240,6 @@ func (repo repositoryDB) ListBeforeReturnOrderLines(ctx context.Context) ([]resp
 
 // ฟังก์ชันพื้นฐานสำหรับการดึงข้อมูล
 func (repo repositoryDB) listBeforeReturnOrders(ctx context.Context, condition string, params map[string]interface{}) ([]response.BeforeReturnOrderResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-
 	query := fmt.Sprintf(`
         SELECT OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         FROM BeforeReturnOrder WITH (NOLOCK)
@@ -612,8 +593,7 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*res
 	return &orderHead, nil
 }
 
-// UpdateSaleReturnSR updates the SR(Sale Return) number for a given order
-func (repo repositoryDB) UpdateSrNo(ctx context.Context, orderNo string, srNo string) error {
+func (repo repositoryDB) UpdateSaleReturn(ctx context.Context, orderNo string, srNo string) error {
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
@@ -635,7 +615,7 @@ func (repo repositoryDB) UpdateSrNo(ctx context.Context, orderNo string, srNo st
 	return nil
 }
 
-// ConfirmSaleReturn confirms a sale return order
+/* // ConfirmSaleReturn confirms a sale return order
 func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, order request.BeforeReturnOrder) error {
 	query := `
         UPDATE BeforeReturnOrder
@@ -656,9 +636,8 @@ func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, order request.Be
 	}
 
 	return nil
-}
-
-// UpdateDynamicFields updates specified fields for a given order
+} */
+/*
 func (repo repositoryDB) UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error {
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -683,7 +662,7 @@ func (repo repositoryDB) UpdateDynamicFields(ctx context.Context, orderNo string
 	}
 
 	return nil
-}
+} */
 
 // Implementation สำหรับ EditOrder
 func (repo repositoryDB) EditOrder(ctx context.Context, req request.EditOrderRequest) error {

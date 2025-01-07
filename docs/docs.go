@@ -2359,7 +2359,7 @@ const docTemplate = `{
                     }
                 },
                 "cancelID": {
-                    "description": "UpdateDate             *time.Time              ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + ` // MSSQL GetDate() function",
+                    "description": "UpdateDate             *time.Time              ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + ` // MSSQL GetDate()",
                     "type": "integer"
                 },
                 "channelID": {
@@ -2408,7 +2408,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updateBy": {
-                    "description": "CreateDate             *time.Time              ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate() function",
+                    "description": "CreateDate             *time.Time              ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
                     "type": "string"
                 },
                 "warehouseID": {

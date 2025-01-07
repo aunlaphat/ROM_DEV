@@ -267,7 +267,7 @@ definitions:
         type: array
       cancelID:
         description: UpdateDate             *time.Time              `json:"updateDate"
-          db:"UpdateDate"` // MSSQL GetDate() function
+          db:"UpdateDate"` // MSSQL GetDate()
         type: integer
       channelID:
         type: integer
@@ -301,7 +301,7 @@ definitions:
         type: string
       updateBy:
         description: CreateDate             *time.Time              `json:"createDate"
-          db:"CreateDate"` // MSSQL GetDate() function
+          db:"CreateDate"` // MSSQL GetDate()
         type: string
       warehouseID:
         type: integer

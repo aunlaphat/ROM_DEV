@@ -17,7 +17,7 @@ type BefROService interface {
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
 	ConfirmSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
-	UpdateSrNo(ctx context.Context, orderNo string, srNo string) error
+	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string) error
 	UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error
 	ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
 	EditOrder(ctx context.Context, req request.EditOrderRequest) (*response.BeforeReturnOrderResponse, error)
@@ -137,10 +137,10 @@ func (srv service) SearchSaleOrder(ctx context.Context, soNo string) ([]response
 	return []response.SaleOrderResponse{*order}, nil
 }
 
-func (srv service) UpdateSrNo(ctx context.Context, orderNo string, srNo string) error {
+func (srv service) UpdateSaleReturn(ctx context.Context, orderNo string, srNo string) error {
 	srv.logger.Info("🏁 Starting to update SR number", zap.String("OrderNo", orderNo), zap.String("SrNo", srNo))
 
-	err := srv.befRORepo.UpdateSrNo(ctx, orderNo, srNo)
+	err := srv.befRORepo.UpdateSaleReturn(ctx, orderNo, srNo)
 	if err != nil {
 		srv.logger.Error("❌ Failed to update SR number", zap.Error(err))
 		return err
@@ -150,7 +150,7 @@ func (srv service) UpdateSrNo(ctx context.Context, orderNo string, srNo string) 
 	return nil
 }
 
-func (srv service) ConfirmSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
+/* func (srv service) ConfirmSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("🏁 Starting to confirm sale return", zap.String("OrderNo", req.OrderNo))
 
 	fields := map[string]interface{}{
@@ -175,8 +175,9 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, req request.BeforeRetu
 		zap.String("OrderNo", req.OrderNo),
 		zap.Any("ConfirmedOrder", confirmedOrder))
 	return confirmedOrder, nil
-}
+} */
 
+/*
 func (srv service) UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error {
 	srv.logger.Info("🏁 Starting to update dynamic fields", zap.String("OrderNo", orderNo), zap.Any("Fields", fields))
 
@@ -188,7 +189,7 @@ func (srv service) UpdateDynamicFields(ctx context.Context, orderNo string, fiel
 
 	srv.logger.Info("✅ Successfully updated dynamic fields", zap.String("OrderNo", orderNo), zap.Any("Fields", fields))
 	return nil
-}
+} */
 
 func (srv service) ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("🏁 Starting to list all drafts")

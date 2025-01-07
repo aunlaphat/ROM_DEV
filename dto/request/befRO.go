@@ -19,9 +19,9 @@ type BeforeReturnOrder struct {
 	StatusConfID   int        `json:"statusConfID" db:"StatusConfID"`
 	ConfirmBy      *string    `json:"confirmBy" db:"ConfirmBy"`
 	CreateBy       string     `json:"createBy" db:"CreateBy"`
-	// CreateDate             *time.Time              `json:"createDate" db:"CreateDate"` // MSSQL GetDate() function
+	// CreateDate             *time.Time              `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 	UpdateBy *string `json:"updateBy" db:"UpdateBy"`
-	//UpdateDate             *time.Time              `json:"updateDate" db:"UpdateDate"` // MSSQL GetDate() function
+	//UpdateDate             *time.Time              `json:"updateDate" db:"UpdateDate"` // MSSQL GetDate()
 	CancelID               *int                    `json:"cancelID" db:"CancelID"`
 	BeforeReturnOrderLines []BeforeReturnOrderLine `json:"beforeReturnOrderLines"`
 }
@@ -36,8 +36,8 @@ type BeforeReturnOrderLine struct {
 	TrackingNo string  `json:"trackingNo" db:"TrackingNo"`
 	AlterSKU   *string `json:"alterSKU" db:"AlterSKU"`
 	UpdateBy   *string `json:"updateBy" db:"UpdateBy"`
-	//UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"`
-	//CreateDate *time.Time `json:"createDate" db:"CreateDate"`
+	//UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"` // MSSQL GetDate()
+	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 }
 
 type SearchOrderRequest struct {

@@ -2,7 +2,6 @@ package response
 
 import "time"
 
-// BeforeReturnOrderResponse represents the response structure for a return order before processing
 type BeforeReturnOrderResponse struct {
 	OrderNo                string                          `json:"orderNo" db:"OrderNo"`
 	SoNo                   string                          `json:"soNo" db:"SoNo"`
@@ -27,7 +26,6 @@ type BeforeReturnOrderResponse struct {
 	BeforeReturnOrderLines []BeforeReturnOrderLineResponse `json:"beforeReturnOrderLines"`
 }
 
-// BeforeReturnOrderLineResponse represents the response structure for return order line
 type BeforeReturnOrderLineResponse struct {
 	OrderNo    string    `json:"orderNo" db:"OrderNo"`
 	SKU        string    `json:"sku" db:"SKU"`

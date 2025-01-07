@@ -355,7 +355,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	if existingOrder != nil {
 		// If the order already exists, update the SR number
 		srNo := "SR123456" // Generate SR number (this is a placeholder, replace with actual SR number generation logic)
-		err = app.Service.BefRO.UpdateDynamicFields(r.Context(), req.OrderNo, map[string]interface{}{"SrNo": srNo})
+		err = app.Service.BefRO.UpdateSaleReturn(r.Context(), req.OrderNo, srNo)
 		if err != nil {
 			handleError(w, err)
 			return
@@ -381,7 +381,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	srNo := "SR123456"
 
 	// Update the SR number in the database
-	err = app.Service.BefRO.UpdateDynamicFields(r.Context(), result.OrderNo, map[string]interface{}{"SrNo": srNo})
+	err = app.Service.BefRO.UpdateSaleReturn(r.Context(), result.OrderNo, srNo)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -390,8 +390,8 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	// Update the result with the new SR number
 	result.SrNo = srNo
 
-	// Check user role
-	/* userRole := r.Context().Value(middleware.ContextUserRole).(string)
+	/* // Check user role
+	userRole := r.Context().Value(middleware.ContextUserRole).(string)
 	if userRole == "ACCOUNTING" {
 		// Show "Create CN" button for accounting role
 		handleResponse(w, true, "Sale return order created successfully. You can create CN.", result, http.StatusOK)
@@ -462,6 +462,9 @@ func (app *Application) ListDrafts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app.Logger.Info("✅ Successfully retrieved all drafts",
+		zap.Int("totalDrafts", len(result)))
+
 	fmt.Printf("\n📋 ========== All Drafts (%d) ========== 📋\n", len(result))
 	for i, draft := range result {
 		fmt.Printf("\n📦 Draft #%d:\n", i+1)
@@ -470,12 +473,11 @@ func (app *Application) ListDrafts(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("\n📦 Order Line #%d:\n", i+1)
 			printDraftLineDetails(&draft.BeforeReturnOrderLines[i])
 		}
+		fmt.Println("\n=====================================================")
 	}
 	// fmt.Println("=====================================")
 
-	app.Logger.Info("✅ Successfully retrieved all drafts",
-		zap.Int("totalDrafts", len(result)))
-	handleResponse(w, true, "Drafts retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "📚 Drafts retrieved successfully", result, http.StatusOK)
 }
 
 // EditOrder godoc
