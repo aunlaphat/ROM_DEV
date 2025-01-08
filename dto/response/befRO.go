@@ -54,11 +54,11 @@ type SaleOrderLineResponse struct {
 }
 
 type ConfirmSaleReturnResponse struct {
-	OrderNo           string                      `json:"orderNo" db:"OrderNo"`
-	ConfirmBy         string                      `json:"confirmBy" db:"ConfirmBy"`
-	ConfirmDate       time.Time                   `json:"confirmDate" db:"ConfirmDate"`
-	BeforeReturnOrder []BeforeReturnOrderResponse `json:"beforeReturnOrder"`
+	OrderNo     string    `json:"orderNo" db:"OrderNo"`
+	ConfirmBy   string    `json:"confirmBy" db:"ConfirmBy"`
+	ConfirmDate time.Time `json:"confirmDate" db:"ConfirmDate"`
 }
+
 type CancelSaleReturnResponse struct {
 	RefID        string    `json:"refId" db:"RefID"`
 	CancelStatus bool      `json:"cancelStatus" db:"CancelStatus"`

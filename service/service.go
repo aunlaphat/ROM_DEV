@@ -17,7 +17,6 @@ type AllOfService struct {
 	User     UserService
 	Constant Constants
 	BefRO    BefROService
-	// Login	    LoginService
 }
 
 func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {

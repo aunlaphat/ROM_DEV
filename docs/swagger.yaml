@@ -256,10 +256,6 @@ definitions:
     type: object
   response.ConfirmSaleReturnResponse:
     properties:
-      beforeReturnOrder:
-        items:
-          $ref: '#/definitions/response.BeforeReturnOrderResponse'
-        type: array
       confirmBy:
         type: string
       confirmDate:

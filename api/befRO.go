@@ -32,6 +32,8 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Post("/cancel/{orderNo}", app.CancelSaleReturn)
 	})
 
+	apiRouter.Post("/login", app.Login)
+
 	/* 	apiRouter.Route("/draft-confirm", func(r chi.Router) {
 	//r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
 	r.Get("/list-drafts", app.ListDrafts)
@@ -454,19 +456,30 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/confirm/{orderNo} [post]
 func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
-	if err := json.NewDecoder(r.Body).Decode(orderNo); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	/* orderNo := chi.URLParam(r, "orderNo")
+	claims, ok := r.Context().Value("claims").(map[string]interface{})
+	if !ok {
+		handleError(w, fmt.Errorf("user claims are missing or invalid"))
 		return
 	}
 
-	err := app.Service.BefRO.ConfirmSaleReturn(r.Context(), orderNo)
+	username, exists := claims["username"]
+	if !exists {
+		handleError(w, fmt.Errorf("username is missing"))
+		return
+	}
+	confirmBy, ok := username.(string)
+	// Validate if the orderNo exists
+	order, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo, confirmBy)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
+	if order == nil {
+		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
+		return
+	} */
 
-	handleResponse(w, true, "Sale return order confirmed successfully", response, http.StatusOK)
 }
 
 // CancelSaleReturn godoc

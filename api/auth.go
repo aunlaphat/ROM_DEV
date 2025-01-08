@@ -176,5 +176,6 @@ func (app *Application) Logout(w http.ResponseWriter, r *http.Request) {
 func (app *Application) CheckAuthen(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Context())
 	_, claims, _ := jwtauth.FromContext(r.Context())
+	fmt.Println("claims: ", claims)
 	handleResponse(w, true, "Checked", claims, http.StatusOK)
 }

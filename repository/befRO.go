@@ -685,7 +685,7 @@ func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, orderNo string, 
 	query := `
         UPDATE BeforeReturnOrder
         SET StatusReturnID = 1, -- Pending status
-            StatusConfID = 1, -- Draft status
+			StatusConfID = 1, -- Draft status
             ConfirmBy = :ConfirmBy
         WHERE OrderNo = :OrderNo
     `

@@ -1577,12 +1577,6 @@ const docTemplate = `{
         "response.ConfirmSaleReturnResponse": {
             "type": "object",
             "properties": {
-                "beforeReturnOrder": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.BeforeReturnOrderResponse"
-                    }
-                },
                 "confirmBy": {
                     "type": "string"
                 },
