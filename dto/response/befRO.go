@@ -18,6 +18,7 @@ type BeforeReturnOrderResponse struct {
 	StatusReturnID         int                             `json:"statusReturnId" db:"StatusReturnID"`
 	StatusConfID           int                             `json:"statusConfId" db:"StatusConfID"`
 	ConfirmBy              *string                         `json:"confirmBy" db:"ConfirmBy"`
+	ConfirmDate            *time.Time                      `json:"confirmDate" db:"ConfirmDate"`
 	CreateBy               string                          `json:"createBy" db:"CreateBy"`
 	CreateDate             time.Time                       `json:"createDate" db:"CreateDate"`
 	UpdateBy               *string                         `json:"updateBy" db:"UpdateBy"`
@@ -50,4 +51,18 @@ type SaleOrderLineResponse struct {
 	ItemName string  `json:"itemName" db:"ItemName"`
 	QTY      int     `json:"qty" db:"QTY"`
 	Price    float64 `json:"price" db:"Price"`
+}
+
+type ConfirmSaleReturnResponse struct {
+	OrderNo           string                      `json:"orderNo" db:"OrderNo"`
+	ConfirmBy         string                      `json:"confirmBy" db:"ConfirmBy"`
+	ConfirmDate       time.Time                   `json:"confirmDate" db:"ConfirmDate"`
+	BeforeReturnOrder []BeforeReturnOrderResponse `json:"beforeReturnOrder"`
+}
+type CancelSaleReturnResponse struct {
+	RefID        string    `json:"refId" db:"RefID"`
+	CancelStatus bool      `json:"cancelStatus" db:"CancelStatus"`
+	Remark       string    `json:"remark" db:"Remark"`
+	CancelBy     string    `json:"cancelBy" db:"CancelBy"`
+	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
 }

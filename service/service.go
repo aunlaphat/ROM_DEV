@@ -8,46 +8,34 @@ import (
 )
 
 type service struct {
-	userRepo        repository.UserRepository //Repository of service
-	usertestRepo    repository.UserTestRepository
-	logger          logs.Logger //Logger of service
-	constant        repository.Constants
-	befRORepo       repository.BefRORepository
-	orderRepo       repository.OrderRepository
-	returnOrderRepo repository.ReturnOrderRepository
+	userRepo  repository.UserRepository //Repository of service
+	logger    logs.Logger               //Logger of service
+	constant  repository.Constants
+	befRORepo repository.BefRORepository
 }
 type AllOfService struct {
-	User        UserService
-	UserTest    UserTestService
-	Constant    Constants
-	BefRO       BefROService
-	Order       OrderService
-	ReturnOrder ReturnOrderService
+	User     UserService
+	Constant Constants
+	BefRO    BefROService
 	// Login	    LoginService
 }
 
 func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 	repo := repository.NewDB(db)
 	srv := service{
-		userRepo:        repo,
-		usertestRepo:    repo,
-		logger:          logger,
-		constant:        repo,
-		befRORepo:       repo,
-		orderRepo:       repo,
-		returnOrderRepo: repo,
+		userRepo:  repo,
+		logger:    logger,
+		constant:  repo,
+		befRORepo: repo,
 	}
 	return AllOfService{
-		User:        srv,
-		UserTest:    srv,
-		Constant:    srv,
-		BefRO:       srv,
-		Order:       srv,
-		ReturnOrder: srv,
+		User:     srv,
+		Constant: srv,
+		BefRO:    srv,
 	}
 }
 
-type Login struct {
+/* type Login struct {
 	UserID       string `json:"userID"`
 	RoleID       int    `json:"roleID"`
 	PermissionID string `json:"permissionID"`
@@ -56,4 +44,4 @@ type Login struct {
 	FullNameTH   string `json:"fullNameTH"`
 	FullNameEN   string `json:"fullNameEN"`
 	Platfrom     string `json:"platfrom"`
-}
+} */

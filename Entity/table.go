@@ -4,7 +4,7 @@ import "time"
 
 // BeforeReturnOrder represents the structure of the BeforeReturnOrder table
 type BeforeReturnOrder struct {
-	RecID          int        `db:"RecID"`          // รหัสอ้างอิงอัตโนมัติ
+	RecID          int        `db:"RecID"`          // รหัสอ้างอิงอัตโนมัติ (PK - Auto Increment)
 	OrderNo        string     `db:"OrderNo"`        // เลขที่ใบสั่งซื้อ
 	SoNo           string     `db:"SoNo"`           // เลขที่ใบสั่งขาย
 	SrNo           string     `db:"SrNo"`           // เลขที่ใบลดหนี้
@@ -20,6 +20,7 @@ type BeforeReturnOrder struct {
 	StatusReturnID int        `db:"StatusReturnID"` // สถานะการคืนสินค้า
 	StatusConfID   int        `db:"StatusConfID"`   // สถานะการยืนยัน
 	ConfirmBy      *string    `db:"ConfirmBy"`      // ผู้ยืนยัน
+	ConfirmDate    *time.Time `db:"ConfirmDate"`    // วันที่ยืนยัน
 	CreateBy       string     `db:"CreateBy"`       // ผู้สร้างรายการ
 	CreateDate     time.Time  `db:"CreateDate"`     // วันที่สร้างรายการ
 	UpdateBy       *string    `db:"UpdateBy"`       // ผู้แก้ไขล่าสุด
@@ -30,7 +31,7 @@ type BeforeReturnOrder struct {
 // BeforeReturnOrderLine คือตารางสำหรับเก็บรายการสินค้าที่ต้องการคืน
 // เป็นรายละเอียดของแต่ละรายการในใบคืนสินค้า
 type BeforeReturnOrderLine struct {
-	RecID      int        `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ
+	RecID      int        `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ (PK - Auto Increment)
 	OrderNo    string     `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ (FK -> BeforeReturnOrder)
 	SKU        string     `db:"SKU"`        // รหัสสินค้า
 	QTY        *int       `db:"QTY"`        // จำนวนสินค้าที่ซื้อ
@@ -44,45 +45,25 @@ type BeforeReturnOrderLine struct {
 	TrackingNo string     `db:"TrackingNo"` // เลขพัสดุ
 }
 
+type Warehouse struct {
+	WarehouseID   int    `db:"WarehouseID"`   // รหัสคลังสินค้า (PK - Auto Increment)
+	WarehouseName string `db:"WarehouseName"` // ชื่อคลังสินค้า
+	Location      string `db:"Location"`      // ที่ตั้งของคลังสินค้า
+}
+
 type CancelStatus struct {
-	CancelID     int       `db:"CancelID"`     // รหัสการยกเลิก (Primary Key)
-	RefID        string    `db:"RefID"`        // เลขที่ใบสั่งซื้อ (Foreign Key -> BeforeReturnOrder)
+	CancelID     int       `db:"CancelID"`     // รหัสการยกเลิก (PK - Auto Increment)
+	RefID        string    `db:"RefID"`        // เลขที่ใบสั่งซื้อ (FK -> RecID(BeforeReturnOrder) || RuturnID(ReturnOrder))
 	CancelStatus bool      `db:"CancelStatus"` // สถานะการยกเลิก
 	Remark       string    `db:"Remark"`       // เหตุผลในการยกเลิก
 	CancelBy     string    `db:"CancelBy"`     // ผู้ยกเลิก
 	CancelDate   time.Time `db:"CancelDate"`   // วันที่ยกเลิก
 }
 
-type Order struct {
-	OrderNo         string     `json:"orderNo" db:"OrderNo" example:"OD0001"`                        // เลขที่ใบสั่งซื้อ
-	BrandName       *string    `json:"brandName" db:"BrandName" example:"BEWELL"`                    // ชื่อแบรนด์
-	CustName        *string    `json:"custName" db:"CustName" example:"Fa"`                          // ชื่อลูกค้า
-	CustAddress     *string    `json:"custAddress" db:"CustAddress" example:"7/20"`                  // ที่อยู่ลูกค้า
-	CustDistrict    *string    `json:"custDistrict" db:"CustDistrict" example:"Bang-Kruay"`          // เขต
-	CustSubDistrict *string    `json:"custSubDistrict" db:"CustSubDistrict" example:"Bang-Kruay"`    // แขวง
-	CustProvince    *string    `json:"custProvince" db:"CustProvince" example:"Nonthaburi"`          // จังหวัด
-	CustPostCode    *string    `json:"custPostCode" db:"CustPostCode" example:"11130"`               // รหัสไปรษณีย์
-	CustPhoneNum    *string    `json:"custPhoneNum" db:"CustPhoneNum" example:"0912345678"`          // เบอร์โทรศัพท์
-	CreateDate      *time.Time `json:"createDate" db:"CreateDate" example:"2024-11-22 09:45:33.260"` // วันที่สร้างรายการ
-	UserCreated     *string    `json:"userCreated" db:"UserCreated" example:"intern"`                // ผู้สร้างรายการ
-	UpdateDate      *time.Time `json:"updateDate" db:"UpdateDate" example:"2024-11-30 09:45:33.260"` // วันที่แก้ไขล่าสุด
-	UserUpdated     *string    `json:"userUpdates" db:"UserUpdated" example:"intern"`                // ผู้แก้ไขล่าสุด
-
-	OrderLines []OrderLine `gorm:"foreignKey:OrderNo" json:"orderLine"` // รายการสินค้าที่สั่งซื้อ
-}
-
-type OrderLine struct {
-	OrderNo  *string  `json:"orderNo" db:"OrderNo" example:"OD0001"`    // เลขที่ใบสั่งซื้อ
-	SKU      *string  `json:"sku" db:"SKU" example:"SKU12345"`          // รหัสสินค้า
-	ItemName *string  `json:"itemName" db:"ItemName" example:"เก้าอี้"` // ชื่อสินค้า
-	QTY      *int     `json:"qty" db:"QTY" example:"5"`                 // จำนวนสินค้า
-	Price    *float64 `json:"price" db:"Price" example:"5900.00"`       // ราคาต่อหน่วย
-}
-
 // ReturnOrder คือตารางสำหรับเก็บข้อมูลการคืนสินค้าที่ผ่านการตรวจสอบแล้ว
 // เป็นขั้นตอนสุดท้ายของกระบวนการคืนสินค้า
 type ReturnOrder struct {
-	ReturnID      string     `db:"ReturnID"`      // เลขที่ใบคืนสินค้า (Primary Key)
+	ReturnID      string     `db:"ReturnID"`      // เลขที่ใบคืนสินค้า (PK - Generate จากระบบ)
 	OrderNo       string     `db:"OrderNo"`       // เลขที่ใบสั่งซื้อ
 	SaleOrder     string     `db:"SaleOrder"`     // เลขที่ใบกำกับภาษี
 	SaleReturn    string     `db:"SaleReturn"`    // เลขที่ใบลดหนี้
@@ -105,7 +86,7 @@ type ReturnOrder struct {
 
 // ReturnOrderLine คือตารางสำหรับเก็บรายการสินค้าที่คืนและผ่านการตรวจสอบแล้ว
 type ReturnOrderLine struct {
-	RecID      int        `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ
+	RecID      int        `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ - (PK - Auto Increment)
 	ReturnID   string     `db:"ReturnID"`   // เลขที่ใบคืนสินค้า (FK -> ReturnOrder)
 	OrderNo    string     `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ
 	TrackingNo string     `db:"TrackingNo"` // เลขพัสดุ
@@ -120,12 +101,7 @@ type ReturnOrderLine struct {
 	UpdateDate *time.Time `db:"UpdateDate"` // วันที่แก้ไขล่าสุด
 }
 
-type Warehouse struct {
-	WarehouseID   int    `db:"WarehouseID" json:"warehouseID"`     // รหัสคลังสินค้า
-	WarehouseName string `db:"WarehouseName" json:"warehouseName"` // ชื่อคลังสินค้า
-	Location      string `db:"Location" json:"location"`           // ที่ตั้งของคลังสินค้า
-}
-
+// View
 type ROM_V_ProductAll struct {
 	SKU       string  `db:"SKU" json:"sku"`             // รหัสสินค้า
 	NameAlias string  `db:"NAMEALIAS" json:"nameAlias"` // ชื่อย่อของสินค้า

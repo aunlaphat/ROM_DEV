@@ -27,15 +27,17 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		//r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
 		r.Get("/search/{soNo}", app.SearchSaleOrder)
 		r.Post("/create", app.CreateSaleReturn)
-		r.Post("/confirm", app.ConfirmSaleReturn)
+		r.Put("/update/{orderNo}", app.UpdateSaleReturn)
+		r.Post("/confirm/{orderNo}", app.ConfirmSaleReturn)
+		r.Post("/cancel/{orderNo}", app.CancelSaleReturn)
 	})
 
-	apiRouter.Route("/draft-confirm", func(r chi.Router) {
-		//r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
-		r.Get("/list-drafts", app.ListDrafts)
-		r.Put("/edit-order/{orderNo}", app.EditDraftCF)
-		r.Post("/confirm-order", app.ConfirmOrder)
-	})
+	/* 	apiRouter.Route("/draft-confirm", func(r chi.Router) {
+	//r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
+	r.Get("/list-drafts", app.ListDrafts)
+	r.Put("/edit-order/{orderNo}", app.EditDraftCF)
+	r.Post("/confirm-order", app.ConfirmOrder)
+	*/
 }
 
 // ListReturnOrders godoc
@@ -371,7 +373,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// If the order does not exist, create a new one
-	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
+	result, err := app.Service.BefRO.CreateSaleReturn(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -399,6 +401,44 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 		// Do not show "Create CN" button for other roles
 		handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
 	} */
+	handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
+}
+
+// UpdateSaleReturn godoc
+// @Summary Update the SR number for a sale return order
+// @Description Update the SR number for a sale return order based on the provided details
+// @ID update-sale-return
+// @Tags Sale Return
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order number"
+// @Param srNo body string true "SR number"
+// @Success 200 {object} api.Response "SR number updated successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /sale-return/update/{orderNo} [put]
+func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request) {
+	orderNo := chi.URLParam(r, "orderNo")
+	var req struct {
+		SrNo string `json:"srNo"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	if req.SrNo == "" {
+		http.Error(w, "SrNo is required", http.StatusBadRequest)
+		return
+	}
+
+	err := app.Service.BefRO.UpdateSaleReturn(r.Context(), orderNo, req.SrNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "SR number updated successfully", nil, http.StatusOK)
 }
 
 // ConfirmSaleReturn godoc
@@ -408,146 +448,60 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// @Param saleReturn body request.BeforeReturnOrder true "Sale Return Order"
-// @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "Sale return order confirmed successfully"
+// @Param orderNo path string true "Order number"
+// @Success 200 {object} api.Response{data=response.ConfirmSaleReturnResponse} "Sale return order confirmed successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /sale-return/confirm [post]
+// @Router /sale-return/confirm/{orderNo} [post]
 func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request) {
-	var req request.BeforeReturnOrder
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	orderNo := chi.URLParam(r, "orderNo")
+	if err := json.NewDecoder(r.Body).Decode(orderNo); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	fields := map[string]interface{}{
-		"StatusConfID": req.StatusConfID,
-		"ConfirmBy":    req.ConfirmBy,
-		"UpdateBy":     req.UpdateBy,
-	}
-
-	err := app.Service.BefRO.UpdateDynamicFields(r.Context(), req.OrderNo, fields)
+	err := app.Service.BefRO.ConfirmSaleReturn(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	result, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	fmt.Printf("\n📋 ========== Confirmed Sale Return Order ========== 📋\n")
-	printOrderDetails(result)
-	// fmt.Println("=====================================")
-
-	handleResponse(w, true, "Sale return order confirmed successfully", result, http.StatusOK)
+	handleResponse(w, true, "Sale return order confirmed successfully", response, http.StatusOK)
 }
 
-// ListDrafts godoc
-// @Summary List all draft orders
-// @Description Retrieve a list of all draft orders
-// @ID list-drafts
-// @Tags Draft & Confirm
-// @Accept json
-// @Produce json
-// @Success 200 {object} api.Response
-// @Failure 500 {object} api.Response
-// @Router /draft-confirm/list-drafts [get]
-func (app *Application) ListDrafts(w http.ResponseWriter, r *http.Request) {
-	result, err := app.Service.BefRO.ListDrafts(r.Context())
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	app.Logger.Info("✅ Successfully retrieved all drafts",
-		zap.Int("totalDrafts", len(result)))
-
-	fmt.Printf("\n📋 ========== All Drafts (%d) ========== 📋\n", len(result))
-	for i, draft := range result {
-		fmt.Printf("\n📦 Draft #%d:\n", i+1)
-		printDraftDetails(&draft)
-		for i := range draft.BeforeReturnOrderLines {
-			fmt.Printf("\n📦 Order Line #%d:\n", i+1)
-			printDraftLineDetails(&draft.BeforeReturnOrderLines[i])
-		}
-		fmt.Println("\n=====================================================")
-	}
-	// fmt.Println("=====================================")
-
-	handleResponse(w, true, "📚 Drafts retrieved successfully", result, http.StatusOK)
-}
-
-// EditOrder godoc
-// @Summary Edit an existing order
-// @Description Edit an existing order with the provided details
-// @ID edit-order
-// @Tags Draft & Confirm
+// CancelSaleReturn godoc
+// @Summary Cancel a sale return order
+// @Description Cancel a sale return order based on the provided details
+// @ID cancel-sale-return
+// @Tags Sale Return
 // @Accept json
 // @Produce json
 // @Param orderNo path string true "Order number"
-// @Param body body request.EditOrderRequest true "Edit order details"
-// @Success 200 {object} api.Response
-// @Failure 400 {object} api.Response
-// @Failure 500 {object} api.Response
-// @Router /draft-confirm/edit-order/{orderNo} [put]
-func (app *Application) EditDraftCF(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
-	var req request.EditOrderRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleError(w, err)
-		return
-	}
-
-	req.OrderNo = orderNo // Ensure the orderNo from the URL is used
-
-	result, err := app.Service.BefRO.EditOrder(r.Context(), req)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	fmt.Printf("\n📋 ========== Edited Order ========== 📋\n")
-	printOrderDetails(result)
-	// fmt.Println("=====================================")
-
-	app.Logger.Info("✅ Successfully edited order",
-		zap.String("OrderNo", result.OrderNo))
-	handleResponse(w, true, "Order edited successfully", result, http.StatusOK)
-}
-
-// ConfirmOrder godoc
-// @Summary Confirm an order
-// @Description Confirm an order based on the provided details
-// @ID confirm-order
-// @Tags Draft & Confirm
-// @Accept json
-// @Produce json
-// @Param confirmOrder body request.ConfirmOrderRequest true "Confirm order details"
-// @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "Order confirmed successfully"
+// @Param cancelDetails body request.CancelSaleReturnRequest true "Cancel details"
+// @Success 200 {object} api.Response{data=response.CancelSaleReturnResponse} "Sale return order canceled successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /draft-confirm/confirm-order [post]
-func (app *Application) ConfirmOrder(w http.ResponseWriter, r *http.Request) {
-	var req request.ConfirmOrderRequest
+// @Router /sale-return/cancel/{orderNo} [post]
+func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request) {
+	orderNo := chi.URLParam(r, "orderNo")
+	var req request.CancelSaleReturnRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	result, err := app.Service.BefRO.ConfirmOrder(r.Context(), req)
+	if req.CancelBy == "" {
+		http.Error(w, "CancelBy is required", http.StatusBadRequest)
+		return
+	}
+
+	err := app.Service.BefRO.CancelSaleReturn(r.Context(), orderNo, req.CancelBy, req.Remark)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Confirmed Order ========== 📋\n")
-	printOrderDetails(result)
-	// fmt.Println("=====================================")
-
-	handleResponse(w, true, "Order confirmed successfully", result, http.StatusOK)
+	handleResponse(w, true, "Sale return order canceled successfully", nil, http.StatusOK)
 }
 
 func printOrderDetails(order *res.BeforeReturnOrderResponse) {
