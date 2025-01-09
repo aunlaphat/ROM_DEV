@@ -1007,6 +1007,11 @@ const docTemplate = `{
         },
         "/sale-return/update/{orderNo}": {
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update the SR number for a sale return order based on the provided details",
                 "consumes": [
                     "application/json"
@@ -1028,12 +1033,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "SR number",
-                        "name": "srNo",
+                        "description": "SR number details",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/request.UpdateSaleReturnRequest"
                         }
                     }
                 ],
@@ -1041,11 +1046,35 @@ const docTemplate = `{
                     "200": {
                         "description": "SR number updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Bad Request - Invalid input or missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Order not found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -1451,6 +1480,18 @@ const docTemplate = `{
                 "userName": {
                     "type": "string",
                     "example": "eknarin"
+                }
+            }
+        },
+        "request.UpdateSaleReturnRequest": {
+            "type": "object",
+            "required": [
+                "srNo"
+            ],
+            "properties": {
+                "srNo": {
+                    "type": "string",
+                    "example": "SR-123456"
                 }
             }
         },

@@ -657,25 +657,31 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 }
 
 func (repo repositoryDB) UpdateSaleReturn(ctx context.Context, orderNo string, srNo string) error {
+	// 1. กำหนด SQL query
 	query := `
         UPDATE BeforeReturnOrder
         SET SrNo = :SrNo
         WHERE OrderNo = :OrderNo
     `
+	// 2. กำหนด parameters
 	params := map[string]interface{}{
 		"OrderNo": orderNo,
 		"SrNo":    srNo,
 	}
 
-	nstmt, err := repo.db.PrepareNamed(query)
+	// 3. execute query
+	result, err := repo.db.NamedExecContext(ctx, query, params)
 	if err != nil {
-		return fmt.Errorf("failed to prepare statement for updating SR number: %w", err)
+		return fmt.Errorf("failed to update SR number: %w", err)
 	}
-	defer nstmt.Close()
 
-	_, err = nstmt.ExecContext(ctx, params)
+	// 4. ตรวจสอบว่ามีการอัพเดทจริง
+	rows, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to update SaleReturn SR number: %w", err)
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("order not found: %s", orderNo)
 	}
 
 	return nil

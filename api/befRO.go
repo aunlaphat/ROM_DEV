@@ -417,34 +417,62 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Tags Sale Return
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param orderNo path string true "Order number"
-// @Param srNo body string true "SR number"
-// @Success 200 {object} api.Response "SR number updated successfully"
-// @Failure 400 {object} api.Response "Bad Request"
+// @Param request body request.UpdateSaleReturnRequest true "SR number details"
+// @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "SR number updated successfully"
+// @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
+// @Failure 404 {object} api.Response "Not Found - Order not found"
+// @Failure 401 {object} api.Response "Unauthorized - Missing or invalid token"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/update/{orderNo} [put]
 func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request) {
+	// 1. รับและตรวจสอบ orderNo
 	orderNo := chi.URLParam(r, "orderNo")
-	var req struct {
-		SrNo string `json:"srNo"`
+	if orderNo == "" {
+		http.Error(w, "OrderNo is required", http.StatusBadRequest)
+		return
 	}
+
+	// 2. รับและตรวจสอบ request body
+	var req request.UpdateSaleReturnRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		handleError(w, fmt.Errorf("invalid request format: %v", err))
 		return
 	}
 
-	if req.SrNo == "" {
-		http.Error(w, "SrNo is required", http.StatusBadRequest)
+	// 3. ตรวจสอบว่า order มีอยู่จริง
+	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+	if existingOrder == nil {
+		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
 		return
 	}
 
-	err := app.Service.BefRO.UpdateSaleReturn(r.Context(), orderNo, req.SrNo)
+	// 4. อัพเดท SR number
+	err = app.Service.BefRO.UpdateSaleReturn(r.Context(), orderNo, req.SrNo)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponse(w, true, "SR number updated successfully", nil, http.StatusOK)
+	// 5. ดึงข้อมูลที่อัพเดทแล้ว
+	updatedOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	// 6. บันทึก log
+	app.Logger.Info("✅ Successfully updated SR number",
+		zap.String("OrderNo", orderNo),
+		zap.String("SrNo", req.SrNo))
+
+	// 7. ส่ง response
+	handleResponse(w, true, "SR number updated successfully", updatedOrder, http.StatusOK)
 }
 
 // ConfirmSaleReturn godoc

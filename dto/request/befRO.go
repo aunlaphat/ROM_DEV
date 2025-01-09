@@ -42,6 +42,10 @@ type BeforeReturnOrderLine struct {
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 }
 
+type UpdateSaleReturnRequest struct {
+	SrNo string `json:"srNo" validate:"required" example:"SR-123456"`
+}
+
 type CancelSaleReturnRequest struct {
 	OrderNo      string `json:"orderNo" db:"OrderNo"`
 	CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`

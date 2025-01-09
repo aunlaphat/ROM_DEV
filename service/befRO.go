@@ -154,15 +154,32 @@ func (srv service) CreateSaleReturn(ctx context.Context, req request.BeforeRetur
 }
 
 func (srv service) UpdateSaleReturn(ctx context.Context, orderNo string, srNo string) error {
-	srv.logger.Info("🏁 Starting to update SR number", zap.String("OrderNo", orderNo), zap.String("SrNo", srNo))
+	// 1. เริ่ม logging
+	srv.logger.Info("🏁 Starting to update SR number",
+		zap.String("OrderNo", orderNo),
+		zap.String("SrNo", srNo))
 
-	err := srv.befRORepo.UpdateSaleReturn(ctx, orderNo, srNo)
+	// 2. ตรวจสอบสถานะปัจจุบันของ order
+	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to get order", zap.Error(err))
+		return err
+	}
+	if order == nil {
+		return fmt.Errorf("order not found: %s", orderNo)
+	}
+
+	// 3. อัพเดท SR number
+	err = srv.befRORepo.UpdateSaleReturn(ctx, orderNo, srNo)
 	if err != nil {
 		srv.logger.Error("❌ Failed to update SR number", zap.Error(err))
 		return err
 	}
 
-	srv.logger.Info("✅ Successfully updated SR number", zap.String("OrderNo", orderNo), zap.String("SrNo", srNo))
+	// 4. บันทึก log สำเร็จ
+	srv.logger.Info("✅ Successfully updated SR number",
+		zap.String("OrderNo", orderNo),
+		zap.String("SrNo", srNo))
 	return nil
 }
 

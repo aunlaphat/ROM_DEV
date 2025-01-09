@@ -175,6 +175,14 @@ definitions:
         example: eknarin
         type: string
     type: object
+  request.UpdateSaleReturnRequest:
+    properties:
+      srNo:
+        example: SR-123456
+        type: string
+    required:
+    - srNo
+    type: object
   response.BeforeReturnOrderLineResponse:
     properties:
       createDate:
@@ -978,27 +986,42 @@ paths:
         name: orderNo
         required: true
         type: string
-      - description: SR number
+      - description: SR number details
         in: body
-        name: srNo
+        name: request
         required: true
         schema:
-          type: string
+          $ref: '#/definitions/request.UpdateSaleReturnRequest'
       produces:
       - application/json
       responses:
         "200":
           description: SR number updated successfully
           schema:
-            $ref: '#/definitions/api.Response'
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.BeforeReturnOrderResponse'
+              type: object
         "400":
-          description: Bad Request
+          description: Bad Request - Invalid input or missing required fields
+          schema:
+            $ref: '#/definitions/api.Response'
+        "401":
+          description: Unauthorized - Missing or invalid token
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found - Order not found
           schema:
             $ref: '#/definitions/api.Response'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
+      security:
+      - BearerAuth: []
       summary: Update the SR number for a sale return order
       tags:
       - Sale Return
