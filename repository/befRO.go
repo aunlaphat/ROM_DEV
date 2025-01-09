@@ -682,24 +682,28 @@ func (repo repositoryDB) UpdateSaleReturn(ctx context.Context, orderNo string, s
 }
 
 func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error {
+	// 1. กำหนด SQL query สำหรับ update สถานะ
 	query := `
         UPDATE BeforeReturnOrder
         SET StatusReturnID = 1, -- Pending status
-			StatusConfID = 1, -- Draft status
+            StatusConfID = 1,   -- Draft status
             ConfirmBy = :ConfirmBy
         WHERE OrderNo = :OrderNo
     `
+	// 2. กำหนด parameters สำหรับ query
 	params := map[string]interface{}{
 		"OrderNo":   orderNo,
 		"ConfirmBy": confirmBy,
 	}
 
+	// 3. เตรียม statement
 	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement for confirming sale return: %w", err)
 	}
 	defer nstmt.Close()
 
+	// 4. execute query
 	_, err = nstmt.ExecContext(ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to confirm sale return: %w", err)
@@ -709,47 +713,59 @@ func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, orderNo string, 
 }
 
 func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo string, cancelBy string, remark string) error {
+	// 1. เริ่ม transaction
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	// 2. อัพเดทสถานะการยกเลิก
 	query := `
         UPDATE BeforeReturnOrder
         SET StatusReturnID = 2, -- Cancel status
-            StatusConfID = 3, -- Cancel status
-            CancelID = (SELECT ISNULL(MAX(CancelID), 0) + 1 FROM CancelStatus), -- Generate new CancelID
+            StatusConfID = 3,   -- Cancel status
+            CancelID = (SELECT ISNULL(MAX(CancelID), 0) + 1 FROM CancelStatus), -- สร้าง CancelID ใหม่
             UpdateBy = :CancelBy
         WHERE OrderNo = :OrderNo
     `
-	params := map[string]interface{}{
+	result, err := tx.NamedExecContext(ctx, query, map[string]interface{}{
 		"OrderNo":  orderNo,
 		"CancelBy": cancelBy,
-	}
-
-	nstmt, err := repo.db.PrepareNamed(query)
+	})
 	if err != nil {
-		return fmt.Errorf("failed to prepare statement for canceling sale return: %w", err)
-	}
-	defer nstmt.Close()
-
-	_, err = nstmt.ExecContext(ctx, params)
-	if err != nil {
-		return fmt.Errorf("failed to cancel sale return: %w", err)
+		return fmt.Errorf("failed to update order status: %w", err)
 	}
 
-	// Insert into CancelStatus table
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("order not found: %s", orderNo)
+	}
+
+	// 3. บันทึกประวัติการยกเลิก
 	queryCancelStatus := `
         INSERT INTO CancelStatus (
-            RefID, CancelStatus, Remark, CancelBy
+            RefID, CancelStatus, Remark, CancelBy, CancelDate
         ) VALUES (
-            :OrderNo, 1, :Remark, :CancelBy
+            :OrderNo, 1, :Remark, :CancelBy, GETDATE()
         )
     `
-	paramsCancelStatus := map[string]interface{}{
+	_, err = tx.NamedExecContext(ctx, queryCancelStatus, map[string]interface{}{
 		"OrderNo":  orderNo,
 		"Remark":   remark,
 		"CancelBy": cancelBy,
-	}
-
-	_, err = repo.db.NamedExecContext(ctx, queryCancelStatus, paramsCancelStatus)
+	})
 	if err != nil {
-		return fmt.Errorf("failed to insert into CancelStatus: %w", err)
+		return fmt.Errorf("failed to insert cancel status: %w", err)
 	}
 
 	return nil

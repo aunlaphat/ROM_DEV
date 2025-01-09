@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +25,10 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
-		//r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
+		// middleware เพื่อตรวจสอบ authentication
+		r.Use(jwtauth.Verifier(app.TokenAuth))
+		r.Use(jwtauth.Authenticator)
+
 		r.Get("/search/{soNo}", app.SearchSaleOrder)
 		r.Post("/create", app.CreateSaleReturn)
 		r.Put("/update/{orderNo}", app.UpdateSaleReturn)
@@ -456,30 +460,36 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/confirm/{orderNo} [post]
 func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request) {
-	/* orderNo := chi.URLParam(r, "orderNo")
+	// 1. รับค่า orderNo จาก URL parameter
+	orderNo := chi.URLParam(r, "orderNo")
+
+	// 2. ดึงข้อมูล claims (ข้อมูลผู้ใช้) จาก context (มาจาก JWT authentication)
 	claims, ok := r.Context().Value("claims").(map[string]interface{})
 	if !ok {
 		handleError(w, fmt.Errorf("user claims are missing or invalid"))
 		return
 	}
 
-	username, exists := claims["username"]
-	if !exists {
-		handleError(w, fmt.Errorf("username is missing"))
+	// 3. ดึง username จาก claims เพื่อใช้เป็น confirmBy
+	confirmBy, ok := claims["username"].(string)
+	if !ok || confirmBy == "" {
+		handleError(w, fmt.Errorf("username is missing or invalid"))
 		return
 	}
-	confirmBy, ok := username.(string)
-	// Validate if the orderNo exists
-	order, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo, confirmBy)
+
+	// 4. เรียกใช้ service layer เพื่อดำเนินการ confirm
+	err := app.Service.BefRO.ConfirmSaleReturn(r.Context(), orderNo, confirmBy)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
-	if order == nil {
-		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
-		return
-	} */
 
+	// 5. สร้าง response และส่งกลับ
+	response := res.ConfirmSaleReturnResponse{
+		OrderNo:   orderNo,
+		ConfirmBy: confirmBy,
+	}
+	handleResponse(w, true, "Sale return order confirmed successfully", response, http.StatusOK)
 }
 
 // CancelSaleReturn godoc
@@ -496,25 +506,55 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/cancel/{orderNo} [post]
 func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request) {
+	// 1. รับค่า orderNo จาก URL parameter
 	orderNo := chi.URLParam(r, "orderNo")
+	if orderNo == "" {
+		http.Error(w, "OrderNo is required", http.StatusBadRequest)
+		return
+	}
+
+	// 2. ตรวจสอบว่า order มีอยู่จริง
+	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+	if existingOrder == nil {
+		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
+		return
+	}
+
+	// 3. รับและตรวจสอบข้อมูล request body
 	var req request.CancelSaleReturnRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
+	// 4. ตรวจสอบข้อมูลที่จำเป็น
 	if req.CancelBy == "" {
 		http.Error(w, "CancelBy is required", http.StatusBadRequest)
 		return
 	}
+	if req.Remark == "" {
+		http.Error(w, "Remark is required", http.StatusBadRequest)
+		return
+	}
 
-	err := app.Service.BefRO.CancelSaleReturn(r.Context(), orderNo, req.CancelBy, req.Remark)
+	// 5. เรียกใช้ service
+	err = app.Service.BefRO.CancelSaleReturn(r.Context(), orderNo, req.CancelBy, req.Remark)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponse(w, true, "Sale return order canceled successfully", nil, http.StatusOK)
+	// 6. ส่ง response
+	response := res.CancelSaleReturnResponse{
+		RefID:    orderNo,
+		CancelBy: req.CancelBy,
+		Remark:   req.Remark,
+	}
+	handleResponse(w, true, "Sale return order canceled successfully", response, http.StatusOK)
 }
 
 func printOrderDetails(order *res.BeforeReturnOrderResponse) {

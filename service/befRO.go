@@ -4,6 +4,7 @@ import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 )
@@ -166,27 +167,54 @@ func (srv service) UpdateSaleReturn(ctx context.Context, orderNo string, srNo st
 }
 
 func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error {
-	srv.logger.Info("🏁 Starting sale return confirmation process", zap.String("OrderNo", orderNo), zap.String("ConfirmBy", confirmBy))
+	// 1. เริ่มต้น log การทำงาน
+	srv.logger.Info("🏁 Starting sale return confirmation process",
+		zap.String("OrderNo", orderNo),
+		zap.String("ConfirmBy", confirmBy))
 
+	// 2. เรียกใช้ repository layer เพื่อ update ข้อมูลในฐานข้อมูล
 	err := srv.befRORepo.ConfirmSaleReturn(ctx, orderNo, confirmBy)
 	if err != nil {
+		// 3. log error ถ้าเกิดข้อผิดพลาด
 		srv.logger.Error("❌ Failed to confirm sale return", zap.Error(err))
 		return err
 	}
 
-	srv.logger.Info("✅ Successfully confirmed sale return", zap.String("OrderNo", orderNo), zap.String("ConfirmBy", confirmBy))
+	// 4. บันทึก log เมื่อทำงานสำเร็จ
+	srv.logger.Info("✅ Successfully confirmed sale return",
+		zap.String("OrderNo", orderNo),
+		zap.String("ConfirmBy", confirmBy))
 	return nil
 }
 
 func (srv service) CancelSaleReturn(ctx context.Context, orderNo string, cancelBy string, remark string) error {
-	srv.logger.Info("🏁 Starting sale return cancellation process", zap.String("OrderNo", orderNo), zap.String("CancelBy", cancelBy))
+	// 1. บันทึก log เริ่มต้น
+	srv.logger.Info("🏁 Starting sale return cancellation process",
+		zap.String("OrderNo", orderNo),
+		zap.String("CancelBy", cancelBy))
 
-	err := srv.befRORepo.CancelSaleReturn(ctx, orderNo, cancelBy, remark)
+	// 2. ตรวจสอบสถานะปัจจุบันของ order
+	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to get order status", zap.Error(err))
+		return err
+	}
+	if order.StatusConfID == 3 {
+		srv.logger.Error("❌ Order already canceled",
+			zap.String("OrderNo", orderNo))
+		return fmt.Errorf("order already canceled")
+	}
+
+	// 3. เรียกใช้ repository layer
+	err = srv.befRORepo.CancelSaleReturn(ctx, orderNo, cancelBy, remark)
 	if err != nil {
 		srv.logger.Error("❌ Failed to cancel sale return", zap.Error(err))
 		return err
 	}
 
-	srv.logger.Info("✅ Successfully canceled sale return", zap.String("OrderNo", orderNo), zap.String("CancelBy", cancelBy))
+	// 4. บันทึก log เมื่อสำเร็จ
+	srv.logger.Info("✅ Successfully canceled sale return",
+		zap.String("OrderNo", orderNo),
+		zap.String("CancelBy", cancelBy))
 	return nil
 }
