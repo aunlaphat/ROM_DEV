@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth"
 	"go.uber.org/zap"
 )
 
@@ -26,8 +25,8 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
 		// middleware เพื่อตรวจสอบ authentication
-		r.Use(jwtauth.Verifier(app.TokenAuth))
-		r.Use(jwtauth.Authenticator)
+		/* r.Use(jwtauth.Verifier(app.TokenAuth))
+		r.Use(jwtauth.Authenticator) */
 
 		r.Get("/search/{soNo}", app.SearchSaleOrder)
 		r.Post("/create", app.CreateSaleReturn)
@@ -359,54 +358,20 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 		handleError(w, err)
 		return
 	}
-
-	if existingOrder != nil {
-		// If the order already exists, update the SR number
-		srNo := "SR123456" // Generate SR number (this is a placeholder, replace with actual SR number generation logic)
-		err = app.Service.BefRO.UpdateSaleReturn(r.Context(), req.OrderNo, srNo)
-		if err != nil {
-			handleError(w, err)
-			return
-		}
-
-		// Update the result with the new SR number
-		existingOrder.SrNo = srNo
-
-		fmt.Printf("\n📋 ========== Updated Sale Return Order ========== 📋\n")
-		printOrderDetails(existingOrder)
-		handleResponse(w, true, "Sale return order updated successfully", existingOrder, http.StatusOK)
+	if existingOrder == nil {
+		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
 		return
 	}
 
-	// If the order does not exist, create a new one
+	// Create a new order
 	result, err := app.Service.BefRO.CreateSaleReturn(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	// Generate SR number (this is a placeholder, replace with actual SR number generation logic)
-	srNo := "SR123456"
-
-	// Update the SR number in the database
-	err = app.Service.BefRO.UpdateSaleReturn(r.Context(), result.OrderNo, srNo)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	// Update the result with the new SR number
-	result.SrNo = srNo
-
-	/* // Check user role
-	userRole := r.Context().Value(middleware.ContextUserRole).(string)
-	if userRole == "ACCOUNTING" {
-		// Show "Create CN" button for accounting role
-		handleResponse(w, true, "Sale return order created successfully. You can create CN.", result, http.StatusOK)
-	} else {
-		// Do not show "Create CN" button for other roles
-		handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
-	} */
+	fmt.Printf("\n📋 ========== Created Sale Return Order ========== 📋\n")
+	printOrderDetails(result)
 	handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
 }
 

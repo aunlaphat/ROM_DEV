@@ -660,7 +660,8 @@ func (repo repositoryDB) UpdateSaleReturn(ctx context.Context, orderNo string, s
 	// 1. กำหนด SQL query
 	query := `
         UPDATE BeforeReturnOrder
-        SET SrNo = :SrNo
+        SET SrNo = :SrNo,
+            UpdateDate = GETDATE()
         WHERE OrderNo = :OrderNo
     `
 	// 2. กำหนด parameters
@@ -694,6 +695,7 @@ func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, orderNo string, 
         SET StatusReturnID = 1, -- Pending status
             StatusConfID = 1,   -- Draft status
             ConfirmBy = :ConfirmBy
+			ComfirmDate = GETDATE()
         WHERE OrderNo = :OrderNo
     `
 	// 2. กำหนด parameters สำหรับ query
