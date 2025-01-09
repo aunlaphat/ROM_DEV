@@ -347,20 +347,14 @@
                             ]
                         }
                     },
-                    "204": {
-                        "description": "No Content, Order Delete Successfully",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
                     "404": {
                         "description": "Order Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }

@@ -5,8 +5,10 @@ package api
 // ส่งคำขอไปยัง service เพื่อขอให้ดึงข้อมูลที่ต้องการออกมา แต่ service จะทำการ validation ก่อนเพื่อตรวจข้อผิดพลาดก่อนจะดึง query ออกมาจาก repo ให้
 // api handle error about res req send error to client ex. 400 500 401
 // service handle error about business logic/ relation data send error to api
+// ตรวจสอบส่วนหน้า ส่วนที่รับมาจาก client เช่น input ที่ถูกป้อนเข้ามา
 import (
 	request "boilerplate-backend-go/dto/request"
+	"boilerplate-backend-go/errors"
 	"encoding/json"
 	"net/http"
 
@@ -15,13 +17,13 @@ import (
 
 func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
 	apiRouter.Route("/reorder", func(r chi.Router) {
-		r.Get("/allget", app.AllGetReturnOrder)                 			// GET /reorder/allget
-		r.Get("/getbyID/{returnID}", app.GetReturnOrderID)      			// GET /reorder/getbyID/{returnID}
-		r.Get("/allgetline", app.GetAllReturnOrderLines)					// GET /reorder/allgetline
+		r.Get("/allget", app.AllGetReturnOrder)                             // GET /reorder/allget
+		r.Get("/getbyID/{returnID}", app.GetReturnOrderID)                  // GET /reorder/getbyID/{returnID}
+		r.Get("/allgetline", app.GetAllReturnOrderLines)                    // GET /reorder/allgetline
 		r.Get("/getlinebyID/{returnID}", app.GetReturnOrderLinesByReturnID) // GET /reorder/getlinebyID/{returnID}
-		r.Post("/create", app.CreateReturnOrder)           	    			// POST /reorder/create
-		r.Patch("/update/{returnID}", app.UpdateReturnOrder)    			// PUT /reorder/update/{returnID}
-		r.Delete("/delete/{returnID}", app.DeleteReturnOrder)   			// DELETE /reorder/delete/{returnID}
+		r.Post("/create", app.CreateReturnOrder)                            // POST /reorder/create
+		r.Patch("/update/{returnID}", app.UpdateReturnOrder)                // PUT /reorder/update/{returnID}
+		r.Delete("/delete/{returnID}", app.DeleteReturnOrder)               // DELETE /reorder/delete/{returnID}
 	})
 }
 
@@ -38,12 +40,13 @@ func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
 // @Router 		/reorder/allget [get]
 func (api *Application) AllGetReturnOrder(w http.ResponseWriter, r *http.Request) {
 
-	res, err := api.Service.ReturnOrder.AllGetReturnOrder()
+	result, err := api.Service.ReturnOrder.AllGetReturnOrder(r.Context())
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, response, res, http.StatusOK)
+
+	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
 }
 
 // @Summary      Get Return Order by ID
@@ -60,17 +63,23 @@ func (api *Application) AllGetReturnOrder(w http.ResponseWriter, r *http.Request
 // @Router       /reorder/getbyID/{returnID} [get]
 func (app *Application) GetReturnOrderID(w http.ResponseWriter, r *http.Request) {
 
-	returnID := chi.URLParam(r, "returnID") //รับค่าจากพาทเพื่อดึงข้อมูล returnid ตาม ReturnID in db
-	res, err := app.Service.ReturnOrder.GetReturnOrderByID(returnID)
-	if err != nil {
-		HandleError(w, err)
+	returnID := chi.URLParam(r, "returnID")
+	if returnID == "" { 
+		handleError(w, errors.ValidationError("ReturnID is required"))
 		return
 	}
-	handleResponse(w, true, response, res, http.StatusOK)
+
+	result, err := app.Service.ReturnOrder.GetReturnOrderByID(r.Context(), returnID)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "Order retrieved successfully", result, http.StatusOK)
 }
 
 // @Summary 	Get Return Order Line
-// @Description Get all Return Order Line 
+// @Description Get all Return Order Line
 // @ID 			Allget-ReturnOrderLine
 // @Tags 		ReturnOrder
 // @Accept 		json
@@ -81,13 +90,13 @@ func (app *Application) GetReturnOrderID(w http.ResponseWriter, r *http.Request)
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/reorder/allgetline [get]
 func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Request) {
-	lines, err := app.Service.ReturnOrder.GetAllReturnOrderLines()
+	result, err := app.Service.ReturnOrder.GetAllReturnOrderLines(r.Context())
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponse(w, true, "return order lines fetched successfully", lines, http.StatusOK)
+	handleResponse(w, true, "Order lines retrieved successfully", result, http.StatusOK)
 }
 
 // @Summary      Get Return Order Line by ID
@@ -105,17 +114,18 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *http.Request) {
 	returnID := chi.URLParam(r, "returnID")
 	if returnID == "" {
-		http.Error(w, "returnID is required", http.StatusBadRequest)
+		handleError(w, errors.ValidationError("ReturnID is required"))
 		return
 	}
 
-	lines, err := app.Service.ReturnOrder.GetReturnOrderLinesByReturnID(returnID)
+	result, err := app.Service.ReturnOrder.GetReturnOrderLinesByReturnID(r.Context(), returnID)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponse(w, true, "return order lines fetched successfully", lines, http.StatusOK)
+	handleResponse(w, true, "Order lines retrieved successfully", result, http.StatusOK)
+
 }
 
 // @Summary 	Create Order
@@ -132,35 +142,31 @@ func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *
 func (api *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request) {
 	var req request.CreateReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		handleError(w, errors.BadRequestError("Invalid JSON format"))
 		return
 	}
 
 	// Validate required fields
 	if req.ReturnID == "" || req.OrderNo == "" {
-		http.Error(w, "ReturnID and OrderNo are required", http.StatusBadRequest)
+		handleError(w, errors.BadRequestError("ReturnID or OrderNo are required"))
 		return
 	}
 
 	// Validate nested fields
 	for _, line := range req.ReturnOrderLine {
 		if line.ReturnQTY <= 0 {
-			http.Error(w, "Invalid ReturnQTY in ReturnOrderLine", http.StatusBadRequest)
+			handleError(w, errors.BadRequestError("Invalid ReturnQTY in ReturnOrderLine"))
 			return
 		}
 	}
 
-	err := api.Service.ReturnOrder.CreateReturnOrder(req)
+	err := api.Service.ReturnOrder.CreateReturnOrder(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "Return order created successfully",
-	})
+	handleResponse(w, true, "Return order created successfully", nil, http.StatusCreated)
 }
 
 // @Summary Update Order
@@ -177,35 +183,29 @@ func (api *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /reorder/update/{returnID} [patch]
 func (api *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request) {
-    // ดึง ReturnID จากพาธ
-    returnID := chi.URLParam(r, "returnID")
-    if returnID == "" {
-        http.Error(w, "ReturnID is required in the path", http.StatusBadRequest)
+	// ดึง ReturnID จากพาธ
+	returnID := chi.URLParam(r, "returnID")
+	if returnID == "" {
+		handleError(w, errors.ValidationError("ReturnID is required in the path"))
+		return
+	}
+
+	// Decode JSON Payload เพื่ออัปเดตฟิลด์ที่กำหนด
+	var req request.UpdateReturnOrder
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, errors.BadRequestError("Invalid JSON format"))
+		return
+	}
+
+	// กำหนด ReturnID จากพาธ
+	req.ReturnID = returnID
+	err := api.Service.ReturnOrder.UpdateReturnOrder(r.Context(), req)
+    if err != nil {
+        handleError(w, err)
         return
     }
 
-    // Decode JSON Payload เพื่ออัปเดตฟิลด์ที่กำหนด
-    var req request.UpdateReturnOrder
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "Invalid JSON format", http.StatusBadRequest)
-        return
-    }
-
-    // กำหนด ReturnID จากพาธ
-    req.ReturnID = returnID
-
-    // เรียก Service เพื่ออัปเดตข้อมูล
-    if err := api.Service.ReturnOrder.UpdateReturnOrder(req); err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-
-    // ตอบกลับเมื่อสำเร็จ
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "success": true,
-        "message": "Return order updated successfully",
-    })
+	handleResponse(w, true, "Return order updated successfully", nil, http.StatusOK)
 }
 
 // @Summary 	Delete Order
@@ -224,18 +224,15 @@ func (api *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 func (api *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request) {
 	returnID := chi.URLParam(r, "returnID")
 	if returnID == "" {
-		http.Error(w, "ReturnID is required in the path", http.StatusBadRequest)
+		handleError(w, errors.ValidationError("ReturnID is required in the path"))
 		return
 	}
 
-	if err := api.Service.ReturnOrder.DeleteReturnOrder(returnID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	err := api.Service.ReturnOrder.DeleteReturnOrder(r.Context(), returnID)
+    if err != nil {
+        handleError(w, err)
+        return
+    }
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "Return order deleted successfully",
-	})
+	handleResponse(w, true, "Return order deleted successfully", nil, http.StatusOK)
 }

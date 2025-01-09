@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // เพิ่ม constant สำหรับ timeout
@@ -38,9 +40,9 @@ type BefRORepository interface {
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 
 	//SO
-	GetAllOrderDetail() ([]response.OrderDetail, error)
-	GetAllOrderDetails(offset, limit int) ([]response.OrderDetail, error)
-	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
+	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
+	GetAllOrderDetails(ctx context.Context, offset, limit int) ([]response.OrderDetail, error)
+	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
 
 	// Update
 	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
@@ -51,7 +53,7 @@ type BefRORepository interface {
 	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
 
 	//Cancle
-	DeleteBeforeReturnOrderLine(recID string) error
+	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
 
 	//Search
 	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
@@ -249,10 +251,7 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 	return orders, nil
 }
 
-func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+func (repo repositoryDB) GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error) {
 	var headDetails []response.OrderHeadDetail
 	var lineDetails []response.OrderLineDetail
 
@@ -293,10 +292,7 @@ func (repo repositoryDB) GetAllOrderDetail() ([]response.OrderDetail, error) {
 	}, nil
 }
 
-func (repo repositoryDB) GetAllOrderDetails(offset, limit int) ([]response.OrderDetail, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit int) ([]response.OrderDetail, error) {
 	var headDetails []response.OrderHeadDetail
 	var lineDetails []response.OrderLineDetail
 
@@ -344,10 +340,7 @@ func (repo repositoryDB) GetAllOrderDetails(offset, limit int) ([]response.Order
 	}, nil
 }
 
-func (repo repositoryDB) GetOrderDetailBySO(soNo string) (*response.OrderDetail, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+func (repo repositoryDB) GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error) {
 	var headDetails []response.OrderHeadDetail
 	var lineDetails []response.OrderLineDetail
 
@@ -814,35 +807,23 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 	return nil
 }
 
-func (repo repositoryDB) DeleteBeforeReturnOrderLine(recID string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (repo repositoryDB) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {
+	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
+		// ลบ BeforeReturnOrderLine ตาม RecID
+		deleteQuery := `
+			DELETE FROM BeforeReturnOrderLine
+			WHERE RecID = :RecID
+		`
 
-	tx, err := repo.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("failed to start transaction: %w", err)
-	}
-	defer handleTransaction(tx)()
+		_, err := tx.NamedExecContext(ctx, deleteQuery, map[string]interface{}{
+			"RecID": recID,
+		})
+		if err != nil {
+			log.Printf("Error deleting BeforeReturnOrderLine by RecID: %v", err)
+			return fmt.Errorf("failed to delete BeforeReturnOrderLine: %w", err)
+		}
 
-	// ลบ BeforeReturnOrderLine ตาม RecID
-	deleteQuery := `
-        DELETE FROM BeforeReturnOrderLine
-        WHERE RecID = :RecID
-    `
-	_, err = tx.NamedExecContext(ctx, deleteQuery, map[string]interface{}{
-		"RecID": recID,
+		// Transaction commit is handled by handleTransaction
+		return nil
 	})
-	if err != nil {
-		log.Printf("Error deleting BeforeReturnOrderLine by RecID: %v", err)
-		return fmt.Errorf("failed to delete BeforeReturnOrderLine: %w", err)
-	}
-
-	// Commit transaction
-	err = tx.Commit()
-	if err != nil {
-		log.Printf("Error committing transaction for DeleteBeforeReturnOrderLine: %v", err)
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return nil
 }

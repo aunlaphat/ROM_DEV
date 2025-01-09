@@ -5,108 +5,121 @@ package service
 import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
-
-	//"boilerplate-backend-go/errors"
+	"boilerplate-backend-go/errors"
+	"context"
 	"database/sql"
-	"fmt"
-	"log"
-	// "os"
-	// "time"
-	//"net/http"
+
+	"go.uber.org/zap"
 )
 
-type ReturnOrderService interface { // ตัวสื่อกลางในการรับส่งกับ api, ประมวลผลข้อมูลที่รับมาจาก api,
-	AllGetReturnOrder() ([]response.ReturnOrder, error)
-	GetReturnOrderByID(returnID string) (*response.ReturnOrder, error)
-	GetAllReturnOrderLines() ([]response.ReturnOrderLine, error)
-	GetReturnOrderLinesByReturnID(returnID string) ([]response.ReturnOrderLine, error)
-	CreateReturnOrder(req request.CreateReturnOrder) error
-	UpdateReturnOrder(req request.UpdateReturnOrder) error
-	DeleteReturnOrder(returnID string) error
+type ReturnOrderService interface { // ตัวสื่อกลางในการรับส่งกับ API และประมวลผลข้อมูลที่รับมาจาก API
+	AllGetReturnOrder(ctx context.Context) ([]response.ReturnOrder, error)
+	GetReturnOrderByID(ctx context.Context, returnID string) (*response.ReturnOrder, error)
+	GetAllReturnOrderLines(ctx context.Context) ([]response.ReturnOrderLine, error)
+	GetReturnOrderLinesByReturnID(ctx context.Context, returnID string) ([]response.ReturnOrderLine, error)
+	CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) error
+	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder) error
+	DeleteReturnOrder(ctx context.Context, returnID string) error
 }
 
-// service เชื่อมกับ repo ต่อเพื่อดึงข้อมูลออกมา แต่ต้องมีการ validation ก่อนดึง
-func (srv service) AllGetReturnOrder() ([]response.ReturnOrder, error) {
-	allorder, err := srv.returnOrderRepo.AllGetReturnOrder()
+// AllGetReturnOrder - ดึงข้อมูล ReturnOrder ทั้งหมด
+func (srv service) AllGetReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
+	allorder, err := srv.returnOrderRepo.AllGetReturnOrder(ctx)
 	if err != nil {
-		switch err {
-		case sql.ErrNoRows:
-			srv.logger.Error(err)
-			return nil, fmt.Errorf("no order data: %w", err)
-		default:
-			srv.logger.Error(err)
-			return nil, fmt.Errorf("get order error: %w", err)
-		}
+		srv.logger.Error("Error fetching all return orders", zap.Error(err))
+		return nil, errors.UnexpectedError()
 	}
+
 	return allorder, nil
 }
 
-func (srv service) GetReturnOrderByID(returnID string) (*response.ReturnOrder, error) {
-	idorder, err := srv.returnOrderRepo.GetReturnOrderByID(returnID)
-	if err != nil {
-		return nil, err
+// GetReturnOrderByID - ดึงข้อมูล ReturnOrder โดยใช้ ReturnID
+func (srv service) GetReturnOrderByID(ctx context.Context, returnID string) (*response.ReturnOrder, error) {
+	if returnID == "" {
+		return nil, errors.ValidationError("ReturnID is required")
 	}
+
+	idorder, err := srv.returnOrderRepo.GetReturnOrderByID(ctx, returnID)
+	if err != nil {
+		if err == sql.ErrNoRows { 
+			return nil, errors.NotFoundError("Return order not found")
+		}
+		srv.logger.Error("Error fetching ReturnOrder by ID", zap.Error(err))
+		return nil, errors.UnexpectedError()
+	}
+
 	return idorder, nil
 }
 
-func (srv service) GetAllReturnOrderLines() ([]response.ReturnOrderLine, error) {
-	lines, err := srv.returnOrderRepo.GetAllReturnOrderLines()
+// GetAllReturnOrderLines - ดึงข้อมูล ReturnOrderLine ทั้งหมด
+func (srv service) GetAllReturnOrderLines(ctx context.Context) ([]response.ReturnOrderLine, error) {
+	lines, err := srv.returnOrderRepo.GetAllReturnOrderLines(ctx)
 	if err != nil {
-		srv.logger.Error(err)
-		return nil, fmt.Errorf("get all return order lines error: %w", err)
+		srv.logger.Error("Error fetching all return order lines", zap.Error(err))
+		return nil, errors.UnexpectedError()
 	}
+
 	return lines, nil
 }
 
-func (srv service) GetReturnOrderLinesByReturnID(returnID string) ([]response.ReturnOrderLine, error) {
-	lines, err := srv.returnOrderRepo.GetReturnOrderLinesByReturnID(returnID)
-	if err != nil {
-		srv.logger.Error(err)
-		return nil, fmt.Errorf("get return order lines by ReturnID error: %w", err)
-	}
-	return lines, nil
-}
-
-func (srv service) CreateReturnOrder(req request.CreateReturnOrder) error {
-
-	// Validate input
-	if req.ReturnID == "" || req.OrderNo == "" {
-		return fmt.Errorf("ReturnID and OrderNo are required")
-	}
-
-	// Call the repository to create the return order
-	err := srv.returnOrderRepo.CreateReturnOrder(req)
-	if err != nil {
-		log.Printf("Error: failed to create return order: %v\n", err)
-		return fmt.Errorf("could not create return order: %w", err)
-	}
-
-	return nil
-}
-
-func (srv service) UpdateReturnOrder(req request.UpdateReturnOrder) error {
-	if req.ReturnID == "" {
-		return fmt.Errorf("ReturnID is required")
-	}
-
-	// ส่งไปยัง Repository Layer
-	err := srv.returnOrderRepo.UpdateReturnOrder(req)
-	if err != nil {
-		return fmt.Errorf("failed to update return order: %w", err)
-	}
-
-	return nil
-}
-
-func (srv service) DeleteReturnOrder(returnID string) error {
+// GetReturnOrderLinesByReturnID - ดึงข้อมูล ReturnOrderLine โดยใช้ ReturnID
+func (srv service) GetReturnOrderLinesByReturnID(ctx context.Context, returnID string) ([]response.ReturnOrderLine, error) {
 	if returnID == "" {
-		return fmt.Errorf("ReturnID is required")
+		return nil, errors.ValidationError("ReturnID is required")
 	}
 
-	// ส่งไปยัง Repository Layer
-	err := srv.returnOrderRepo.DeleteReturnOrder(returnID)
+	lines, err := srv.returnOrderRepo.GetReturnOrderLinesByReturnID(ctx, returnID)
 	if err != nil {
-		return fmt.Errorf("failed to delete return order: %w", err)
+		if err == sql.ErrNoRows {
+			return nil, errors.NotFoundError("No return order lines found for the given ReturnID")
+		}
+		srv.logger.Error("Error fetching return order lines by ReturnID", zap.Error(err))
+		return nil, errors.UnexpectedError()
+	}
+
+	return lines, nil
+}
+
+// CreateReturnOrder - สร้าง ReturnOrder ใหม่
+func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) error {
+	if req.ReturnID == "" || req.OrderNo == "" {
+		return errors.ValidationError("ReturnID or OrderNo are required")
+	}
+
+	err := srv.returnOrderRepo.CreateReturnOrder(ctx, req)
+	if err != nil {
+		srv.logger.Error("Error creating return order", zap.Error(err))
+		return errors.UnexpectedError()
+	}
+
+	return nil
+}
+
+// UpdateReturnOrder - อัปเดตข้อมูล ReturnOrder
+func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder) error {
+	if req.ReturnID == "" {
+		return errors.ValidationError("ReturnID is required")
+	}
+
+	err := srv.returnOrderRepo.UpdateReturnOrder(ctx, req)
+	if err != nil {
+		srv.logger.Error("Error updating ReturnOrder", zap.Error(err))
+		return errors.UnexpectedError()
+	}
+
+	return nil
+}
+
+// DeleteReturnOrder - ลบข้อมูล ReturnOrder
+func (srv service) DeleteReturnOrder(ctx context.Context, returnID string) error {
+	if returnID == "" {
+		return errors.ValidationError("ReturnID is required")
+	}
+
+	err := srv.returnOrderRepo.DeleteReturnOrder(ctx, returnID)
+	if err != nil {
+		srv.logger.Error("Error deleting ReturnOrder", zap.Error(err))
+		return errors.UnexpectedError()
 	}
 
 	return nil

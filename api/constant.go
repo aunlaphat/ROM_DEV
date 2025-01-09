@@ -39,7 +39,7 @@ func (app *Application) Constants(apiRouter *chi.Mux) {
 func (app *Application) GetThaiProvince(w http.ResponseWriter, r *http.Request) {
 	res, err := app.Service.Constant.GetThaiProvince()
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
@@ -59,7 +59,7 @@ func (app *Application) GetThaiProvince(w http.ResponseWriter, r *http.Request) 
 func (app *Application) GetThaiDistrict(w http.ResponseWriter, r *http.Request) {
 	res, err := app.Service.Constant.GetThaiDistrict()
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
@@ -79,7 +79,7 @@ func (app *Application) GetThaiDistrict(w http.ResponseWriter, r *http.Request) 
 func (app *Application) GetThaiSubDistrict(w http.ResponseWriter, r *http.Request) {
 	res, err := app.Service.Constant.GetThaiSubDistrict()
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
@@ -119,7 +119,7 @@ func (app *Application) GetThaiSubDistrict(w http.ResponseWriter, r *http.Reques
 func (app *Application) GetWarehouse(w http.ResponseWriter, r *http.Request) {
 	res, err := app.Service.Constant.GetWarehouse()
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
@@ -139,7 +139,7 @@ func (app *Application) GetWarehouse(w http.ResponseWriter, r *http.Request) {
 func (app *Application) GetProductAll(w http.ResponseWriter, r *http.Request) {
 	res, err := app.Service.Constant.GetProductAll()
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
@@ -173,7 +173,7 @@ func (app *Application) GetProductAlls(w http.ResponseWriter, r *http.Request) {
 
     products, total, err := app.Service.Constant.GetProductAllWithPagination(page, limit)
     if err != nil {
-        HandleError(w, err)
+        handleError(w, err)
         return
     }
 

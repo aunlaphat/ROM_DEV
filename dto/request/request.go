@@ -155,6 +155,7 @@ type UpdateReturnOrder struct {
 	StatusCheckID   *int            `json:"statusCheckId" db:"StatusCheckID" example:"1"`    
 	CheckBy         *string         `json:"checkBy" db:"CheckBy" example:"dev03"`                
 	Description     *string         `json:"description" db:"Description" example:""`
+	UpdateBy      	string  		`json:"-"`
 }
 
 type ReturnOrderLine struct {       

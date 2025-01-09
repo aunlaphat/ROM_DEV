@@ -2,6 +2,7 @@ package api
 
 import (
 	"boilerplate-backend-go/dto/request"
+	"boilerplate-backend-go/errors"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -132,13 +133,13 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/before-return-order/get-order [get]
 func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request) {
-
-	res, err := api.Service.BefRO.GetAllOrderDetail()
+	result, err := api.Service.BefRO.GetAllOrderDetail(r.Context())
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, response, res, http.StatusOK)
+
+	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
 }
 
 // @Summary 	Get Paginated Before Return Order
@@ -157,13 +158,13 @@ func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request
 func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Request) {
 	page, limit := parsePagination(r) // ฟังก์ชันช่วยดึง page และ limit จาก Query Parameters
 
-	res, err := api.Service.BefRO.GetAllOrderDetails(page, limit)
+	result, err := api.Service.BefRO.GetAllOrderDetails(r.Context(), page, limit)
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	}
 
-	handleResponse(w, true, response, res, http.StatusOK)
+	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
 }
 
 // Helper function: parsePagination
@@ -199,13 +200,13 @@ func parseInt(value string, defaultValue int) int {
 // @Failure      500      {object} Response "Internal Server Error"
 // @Router       /before-return-order/get-orderbySO/{soNo} [get]
 func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Request) {
-
-	soNo := chi.URLParam(r, "soNo") //รับค่าจากพาทเพื่อดึงข้อมูล returnid ตาม ReturnID in db
-	res, err := app.Service.BefRO.GetOrderDetailBySO(soNo)
+	soNo := chi.URLParam(r, "soNo")
+	res, err := app.Service.BefRO.GetOrderDetailBySO(r.Context(), soNo)
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	}
+
 	handleResponse(w, true, response, res, http.StatusOK)
 }
 
@@ -289,7 +290,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
+	handleResponse(w, true, "created trade return successfully", result, http.StatusCreated)
 }
 
 // UpdateBeforeReturnOrderWithLines godoc
@@ -332,26 +333,21 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Produce 	json
 // @Param 		recID path string true "Rec ID"
 // @Success 	200 {object} Response{result=string} "Before ReturnOrderLine Deleted"
-// @Success 	204 {object} Response "No Content, Order Delete Successfully"
-// @Failure 	400 {object} Response "Bad Request"
 // @Failure 	404 {object} Response "Order Not Found"
+// @Failure 	422 {object} Response "Validation Error"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/before-return-order/delete-befodline/{recID} [delete]
 func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *http.Request) {
 	recID := chi.URLParam(r, "recID")
 	if recID == "" {
-		http.Error(w, "RecID is required in the path", http.StatusBadRequest)
+		handleError(w, errors.ValidationError("ReturnID is required in the path"))
 		return
 	}
 
-	if err := api.Service.BefRO.DeleteBeforeReturnOrderLine(recID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := api.Service.BefRO.DeleteBeforeReturnOrderLine(r.Context(), recID); err != nil {
+		handleError(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "Return order deleted successfully",
-	})
+	handleResponse(w, true, "Return order deleted successfully", nil, http.StatusOK)
 }

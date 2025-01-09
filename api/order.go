@@ -34,7 +34,7 @@ func (app *Application) Orders(apiRouter *chi.Mux) {
 func (api *Application) AllGetOrder(w http.ResponseWriter, r *http.Request) {
 	res, err := api.Service.Order.AllGetOrder()
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	}
 	handleResponse(w, true, response, res, http.StatusOK)
@@ -58,7 +58,7 @@ func (app *Application) GetOrderID(w http.ResponseWriter, r *http.Request) {
 	// เรียกใช้ Service เพื่อประมวลผล ตรวจสอบ ก่อนที่จะเข้า method query ตาม api ที่ส่งไป
 	res, err := app.Service.Order.GetOrderID(orderNo)
 	if err != nil {
-		HandleError(w, err)
+		handleError(w, err)
 		return
 	} // ดักข้อผิดพลาดที่อาจเกิดตอนเข้าถึงพาทนั้นๆ
 

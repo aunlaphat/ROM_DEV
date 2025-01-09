@@ -16,15 +16,15 @@ type BefROService interface {
 
 	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
-	GetAllOrderDetail() ([]response.OrderDetail, error)
-	GetAllOrderDetails(page, limit int) ([]response.OrderDetail, error)
+	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
+	GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error)
 
-	GetOrderDetailBySO(soNo string) (*response.OrderDetail, error)
+	GetOrderDetailBySO(ctx context.Context,soNo string) (*response.OrderDetail, error)
 	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
 
 	CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
-	DeleteBeforeReturnOrderLine(recID string) error
+	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
 }
 
 func (srv service) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
@@ -71,9 +71,8 @@ func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderN
 	return lines, nil
 }
 
-// service เชื่อมกับ repo ต่อเพื่อดึงข้อมูลออกมา แต่ต้องมีการ validation ก่อนดึง
-func (srv service) GetAllOrderDetail() ([]response.OrderDetail, error) {
-	allorder, err := srv.befRORepo.GetAllOrderDetail()
+func (srv service) GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error) {
+	allorder, err := srv.befRORepo.GetAllOrderDetail(ctx)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -87,10 +86,10 @@ func (srv service) GetAllOrderDetail() ([]response.OrderDetail, error) {
 	return allorder, nil
 }
 
-func (srv service) GetAllOrderDetails(page, limit int) ([]response.OrderDetail, error) {
-	offset := (page - 1) * limit // คำนวณ Offset
+func (srv service) GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error) {
+	offset := (page - 1) * limit
 
-	allorder, err := srv.befRORepo.GetAllOrderDetails(offset, limit)
+	allorder, err := srv.befRORepo.GetAllOrderDetails(ctx, offset, limit)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -105,8 +104,8 @@ func (srv service) GetAllOrderDetails(page, limit int) ([]response.OrderDetail, 
 }
 
 
-func (srv service) GetOrderDetailBySO(soNo string) (*response.OrderDetail, error) {
-	soOrder, err := srv.befRORepo.GetOrderDetailBySO(soNo)
+func (srv service) GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error) {
+	soOrder, err := srv.befRORepo.GetOrderDetailBySO(ctx, soNo)
 	if err != nil {
 		return nil, err
 	}
@@ -167,13 +166,13 @@ func (srv service) UpdateBeforeReturnOrderWithLines(ctx context.Context, req req
 	return updatedOrder, nil
 }
 
-func (srv service) DeleteBeforeReturnOrderLine(recID string) error {
+func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {
 	if recID == "" {
 		return fmt.Errorf("RecID is required")
 	}
 
 	// ส่งไปยัง Repository Layer
-	err := srv.befRORepo.DeleteBeforeReturnOrderLine(recID)
+	err := srv.befRORepo.DeleteBeforeReturnOrderLine(ctx, recID)
 	if err != nil {
 		return fmt.Errorf("failed to delete before return order line: %w", err)
 	}

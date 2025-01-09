@@ -43,6 +43,13 @@ func UnauthorizedError(message string) error {
 	}
 }
 
+func BadRequestError(message string) error {
+	return AppError{
+		Code:    http.StatusBadRequest,
+		Message: message,
+	}
+}
+
 func ErrorHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {

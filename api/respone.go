@@ -1,7 +1,6 @@
 package api
 
 import (
-	"boilerplate-backend-go/errors"
 	"encoding/json"
 	"net/http"
 )
@@ -24,13 +23,4 @@ func handleResponse(w http.ResponseWriter, success bool, message string, result 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(response)
-}
-
-func HandleError(w http.ResponseWriter, err error) {
-	switch e := err.(type) {
-	case errors.AppError:
-		handleResponse(w, false, e.Message, nil, e.Code)
-	default:
-		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
-	}
 }
