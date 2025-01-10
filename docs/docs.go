@@ -85,7 +85,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.LoginWeb"
+                            "$ref": "#/definitions/request.Login"
                         }
                     }
                 ],
@@ -1457,25 +1457,25 @@ const docTemplate = `{
                 }
             }
         },
+        "request.Login": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "string"
+                },
+                "userID": {
+                    "type": "string",
+                    "example": "DC0000"
+                }
+            }
+        },
         "request.LoginLark": {
             "type": "object",
             "properties": {
                 "userID": {
                     "type": "string",
                     "example": "DC99999"
-                },
-                "userName": {
-                    "type": "string",
-                    "example": "eknarin"
-                }
-            }
-        },
-        "request.LoginWeb": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string",
-                    "example": "asdfhdskjf"
                 },
                 "userName": {
                     "type": "string",

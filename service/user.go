@@ -14,29 +14,30 @@ import (
 )
 
 type UserService interface {
-	Login(req request.LoginWeb) (response.Login, error)
+	Login(req request.Login) (response.Login, error)
 	LoginLark(req request.LoginLark) (response.Login, error)
 	GetUser(ctx context.Context, username, password string) (response.Login, error)
 	GetUserWithPermission(ctx context.Context, username, password string) (response.UserPermission, error)
 }
 
-func (srv service) Login(req request.LoginWeb) (response.Login, error) {
+func (srv service) Login(req request.Login) (response.Login, error) {
 	res := response.Login{}
-	if req.UserName == "" || req.Password == "" {
-		return res, errors.ValidationError("username or password must not be null")
+	if req.UserID == "" || req.Password == "" {
+		return res, errors.ValidationError("userid or password must not be null")
 	}
 
 	hasher := md5.New()
 	hasher.Write([]byte(req.Password))
 	hashedPassword := hex.EncodeToString(hasher.Sum(nil))
 	ctx := context.Background()
-	user, err := srv.userRepo.GetUser(ctx, req.UserName, hashedPassword)
+	user, err := srv.userRepo.GetUser(ctx, req.UserID, hashedPassword)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
+			srv.logger.Warn("❌ No user found with provided credentials", zap.String("userid", req.UserID))
 			return res, errors.UnauthorizedError("username or password is not valid")
 		default:
-			srv.logger.Error(err)
+			srv.logger.Error("❌ Unexpected error occurred while getting user", zap.Error(err))
 			return res, errors.UnexpectedError()
 		}
 	}
@@ -67,7 +68,7 @@ func (srv service) GetUser(ctx context.Context, username, password string) (resp
 	srv.logger.Debug("🚀 Starting GetUser", zap.String("username", username))
 
 	user, err := srv.userRepo.GetUser(ctx, username, password)
-	if err != nil {
+	if (err != nil) {
 		srv.logger.Error("❌ Failed to get user", zap.Error(err))
 		return response.Login{}, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -80,7 +81,7 @@ func (srv service) GetUserWithPermission(ctx context.Context, username, password
 	srv.logger.Debug("🚀 Starting GetUser", zap.String("username", username))
 
 	user, err := srv.userRepo.GetUserWithPermission(ctx, username, password)
-	if err != nil {
+	if (err != nil) {
 		srv.logger.Error("❌ Failed to get user", zap.Error(err))
 		return response.UserPermission{}, fmt.Errorf("failed to get user: %w", err)
 	}

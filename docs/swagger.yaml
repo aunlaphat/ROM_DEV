@@ -157,19 +157,19 @@ definitions:
       remark:
         type: string
     type: object
+  request.Login:
+    properties:
+      password:
+        example: string
+        type: string
+      userID:
+        example: DC0000
+        type: string
+    type: object
   request.LoginLark:
     properties:
       userID:
         example: DC99999
-        type: string
-      userName:
-        example: eknarin
-        type: string
-    type: object
-  request.LoginWeb:
-    properties:
-      password:
-        example: asdfhdskjf
         type: string
       userName:
         example: eknarin
@@ -394,7 +394,7 @@ paths:
         name: login-request
         required: true
         schema:
-          $ref: '#/definitions/request.LoginWeb'
+          $ref: '#/definitions/request.Login'
       produces:
       - application/json
       responses:

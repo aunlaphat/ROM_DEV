@@ -50,7 +50,7 @@ func (app *Application) GenerateToken(tokenData res.Login) string {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param login-request body request.LoginWeb true "User login credentials in JSON format"
+// @Param login-request body request.Login true "User login credentials in JSON format"
 // @Success 200 {object} Response{result=string} "JWT token"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
@@ -64,7 +64,7 @@ func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. รับข้อมูล login จาก request body
-	req := req.LoginWeb{}
+	req := req.Login{}
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		handleError(w, err)
