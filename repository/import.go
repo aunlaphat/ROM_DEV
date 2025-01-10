@@ -40,28 +40,38 @@ func (repo repositoryDB) FetchReturnDetailsBySaleOrder(ctx context.Context, sale
 
 // InsertImageMetadata inserts image metadata into the database
 func (repo repositoryDB) InsertImageMetadata(ctx context.Context, image request.Image) (int, error) {
-	log.Printf("Repository: Inserting image metadata for ReturnID: %s, OrderNo: %s", image.ReturnID, image.OrderNo)
-
 	query := `
-		INSERT INTO Images (ReturnID, SKU, FilePath, ImageTypeID, CreateBy, CreateDate, OrderNo)
-		VALUES (@ReturnID, @SKU, @FilePath, @ImageTypeID, @CreateBy, GETDATE(), @OrderNo);
+		INSERT INTO Images (ReturnID, SKU, OrderNo, FilePath, ImageTypeID, CreateBy, CreateDate)
+		VALUES (:ReturnID, :SKU, :OrderNo, :FilePath, :ImageTypeID, :CreateBy, GETDATE());
 		SELECT SCOPE_IDENTITY();
 	`
 
+	params := map[string]interface{}{
+		"ReturnID":    image.ReturnID,
+		"SKU":         image.SKU,
+		"OrderNo":     image.OrderNo,
+		"FilePath":    image.FilePath,
+		"ImageTypeID": image.ImageTypeID,
+		"CreateBy":    image.CreateBy,
+	}
+
 	var imageID int
-	err := repo.db.QueryRowContext(ctx, query,
-		sql.Named("ReturnID", image.ReturnID),
-		sql.Named("SKU", image.SKU),
-		sql.Named("FilePath", image.FilePath),
-		sql.Named("ImageTypeID", image.ImageTypeID),
-		sql.Named("CreateBy", image.CreateBy),
-		sql.Named("OrderNo", image.OrderNo),
-	).Scan(&imageID)
+	rows, err := repo.db.NamedQuery(query, params)
 	if err != nil {
 		log.Printf("Repository: Error inserting image metadata - %v", err)
-		return 0, fmt.Errorf("failed to insert image metadata: %w", err)
+		return 0, fmt.Errorf("error inserting image metadata: %w", err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.Scan(&imageID)
+		if err != nil {
+			log.Printf("Error scanning inserted image ID - %v", err)
+			return 0, fmt.Errorf("error scanning inserted image ID: %w", err)
+		}
 	}
 
 	log.Printf("Repository: Successfully inserted image metadata with ImageID: %d", imageID)
 	return imageID, nil
 }
+
