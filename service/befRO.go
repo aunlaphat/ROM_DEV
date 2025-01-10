@@ -3,6 +3,7 @@ package service
 import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
+	"boilerplate-backend-go/errors"
 	"context"
 	"database/sql"
 	"fmt"
@@ -168,13 +169,13 @@ func (srv service) UpdateBeforeReturnOrderWithLines(ctx context.Context, req req
 
 func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {
 	if recID == "" {
-		return fmt.Errorf("RecID is required")
+		return errors.ValidationError("ReturnID is required")
 	}
 
-	// ส่งไปยัง Repository Layer
 	err := srv.befRORepo.DeleteBeforeReturnOrderLine(ctx, recID)
 	if err != nil {
-		return fmt.Errorf("failed to delete before return order line: %w", err)
+		srv.logger.Error("failed to delete before return order line: ", zap.Error(err))
+		return errors.UnexpectedError()
 	}
 
 	return nil

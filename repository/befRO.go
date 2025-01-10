@@ -305,6 +305,7 @@ func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit i
     `
 	err := repo.db.SelectContext(ctx, &headDetails, headQuery, sql.Named("offset", offset), sql.Named("limit", limit))
 	if err != nil {
+		log.Printf("Error querying OrderHeadDetail: %v", err)
 		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
 	}
 
@@ -322,6 +323,7 @@ func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit i
     `
 	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("offset", offset), sql.Named("limit", limit))
 	if err != nil {
+		log.Printf("Error querying OrderLineDetail: %v", err)
 		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
 	}
 
@@ -353,9 +355,10 @@ func (repo repositoryDB) GetOrderDetailBySO(ctx context.Context, soNo string) (*
 	err := repo.db.SelectContext(ctx, &headDetails, headQuery, sql.Named("SoNo", soNo))
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("no order head found for SoNo: %s", soNo)
+			return nil, sql.ErrNoRows
 		}
-		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
+		log.Printf("Error querying OrderHeadDetail by SO: %v", err)
+		return nil, fmt.Errorf("error querying OrderHeadDetail by SO: %w", err)
 	}
 
 	// Query Order Line
@@ -366,7 +369,8 @@ func (repo repositoryDB) GetOrderDetailBySO(ctx context.Context, soNo string) (*
     `
 	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("SoNo", soNo))
 	if err != nil {
-		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+		log.Printf("Error querying OrderLineDetail by SO: %v", err)
+		return nil, fmt.Errorf("error querying OrderLineDetail by SO: %w", err)
 	}
 
 	// Map Order Lines to Order Heads
@@ -823,7 +827,6 @@ func (repo repositoryDB) DeleteBeforeReturnOrderLine(ctx context.Context, recID 
 			return fmt.Errorf("failed to delete BeforeReturnOrderLine: %w", err)
 		}
 
-		// Transaction commit is handled by handleTransaction
 		return nil
 	})
 }

@@ -152,7 +152,7 @@ func (api *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Validate nested fields
+	// จำนวนสินค้าที่คืนไม่ถูกต้อง เช่น ค่าติดลบหรือเป็น 0
 	for _, line := range req.ReturnOrderLine {
 		if line.ReturnQTY <= 0 {
 			handleError(w, errors.BadRequestError("Invalid ReturnQTY in ReturnOrderLine"))

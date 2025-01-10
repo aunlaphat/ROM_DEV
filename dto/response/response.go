@@ -139,9 +139,3 @@ type ImageResponse struct {
 	ImageID  int    `json:"imageID"`
 	FilePath string `json:"filePath"`
 }
-
-type BaseResponse struct {
-    Success bool        `json:"success"`
-    Message string      `json:"message,omitempty"`
-    Data    interface{} `json:"data,omitempty"`
-}

@@ -514,14 +514,6 @@ definitions:
         example: 12345678TH
         type: string
     type: object
-  response.BaseResponse:
-    properties:
-      data: {}
-      message:
-        type: string
-      success:
-        type: boolean
-    type: object
   response.Login:
     properties:
       department:
@@ -1354,48 +1346,47 @@ paths:
       summary: Get Warehouse
       tags:
       - Constants
-  /images/upload:
+  /importorder/salereturn:
     post:
       consumes:
       - multipart/form-data
-      description: Handle image upload for return process
-      operationId: upload-images
+      description: Upload multiple images for a specific SaleOrder
       parameters:
-      - description: Image files to upload
+      - description: Sale Order Number
         in: formData
-        name: files
-        required: true
-        type: file
-      - description: number of order
-        in: formData
-        name: returnID
+        name: saleOrder
         required: true
         type: string
-      - description: SKU for one same model in img
-        in: formData
-        name: skus
-        type: string
-      - description: type image
+      - description: Type of the image (1, 2, or 3)
         in: formData
         name: imageTypeID
         required: true
         type: integer
+      - description: SKU (Optional)
+        in: formData
+        name: sku
+        type: string
+      - description: Files to upload
+        in: formData
+        name: files
+        required: true
+        type: file
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Successful upload
           schema:
-            $ref: '#/definitions/response.BaseResponse'
+            $ref: '#/definitions/api.Response'
         "400":
-          description: Bad Request
+          description: Invalid input
           schema:
             $ref: '#/definitions/api.Response'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Upload images for return order
+      summary: Upload images for import order
       tags:
       - Import Order
   /orders/allgetorder:

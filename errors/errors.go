@@ -50,6 +50,13 @@ func BadRequestError(message string) error {
 	}
 }
 
+func InternalError(message string) error {
+	return AppError{
+		Code:    http.StatusInternalServerError,
+		Message: message,
+	}
+}
+
 func ErrorHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {

@@ -2,137 +2,66 @@ package repository
 
 import (
 	"boilerplate-backend-go/dto/request"
+	"context"
+	"database/sql"
 	"fmt"
-	// "database/sql"
+	"log"
 )
 
 type ImportOrderRepository interface {
-	InsertImageMetadataWithOrderNo(image request.Image) (int, error)
-	// GetLastImageTypeByReturnID(returnID string) (int, error)
-	CheckReturnIDExists(returnID string) (bool, error)
-	// CheckDuplicateFileName(returnID, fileName string, imageType int) (bool, error)
-	CheckDuplicateFileName(returnID, fileName string) (bool, error)
+	FetchReturnDetailsBySaleOrder(ctx context.Context, saleOrder string) (string, string, error)
+	InsertImageMetadata(ctx context.Context, image request.Image) (int, error)
 }
 
-func (repo repositoryDB) InsertImageMetadataWithOrderNo(image request.Image) (int, error) {
-    queryInsert := `
-        INSERT INTO Images (ReturnID, SKU, OrderNo, FilePath, ImageTypeID, CreateBy, CreateDate)
-        VALUES (
-            :ReturnID, 
-            :SKU, 
-            (SELECT OrderNo FROM ReturnOrder WHERE ReturnID = :ReturnID), -- ดึง OrderNo ระหว่าง Insert
-            :FilePath, 
-            :ImageTypeID, 
-            :CreateBy, 
-            GETDATE()
-        );
-        SELECT SCOPE_IDENTITY();
-    `
-    params := map[string]interface{}{
-        "ReturnID":    image.ReturnID,
-        "SKU":         image.SKU,
-        "FilePath":    image.FilePath,
-        "ImageTypeID": image.ImageTypeID,
-        "CreateBy":    image.CreateBy,
-    }
+// FetchReturnDetailsBySaleOrder retrieves ReturnID and OrderNo from SaleOrder
+func (repo repositoryDB) FetchReturnDetailsBySaleOrder(ctx context.Context, saleOrder string) (string, string, error) {
+	log.Printf("Repository: Fetching ReturnID and OrderNo for SaleOrder: %s", saleOrder)
 
-    var imageID int
-    rows, err := repo.db.NamedQuery(queryInsert, params)
-    if err != nil {
-        return 0, fmt.Errorf("error inserting image metadata with OrderNo: %w", err)
-    }
-    defer rows.Close()
-
-    if rows.Next() {
-        err = rows.Scan(&imageID)
-        if err != nil {
-            return 0, fmt.Errorf("error scanning imageID: %w", err)
-        }
-    }
-
-    return imageID, nil
-}
-
-
-// func (repo repositoryDB) GetLastImageTypeByReturnID(returnID string) (int, error) {
-//     var lastImageType int
-//     query := `
-//         SELECT TOP 1 ImageTypeID
-//         FROM Images
-//         WHERE ReturnID = :ReturnID
-//         ORDER BY CreateDate DESC
-//     `
-
-//     // ใช้ NamedQuery และ Scan ค่า
-//     rows, err := repo.db.NamedQuery(query, map[string]interface{}{"ReturnID": returnID})
-//     if err != nil {
-//         return 0, err
-//     }
-//     defer rows.Close()
-
-//     if rows.Next() {
-//         err = rows.Scan(&lastImageType)
-//         if err != nil {
-//             return 0, err
-//         }
-//     }
-//     return lastImageType, nil
-// }
-
-func (repo repositoryDB) CheckReturnIDExists(returnID string) (bool, error) {
-	var count int
 	query := `
-        SELECT COUNT(1) 
-        FROM ReturnOrder
-        WHERE ReturnID = :ReturnID
-    `
-	// ใช้ NamedQuery เพื่อส่งพารามิเตอร์ในรูปแบบ map
-	rows, err := repo.db.NamedQuery(query, map[string]interface{}{"ReturnID": returnID})
+		SELECT ReturnID, OrderNo
+		FROM ReturnOrder
+		WHERE SaleOrder = @SaleOrder
+	`
+
+	var returnID, orderNo string
+	err := repo.db.QueryRowContext(ctx, query, sql.Named("SaleOrder", saleOrder)).Scan(&returnID, &orderNo)
 	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-
-	// ดึงค่าจากผลลัพธ์
-	if rows.Next() {
-		err = rows.Scan(&count)
-		if err != nil {
-			return false, err
+		if err == sql.ErrNoRows {
+			log.Printf("Repository: No records found for SaleOrder: %s", saleOrder)
+			return "", "", fmt.Errorf("no records found for SaleOrder: %s", saleOrder)
 		}
+		log.Printf("Repository: Error querying database - %v", err)
+		return "", "", fmt.Errorf("database query error: %w", err)
 	}
-	return count > 0, nil
+
+	log.Printf("Repository: Successfully fetched ReturnID: %s, OrderNo: %s for SaleOrder: %s", returnID, orderNo, saleOrder)
+	return returnID, orderNo, nil
 }
 
-func (repo repositoryDB) CheckDuplicateFileName(returnID, fileName string) (bool, error) {
-    var count int
-    query := `
-        SELECT COUNT(1)
-        FROM Images
-        WHERE ReturnID = :ReturnID AND FilePath LIKE :FilePath
-    `
+// InsertImageMetadata inserts image metadata into the database
+func (repo repositoryDB) InsertImageMetadata(ctx context.Context, image request.Image) (int, error) {
+	log.Printf("Repository: Inserting image metadata for ReturnID: %s, OrderNo: %s", image.ReturnID, image.OrderNo)
 
-    params := map[string]interface{}{
-        "ReturnID": returnID,
-        "FilePath": "%" + fileName, // ตรวจสอบเฉพาะชื่อไฟล์จริง
-    }
+	query := `
+		INSERT INTO Images (ReturnID, SKU, FilePath, ImageTypeID, CreateBy, CreateDate, OrderNo)
+		VALUES (@ReturnID, @SKU, @FilePath, @ImageTypeID, @CreateBy, GETDATE(), @OrderNo);
+		SELECT SCOPE_IDENTITY();
+	`
 
-    rows, err := repo.db.NamedQuery(query, params)
-    if err != nil {
-        return false, fmt.Errorf("error checking duplicate file name: %w", err)
-    }
-    defer rows.Close()
+	var imageID int
+	err := repo.db.QueryRowContext(ctx, query,
+		sql.Named("ReturnID", image.ReturnID),
+		sql.Named("SKU", image.SKU),
+		sql.Named("FilePath", image.FilePath),
+		sql.Named("ImageTypeID", image.ImageTypeID),
+		sql.Named("CreateBy", image.CreateBy),
+		sql.Named("OrderNo", image.OrderNo),
+	).Scan(&imageID)
+	if err != nil {
+		log.Printf("Repository: Error inserting image metadata - %v", err)
+		return 0, fmt.Errorf("failed to insert image metadata: %w", err)
+	}
 
-    if rows.Next() {
-        err = rows.Scan(&count)
-        if err != nil {
-            return false, fmt.Errorf("error scanning duplicate file name result: %w", err)
-        }
-    }
-
-    return count > 0, nil
+	log.Printf("Repository: Successfully inserted image metadata with ImageID: %d", imageID)
+	return imageID, nil
 }
-
-
-
-
-

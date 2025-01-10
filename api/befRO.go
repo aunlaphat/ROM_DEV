@@ -201,6 +201,11 @@ func parseInt(value string, defaultValue int) int {
 // @Router       /before-return-order/get-orderbySO/{soNo} [get]
 func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Request) {
 	soNo := chi.URLParam(r, "soNo")
+	if soNo == "" { 
+		handleError(w, errors.ValidationError("soNo is required"))
+		return
+	}
+
 	res, err := app.Service.BefRO.GetOrderDetailBySO(r.Context(), soNo)
 	if err != nil {
 		handleError(w, err)
@@ -349,5 +354,5 @@ func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *ht
 		return
 	}
 
-	handleResponse(w, true, "Return order deleted successfully", nil, http.StatusOK)
+	handleResponse(w, true, "Order lines deleted successfully", nil, http.StatusOK)
 }

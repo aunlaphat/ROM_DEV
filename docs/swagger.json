@@ -1176,9 +1176,9 @@
                 }
             }
         },
-        "/images/upload": {
+        "/importorder/salereturn": {
             "post": {
-                "description": "Handle image upload for return process",
+                "description": "Upload multiple images for a specific SaleOrder",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1188,46 +1188,45 @@
                 "tags": [
                     "Import Order"
                 ],
-                "summary": "Upload images for return order",
-                "operationId": "upload-images",
+                "summary": "Upload images for import order",
                 "parameters": [
                     {
-                        "type": "file",
-                        "description": "Image files to upload",
-                        "name": "files",
+                        "type": "string",
+                        "description": "Sale Order Number",
+                        "name": "saleOrder",
                         "in": "formData",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "number of order",
-                        "name": "returnID",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "SKU for one same model in img",
-                        "name": "skus",
-                        "in": "formData"
                     },
                     {
                         "type": "integer",
-                        "description": "type image",
+                        "description": "Type of the image (1, 2, or 3)",
                         "name": "imageTypeID",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU (Optional)",
+                        "name": "sku",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Files to upload",
+                        "name": "files",
                         "in": "formData",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Successful upload",
                         "schema": {
-                            "$ref": "#/definitions/response.BaseResponse"
+                            "$ref": "#/definitions/api.Response"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid input",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2927,18 +2926,6 @@
                 "trackingNo": {
                     "type": "string",
                     "example": "12345678TH"
-                }
-            }
-        },
-        "response.BaseResponse": {
-            "type": "object",
-            "properties": {
-                "data": {},
-                "message": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
                 }
             }
         },
