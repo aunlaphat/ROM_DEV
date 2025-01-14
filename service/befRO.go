@@ -167,11 +167,13 @@ func (srv service) UpdateSaleReturn(ctx context.Context, orderNo string, srNo st
 
 	// 3. เพิ่มการตรวจสอบสถานะก่อนอัพเดท (ถ้าจำเป็น)
 	if order.StatusConfID == 3 { // ถ้าถูกยกเลิกแล้ว
+		srv.logger.Error("❌ Cannot update canceled order", zap.String("OrderNo", orderNo))
 		return fmt.Errorf("cannot update canceled order")
 	}
 
 	// เพิ่มการตรวจสอบสถานะเพิ่มเติม
 	if order.StatusReturnID != 1 { // ถ้าไม่ใช่สถานะเริ่มต้น
+		srv.logger.Error("❌ Cannot update SR number: invalid status", zap.String("OrderNo", orderNo))
 		return fmt.Errorf("cannot update SR number: invalid status")
 	}
 
