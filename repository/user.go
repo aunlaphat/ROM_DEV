@@ -22,7 +22,7 @@ func (repo repositoryDB) GetUserFromLark(username, userID string) (response.Logi
 	user.UserName = username
 	query := `
         SELECT UserName, UserID, RoleID, NickName, FullNameTH , 'lark' as  Platform
-        FROM V_User_Login
+        FROM ROM_V_UserPermission
         WHERE UserName = @userName AND UserID = @userID
     `
 	err := repo.db.GetContext(ctx, &user, query,

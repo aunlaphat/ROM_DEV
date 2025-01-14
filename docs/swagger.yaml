@@ -88,7 +88,7 @@ definitions:
         description: หมายเหตุ
         type: string
       returnID:
-        description: เลขที่ใบคืนสินค้า (Primary Key)
+        description: เลขที่ใบคืนสินค้า (PK - Generate จากระบบ)
         type: string
       saleOrder:
         description: เลขที่ใบกำกับภาษี
@@ -130,7 +130,7 @@ definitions:
         description: ราคาต่อหน่วย
         type: number
       recID:
-        description: รหัสอ้างอิงอัตโนมัติ
+        description: รหัสอ้างอิงอัตโนมัติ - (PK - Auto Increment)
         type: integer
       returnID:
         description: เลขที่ใบคืนสินค้า (FK -> ReturnOrder)
@@ -170,7 +170,7 @@ definitions:
         description: ที่ตั้งของคลังสินค้า
         type: string
       warehouseID:
-        description: รหัสคลังสินค้า
+        description: รหัสคลังสินค้า (PK - Auto Increment)
         type: integer
       warehouseName:
         description: ชื่อคลังสินค้า
@@ -184,7 +184,7 @@ definitions:
         type: array
       cancelID:
         description: UpdateDate             *time.Time              `json:"updateDate"
-          db:"UpdateDate"` // MSSQL GetDate() function
+          db:"UpdateDate"` // MSSQL GetDate()
         type: integer
       channelID:
         type: integer
@@ -201,6 +201,8 @@ definitions:
       mkpStatusID:
         type: integer
       orderNo:
+        description: "RecID\t\t  int        `json:\"recID\" db:\"RecID\"` // (PK -
+          Auto Increment)"
         type: string
       returnDate:
         type: string
@@ -220,7 +222,7 @@ definitions:
         type: string
       updateBy:
         description: CreateDate             *time.Time              `json:"createDate"
-          db:"CreateDate"` // MSSQL GetDate() function
+          db:"CreateDate"` // MSSQL GetDate()
         type: string
       warehouseID:
         type: integer
@@ -228,6 +230,10 @@ definitions:
   request.BeforeReturnOrderLine:
     properties:
       alterSKU:
+        type: string
+      confirmBy:
+        description: CreateDate *time.Time `json:"createDate" db:"CreateDate"` //
+          MSSQL GetDate()
         type: string
       createBy:
         type: string
@@ -242,8 +248,6 @@ definitions:
       sku:
         type: string
       trackingNo:
-        description: CreateDate *time.Time `json:"createDate" db:"CreateDate"` //
-          MSSQL GetDate()
         type: string
       updateBy:
         type: string
@@ -257,6 +261,14 @@ definitions:
       orderNo:
         type: string
       remark:
+        type: string
+    type: object
+  request.CancelSaleReturnRequest:
+    properties:
+      remark:
+        description: |-
+          OrderNo      string `json:"orderNo" db:"OrderNo"`
+          CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
         type: string
     type: object
   request.CreateReturnOrder:
@@ -317,22 +329,13 @@ definitions:
         example: string
         type: string
       userID:
-        example: DC53002
+        example: DC0000
         type: string
     type: object
   request.LoginLark:
     properties:
       userID:
         example: DC99999
-        type: string
-      userName:
-        example: eknarin
-        type: string
-    type: object
-  request.LoginWeb:
-    properties:
-      password:
-        example: asdfhdskjf
         type: string
       userName:
         example: eknarin
@@ -403,6 +406,80 @@ definitions:
         example: 12345678TH
         type: string
     type: object
+  request.UpdateSaleReturnRequest:
+    properties:
+      srNo:
+        example: SR-123456
+        type: string
+    required:
+    - srNo
+    type: object
+  response.BeforeReturnOrderLineResponse:
+    properties:
+      createDate:
+        type: string
+      orderNo:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      returnQty:
+        type: integer
+      sku:
+        type: string
+      trackingNo:
+        type: string
+    type: object
+  response.BeforeReturnOrderResponse:
+    properties:
+      beforeReturnOrderLines:
+        items:
+          $ref: '#/definitions/response.BeforeReturnOrderLineResponse'
+        type: array
+      cancelId:
+        type: integer
+      channelId:
+        type: integer
+      confirmBy:
+        type: string
+      confirmDate:
+        type: string
+      createBy:
+        type: string
+      createDate:
+        type: string
+      customerId:
+        type: string
+      logistic:
+        type: string
+      mkpStatusId:
+        type: integer
+      orderNo:
+        type: string
+      returnDate:
+        type: string
+      returnType:
+        type: string
+      soNo:
+        type: string
+      soStatusId:
+        type: integer
+      srNo:
+        type: string
+      statusConfId:
+        type: integer
+      statusReturnId:
+        type: integer
+      trackingNo:
+        type: string
+      updateBy:
+        type: string
+      updateDate:
+        type: string
+      warehouseId:
+        type: integer
+    type: object
   response.CancelReturnResponse:
     properties:
       cancelBy:
@@ -416,7 +493,29 @@ definitions:
       remark:
         type: string
     type: object
+  response.CancelSaleReturnResponse:
+    properties:
+      cancelBy:
+        type: string
+      cancelDate:
+        type: string
+      cancelStatus:
+        type: boolean
+      refId:
+        type: string
+      remark:
+        type: string
+    type: object
   response.ConfirmReturnResponse:
+    properties:
+      confirmBy:
+        type: string
+      confirmDate:
+        type: string
+      orderNo:
+        type: string
+    type: object
+  response.ConfirmSaleReturnResponse:
     properties:
       confirmBy:
         type: string
@@ -490,6 +589,34 @@ definitions:
         description: รหัสสินค้า
         type: string
     type: object
+  response.SaleOrderLineResponse:
+    properties:
+      itemName:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      sku:
+        type: string
+    type: object
+  response.SaleOrderResponse:
+    properties:
+      createDate:
+        type: string
+      orderLines:
+        items:
+          $ref: '#/definitions/response.SaleOrderLineResponse'
+        type: array
+      orderNo:
+        type: string
+      salesStatus:
+        type: string
+      soNo:
+        type: string
+      statusMKP:
+        type: string
+    type: object
   response.UserPermission:
     properties:
       departmentNo:
@@ -561,7 +688,7 @@ paths:
         name: login-request
         required: true
         schema:
-          $ref: '#/definitions/request.LoginWeb'
+          $ref: '#/definitions/request.Login'
       produces:
       - application/json
       responses:
@@ -1015,36 +1142,6 @@ paths:
       summary: List all return orders
       tags:
       - Before Return Order
-  /before-return-order/search/{soNo}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve the details of a sale order by its SO number
-      operationId: search-sale-order
-      parameters:
-      - description: SO number
-        in: path
-        name: soNo
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Search sale order by SO number
-      tags:
-      - Search Sale Order
   /before-return-order/update/{orderNo}:
     patch:
       consumes:
@@ -1630,12 +1727,12 @@ paths:
         name: orderNo
         required: true
         type: string
-      - description: Cancel details
+      - description: Cancel Sale Return
         in: body
-        name: cancelDetails
+        name: request
         required: true
         schema:
-          $ref: '#/definitions/request.CancelReturnRequest'
+          $ref: '#/definitions/request.CancelSaleReturnRequest'
       produces:
       - application/json
       responses:
@@ -1646,7 +1743,7 @@ paths:
             - $ref: '#/definitions/api.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/response.CancelReturnResponse'
+                  $ref: '#/definitions/response.CancelSaleReturnResponse'
               type: object
         "400":
           description: Bad Request
@@ -1658,7 +1755,7 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: Cancel a sale return order
       tags:
-      - Trade Return
+      - Sale Return
   /sale-return/confirm/{orderNo}:
     post:
       consumes:
@@ -1681,7 +1778,7 @@ paths:
             - $ref: '#/definitions/api.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/response.ConfirmReturnResponse'
+                  $ref: '#/definitions/response.ConfirmSaleReturnResponse'
               type: object
         "400":
           description: Bad Request
@@ -1693,32 +1790,31 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: Confirm a sale return order
       tags:
-      - Trade Return
-  /test/login:
+      - Sale Return
+  /sale-return/create:
     post:
       consumes:
       - application/json
-      description: Handles user login requests and generates a token for the authenticated
-        user.
-      operationId: usertest-login
+      description: Create a new sale return order based on the provided details
+      operationId: create-sale-return
       parameters:
-      - description: User login credentials in JSON format
+      - description: Sale Return Order
         in: body
-        name: login-request
+        name: saleReturn
         required: true
         schema:
-          $ref: '#/definitions/request.Login'
+          $ref: '#/definitions/request.BeforeReturnOrder'
       produces:
       - application/json
       responses:
         "200":
-          description: JWT token
+          description: Sale return order created successfully
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
-                result:
-                  type: string
+                data:
+                  $ref: '#/definitions/response.BeforeReturnOrderResponse'
               type: object
         "400":
           description: Bad Request
@@ -1728,9 +1824,100 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: User Login with UserID
+      summary: Create a new sale return order
       tags:
-      - LoginTest
+      - Sale Return
+  /sale-return/search/{soNo}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of a sale order by its SO number
+      operationId: search-sale-order
+      parameters:
+      - description: SO number
+        in: path
+        name: soNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sale order retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.SaleOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Sale order not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search sale order by SO number
+      tags:
+      - Sale Return
+  /sale-return/update/{orderNo}:
+    put:
+      consumes:
+      - application/json
+      description: Update the SR number for a sale return order based on the provided
+        details
+      operationId: update-sale-return
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: SR number details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateSaleReturnRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: SR number updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.BeforeReturnOrderResponse'
+              type: object
+        "400":
+          description: Bad Request - Invalid input or missing required fields
+          schema:
+            $ref: '#/definitions/api.Response'
+        "401":
+          description: Unauthorized - Missing or invalid token
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found - Order not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      security:
+      - BearerAuth: []
+      summary: Update the SR number for a sale return order
+      tags:
+      - Sale Return
   /user/get-user:
     get:
       consumes:

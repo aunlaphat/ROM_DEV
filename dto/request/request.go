@@ -4,8 +4,8 @@ package request
 /********** Login ***************/
 
 type LoginWeb struct {
-	UserName string `json:"userName" db:"userID" example:"eknarin"`
-	Password string `json:"password," db:"password" example:"asdfhdskjf"`
+	UserName string `json:"userName" db:"Username" example:"eknarin"`
+	Password string `json:"password" db:"Password" example:"asdfhdskjf"`
 }
 
 type LoginLark struct {
@@ -14,12 +14,12 @@ type LoginLark struct {
 }
 
 type Login struct {
-	UserID string `json:"userID" db:"UserID" example:"DC53002"`
-	Password string `json:"password," db:"Password" example:"string"`
+	UserID   string `json:"userID" db:"UserID" example:"DC0000"`
+	Password string `json:"password" db:"Password" example:"string"`
 }
 
 type LoginJWT struct {
-	UserID string `json:"userID" db:"UserID" example:"DC53002"`
+	UserID   string `json:"userID" db:"UserID" example:"DC53002"`
 	UserName string `json:"userName" db:"Username" example:"string"`
 }
 
@@ -54,7 +54,7 @@ type UpdateOrderRequest struct {
 
 //ข้อมูลของสินค้าแต่ละชิ้นที่ลูกค้าสั่ง เชื่อมกันกับด้านบนด้วย OrderNo
 type OrderLineRequest struct {
-	OrderNo  string   `json:"-" db:"OrderNo" `
+	OrderNo  string   `json:"-" db:"OrderNo"`
 	SKU      *string  `json:"sku" db:"SKU" example:"SKU12345"`
 	ItemName *string  `json:"itemName" db:"ItemName" example:"เก้าอี้"`
 	QTY      *int     `json:"qty" db:"QTY" example:"5"`
@@ -82,7 +82,7 @@ type CreateReturnOrder struct {
 	// CreateBy      string     	`json:"createBy" db:"CreateBy"`		// 'USER'
 	// CreateDate   *time.Time      `json:"createDate" db:"CreateDate"` // MSSQL SYSDATETIME() function
 
-	ReturnOrderLine	[]ReturnOrderLine `json:"ReturnOrderLine"`
+	ReturnOrderLine []ReturnOrderLine `json:"ReturnOrderLine"`
 }
 
 type UpdateReturnOrder struct {

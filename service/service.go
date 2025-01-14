@@ -9,7 +9,7 @@ import (
 
 type service struct {
 	userRepo        repository.UserRepository //Repository of service
-	usertestRepo    repository.UserTestRepository
+	//usertestRepo    repository.UserTestRepository
 	logger          logs.Logger //Logger of service
 	constant        repository.Constants
 	befRORepo       repository.BefRORepository
@@ -18,7 +18,7 @@ type service struct {
 }
 type AllOfService struct {
 	User        UserService
-	UserTest    UserTestService
+	//UserTest    UserTestService
 	Constant    Constants
 	BefRO       BefROService
 	ReturnOrder ReturnOrderService
@@ -30,7 +30,7 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 	repo := repository.NewDB(db)
 	srv := service{
 		userRepo:        repo,
-		usertestRepo:    repo,
+		//usertestRepo:    repo,
 		logger:          logger,
 		constant:        repo,
 		befRORepo:       repo,
@@ -39,7 +39,7 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 	}
 	return AllOfService{
 		User:        srv,
-		UserTest:    srv,
+		//UserTest:    srv,
 		Constant:    srv,
 		BefRO:       srv,
 		ReturnOrder: srv,
@@ -47,7 +47,7 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 	}
 }
 
-type Login struct {
+/* type Login struct {
 	UserID       string `json:"userID"`
 	RoleID       int    `json:"roleID"`
 	PermissionID string `json:"permissionID"`
@@ -56,4 +56,4 @@ type Login struct {
 	FullNameTH   string `json:"fullNameTH"`
 	FullNameEN   string `json:"fullNameEN"`
 	Platfrom     string `json:"platfrom"`
-}
+} */
