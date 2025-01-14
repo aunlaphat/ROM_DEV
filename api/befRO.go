@@ -360,10 +360,26 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 		handleError(w, err)
 		return
 	}
-	if existingOrder == nil {
-		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
+	if existingOrder != nil {
+		handleResponse(w, false, "Order already exists", nil, http.StatusConflict)
 		return
 	}
+
+	// ดึงค่า claims จาก JWT token
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		return
+	}
+
+	userID, ok := claims["userID"].(string)
+	if !ok || userID == "" {
+		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
+		return
+	}
+
+	// Set CreateBy จาก claims
+	req.CreateBy = userID
 
 	// Create a new order
 	result, err := app.Service.BefRO.CreateSaleReturn(r.Context(), req)
@@ -374,6 +390,11 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 
 	fmt.Printf("\n📋 ========== Created Sale Return Order ========== 📋\n")
 	printOrderDetails(result)
+	fmt.Printf("\n📋 ========== Sale Return Order Line Details ========== 📋\n")
+	for _, line := range result.BeforeReturnOrderLines {
+		printOrderLineDetails(&line)
+	}
+
 	handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
 }
 
