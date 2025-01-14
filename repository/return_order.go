@@ -3,7 +3,7 @@ package repository
 import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
-
+	"strings"
 
 	//"boilerplate-backend-go/errors"
 	"context"
@@ -78,7 +78,7 @@ func (repo repositoryDB) GetReturnOrderByID(ctx context.Context, returnID string
 	err := repo.db.GetContext(ctx, &order, queryOrder, sql.Named("returnID", returnID))
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, sql.ErrNoRows 
+			return nil, sql.ErrNoRows
 		}
 		log.Printf("Database error querying ReturnOrder by ID: %v", err)
 		return nil, fmt.Errorf("unexpected database error: %w", err)
@@ -117,40 +117,39 @@ func (repo repositoryDB) GetAllReturnOrderLines(ctx context.Context) ([]response
 
 // Get ReturnOrderLines by ReturnID
 func (repo repositoryDB) GetReturnOrderLinesByReturnID(ctx context.Context, returnID string) ([]response.ReturnOrderLine, error) {
-    // ตรวจสอบว่า ReturnID มีอยู่จริงในฐานข้อมูล
-    var exists bool
-    checkQuery := `
+	// ตรวจสอบว่า ReturnID มีอยู่จริงในฐานข้อมูล
+	var exists bool
+	checkQuery := `
         SELECT CASE WHEN EXISTS (
             SELECT 1 FROM ReturnOrder WHERE ReturnID = @ReturnID
         ) THEN 1 ELSE 0 END
     `
-    err := repo.db.GetContext(ctx, &exists, checkQuery, sql.Named("ReturnID", returnID))
-    if err != nil {
-        return nil, fmt.Errorf("failed to check ReturnID existence: %w", err)
-    }
-    if !exists {
-        return nil, sql.ErrNoRows // ReturnID ไม่พบ
-    }
+	err := repo.db.GetContext(ctx, &exists, checkQuery, sql.Named("ReturnID", returnID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to check ReturnID existence: %w", err)
+	}
+	if !exists {
+		return nil, sql.ErrNoRows // ReturnID ไม่พบ
+	}
 
-    // ดึงข้อมูล ReturnOrderLines
-    var lines []response.ReturnOrderLine
-    query := `
+	// ดึงข้อมูล ReturnOrderLines
+	var lines []response.ReturnOrderLine
+	query := `
         SELECT RecID, ReturnID, OrderNo, TrackingNo, SKU, ReturnQTY, CheckQTY, Price, 
                CreateBy, CreateDate, AlterSKU, UpdateBy, UpdateDate
         FROM ReturnOrderLine
         WHERE ReturnID = @ReturnID
     `
-    err = repo.db.SelectContext(ctx, &lines, query, sql.Named("ReturnID", returnID))
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return nil, sql.ErrNoRows // ไม่มีข้อมูล ReturnOrderLine
-        }
-        return nil, fmt.Errorf("error querying ReturnOrderLine by ReturnID: %w", err)
-    }
+	err = repo.db.SelectContext(ctx, &lines, query, sql.Named("ReturnID", returnID))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, sql.ErrNoRows // ไม่มีข้อมูล ReturnOrderLine
+		}
+		return nil, fmt.Errorf("error querying ReturnOrderLine by ReturnID: %w", err)
+	}
 
-    return lines, nil
+	return lines, nil
 }
-
 
 func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) error {
 	// Step 1: เริ่มต้น Transaction
@@ -169,21 +168,21 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
         `
 		// Step 2.1: ตรวจสอบว่ามีค่าสำหรับการใส่ใน Query
 		params := map[string]interface{}{
-			"ReturnID":       req.ReturnID,
-			"OrderNo":        req.OrderNo,
-			"SaleOrder":      req.SaleOrder,
-			"SaleReturn":     req.SaleReturn,
-			"TrackingNo":     req.TrackingNo,
-			"PlatfID":        req.PlatfID,
-			"ChannelID":      req.ChannelID,
-			"OptStatusID":    req.OptStatusID,
-			"AxStatusID":     req.AxStatusID,
-			"PlatfStatusID":  req.PlatfStatusID,
-			"Remark":         req.Remark,
-			"CancelID":       req.CancelID,
-			"StatusCheckID":  req.StatusCheckID,
-			"CheckBy":        req.CheckBy,
-			"Description":    req.Description,
+			"ReturnID":      req.ReturnID,
+			"OrderNo":       req.OrderNo,
+			"SaleOrder":     req.SaleOrder,
+			"SaleReturn":    req.SaleReturn,
+			"TrackingNo":    req.TrackingNo,
+			"PlatfID":       req.PlatfID,
+			"ChannelID":     req.ChannelID,
+			"OptStatusID":   req.OptStatusID,
+			"AxStatusID":    req.AxStatusID,
+			"PlatfStatusID": req.PlatfStatusID,
+			"Remark":        req.Remark,
+			"CancelID":      req.CancelID,
+			"StatusCheckID": req.StatusCheckID,
+			"CheckBy":       req.CheckBy,
+			"Description":   req.Description,
 		}
 		if _, err := tx.NamedExecContext(ctx, insertReturnOrderQuery, params); err != nil {
 			log.Printf("Error inserting ReturnOrder: %v", err)
@@ -229,76 +228,128 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 // อัปเดต ReturnOrder และ ReturnOrderLine
 func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder) error {
 	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
-		if req.TrackingNo != nil {
-			
+		// Step 1: ดึงค่าปัจจุบันจากฐานข้อมูล
+		var current response.ReturnOrder
+		queryCurrent := `
+            SELECT SaleReturn, TrackingNo, PlatfID, ChannelID, OptStatusID, AxStatusID, 
+                   PlatfStatusID, Remark, CancelID, StatusCheckID, CheckBy, Description
+            FROM ReturnOrder
+            WHERE ReturnID = :ReturnID
+        `
+		currentParams := map[string]interface{}{"ReturnID": req.ReturnID}
+
+		// ใช้ NamedQuery และ Rebind
+		namedQuery, args, err := sqlx.Named(queryCurrent, currentParams)
+		if err != nil {
+			return fmt.Errorf("failed to prepare query: %w", err)
 		}
-		updateReturnOrderQuery := `
-			   UPDATE ReturnOrder
-				SET 
-					SaleReturn = COALESCE(:SaleReturn, SaleReturn),
-					TrackingNo = COALESCE(:TrackingNo, TrackingNo),
-					PlatfID = COALESCE(:PlatfID, PlatfID),
-					ChannelID = COALESCE(:ChannelID, ChannelID),
-					OptStatusID = COALESCE(:OptStatusID, OptStatusID),
-					AxStatusID = COALESCE(:AxStatusID, AxStatusID),
-					PlatfStatusID = COALESCE(:PlatfStatusID, PlatfStatusID),
-					Remark = COALESCE(:Remark, Remark),
-					CancelID = COALESCE(:CancelID, CancelID),
-					StatusCheckID = COALESCE(:StatusCheckID, StatusCheckID),
-					CheckBy = COALESCE(:CheckBy, CheckBy),
-					Description = COALESCE(:Description, Description),
-					UpdateBy = CASE 
-						WHEN :SaleReturn IS NOT NULL OR :TrackingNo IS NOT NULL OR :PlatfID IS NOT NULL 
-							OR :ChannelID IS NOT NULL OR :Remark IS NOT NULL OR :OptStatusID IS NOT NULL
-							OR :AxStatusID IS NOT NULL OR :PlatfStatusID IS NOT NULL OR :CancelID IS NOT NULL 
-							OR :StatusCheckID IS NOT NULL OR :CheckBy IS NOT NULL OR :Description IS NOT NULL
-						THEN 'USER'
-						ELSE UpdateBy
-					END,
-					UpdateDate = CASE 
-						WHEN :SaleReturn IS NOT NULL OR :TrackingNo IS NOT NULL OR :PlatfID IS NOT NULL 
-							OR :ChannelID IS NOT NULL OR :Remark IS NOT NULL OR :OptStatusID IS NOT NULL
-							OR :AxStatusID IS NOT NULL OR :PlatfStatusID IS NOT NULL OR :CancelID IS NOT NULL 
-							OR :StatusCheckID IS NOT NULL OR :CheckBy IS NOT NULL OR :Description IS NOT NULL
-						THEN SYSDATETIME()
-						ELSE UpdateDate
-					END
-				WHERE ReturnID = :ReturnID
-		`
+		query := tx.Rebind(namedQuery)
+
+		if err := tx.GetContext(ctx, &current, query, args...); err != nil {
+			if err == sql.ErrNoRows {
+				return fmt.Errorf("ReturnID not found: %w", err)
+			}
+			return fmt.Errorf("failed to fetch current data: %w", err)
+		}
+
+		// Step 2: ตรวจสอบค่าที่เปลี่ยนแปลงและสร้าง SQL Update เฉพาะส่วนที่เปลี่ยนแปลง
+		updateFields := []string{}
 		params := map[string]interface{}{
-			"ReturnID":       req.ReturnID,
-			"SaleReturn":     req.SaleReturn,
-			"TrackingNo":     req.TrackingNo,
-			"PlatfID":        req.PlatfID,
-			"ChannelID":      req.ChannelID,
-			"OptStatusID":    req.OptStatusID,
-			"AxStatusID":     req.AxStatusID,
-			"PlatfStatusID":  req.PlatfStatusID,
-			"Remark":         req.Remark,
-			"CancelID":       req.CancelID,
-			"StatusCheckID":  req.StatusCheckID,
-			"CheckBy":        req.CheckBy,
-			"Description":    req.Description,
+			"ReturnID": req.ReturnID,
 		}
-		if _, err := tx.NamedExecContext(ctx, updateReturnOrderQuery, params); err != nil {
+
+		if req.SaleReturn != nil && (current.SaleReturn == nil || *req.SaleReturn != *current.SaleReturn) {
+			updateFields = append(updateFields, "SaleReturn = :SaleReturn")
+			params["SaleReturn"] = req.SaleReturn
+		}
+		if req.TrackingNo != nil && (current.TrackingNo == nil || *req.TrackingNo != *current.TrackingNo) {
+			updateFields = append(updateFields, "TrackingNo = :TrackingNo")
+			params["TrackingNo"] = req.TrackingNo
+		}
+		if req.PlatfID != nil && (current.PlatfID == nil || *req.PlatfID != *current.PlatfID) {
+			updateFields = append(updateFields, "PlatfID = :PlatfID")
+			params["PlatfID"] = req.PlatfID
+		}
+		if req.ChannelID != nil && (current.ChannelID == nil || *req.ChannelID != *current.ChannelID) {
+			updateFields = append(updateFields, "ChannelID = :ChannelID")
+			params["ChannelID"] = req.ChannelID
+		}
+		if req.OptStatusID != nil && (current.OptStatusID == nil || *req.OptStatusID != *current.OptStatusID) {
+			updateFields = append(updateFields, "OptStatusID = :OptStatusID")
+			params["OptStatusID"] = req.OptStatusID
+		}
+		if req.AxStatusID != nil && (current.AxStatusID == nil || *req.AxStatusID != *current.AxStatusID) {
+			updateFields = append(updateFields, "AxStatusID = :AxStatusID")
+			params["AxStatusID"] = req.AxStatusID
+		}
+		if req.PlatfStatusID != nil && (current.PlatfStatusID == nil || *req.PlatfStatusID != *current.PlatfStatusID) {
+			updateFields = append(updateFields, "PlatfStatusID = :PlatfStatusID")
+			params["PlatfStatusID"] = req.PlatfStatusID
+		}
+		if req.Remark != nil && (current.Remark == nil || *req.Remark != *current.Remark) {
+			updateFields = append(updateFields, "Remark = :Remark")
+			params["Remark"] = req.Remark
+		}
+		if req.CancelID != nil && (current.CancelID == nil || *req.CancelID != *current.CancelID) {
+			updateFields = append(updateFields, "CancelID = :CancelID")
+			params["CancelID"] = req.CancelID
+		}
+		if req.StatusCheckID != nil && (current.StatusCheckID == nil || *req.StatusCheckID != *current.StatusCheckID) {
+			updateFields = append(updateFields, "StatusCheckID = :StatusCheckID")
+			params["StatusCheckID"] = req.StatusCheckID
+		}
+		if req.CheckBy != nil && (current.CheckBy == nil || *req.CheckBy != *current.CheckBy) {
+			updateFields = append(updateFields, "CheckBy = :CheckBy")
+			params["CheckBy"] = req.CheckBy
+		}
+		if req.Description != nil && (current.Description == nil || *req.Description != *current.Description) {
+			updateFields = append(updateFields, "Description = :Description")
+			params["Description"] = req.Description
+		}
+
+		// หากไม่มีการเปลี่ยนแปลง ออกจากฟังก์ชัน
+		if len(updateFields) == 0 {
+			return nil
+		}
+
+		// Step 3: เพิ่ม UpdateBy และ UpdateDate ใน SQL Query
+		updateFields = append(updateFields, "UpdateBy = 'USER'", "UpdateDate = SYSDATETIME()")
+		updateQuery := fmt.Sprintf(`
+            UPDATE ReturnOrder
+            SET %s
+            WHERE ReturnID = :ReturnID
+        `, strings.Join(updateFields, ", "))
+
+		// ใช้ NamedQuery และ Rebind
+		namedUpdateQuery, updateArgs, err := sqlx.Named(updateQuery, params)
+		if err != nil {
+			return fmt.Errorf("failed to prepare update query: %w", err)
+		}
+		updateQueryRebind := tx.Rebind(namedUpdateQuery)
+
+		// Step 4: ดำเนินการอัปเดตใน ReturnOrder
+		if _, err := tx.ExecContext(ctx, updateQueryRebind, updateArgs...); err != nil {
 			log.Printf("Error updating ReturnOrder: %v", err)
 			return fmt.Errorf("failed to update ReturnOrder: %w", err)
 		}
 
-		if req.TrackingNo != nil {
-			updateReturnOrderLineQuery := `
-				UPDATE ReturnOrderLine
-				SET 
-					TrackingNo = :TrackingNo, 
-					UpdateBy = 'USER', 
-					UpdateDate = SYSDATETIME()
-				WHERE ReturnID = :ReturnID
-			`
-			params := map[string]interface{}{
-				"ReturnID":    req.ReturnID,
-				"TrackingNo":  req.TrackingNo,
+		// Step 5: อัปเดต TrackingNo ใน ReturnOrderLine หากเปลี่ยนแปลง
+		if req.TrackingNo != nil && (current.TrackingNo == nil || *req.TrackingNo != *current.TrackingNo) {
+			updateLineQuery := `
+                UPDATE ReturnOrderLine
+                SET 
+                    TrackingNo = :TrackingNo, 
+                    UpdateBy = 'USER', 
+                    UpdateDate = SYSDATETIME()
+                WHERE ReturnID = :ReturnID
+            `
+			namedLineQuery, lineArgs, err := sqlx.Named(updateLineQuery, params)
+			if err != nil {
+				return fmt.Errorf("failed to prepare line update query: %w", err)
 			}
-			if _, err := tx.NamedExecContext(ctx, updateReturnOrderLineQuery, params); err != nil {
+			lineQueryRebind := tx.Rebind(namedLineQuery)
+
+			if _, err := tx.ExecContext(ctx, lineQueryRebind, lineArgs...); err != nil {
 				log.Printf("Error updating ReturnOrderLine: %v", err)
 				return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
 			}
@@ -307,6 +358,7 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 		return nil
 	})
 }
+
 
 // ลบ ReturnOrder และ ReturnOrderLine
 func (repo repositoryDB) DeleteReturnOrder(ctx context.Context, returnID string) error {
@@ -343,16 +395,16 @@ func (repo repositoryDB) DeleteReturnOrder(ctx context.Context, returnID string)
 
 // CheckReturnIDExists - เพิ่มการตรวจสอบ ReturnID ว่ามีอยู่ในฐานข้อมูล
 func (repo repositoryDB) CheckReturnIDExists(ctx context.Context, returnID string) (bool, error) {
-    var exists bool
-    query := `
+	var exists bool
+	query := `
         SELECT CASE WHEN EXISTS (
             SELECT 1 FROM ReturnOrder WHERE ReturnID = @ReturnID
         ) THEN 1 ELSE 0 END
     `
-    err := repo.db.GetContext(ctx, &exists, query, sql.Named("ReturnID", returnID))
-    if err != nil {
-        return false, fmt.Errorf("failed to check ReturnID existence: %w", err)
-    }
+	err := repo.db.GetContext(ctx, &exists, query, sql.Named("ReturnID", returnID))
+	if err != nil {
+		return false, fmt.Errorf("failed to check ReturnID existence: %w", err)
+	}
 
-    return exists, nil
+	return exists, nil
 }
