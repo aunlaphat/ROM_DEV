@@ -2,8 +2,10 @@ package api
 
 import (
 	"boilerplate-backend-go/dto/request"
+	res "boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -18,7 +20,6 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Get("/get-order", app.GetAllOrderDetail)
 		r.Get("/get-orders", app.GetAllOrderDetails) //with paginate
 
-
 		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
 
@@ -29,9 +30,190 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Post("/create-trade", app.CreateTradeReturn)
 
 		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines) // New route for updating return order with lines
-		
+
 		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine)
+
+		/******** Trade Retrun ********/
+		r.Post("/create-trade", app.CreateTradeReturn)
+		r.Post("/add-line/{orderNo}", app.AddTradeReturnLine)
+		r.Post("/confirm/{orderNo}", app.ConfirmTradeReturn)
+		r.Post("/cancel/{orderNo}", app.CancelTradeReturn)
+
 	})
+}
+
+// @Summary Create a new trade return order
+// @Description Create a new trade return order with multiple order lines
+// @ID create-trade-return
+// @Tags Trade Return
+// @Accept json
+// @Produce json
+// @Param body body request.BeforeReturnOrder true "Trade Return Detail"
+// @Success 201 {object} api.Response "Trade return created successfully"
+// @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
+// @Failure 404 {object} api.Response "Not Found - Order not found"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /before-return-order/create-trade [post]
+func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request) {
+	var req request.BeforeReturnOrder
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
+}
+
+// @Summary Add a new trade return line to an existing order
+// @Description Add a new trade return line based on the provided order number and line details
+// @ID add-trade-return-line
+// @Tags Trade Return
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order number"
+// @Param body body request.TradeReturnLineRequest true "Trade Return Line Details"
+// @Success 201 {object} api.Response "Trade return line created successfully"
+// @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
+// @Failure 404 {object} api.Response "Not Found - Order not found"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /before-return-order/add-line/{orderNo} [post]
+func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Request) {
+	orderNo := chi.URLParam(r, "orderNo")
+	if orderNo == "" {
+		handleError(w, fmt.Errorf("OrderNo is required"))
+		return
+	}
+
+	var req request.TradeReturnLineRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, fmt.Errorf("invalid request format: %v", err))
+		return
+	}
+
+	// เรียก service layer เพื่อสร้างข้อมูล
+	err := app.Service.BefRO.CreateTradeReturnLine(r.Context(), orderNo, req)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "Trade return line created successfully", nil, http.StatusCreated)
+}
+
+// ConfirmSaleReturn godoc
+// @Summary Confirm a sale return order
+// @Description Confirm a sale return order based on the provided details
+// @ID confirm-sale-return
+// @Tags Trade Return
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order number"
+// @Success 200 {object} api.Response{data=response.ConfirmReturnResponse} "Sale return order confirmed successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /sale-return/confirm/{orderNo} [post]
+func (app *Application) ConfirmTradeReturn(w http.ResponseWriter, r *http.Request) {
+	// 1. รับค่า orderNo จาก URL parameter
+	orderNo := chi.URLParam(r, "orderNo")
+
+	// 2. ดึงข้อมูล claims (ข้อมูลผู้ใช้) จาก context (มาจาก JWT authentication)
+	claims, ok := r.Context().Value("claims").(map[string]interface{})
+	if !ok {
+		handleError(w, fmt.Errorf("user claims are missing or invalid"))
+		return
+	}
+
+	// 3. ดึง username จาก claims เพื่อใช้เป็น confirmBy
+	confirmBy, ok := claims["username"].(string)
+	if !ok || confirmBy == "" {
+		handleError(w, fmt.Errorf("username is missing or invalid"))
+		return
+	}
+
+	// 4. เรียกใช้ service layer เพื่อดำเนินการ confirm
+	err := app.Service.BefRO.ConfirmReturn(r.Context(), orderNo, confirmBy)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	// 5. สร้าง response และส่งกลับ
+	response := res.ConfirmReturnResponse{
+		OrderNo:   orderNo,
+		ConfirmBy: confirmBy,
+	}
+	handleResponse(w, true, "Trade Return Order confirm successfully", response, http.StatusOK)
+}
+
+// CancelSaleReturn godoc
+// @Summary Cancel a sale return order
+// @Description Cancel a sale return order based on the provided details
+// @ID cancel-sale-return
+// @Tags Trade Return
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order number"
+// @Param cancelDetails body request.CancelReturnRequest true "Cancel details"
+// @Success 200 {object} api.Response{data=response.CancelReturnResponse} "Sale return order canceled successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /sale-return/cancel/{orderNo} [post]
+func (app *Application) CancelTradeReturn(w http.ResponseWriter, r *http.Request) {
+	// 1. รับค่า orderNo จาก URL parameter
+	orderNo := chi.URLParam(r, "orderNo")
+	if orderNo == "" {
+		http.Error(w, "OrderNo is required", http.StatusBadRequest)
+		return
+	}
+
+	// 2. ตรวจสอบว่า order มีอยู่จริง
+	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+	if existingOrder == nil {
+		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
+		return
+	}
+
+	// 3. รับและตรวจสอบข้อมูล request body
+	var req request.CancelReturnRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// 4. ตรวจสอบข้อมูลที่จำเป็น
+	if req.CancelBy == "" {
+		http.Error(w, "CancelBy is required", http.StatusBadRequest)
+		return
+	}
+	if req.Remark == "" {
+		http.Error(w, "Remark is required", http.StatusBadRequest)
+		return
+	}
+
+	// 5. เรียกใช้ service
+	err = app.Service.BefRO.CancelReturn(r.Context(), orderNo, req.CancelBy, req.Remark)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	// 6. ส่ง response
+	response := res.CancelReturnResponse{
+		RefID:    orderNo,
+		CancelBy: req.CancelBy,
+		Remark:   req.Remark,
+	}
+	handleResponse(w, true, "Trade Return Order cancel successfully", response, http.StatusOK)
 }
 
 // ListReturnOrders godoc
@@ -170,7 +352,7 @@ func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Reques
 // Helper function: parsePagination
 func parsePagination(r *http.Request) (int, int) {
 	query := r.URL.Query()
-	page := parseInt(query.Get("page"), 1)   // Default page = 1
+	page := parseInt(query.Get("page"), 1)    // Default page = 1
 	limit := parseInt(query.Get("limit"), 10) // Default limit = 10
 	return page, limit
 }
@@ -186,7 +368,6 @@ func parseInt(value string, defaultValue int) int {
 	return result
 }
 
-
 // @Summary      Get Before Return Order by SO
 // @Description  Get details of an order by its SO number
 // @ID           GetBySO-BefReturnOrder
@@ -201,18 +382,18 @@ func parseInt(value string, defaultValue int) int {
 // @Router       /before-return-order/get-orderbySO/{soNo} [get]
 func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Request) {
 	soNo := chi.URLParam(r, "soNo")
-	if soNo == "" { 
+	if soNo == "" {
 		handleError(w, errors.ValidationError("soNo is required"))
 		return
 	}
 
-	res, err := app.Service.BefRO.GetOrderDetailBySO(r.Context(), soNo)
+	result, err := app.Service.BefRO.GetOrderDetailBySO(r.Context(), soNo)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponse(w, true, response, res, http.StatusOK)
+	handleResponse(w, true, "Orders retrieved by SO successfully", result, http.StatusOK)
 }
 
 // SearchSaleOrder godoc
@@ -269,33 +450,6 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 	}
 
 	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
-}
-
-// @Summary Create a new return order
-// @Description Create a new return order
-// @ID create-trade-return
-// @Tags Before Return Order
-// @Accept json
-// @Produce json
-// @Param body body request.BeforeReturnOrder true "Trade Return Detail"
-// @Success 201 {object} api.Response
-// @Failure 400 {object} api.Response
-// @Failure 500 {object} api.Response
-// @Router /before-return-order/create-trade [post]
-func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request) {
-	var req request.BeforeReturnOrder
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleError(w, err)
-		return
-	}
-
-	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	handleResponse(w, true, "created trade return successfully", result, http.StatusCreated)
 }
 
 // UpdateBeforeReturnOrderWithLines godoc

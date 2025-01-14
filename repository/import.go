@@ -10,7 +10,7 @@ import (
 
 type ImportOrderRepository interface {
 	FetchReturnDetailsBySaleOrder(ctx context.Context, saleOrder string) (string, string, error)
-	InsertImageMetadata(ctx context.Context, image request.Image) (int, error)
+	InsertImageMetadata(ctx context.Context, image request.Images) (int, error)
 }
 
 // FetchReturnDetailsBySaleOrder retrieves ReturnID and OrderNo from SaleOrder
@@ -39,7 +39,7 @@ func (repo repositoryDB) FetchReturnDetailsBySaleOrder(ctx context.Context, sale
 }
 
 // InsertImageMetadata inserts image metadata into the database
-func (repo repositoryDB) InsertImageMetadata(ctx context.Context, image request.Image) (int, error) {
+func (repo repositoryDB) InsertImageMetadata(ctx context.Context, image request.Images) (int, error) {
 	query := `
 		INSERT INTO Images (ReturnID, SKU, OrderNo, FilePath, ImageTypeID, CreateBy, CreateDate)
 		VALUES (:ReturnID, :SKU, :OrderNo, :FilePath, :ImageTypeID, :CreateBy, GETDATE());

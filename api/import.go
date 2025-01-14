@@ -97,7 +97,7 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		image := request.Image{
+		image := request.Images{
 			ReturnID:    returnID,
 			OrderNo:     orderNo,
 			FilePath:    filePath,

@@ -10,7 +10,7 @@ import (
 
 type ImportOrderService interface {
 	GetReturnDetailsFromSaleOrder(ctx context.Context, saleOrder string) (string, string, error)
-	SaveImageMetadata(ctx context.Context, image request.Image) (int, error)
+	SaveImageMetadata(ctx context.Context, image request.Images) (int, error)
 }
 
 // GetReturnDetailsFromSaleOrder retrieves ReturnID and OrderNo based on SaleOrder
@@ -28,7 +28,7 @@ func (srv service) GetReturnDetailsFromSaleOrder(ctx context.Context, saleOrder 
 }
 
 // SaveImageMetadata saves image metadata to the database
-func (srv service) SaveImageMetadata(ctx context.Context, image request.Image) (int, error) {
+func (srv service) SaveImageMetadata(ctx context.Context, image request.Images) (int, error) {
 	srv.logger.Info("Service: Saving image metadata", zap.Any("Image", image))
 
 	imageID, err := srv.importOrderRepo.InsertImageMetadata(ctx, image)

@@ -18,7 +18,7 @@ func (e AppError) Error() string {
 func NotFoundError(message string) error {
 	return AppError{
 		Code:    http.StatusNotFound,
-		Message: fmt.Sprintf("%v not found", message),
+		Message: fmt.Sprintf("%v : not found", message),
 	}
 }
 

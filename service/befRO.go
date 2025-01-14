@@ -26,7 +26,84 @@ type BefROService interface {
 	CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
+
+	CreateTradeReturnLine(ctx context.Context, orderNo string, line request.TradeReturnLineRequest) error
+	ConfirmReturn(ctx context.Context, orderNo string, confirmBy string) error
+	CancelReturn(ctx context.Context, orderNo string, cancelBy string, remark string) error 
 }
+
+func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, line request.TradeReturnLineRequest) error {
+	// ตรวจสอบว่ามี OrderNo อยู่ใน BeforeReturnOrder หรือไม่
+	exists, err := srv.befRORepo.CheckOrderNoExists(ctx, orderNo)
+	if err != nil {
+		return fmt.Errorf("failed to check order existence: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("order not found: %s", orderNo)
+	}
+
+	// สร้างข้อมูลใน BeforeReturnOrderLine
+	err = srv.befRORepo.CreateTradeReturnLine(ctx, orderNo, line)
+	if err != nil {
+		return fmt.Errorf("failed to create trade return line: %w", err)
+	}
+
+	return nil
+}
+
+func (srv service) ConfirmReturn(ctx context.Context, orderNo string, confirmBy string) error {
+	// 1. เริ่มต้น log การทำงาน
+	srv.logger.Info("🏁 Starting sale return confirmation process",
+		zap.String("OrderNo", orderNo),
+		zap.String("ConfirmBy", confirmBy))
+
+	// 2. เรียกใช้ repository layer เพื่อ update ข้อมูลในฐานข้อมูล
+	err := srv.befRORepo.ConfirmOrderNo(ctx, orderNo, confirmBy)
+	if err != nil {
+		// 3. log error ถ้าเกิดข้อผิดพลาด
+		srv.logger.Error("❌ Failed to confirm sale return", zap.Error(err))
+		return err
+	}
+
+	// 4. บันทึก log เมื่อทำงานสำเร็จ
+	srv.logger.Info("✅ Successfully confirmed sale return",
+		zap.String("OrderNo", orderNo),
+		zap.String("ConfirmBy", confirmBy))
+	return nil
+}
+
+func (srv service) CancelReturn(ctx context.Context, orderNo string, cancelBy string, remark string) error {
+	// 1. บันทึก log เริ่มต้น
+	srv.logger.Info("🏁 Starting sale return cancellation process",
+		zap.String("OrderNo", orderNo),
+		zap.String("CancelBy", cancelBy))
+
+	// 2. ตรวจสอบสถานะปัจจุบันของ order
+	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to get order status", zap.Error(err))
+		return err
+	}
+	if order.StatusConfID == 3 {
+		srv.logger.Error("❌ Order already canceled",
+			zap.String("OrderNo", orderNo))
+		return fmt.Errorf("order already canceled")
+	}
+
+	// 3. เรียกใช้ repository layer
+	err = srv.befRORepo.CancelOrderNo(ctx, orderNo, cancelBy, remark)
+	if err != nil {
+		srv.logger.Error("❌ Failed to cancel sale return", zap.Error(err))
+		return err
+	}
+
+	// 4. บันทึก log เมื่อสำเร็จ
+	srv.logger.Info("✅ Successfully canceled sale return",
+		zap.String("OrderNo", orderNo),
+		zap.String("CancelBy", cancelBy))
+	return nil
+}
+
 
 func (srv service) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
 	srv.logger.Debug("🚀 Starting ListBeforeReturnOrders")

@@ -9,8 +9,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-var response = "success"
-
 func (app *Application) Constants(apiRouter *chi.Mux) {
 	apiRouter.Route("/constants", func(r chi.Router) {
 		r.Get("/get-province", app.GetThaiProvince)
@@ -37,12 +35,12 @@ func (app *Application) Constants(apiRouter *chi.Mux) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /constants/get-province [get]
 func (app *Application) GetThaiProvince(w http.ResponseWriter, r *http.Request) {
-	res, err := app.Service.Constant.GetThaiProvince()
+	result, err := app.Service.Constant.GetThaiProvince()
 	if err != nil {
 		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, response, res, http.StatusOK)
+	handleResponse(w, true, "successfully", result, http.StatusOK)
 }
 
 // @Summary Get Thai District
@@ -57,12 +55,13 @@ func (app *Application) GetThaiProvince(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /constants/get-district [get]
 func (app *Application) GetThaiDistrict(w http.ResponseWriter, r *http.Request) {
-	res, err := app.Service.Constant.GetThaiDistrict()
+	result, err := app.Service.Constant.GetThaiDistrict()
 	if err != nil {
 		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, response, res, http.StatusOK)
+	handleResponse(w, true, "successfully", result, http.StatusOK)
+
 }
 
 // @Summary Get Thai SubDistrict
@@ -77,12 +76,13 @@ func (app *Application) GetThaiDistrict(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /constants/get-sub-district [get]
 func (app *Application) GetThaiSubDistrict(w http.ResponseWriter, r *http.Request) {
-	res, err := app.Service.Constant.GetThaiSubDistrict()
+	result, err := app.Service.Constant.GetThaiSubDistrict()
 	if err != nil {
 		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, response, res, http.StatusOK)
+	handleResponse(w, true, "successfully", result, http.StatusOK)
+
 }
 
 // // @Summary Get Thai GetPostCode
@@ -97,12 +97,13 @@ func (app *Application) GetThaiSubDistrict(w http.ResponseWriter, r *http.Reques
 // // @Failure 500 {object} Response "Internal Server Error"
 // // @Router /constants/get-sub-district [get]
 // func (app *Application) GetPostCode(w http.ResponseWriter, r *http.Request) {
-// 	res, err := app.Service.Constant.GetPostCode()
+// 	result, err := app.Service.Constant.GetPostCode()
 // 	if err != nil {
 // 		HandleError(w, err)
 // 		return
 // 	}
-// 	handleResponse(w, true, response, res, http.StatusOK)
+// 		handleResponse(w, true, "successfully", result, http.StatusOK)
+
 // }
 
 // @Summary Get Warehouse
@@ -117,12 +118,13 @@ func (app *Application) GetThaiSubDistrict(w http.ResponseWriter, r *http.Reques
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /constants/get-warehouse [get]
 func (app *Application) GetWarehouse(w http.ResponseWriter, r *http.Request) {
-	res, err := app.Service.Constant.GetWarehouse()
+	result, err := app.Service.Constant.GetWarehouse()
 	if err != nil {
 		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, response, res, http.StatusOK)
+	handleResponse(w, true, "successfully", result, http.StatusOK)
+
 }
 
 // @Summary Get ProductAll
@@ -137,12 +139,13 @@ func (app *Application) GetWarehouse(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /constants/get-productAll [get]
 func (app *Application) GetProductAll(w http.ResponseWriter, r *http.Request) {
-	res, err := app.Service.Constant.GetProductAll()
+	result, err := app.Service.Constant.GetProductAll()
 	if err != nil {
 		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, response, res, http.StatusOK)
+	handleResponse(w, true, "successfully", result, http.StatusOK)
+
 }
 
 // @Summary Get ProductAll with Pagination
@@ -177,7 +180,7 @@ func (app *Application) GetProductAlls(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    handleResponse(w, true, response, map[string]interface{}{
+    handleResponse(w, true, "successfully", map[string]interface{}{
         "products": products,
         "total":    total,
         "page":     page,
@@ -197,10 +200,11 @@ func (app *Application) GetProductAlls(w http.ResponseWriter, r *http.Request) {
 // // @Failure 500 {object} Response "Internal Server Error"
 // // @Router /constants/get-customer [get]
 // func (app *Application) GetCustomer(w http.ResponseWriter, r *http.Request) {
-// 	res, err := app.Service.Constant.GetThaiSubDistrict()
+// 	result, err := app.Service.Constant.GetThaiSubDistrict()
 // 	if err != nil {
 // 		HandleError(w, err)
 // 		return
 // 	}
-// 	handleResponse(w, true, response, res, http.StatusOK)
+// 		handleResponse(w, true, "successfully", result, http.StatusOK)
+
 // }

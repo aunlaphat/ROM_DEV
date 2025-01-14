@@ -57,6 +57,184 @@ type BefRORepository interface {
 
 	//Search
 	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
+
+	CheckOrderNoExists(ctx context.Context, orderNo string) (bool, error)
+	CreateTradeReturnLine(ctx context.Context, orderNo string, line request.TradeReturnLineRequest) error
+	ConfirmOrderNo(ctx context.Context, orderNo string, confirmBy string) error
+	CancelOrderNo(ctx context.Context, orderNo string, cancelBy string, remark string) error
+	GetTrackingNoByOrderNo(ctx context.Context, orderNo string) (string, error)
+}
+
+// CheckOrderExists ตรวจสอบว่ามี OrderNo ใน BeforeReturnOrder หรือไม่
+func (repo repositoryDB) CheckOrderNoExists(ctx context.Context, orderNo string) (bool, error) {
+	var exists bool
+
+	query := `
+		SELECT CASE 
+			WHEN EXISTS (SELECT 1 FROM BeforeReturnOrder WHERE OrderNo = @OrderNo) 
+			THEN 1 ELSE 0 
+		END
+	`
+
+	// ใช้ QueryRowContext เพื่อระบุ context
+	err := repo.db.QueryRowContext(ctx, query, sql.Named("OrderNo", orderNo)).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check order existence: %w", err)
+	}
+
+	return exists, nil
+}
+
+func (repo repositoryDB) GetTrackingNoByOrderNo(ctx context.Context, orderNo string) (string, error) {
+	var trackingNo string
+	query := `
+        SELECT TrackingNo
+        FROM BeforeReturnOrder
+        WHERE OrderNo = @OrderNo
+    `
+	err := repo.db.QueryRowContext(ctx, query, sql.Named("OrderNo", orderNo)).Scan(&trackingNo)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("order not found: %s", orderNo)
+		}
+		return "", fmt.Errorf("failed to fetch TrackingNo: %w", err)
+	}
+	return trackingNo, nil
+}
+
+
+// CreateTradeReturnLine สร้างข้อมูลใน BeforeReturnOrderLine
+func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo string, line request.TradeReturnLineRequest) error {
+	// ตรวจสอบว่า OrderNo มีอยู่ใน BeforeReturnOrder หรือไม่
+	exists, err := repo.CheckOrderNoExists(ctx, orderNo)
+	if err != nil {
+		return fmt.Errorf("failed to check order existence: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("order not found: %s", orderNo)
+	}
+
+	// ดึง TrackingNo จาก BeforeReturnOrder
+	trackingNo, err := repo.GetTrackingNoByOrderNo(ctx, orderNo)
+	if err != nil {
+		return fmt.Errorf("failed to fetch TrackingNo for OrderNo %s: %w", orderNo, err)
+	}
+
+	// สร้างข้อมูล BeforeReturnOrderLine ด้วย NamedExecContext
+	query := `
+        INSERT INTO BeforeReturnOrderLine (
+            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo, CreateDate
+        ) VALUES (
+            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo, GETDATE()
+        )
+    `
+	params := map[string]interface{}{
+		"OrderNo":    orderNo,
+		"SKU":        line.SKU,
+		"QTY":        line.QTY,
+		"ReturnQTY":  line.ReturnQTY,
+		"Price":      line.Price,
+		"CreateBy":   "user", // กำหนด "user" สำหรับฟิลด์ CreateBy
+		"TrackingNo": trackingNo,
+	}
+
+	_, err = repo.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		return fmt.Errorf("failed to create trade return line: %w", err)
+	}
+
+	return nil
+}
+
+func (repo repositoryDB) ConfirmOrderNo(ctx context.Context, orderNo string, confirmBy string) error {
+	// 1. กำหนด SQL query สำหรับ update สถานะ
+	query := `
+        UPDATE BeforeReturnOrder
+        SET StatusReturnID = 1, -- Pending status
+            StatusConfID = 1,   -- Draft status
+            ConfirmBy = :ConfirmBy
+			ComfirmDate = GETDATE()
+        WHERE OrderNo = :OrderNo
+    `
+	// 2. กำหนด parameters สำหรับ query
+	params := map[string]interface{}{
+		"OrderNo":   orderNo,
+		"ConfirmBy": confirmBy,
+	}
+
+	// 3. เตรียม statement
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare statement for confirming sale return: %w", err)
+	}
+	defer nstmt.Close()
+
+	// 4. execute query
+	_, err = nstmt.ExecContext(ctx, params)
+	if err != nil {
+		return fmt.Errorf("failed to confirm sale return: %w", err)
+	}
+
+	return nil
+}
+
+func (repo repositoryDB) CancelOrderNo(ctx context.Context, orderNo string, cancelBy string, remark string) error {
+	// 1. เริ่ม transaction
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	// 2. อัพเดทสถานะการยกเลิก
+	query := `
+        UPDATE BeforeReturnOrder
+        SET StatusReturnID = 2, -- Cancel status
+            StatusConfID = 3,   -- Cancel status
+            CancelID = (SELECT ISNULL(MAX(CancelID), 0) + 1 FROM CancelStatus), -- สร้าง CancelID ใหม่
+            UpdateBy = :CancelBy
+        WHERE OrderNo = :OrderNo
+    `
+	result, err := tx.NamedExecContext(ctx, query, map[string]interface{}{
+		"OrderNo":  orderNo,
+		"CancelBy": cancelBy,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update order status: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("order not found: %s", orderNo)
+	}
+
+	// 3. บันทึกประวัติการยกเลิก
+	queryCancelStatus := `
+        INSERT INTO CancelStatus (
+            RefID, CancelStatus, Remark, CancelBy, CancelDate
+        ) VALUES (
+            :OrderNo, 1, :Remark, :CancelBy, GETDATE()
+        )
+    `
+	_, err = tx.NamedExecContext(ctx, queryCancelStatus, map[string]interface{}{
+		"OrderNo":  orderNo,
+		"Remark":   remark,
+		"CancelBy": cancelBy,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to insert cancel status: %w", err)
+	}
+
+	return nil
 }
 
 // Implementation สำหรับ GetBeforeReturnOrderLineByOrderNo
@@ -103,7 +281,7 @@ func (repo repositoryDB) GetBeforeReturnOrderByOrderNo(ctx context.Context, orde
 	defer cancel()
 
 	query := `
-        SELECT OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
+        SELECT OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         FROM BeforeReturnOrder WITH (NOLOCK)
         WHERE OrderNo = :OrderNo
     `
@@ -221,7 +399,7 @@ func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response
 	defer cancel()
 
 	query := `
-        SELECT OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
+        SELECT OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         FROM BeforeReturnOrder WITH (NOLOCK)
         ORDER BY CreateDate ASC
     `
@@ -388,9 +566,9 @@ func (repo repositoryDB) GetOrderDetailBySO(ctx context.Context, soNo string) (*
 	}, nil
 }
 
-// Implementation สำหรับ SearchSaleOrder
+// Implementation สำหรับ SearchSoNo
 func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error) {
-	log.Printf("🚀 Starting SearchSaleOrder for SoNo: %s", soNo)
+	log.Printf("🚀 Starting SearchSoNo for SoNo: %s", soNo)
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
@@ -452,15 +630,15 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order requ
 
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
-            OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, CancelID
+            OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, CancelID
         ) VALUES (
-            :OrderNo, :SaleOrder, :SaleReturn, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE(), :CancelID
+            :OrderNo, :SoNo, :SrNo, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE(), :CancelID
         )
     `
 	paramsOrder := map[string]interface{}{
 		"OrderNo":        order.OrderNo,
-		"SaleOrder":      order.SaleOrder,
-		"SaleReturn":     order.SaleReturn,
+		"SoNo":      order.SoNo,
+		"SrNo":     order.SrNo,
 		"ChannelID":      order.ChannelID,
 		"ReturnType":     order.ReturnType,
 		"CustomerID":     order.CustomerID,
@@ -536,17 +714,17 @@ func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, o
 
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
-            OrderNo, SaleOrder, SaleReturn, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, 
+            OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, 
             SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate
         ) VALUES (
-            :OrderNo, :SaleOrder, :SaleReturn, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
+            :OrderNo, :SoNo, :SrNo, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
             :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE()
         )
     `
 	_, err = tx.NamedExecContext(ctx, queryOrder, map[string]interface{}{
 		"OrderNo":        order.OrderNo,
-		"SaleOrder":      order.SaleOrder,
-		"SaleReturn":     order.SaleReturn,
+		"SoNo":           order.SoNo,
+		"SrNo":           order.SrNo,
 		"ChannelID":      order.ChannelID,
 		"ReturnType":     order.ReturnType,
 		"CustomerID":     order.CustomerID,
@@ -615,8 +793,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order requ
 
 	query := `
         UPDATE BeforeReturnOrder 
-        SET SaleOrder = COALESCE(:SaleOrder, SaleOrder),
-            SaleReturn = COALESCE(:SaleReturn, SaleReturn),
+        SET SoNo = COALESCE(:SoNo, SoNo),
+            SrNo = COALESCE(:SrNo, SrNo),
             ChannelID = COALESCE(:ChannelID, ChannelID),
             ReturnType = COALESCE(:ReturnType, ReturnType),
             CustomerID = COALESCE(:CustomerID, CustomerID),
@@ -636,8 +814,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order requ
     `
 	params := map[string]interface{}{
 		"OrderNo":        order.OrderNo,
-		"SaleOrder":      order.SaleOrder,
-		"SaleReturn":     order.SaleReturn,
+		"SoNo":      order.SoNo,
+		"SrNo":     order.SrNo,
 		"ChannelID":      order.ChannelID,
 		"ReturnType":     order.ReturnType,
 		"CustomerID":     order.CustomerID,
@@ -761,8 +939,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 	// Update BeforeReturnOrder
 	queryOrder := `
         UPDATE BeforeReturnOrder 
-        SET SaleOrder = COALESCE(:SaleOrder, SaleOrder),
-            SaleReturn = COALESCE(:SaleReturn, SaleReturn),
+        SET SoNo = COALESCE(:SoNo, SoNo),
+            SrNo = COALESCE(:SrNo, SrNo),
             ChannelID = COALESCE(:ChannelID, ChannelID),
             ReturnType = COALESCE(:ReturnType, ReturnType),
             CustomerID = COALESCE(:CustomerID, CustomerID),
@@ -783,8 +961,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 
 	paramsOrder := map[string]interface{}{
 		"OrderNo":        order.OrderNo,
-		"SaleOrder":      order.SaleOrder,
-		"SaleReturn":     order.SaleReturn,
+		"SoNo":      order.SoNo,
+		"SrNo":     order.SrNo,
 		"ChannelID":      order.ChannelID,
 		"ReturnType":     order.ReturnType,
 		"CustomerID":     order.CustomerID,

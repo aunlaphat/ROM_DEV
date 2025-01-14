@@ -16,8 +16,8 @@ type BeforeReturnOrderLineResponse struct {
 // BeforeReturnOrderResponse represents the response structure for a return order before processing
 type BeforeReturnOrderResponse struct {
 	OrderNo                string                          `json:"orderNo" db:"OrderNo"`
-	SaleOrder              string                          `json:"saleOrder" db:"SaleOrder"`
-	SaleReturn             string                          `json:"saleReturn" db:"SaleReturn"`
+	SoNo                   string                          `json:"soNo" db:"SoNo"`
+	SrNo                   string                          `json:"srNo" db:"SrNo"`
 	ChannelID              int                             `json:"channelId" db:"ChannelID"`
 	ReturnType             string                          `json:"returnType" db:"ReturnType"`
 	CustomerID             string                          `json:"customerId" db:"CustomerID"`
@@ -52,4 +52,18 @@ type SaleOrderLineResponse struct {
 	ItemName string  `json:"itemName" db:"ItemName"`
 	QTY      int     `json:"qty" db:"QTY"`
 	Price    float64 `json:"price" db:"Price"`
+}
+
+type ConfirmReturnResponse struct {
+	OrderNo     string    `json:"orderNo" db:"OrderNo"`
+	ConfirmBy   string    `json:"confirmBy" db:"ConfirmBy"`
+	ConfirmDate time.Time `json:"confirmDate" db:"ConfirmDate"`
+}
+
+type CancelReturnResponse struct {
+	RefID        string    `json:"refId" db:"RefID"`
+	CancelStatus bool      `json:"cancelStatus" db:"CancelStatus"`
+	Remark       string    `json:"remark" db:"Remark"`
+	CancelBy     string    `json:"cancelBy" db:"CancelBy"`
+	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
 }
