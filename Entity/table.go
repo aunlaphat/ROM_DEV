@@ -131,6 +131,14 @@ type ROM_V_OrderHeadDetail struct {
 	CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
 }
 
+/* type ROM_V_User struct {
+	UserID       string `json:"userID,omitempty" db:"UserID"`           // รหัสผู้ใช้
+	UserName     string `json:"userName,omitempty" db:"Username"`       // ชื่อผู้ใช้
+	NickName     string `json:"nickName,omitempty" db:"NickName"`       // ชื่อเล่น
+	FullNameTH   string `json:"fullNameTH,omitempty" db:"FullNameTH"`   // ชื่อเต็มภาษาไทย
+	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo"` // รหัสแผนก
+} */
+
 type ROM_V_UserPermission struct {
 	UserID       string `json:"userID,omitempty" db:"UserID"`           // รหัสผู้ใช้
 	UserName     string `json:"userName,omitempty" db:"Username"`       // ชื่อผู้ใช้

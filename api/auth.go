@@ -34,9 +34,11 @@ func (app *Application) GenerateToken(tokenData res.Login) string {
 	// สร้าง claims (ข้อมูลที่จะเก็บใน token)
 	data := map[string]interface{}{
 		"userID":     tokenData.UserID,
+		"userName":   tokenData.UserName,
 		"roleID":     tokenData.RoleID,
-		"nickName":   tokenData.NickName,
 		"fullNameTH": tokenData.FullNameTH,
+		"nickName":   tokenData.NickName,
+		"department": tokenData.DepartmentNo,
 		"platform":   tokenData.Platform,
 	}
 	// สร้างและเข้ารหัส token
@@ -50,7 +52,7 @@ func (app *Application) GenerateToken(tokenData res.Login) string {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param login-request body request.Login true "User login credentials in JSON format"
+// @Param login-request body request.LoginWeb true "User login credentials in JSON format"
 // @Success 200 {object} Response{result=string} "JWT token"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
@@ -64,7 +66,7 @@ func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. รับข้อมูล login จาก request body
-	req := req.Login{}
+	req := req.LoginWeb{}
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		handleError(w, err)
@@ -78,11 +80,13 @@ func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tokenData := res.Login{
-		UserID:     user.UserID,
-		RoleID:     user.RoleID,
-		NickName:   user.NickName,
-		FullNameTH: user.FullNameTH,
-		Platform:   user.Platform,
+		UserID:       user.UserID,
+		UserName:     user.UserName,
+		RoleID:       user.RoleID,
+		FullNameTH:   user.FullNameTH,
+		NickName:     user.NickName,
+		DepartmentNo: user.DepartmentNo,
+		Platform:     user.Platform,
 	}
 	fmt.Println("token data", tokenData)
 
@@ -133,11 +137,13 @@ func (app *Application) LoginFromLark(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tokenData := res.Login{
-		UserID:     user.UserID,
-		RoleID:     user.RoleID,
-		NickName:   user.NickName,
-		FullNameTH: user.FullNameTH,
-		Platform:   user.Platform,
+		UserID:       user.UserID,
+		UserName:     user.UserName,
+		RoleID:       user.RoleID,
+		FullNameTH:   user.FullNameTH,
+		NickName:     user.NickName,
+		DepartmentNo: user.DepartmentNo,
+		Platform:     user.Platform,
 	}
 	token := app.GenerateToken(tokenData)
 

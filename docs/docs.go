@@ -85,7 +85,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.Login"
+                            "$ref": "#/definitions/request.LoginWeb"
                         }
                     }
                 ],
@@ -1449,29 +1449,29 @@ const docTemplate = `{
                 }
             }
         },
-        "request.Login": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string",
-                    "example": "string"
-                },
-                "userID": {
-                    "type": "string",
-                    "example": "DC0000"
-                }
-            }
-        },
         "request.LoginLark": {
             "type": "object",
             "properties": {
                 "userID": {
                     "type": "string",
-                    "example": "DC99999"
+                    "example": "DC65060"
                 },
                 "userName": {
                     "type": "string",
-                    "example": "eknarin"
+                    "example": "eknarin.ler"
+                }
+            }
+        },
+        "request.LoginWeb": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "xxxxxxxx"
+                },
+                "userName": {
+                    "type": "string",
+                    "example": "eknarin.ler"
                 }
             }
         },
@@ -1630,23 +1630,23 @@ const docTemplate = `{
                 },
                 "fullNameTH": {
                     "type": "string",
-                    "example": "test1234"
+                    "example": "Firstname Lastname"
                 },
                 "nickName": {
                     "type": "string",
-                    "example": "test1234"
+                    "example": "Nickname"
                 },
                 "platform": {
                     "type": "string",
-                    "example": "test1234"
+                    "example": "Platform"
                 },
                 "roleID": {
                     "type": "integer",
-                    "example": 1
+                    "example": 0
                 },
                 "userID": {
                     "type": "string",
-                    "example": "userID"
+                    "example": "DC-XXXXX"
                 },
                 "userName": {
                     "type": "string",
