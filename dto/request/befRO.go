@@ -47,8 +47,7 @@ type UpdateSaleReturnRequest struct {
 }
 
 type CancelSaleReturnRequest struct {
-	OrderNo      string `json:"orderNo" db:"OrderNo"`
-	CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
-	CancelBy     string `json:"cancelBy" db:"CancelBy"`
+	//OrderNo      string `json:"orderNo" db:"OrderNo"`
+	//CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
 	Remark       string `json:"remark" db:"Remark"`
 }

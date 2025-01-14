@@ -37,7 +37,7 @@ func (app *Application) GenerateToken(tokenData res.Login) string {
 		"roleID":     tokenData.RoleID,
 		"nickName":   tokenData.NickName,
 		"fullNameTH": tokenData.FullNameTH,
-		"plateform":  tokenData.Platform,
+		"platform":   tokenData.Platform,
 	}
 	// สร้างและเข้ารหัส token
 	_, tokenString, _ := app.TokenAuth.Encode(data)

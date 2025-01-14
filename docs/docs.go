@@ -783,8 +783,8 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Cancel details",
-                        "name": "cancelDetails",
+                        "description": "Cancel Sale Return",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -1443,16 +1443,8 @@ const docTemplate = `{
         "request.CancelSaleReturnRequest": {
             "type": "object",
             "properties": {
-                "cancelBy": {
-                    "type": "string"
-                },
-                "cancelStatus": {
-                    "type": "boolean"
-                },
-                "orderNo": {
-                    "type": "string"
-                },
                 "remark": {
+                    "description": "OrderNo      string ` + "`" + `json:\"orderNo\" db:\"OrderNo\"` + "`" + `\nCancelStatus bool   ` + "`" + `json:\"cancelStatus\" db:\"CancelStatus\"` + "`" + `",
                     "type": "string"
                 }
             }

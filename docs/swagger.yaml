@@ -148,13 +148,10 @@ definitions:
     type: object
   request.CancelSaleReturnRequest:
     properties:
-      cancelBy:
-        type: string
-      cancelStatus:
-        type: boolean
-      orderNo:
-        type: string
       remark:
+        description: |-
+          OrderNo      string `json:"orderNo" db:"OrderNo"`
+          CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
         type: string
     type: object
   request.Login:
@@ -834,9 +831,9 @@ paths:
         name: orderNo
         required: true
         type: string
-      - description: Cancel details
+      - description: Cancel Sale Return
         in: body
-        name: cancelDetails
+        name: request
         required: true
         schema:
           $ref: '#/definitions/request.CancelSaleReturnRequest'

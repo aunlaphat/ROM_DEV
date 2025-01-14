@@ -53,6 +53,13 @@ type SaleOrderLineResponse struct {
 	Price    float64 `json:"price" db:"Price"`
 }
 
+type UpdateSaleReturnResponse struct {
+	OrderNo    string    `json:"orderNo" db:"OrderNo"`
+	SrNo       string    `json:"srNo" db:"SrNo"`
+	UpdateBy   string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate time.Time `json:"updateDate" db:"UpdateDate"`
+}
+
 type ConfirmSaleReturnResponse struct {
 	OrderNo     string    `json:"orderNo" db:"OrderNo"`
 	ConfirmBy   string    `json:"confirmBy" db:"ConfirmBy"`

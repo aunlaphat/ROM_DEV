@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth"
 	"go.uber.org/zap"
 )
 
@@ -24,9 +26,9 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
-		// middleware เพื่อตรวจสอบ authentication
-		/* r.Use(jwtauth.Verifier(app.TokenAuth))
-		r.Use(jwtauth.Authenticator) */
+		// Add auth middleware for protected routes
+		r.Use(jwtauth.Verifier(app.TokenAuth))
+		r.Use(jwtauth.Authenticator)
 
 		r.Get("/search/{soNo}", app.SearchSaleOrder)
 		r.Post("/create", app.CreateSaleReturn)
@@ -406,6 +408,12 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// อัพเดทการตรวจสอบข้อมูล
+	if req.SrNo == "" {
+		http.Error(w, "SrNo is required", http.StatusBadRequest)
+		return
+	}
+
 	// 3. ตรวจสอบว่า order มีอยู่จริง
 	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
@@ -417,27 +425,34 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// 4. อัพเดท SR number
-	err = app.Service.BefRO.UpdateSaleReturn(r.Context(), orderNo, req.SrNo)
+	// ดึง userID จาก JWT token
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		return
+	}
+
+	userID, ok := claims["userID"].(string)
+	if !ok || userID == "" {
+		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
+		return
+	}
+
+	// เรียกใช้ service พร้อมส่ง userID
+	err = app.Service.BefRO.UpdateSaleReturn(r.Context(), orderNo, req.SrNo, userID)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	// 5. ดึงข้อมูลที่อัพเดทแล้ว
-	updatedOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
-	if err != nil {
-		handleError(w, err)
-		return
+	response := res.UpdateSaleReturnResponse{
+		OrderNo:    orderNo,
+		SrNo:       req.SrNo,
+		UpdateBy:   userID,
+		UpdateDate: time.Now(),
 	}
 
-	// 6. บันทึก log
-	app.Logger.Info("✅ Successfully updated SR number",
-		zap.String("OrderNo", orderNo),
-		zap.String("SrNo", req.SrNo))
-
-	// 7. ส่ง response
-	handleResponse(w, true, "SR number updated successfully", updatedOrder, http.StatusOK)
+	handleResponse(w, true, "SR number updated successfully", response, http.StatusOK)
 }
 
 // ConfirmSaleReturn godoc
@@ -455,23 +470,27 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request) {
 	// 1. รับค่า orderNo จาก URL parameter
 	orderNo := chi.URLParam(r, "orderNo")
-
-	// 2. ดึงข้อมูล claims (ข้อมูลผู้ใช้) จาก context (มาจาก JWT authentication)
-	claims, ok := r.Context().Value("claims").(map[string]interface{})
-	if !ok {
-		handleError(w, fmt.Errorf("user claims are missing or invalid"))
+	if orderNo == "" {
+		handleError(w, fmt.Errorf("order number is required"))
 		return
 	}
 
-	// 3. ดึง username จาก claims เพื่อใช้เป็น confirmBy
-	confirmBy, ok := claims["username"].(string)
-	if !ok || confirmBy == "" {
-		handleError(w, fmt.Errorf("username is missing or invalid"))
+	// 2. ดึงค่า claims จาก JWT token
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		return
+	}
+
+	// 3. ดึงค่า userID จาก claims
+	userID, ok := claims["userID"].(string)
+	if !ok || userID == "" {
+		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
 		return
 	}
 
 	// 4. เรียกใช้ service layer เพื่อดำเนินการ confirm
-	err := app.Service.BefRO.ConfirmSaleReturn(r.Context(), orderNo, confirmBy)
+	err = app.Service.BefRO.ConfirmSaleReturn(r.Context(), orderNo, userID)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -479,9 +498,11 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 
 	// 5. สร้าง response และส่งกลับ
 	response := res.ConfirmSaleReturnResponse{
-		OrderNo:   orderNo,
-		ConfirmBy: confirmBy,
+		OrderNo:     orderNo,
+		ConfirmBy:   userID,
+		ConfirmDate: time.Now(),
 	}
+
 	handleResponse(w, true, "Sale return order confirmed successfully", response, http.StatusOK)
 }
 
@@ -493,7 +514,7 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 // @Accept json
 // @Produce json
 // @Param orderNo path string true "Order number"
-// @Param cancelDetails body request.CancelSaleReturnRequest true "Cancel details"
+// @Param request body request.CancelSaleReturnRequest true "Cancel Sale Return"
 // @Success 200 {object} api.Response{data=response.CancelSaleReturnResponse} "Sale return order canceled successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
@@ -517,6 +538,20 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// 2. ดึงค่า claims จาก JWT token
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		return
+	}
+
+	// 3. ดึงค่า userID จาก claims
+	userID, ok := claims["userID"].(string)
+	if !ok || userID == "" {
+		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
+		return
+	}
+
 	// 3. รับและตรวจสอบข้อมูล request body
 	var req request.CancelSaleReturnRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -525,17 +560,13 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 4. ตรวจสอบข้อมูลที่จำเป็น
-	if req.CancelBy == "" {
-		http.Error(w, "CancelBy is required", http.StatusBadRequest)
-		return
-	}
 	if req.Remark == "" {
 		http.Error(w, "Remark is required", http.StatusBadRequest)
 		return
 	}
 
 	// 5. เรียกใช้ service
-	err = app.Service.BefRO.CancelSaleReturn(r.Context(), orderNo, req.CancelBy, req.Remark)
+	err = app.Service.BefRO.CancelSaleReturn(r.Context(), orderNo, userID, req.Remark)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -543,9 +574,11 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 
 	// 6. ส่ง response
 	response := res.CancelSaleReturnResponse{
-		RefID:    orderNo,
-		CancelBy: req.CancelBy,
-		Remark:   req.Remark,
+		RefID:        orderNo,
+		CancelStatus: true,
+		CancelBy:     userID,
+		Remark:       req.Remark,
+		CancelDate:   time.Now(),
 	}
 	handleResponse(w, true, "Sale return order canceled successfully", response, http.StatusOK)
 }
