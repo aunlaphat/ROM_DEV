@@ -1472,7 +1472,7 @@ const docTemplate = `{
             "properties": {
                 "password": {
                     "type": "string",
-                    "example": "xxxxxxxx"
+                    "example": "ekna1234"
                 },
                 "userName": {
                     "type": "string",

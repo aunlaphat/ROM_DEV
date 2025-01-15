@@ -166,7 +166,7 @@ definitions:
   request.LoginWeb:
     properties:
       password:
-        example: xxxxxxxx
+        example: ekna1234
         type: string
       userName:
         example: eknarin.ler

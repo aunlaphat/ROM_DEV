@@ -593,6 +593,9 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 		}
 	}()
 
+	// Logging
+	fmt.Println("Transaction started")
+
 	// 2. Insert BeforeReturnOrder (Header)
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
@@ -622,6 +625,9 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 		return nil, fmt.Errorf("failed to create BeforeReturnOrder: %w", err)
 	}
 
+	// Logging
+	fmt.Println("Inserted BeforeReturnOrder")
+
 	// 3. Insert BeforeReturnOrderLine (Lines)
 	queryLine := `
         INSERT INTO BeforeReturnOrderLine (
@@ -650,11 +656,17 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
+	// Logging
+    fmt.Println("Transaction committed")
+
 	// 5. ดึงข้อมูลที่สร้างเสร็จแล้ว
 	createdOrder, err := repo.GetBeforeReturnOrderByOrderNo(ctx, order.OrderNo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch created order: %w", err)
 	}
+
+	// Logging
+    fmt.Println("Fetched created order")
 
 	return createdOrder, nil
 }

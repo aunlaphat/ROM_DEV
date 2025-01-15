@@ -7,7 +7,7 @@ type Login struct {
 
 type LoginWeb struct {
 	UserName string `json:"userName" db:"Username" example:"eknarin.ler"`
-	Password string `json:"password" db:"Password" example:"xxxxxxxx"`
+	Password string `json:"password" db:"Password" example:"ekna1234"`
 }
 
 type LoginLark struct {

@@ -15,8 +15,8 @@ type BeforeReturnOrderResponse struct {
 	SoStatusID             *int                            `json:"soStatusId" db:"SoStatusID"`
 	MkpStatusID            *int                            `json:"mkpStatusId" db:"MkpStatusID"`
 	ReturnDate             *time.Time                      `json:"returnDate" db:"ReturnDate"`
-	StatusReturnID         int                             `json:"statusReturnId" db:"StatusReturnID"`
-	StatusConfID           int                             `json:"statusConfId" db:"StatusConfID"`
+	StatusReturnID         *int                            `json:"statusReturnId" db:"StatusReturnID"`
+	StatusConfID           *int                            `json:"statusConfId" db:"StatusConfID"`
 	ConfirmBy              *string                         `json:"confirmBy" db:"ConfirmBy"`
 	ConfirmDate            *time.Time                      `json:"confirmDate" db:"ConfirmDate"`
 	CreateBy               string                          `json:"createBy" db:"CreateBy"`
