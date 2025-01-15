@@ -28,10 +28,8 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
 
 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)
-		r.Get("/search/{soNo}", app.SearchSaleOrder) // New route for searching sale order
 
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
-		r.Post("/create-trade", app.CreateTradeReturn)
 
 		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines) // New route for updating return order with lines
 
@@ -88,7 +86,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request) {
 	var req request.BeforeReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleError(w, err)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
@@ -144,16 +142,32 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	// Check if the order already exists
+	// เช็คว่า orderNo ที่สร้างไม่ซ้ำกับตัวที่มีอยู่แล้ว
 	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
-	if existingOrder == nil {
-		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
+	if existingOrder != nil {
+		handleResponse(w, false, "Order already exists", nil, http.StatusConflict)
 		return
 	}
+
+	// ดึงค่า claims จาก JWT token
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		return
+	}
+
+	userID, ok := claims["userID"].(string)
+	if !ok || userID == "" {
+		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
+		return
+	}
+
+	// Set CreateBy จาก claims
+	req.CreateBy = userID
 
 	// Create a new order
 	result, err := app.Service.BefRO.CreateBeforeReturn(r.Context(), req)
@@ -164,6 +178,11 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 
 	fmt.Printf("\n📋 ========== Created Trade Return Order ========== 📋\n")
 	printOrderDetails(result)
+	fmt.Printf("\n📋 ========== Trade Return Order Line Details ========== 📋\n")
+	for _, line := range result.BeforeReturnOrderLines {
+		printOrderLineDetails(&line)
+	}
+
 	handleResponse(w, true, "Trade return order created successfully", result, http.StatusOK)
 }
 
@@ -740,10 +759,26 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 		handleError(w, err)
 		return
 	}
-	if existingOrder == nil {
-		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
+	if existingOrder != nil {
+		handleResponse(w, false, "Order already exists", nil, http.StatusConflict)
 		return
 	}
+
+	// ดึงค่า claims จาก JWT token
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		return
+	}
+
+	userID, ok := claims["userID"].(string)
+	if !ok || userID == "" {
+		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
+		return
+	}
+
+	// Set CreateBy จาก claims
+	req.CreateBy = userID
 
 	// Create a new order
 	result, err := app.Service.BefRO.CreateBeforeReturn(r.Context(), req)
@@ -754,6 +789,11 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 
 	fmt.Printf("\n📋 ========== Created Sale Return Order ========== 📋\n")
 	printOrderDetails(result)
+	fmt.Printf("\n📋 ========== Sale Return Order Line Details ========== 📋\n")
+	for _, line := range result.BeforeReturnOrderLines {
+		printOrderLineDetails(&line)
+	}
+
 	handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
 }
 
@@ -1029,3 +1069,4 @@ func printDraftLineDetails(line *res.BeforeReturnOrderLineResponse) {
 	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
 	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate)
 }
+
