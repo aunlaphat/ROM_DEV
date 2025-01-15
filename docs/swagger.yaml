@@ -800,47 +800,6 @@ paths:
       summary: Get return order by order number
       tags:
       - Before Return Order
-  /before-return-order/add-line/{orderNo}:
-    post:
-      consumes:
-      - application/json
-      description: Add a new trade return line based on the provided order number
-        and line details
-      operationId: add-trade-return-line
-      parameters:
-      - description: Order number
-        in: path
-        name: orderNo
-        required: true
-        type: string
-      - description: Trade Return Line Details
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/request.TradeReturnLineRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Trade return line created successfully
-          schema:
-            $ref: '#/definitions/api.Response'
-        "400":
-          description: Bad Request - Invalid input or missing required fields
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found - Order not found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Add a new trade return line to an existing order
-      tags:
-      - Trade Return
   /before-return-order/create:
     post:
       consumes:
@@ -872,41 +831,6 @@ paths:
       summary: Create a new return order with lines
       tags:
       - Before Return Order
-  /before-return-order/create-trade:
-    post:
-      consumes:
-      - application/json
-      description: Create a new trade return order with multiple order lines
-      operationId: create-trade-return
-      parameters:
-      - description: Trade Return Detail
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/request.BeforeReturnOrder'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Trade return created successfully
-          schema:
-            $ref: '#/definitions/api.Response'
-        "400":
-          description: Bad Request - Invalid input or missing required fields
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found - Order not found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Create a new trade return order
-      tags:
-      - Trade Return
   /before-return-order/delete-befodline/{recID}:
     delete:
       consumes:
@@ -1918,6 +1842,158 @@ paths:
       summary: Update the SR number for a sale return order
       tags:
       - Sale Return
+  /trade-return/add-line/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Add a new trade return line based on the provided order number
+        and line details
+      operationId: add-trade-return-line
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: Trade Return Line Details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.TradeReturnLineRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Trade return line created successfully
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request - Invalid input or missing required fields
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found - Order not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Add a new trade return line to an existing order
+      tags:
+      - Trade Return
+  /trade-return/cancel/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Cancel a sale return order based on the provided details
+      operationId: cancel-trade-return
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: Cancel details
+        in: body
+        name: cancelDetails
+        required: true
+        schema:
+          $ref: '#/definitions/request.CancelReturnRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sale return order canceled successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.CancelReturnResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Cancel a sale return order
+      tags:
+      - Trade Return
+  /trade-return/confirm/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Confirm a sale return order based on the provided details
+      operationId: confirm-trade-return
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sale return order confirmed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.ConfirmReturnResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Confirm a sale return order
+      tags:
+      - Trade Return
+  /trade-return/create-trade:
+    post:
+      consumes:
+      - application/json
+      description: Create a new trade return order with multiple order lines
+      operationId: create-trade-return
+      parameters:
+      - description: Trade Return Detail
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.BeforeReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Trade return created successfully
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request - Invalid input or missing required fields
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found - Order not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Create a new trade return order
+      tags:
+      - Trade Return
   /user/get-user:
     get:
       consumes:

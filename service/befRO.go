@@ -27,7 +27,8 @@ type BefROService interface {
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
 
-	CreateSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) 
+	CreateBeforeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) 
+
 	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error
 	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
 	CancelSaleReturn(ctx context.Context, orderNo string, cancelBy string, remark string) error 
@@ -267,11 +268,11 @@ func (srv service) SearchSaleOrder(ctx context.Context, soNo string) ([]response
 	return []response.SaleOrderResponse{*order}, nil
 }
 
-func (srv service) CreateSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
+func (srv service) CreateBeforeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("🏁 Starting sale return creation process", zap.String("OrderNo", req.OrderNo))
 	srv.logger.Debug("Creating sale return order", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo))
 
-	createdOrder, err := srv.befRORepo.CreateSaleReturn(ctx, req)
+	createdOrder, err := srv.befRORepo.CreateBeforeReturn(ctx, req)
 	if err != nil {
 		srv.logger.Error("❌ Failed to create sale return order", zap.Error(err))
 		return nil, err

@@ -58,7 +58,7 @@ type BefRORepository interface {
 	//Search SoNo (Sale Order from Order - MKP)
 	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
 	//Create
-	CreateSaleReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
+	CreateBeforeReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	//Insert SrNo (SR Create from AX)
 	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error
 
@@ -943,7 +943,7 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*res
 	return &orderHead, nil
 }
 
-func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
+func (repo repositoryDB) CreateBeforeReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)

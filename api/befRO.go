@@ -36,14 +36,20 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines) // New route for updating return order with lines
 
 		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine)
+	})
+
+	apiRouter.Route("/trade-return", func(r chi.Router) {
+		// Add auth middleware for protected routes
+		r.Use(jwtauth.Verifier(app.TokenAuth))
+		r.Use(jwtauth.Authenticator)
 
 		/******** Trade Retrun ********/
 		r.Post("/create-trade", app.CreateTradeReturn)
 		r.Post("/add-line/{orderNo}", app.AddTradeReturnLine)
 		r.Post("/confirm/{orderNo}", app.ConfirmTradeReturn)
 		r.Post("/cancel/{orderNo}", app.CancelTradeReturn)
-
 	})
+
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
 		// Add auth middleware for protected routes
@@ -78,7 +84,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 // @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
 // @Failure 404 {object} api.Response "Not Found - Order not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /before-return-order/create-trade [post]
+// @Router /trade-return/create-trade [post]
 func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request) {
 	var req request.BeforeReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -86,13 +92,79 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
+	// Validation
+	if req.OrderNo == "" {
+		http.Error(w, "OrderNo is required", http.StatusBadRequest)
+		return
+	}
+	if req.SoNo == "" {
+		http.Error(w, "SoNo is required", http.StatusBadRequest)
+		return
+	}
+	if req.ChannelID == 0 {
+		http.Error(w, "ChannelID is required", http.StatusBadRequest)
+		return
+	}
+	if req.CustomerID == "" {
+		http.Error(w, "CustomerID is required", http.StatusBadRequest)
+		return
+	}
+	if req.WarehouseID == 0 {
+		http.Error(w, "WarehouseID is required", http.StatusBadRequest)
+		return
+	}
+	if req.ReturnType == "" {
+		http.Error(w, "ReturnType is required", http.StatusBadRequest)
+		return
+	}
+	if req.TrackingNo == "" {
+		http.Error(w, "TrackingNo is required", http.StatusBadRequest)
+		return
+	}
+	if len(req.BeforeReturnOrderLines) == 0 {
+		http.Error(w, "At least one order line is required", http.StatusBadRequest)
+		return
+	}
+	for _, line := range req.BeforeReturnOrderLines {
+		if line.SKU == "" {
+			http.Error(w, "SKU is required for all order lines", http.StatusBadRequest)
+			return
+		}
+		if line.QTY <= 0 {
+			http.Error(w, "QTY must be greater than 0 for all order lines", http.StatusBadRequest)
+			return
+		}
+		if line.ReturnQTY < 0 {
+			http.Error(w, "ReturnQTY cannot be negative for all order lines", http.StatusBadRequest)
+			return
+		}
+		if line.Price < 0 {
+			http.Error(w, "Price cannot be negative for all order lines", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Check if the order already exists
+	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+	if existingOrder == nil {
+		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
+		return
+	}
+
+	// Create a new order
+	result, err := app.Service.BefRO.CreateBeforeReturn(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
+	fmt.Printf("\n📋 ========== Created Trade Return Order ========== 📋\n")
+	printOrderDetails(result)
+	handleResponse(w, true, "Trade return order created successfully", result, http.StatusOK)
 }
 
 // @Summary Add a new trade return line to an existing order
@@ -107,7 +179,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 // @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
 // @Failure 404 {object} api.Response "Not Found - Order not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /before-return-order/add-line/{orderNo} [post]
+// @Router /trade-return/add-line/{orderNo} [post]
 func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
@@ -134,7 +206,7 @@ func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Reques
 // ConfirmSaleReturn godoc
 // @Summary Confirm a sale return order
 // @Description Confirm a sale return order based on the provided details
-// @ID confirm-sale-return
+// @ID confirm-trade-return
 // @Tags Trade Return
 // @Accept json
 // @Produce json
@@ -142,7 +214,7 @@ func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Reques
 // @Success 200 {object} api.Response{data=response.ConfirmReturnResponse} "Sale return order confirmed successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /sale-return/confirm/{orderNo} [post]
+// @Router /trade-return/confirm/{orderNo} [post]
 func (app *Application) ConfirmTradeReturn(w http.ResponseWriter, r *http.Request) {
 	// 1. รับค่า orderNo จาก URL parameter
 	orderNo := chi.URLParam(r, "orderNo")
@@ -179,7 +251,7 @@ func (app *Application) ConfirmTradeReturn(w http.ResponseWriter, r *http.Reques
 // CancelSaleReturn godoc
 // @Summary Cancel a sale return order
 // @Description Cancel a sale return order based on the provided details
-// @ID cancel-sale-return
+// @ID cancel-trade-return
 // @Tags Trade Return
 // @Accept json
 // @Produce json
@@ -188,7 +260,7 @@ func (app *Application) ConfirmTradeReturn(w http.ResponseWriter, r *http.Reques
 // @Success 200 {object} api.Response{data=response.CancelReturnResponse} "Sale return order canceled successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /sale-return/cancel/{orderNo} [post]
+// @Router /trade-return/cancel/{orderNo} [post]
 func (app *Application) CancelTradeReturn(w http.ResponseWriter, r *http.Request) {
 	// 1. รับค่า orderNo จาก URL parameter
 	orderNo := chi.URLParam(r, "orderNo")
@@ -674,7 +746,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Create a new order
-	result, err := app.Service.BefRO.CreateSaleReturn(r.Context(), req)
+	result, err := app.Service.BefRO.CreateBeforeReturn(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
