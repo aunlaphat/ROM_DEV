@@ -6,10 +6,9 @@ import (
 	"boilerplate-backend-go/errors"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -696,115 +695,45 @@ func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *ht
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/create [post]
 func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request) {
-	var req request.BeforeReturnOrder
-
-	// อ่านข้อมูลจาก request body
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-
-	// log JSON ที่ได้รับ
-	log.Printf("Received JSON payload: %s", string(body))
-
-	// Decode JSON
-	if err := json.Unmarshal(body, &req); err != nil {
-		log.Printf("Error decoding JSON: %v", err)
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
-		return
-	}
-
-	log.Printf("Decoded struct: %+v", req)
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	// Validation
-	if req.OrderNo == "" {
-		http.Error(w, "OrderNo is required", http.StatusBadRequest)
-		return
-	}
-	if req.SoNo == "" {
-		http.Error(w, "SoNo is required", http.StatusBadRequest)
-		return
-	}
-	if req.ChannelID == 0 {
-		http.Error(w, "ChannelID is required", http.StatusBadRequest)
-		return
-	}
-	if req.CustomerID == "" {
-		http.Error(w, "CustomerID is required", http.StatusBadRequest)
-		return
-	}
-	if req.WarehouseID == 0 {
-		http.Error(w, "WarehouseID is required", http.StatusBadRequest)
-		return
-	}
-	if req.ReturnType == "" {
-		http.Error(w, "ReturnType is required", http.StatusBadRequest)
-		return
-	}
-	if req.TrackingNo == "" {
-		http.Error(w, "TrackingNo is required", http.StatusBadRequest)
-		return
-	}
-	if len(req.BeforeReturnOrderLines) == 0 {
-		http.Error(w, "At least one order line is required", http.StatusBadRequest)
-		return
-	}
-	for _, line := range req.BeforeReturnOrderLines {
-		if line.SKU == "" {
-			http.Error(w, "SKU is required for all order lines", http.StatusBadRequest)
-			return
-		}
-		if line.QTY <= 0 {
-			http.Error(w, "QTY must be greater than 0 for all order lines", http.StatusBadRequest)
-			return
-		}
-		if line.ReturnQTY < 0 {
-			http.Error(w, "ReturnQTY cannot be negative for all order lines", http.StatusBadRequest)
-			return
-		}
-		if line.Price < 0 {
-			http.Error(w, "Price cannot be negative for all order lines", http.StatusBadRequest)
-			return
-		}
-	}
-
-	// Check if the order already exists
-	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-	if existingOrder != nil {
-		handleResponse(w, false, "Order already exists", nil, http.StatusConflict)
-		return
-	}
-
-	// ดึงค่า claims จาก JWT token
+	// 1. Authentication check
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
-	userID, ok := claims["userID"].(string)
-	if !ok || userID == "" {
-		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
+	userID, err := getUserIDFromClaims(claims)
+	if err != nil {
+		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
 		return
 	}
 
-	// Set CreateBy จาก claims
+	var req request.BeforeReturnOrder
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		app.Logger.Error("Failed to decode request", zap.Error(err))
+		handleResponse(w, false, "Invalid request format", nil, http.StatusBadRequest)
+		return
+	}
+
+	// Set user information from claims
 	req.CreateBy = userID
 
-	// Create a new order
+	// 4. Call service
 	result, err := app.Service.BefRO.CreateBeforeReturn(r.Context(), req)
 	if err != nil {
-		handleError(w, err)
+		app.Logger.Error("Failed to create sale return",
+			zap.Error(err),
+			zap.String("orderNo", req.OrderNo))
+
+		// Handle specific error cases
+		switch {
+		case strings.Contains(err.Error(), "validation failed"):
+			handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
+		case strings.Contains(err.Error(), "already exists"):
+			handleResponse(w, false, err.Error(), nil, http.StatusConflict)
+		default:
+			handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
+		}
 		return
 	}
 

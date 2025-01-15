@@ -269,18 +269,37 @@ func (srv service) SearchSaleOrder(ctx context.Context, soNo string) ([]response
 }
 
 func (srv service) CreateBeforeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
-	srv.logger.Info("🏁 Starting sale return creation process", zap.String("OrderNo", req.OrderNo))
-	srv.logger.Debug("Creating sale return order", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo))
-
-	createdOrder, err := srv.befRORepo.CreateBeforeReturn(ctx, req)
-	if err != nil {
-		srv.logger.Error("❌ Failed to create sale return order", zap.Error(err))
-		return nil, err
-	}
-
-	srv.logger.Info("✅ Successfully created sale return order",
-		zap.String("OrderNo", req.OrderNo))
-	return createdOrder, nil
+		// 1. เริ่มต้น log การทำงาน
+		srv.logger.Info("🏁 Starting sale return creation process", zap.String("OrderNo", req.OrderNo))
+		srv.logger.Debug("Creating sale return order", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo))
+	
+		// 2. Validate request
+		if err := srv.validateCreateSaleReturn(req); err != nil {
+			srv.logger.Error("Invalid request", zap.Error(err))
+			return nil, fmt.Errorf("validation failed: %w", err)
+		}
+	
+		// 3. ตรวจสอบว่า order มีอยู่แล้วหรือไม่
+		existingOrder, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
+		if err != nil {
+			srv.logger.Error("Failed to check existing order", zap.Error(err))
+			return nil, err
+		}
+		if existingOrder != nil {
+			return nil, fmt.Errorf("order already exists: %s", req.OrderNo)
+		}
+	
+		// 4. สร้าง sale return order
+		createdOrder, err := srv.befRORepo.CreateBeforeReturn(ctx, req)
+		if err != nil {
+			srv.logger.Error("❌ Failed to create sale return order", zap.Error(err))
+			return nil, err
+		}
+	
+		// 5. บันทึก log สำเร็จ
+		srv.logger.Info("✅ Successfully created sale return order",
+			zap.String("OrderNo", req.OrderNo))
+		return createdOrder, nil
 }
 
 func (srv service) UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error {

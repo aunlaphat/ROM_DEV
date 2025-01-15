@@ -944,85 +944,98 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*res
 }
 
 func (repo repositoryDB) CreateBeforeReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
-	tx, err := repo.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %w", err)
-	}
-	defer func() {
-		if p := recover(); p != nil {
-			log.Println("Rolling back due to panic")
-			tx.Rollback()
-			panic(p)
-		} else if err != nil {
-			log.Println("Rolling back due to error:", err)
-			tx.Rollback()
-		} else {
-			log.Println("Committing transaction")
-			err = tx.Commit()
+		// 1. เริ่ม transaction
+		tx, err := repo.db.BeginTxx(ctx, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to start transaction: %w", err)
 		}
-	}()
+		defer func() {
+			if p := recover(); p != nil {
+				tx.Rollback()
+				panic(p)
+			} else if err != nil {
+				tx.Rollback()
+			} else {
+				err = tx.Commit()
+			}
+		}()
 	
-
-	// Insert into BeforeReturnOrder
-	queryOrder := `
-        INSERT INTO BeforeReturnOrder (
-            OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, 
-            SoStatusID, MkpStatusID, ReturnDate, CreateBy
-        ) VALUES (
-            :OrderNo, :SoNo, :SrNo, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
-            :SoStatusID, :MkpStatusID, :ReturnDate, :CreateBy
-        )
-    `
-	_, err = tx.NamedExecContext(ctx, queryOrder, map[string]interface{}{
-		"OrderNo":        order.OrderNo,
-		"SoNo":           order.SoNo,
-		"SrNo":           order.SrNo,
-		"ChannelID":      order.ChannelID,
-		"ReturnType":     order.ReturnType,
-		"CustomerID":     order.CustomerID,
-		"TrackingNo":     order.TrackingNo,
-		"Logistic":       order.Logistic,
-		"WarehouseID":    order.WarehouseID,
-		"SoStatusID":     order.SoStatusID,
-		"MkpStatusID":    order.MkpStatusID,
-		"ReturnDate":     order.ReturnDate,
-		"CreateBy":       order.CreateBy,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create BeforeReturnOrder: %w", err)
-	}
-
-	// Insert into BeforeReturnOrderLine
-	query := `
-	INSERT INTO BeforeReturnOrderLine (OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo)
-	VALUES (:OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo)
-`
-lines := []map[string]interface{}{}
-for _, line := range order.BeforeReturnOrderLines {
-	lines = append(lines, map[string]interface{}{
-		"OrderNo":    order.OrderNo,
-		"SKU":        line.SKU,
-		"QTY":        line.QTY,
-		"ReturnQTY":  line.ReturnQTY,
-		"Price":      line.Price,
-		"CreateBy":   line.CreateBy,
-		"TrackingNo": line.TrackingNo,
-	})
-}
-
-_, err = tx.NamedExecContext(ctx, query, lines)
-if err != nil {
-	return nil, fmt.Errorf("failed to batch insert BeforeReturnOrderLine: %w", err)
-}
-
-
-	// Fetch the created order to return as response
-	createdOrder, err := repo.GetBeforeReturnOrderByOrderNo(ctx, order.OrderNo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch created order: %w", err)
-	}
-
-	return createdOrder, nil
+		// Logging
+		fmt.Println("Transaction started")
+	
+		// 2. Insert BeforeReturnOrder (Header)
+		queryOrder := `
+			INSERT INTO BeforeReturnOrder (
+				OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, 
+				SoStatusID, MkpStatusID, ReturnDate, CreateBy, CreateDate
+			) VALUES (
+				:OrderNo, :SoNo, :SrNo, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
+				:SoStatusID, :MkpStatusID, :ReturnDate, :CreateBy, GETDATE()
+			)
+		`
+		_, err = tx.NamedExecContext(ctx, queryOrder, map[string]interface{}{
+			"OrderNo":     order.OrderNo,
+			"SoNo":        order.SoNo,
+			"SrNo":        order.SrNo,
+			"ChannelID":   order.ChannelID,
+			"ReturnType":  order.ReturnType,
+			"CustomerID":  order.CustomerID,
+			"TrackingNo":  order.TrackingNo,
+			"Logistic":    order.Logistic,
+			"WarehouseID": order.WarehouseID,
+			"SoStatusID":  order.SoStatusID,
+			"MkpStatusID": order.MkpStatusID,
+			"ReturnDate":  order.ReturnDate,
+			"CreateBy":    order.CreateBy,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create BeforeReturnOrder: %w", err)
+		}
+	
+		// Logging
+		fmt.Println("Inserted BeforeReturnOrder")
+	
+		// 3. Insert BeforeReturnOrderLine (Lines)
+		queryLine := `
+			INSERT INTO BeforeReturnOrderLine (
+				OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
+			) VALUES (
+				:OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
+			)
+		`
+		for _, line := range order.BeforeReturnOrderLines {
+			_, err = tx.NamedExecContext(ctx, queryLine, map[string]interface{}{
+				"OrderNo":    order.OrderNo,
+				"SKU":        line.SKU,
+				"QTY":        line.QTY,
+				"ReturnQTY":  line.ReturnQTY,
+				"Price":      line.Price,
+				"CreateBy":   line.CreateBy,
+				"TrackingNo": line.TrackingNo,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to create BeforeReturnOrderLine: %w", err)
+			}
+		}
+	
+		// 4. Commit transaction
+		if err = tx.Commit(); err != nil {
+			return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		}
+	
+		// Logging
+		fmt.Println("Transaction committed")
+	
+		// 5. ดึงข้อมูลที่สร้างเสร็จแล้ว
+		createdOrder, err := repo.GetBeforeReturnOrderByOrderNo(ctx, order.OrderNo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch created order: %w", err)
+		}
+	
+		// Logging
+		fmt.Println("Fetched created order")
+	
+		return createdOrder, nil
 }
 
 func (repo repositoryDB) UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error {
