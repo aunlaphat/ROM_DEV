@@ -942,9 +942,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/sale-return/search/{soNo}": {
+        "/sale-return/search": {
             "get": {
-                "description": "Retrieve the details of a sale order by its SO number",
+                "description": "Retrieve the details of a order by its SO number or Order number",
                 "consumes": [
                     "application/json"
                 ],
@@ -954,20 +954,25 @@ const docTemplate = `{
                 "tags": [
                     "Sale Return"
                 ],
-                "summary": "Search sale order by SO number",
-                "operationId": "search-sale-order",
+                "summary": "Search order by SO number or Order number",
+                "operationId": "search-order",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "SO number",
                         "name": "soNo",
-                        "in": "path",
-                        "required": true
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Sale order retrieved successfully",
+                        "description": "Order retrieved successfully",
                         "schema": {
                             "allOf": [
                                 {

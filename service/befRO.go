@@ -18,7 +18,7 @@ type BefROService interface {
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 
 	// ************************ Create Sale Return ************************ //
-	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
+	SearchOrder(ctx context.Context, soNo, orderNo string) ([]response.SaleOrderResponse, error)
 	CreateSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error
 	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
@@ -112,32 +112,112 @@ func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderN
 	return lines, nil
 }
 
-func (srv service) SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error) {
-	srv.logger.Info("🏁 Starting to search sale order", zap.String("SoNo", soNo))
-	order, err := srv.befRORepo.SearchSaleOrder(ctx, soNo)
+func (srv service) SearchOrder(ctx context.Context, soNo, orderNo string) ([]response.SaleOrderResponse, error) {
+	srv.logger.Info("🏁 Starting to search sale order", zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
+	order, err := srv.befRORepo.SearchOrder(ctx, soNo, orderNo)
 	if err != nil {
 		srv.logger.Error("❌ Failed to search sale orders", zap.Error(err))
 		return nil, err
 	}
 	if order == nil {
-		srv.logger.Info("❗ No sale order found", zap.String("SoNo", soNo))
+		srv.logger.Info("❗ No sale order found", zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
 		return nil, nil
 	}
 	srv.logger.Info("✅ Successfully searched sale orders",
-		zap.String("SoNo", soNo))
+		zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
 	return []response.SaleOrderResponse{*order}, nil
 }
 
+// เพิ่มฟังก์ชัน validate สำหรับ CreateSaleReturn
+func (srv service) validateCreateSaleReturn(req request.BeforeReturnOrder) error {
+	// 1. ตรวจสอบข้อมูลพื้นฐาน
+	if req.OrderNo == "" {
+		return fmt.Errorf("order number is required")
+	}
+	if req.SoNo == "" {
+		return fmt.Errorf("SO number is required")
+	}
+	if req.CustomerID == "" {
+		return fmt.Errorf("customer ID is required")
+	}
+
+	// 2. ตรวจสอบค่าที่ต้องมากกว่า 0
+	if req.ChannelID <= 0 {
+		return fmt.Errorf("invalid channel ID")
+	}
+	if req.WarehouseID <= 0 {
+		return fmt.Errorf("invalid warehouse ID")
+	}
+
+	// 3. ตรวจสอบ ReturnType
+	/* validReturnTypes := map[string]bool{
+		"NORMAL": true,
+		"DAMAGE": true,
+		// เพิ่ม type อื่นๆ ตามต้องการ
+	}
+	if !validReturnTypes[req.ReturnType] {
+		return fmt.Errorf("invalid return type: %s", req.ReturnType)
+	} */
+
+	// 4. ตรวจสอบ order lines
+	if len(req.BeforeReturnOrderLines) == 0 {
+		return fmt.Errorf("at least one order line is required")
+	}
+
+	for i, line := range req.BeforeReturnOrderLines {
+		if line.SKU == "" {
+			return fmt.Errorf("SKU is required for line %d", i+1)
+		}
+		if line.QTY <= 0 {
+			return fmt.Errorf("quantity must be greater than 0 for line %d", i+1)
+		}
+		if line.ReturnQTY < 0 {
+			return fmt.Errorf("return quantity cannot be negative for line %d", i+1)
+		}
+		if line.ReturnQTY > line.QTY {
+			return fmt.Errorf("return quantity cannot be greater than quantity for line %d", i+1)
+		}
+		if line.Price < 0 {
+			return fmt.Errorf("price cannot be negative for line %d", i+1)
+		}
+		// ตรวจสอบ AlterSKU ถ้ามี
+		if line.AlterSKU != nil && *line.AlterSKU == "" {
+			return fmt.Errorf("alter SKU cannot be empty if provided for line %d", i+1)
+		}
+	}
+
+	return nil
+}
+
 func (srv service) CreateSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
+	// 1. เริ่มต้น log การทำงาน
 	srv.logger.Info("🏁 Starting sale return creation process", zap.String("OrderNo", req.OrderNo))
 	srv.logger.Debug("Creating sale return order", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo))
 
+	// 2. Validate request
+	if err := srv.validateCreateSaleReturn(req); err != nil {
+		srv.logger.Error("Invalid request", zap.Error(err))
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
+	// 3. ตรวจสอบว่า order มีอยู่แล้วหรือไม่
+	existingOrder, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
+	if err != nil {
+		srv.logger.Error("Failed to check existing order", zap.Error(err))
+		return nil, err
+	}
+	if existingOrder != nil {
+		return nil, fmt.Errorf("order already exists: %s", req.OrderNo)
+	}
+
+	// 4. สร้าง sale return order
 	createdOrder, err := srv.befRORepo.CreateSaleReturn(ctx, req)
 	if err != nil {
 		srv.logger.Error("❌ Failed to create sale return order", zap.Error(err))
 		return nil, err
 	}
 
+	// 5. บันทึก log สำเร็จ
 	srv.logger.Info("✅ Successfully created sale return order",
 		zap.String("OrderNo", req.OrderNo))
 	return createdOrder, nil
@@ -215,33 +295,40 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 }
 
 func (srv service) CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error {
-	// 1. บันทึก log เริ่มต้น
-	srv.logger.Info("🏁 Starting sale return cancellation process",
-		zap.String("OrderNo", orderNo),
-		zap.String("updateBy", updateBy))
+	// 1. Input validation
+	if orderNo == "" || updateBy == "" || remark == "" {
+		return fmt.Errorf("orderNo, updateBy and remark are required")
+	}
 
 	// 2. ตรวจสอบสถานะปัจจุบันของ order
 	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
-		srv.logger.Error("❌ Failed to get order status", zap.Error(err))
+		srv.logger.Error("Failed to get order status", zap.Error(err))
 		return err
 	}
+	if order == nil {
+		return fmt.Errorf("order not found: %s", orderNo)
+	}
+
+	// 3. ตรวจสอบว่าถูกยกเลิกไปแล้วหรือไม่
 	if order.StatusConfID == 3 {
-		srv.logger.Error("❌ Order already canceled",
+		srv.logger.Error("Order already canceled",
 			zap.String("OrderNo", orderNo))
 		return fmt.Errorf("order already canceled")
 	}
 
-	// 3. เรียกใช้ repository layer
+	// 4. เรียกใช้ repository layer เพื่อยกเลิก order และสร้าง cancel status
 	err = srv.befRORepo.CancelSaleReturn(ctx, orderNo, updateBy, remark)
 	if err != nil {
-		srv.logger.Error("❌ Failed to cancel sale return", zap.Error(err))
+		srv.logger.Error("Failed to process cancellation", zap.Error(err))
 		return err
 	}
 
-	// 4. บันทึก log เมื่อสำเร็จ
-	srv.logger.Info("✅ Successfully canceled sale return",
+	// 5. Log สำเร็จ
+	srv.logger.Info("Successfully canceled sale return",
 		zap.String("OrderNo", orderNo),
-		zap.String("UpdateBy", updateBy))
+		zap.String("UpdateBy", updateBy),
+		zap.String("Remark", remark))
+
 	return nil
 }

@@ -931,23 +931,26 @@ paths:
       summary: Create a new sale return order
       tags:
       - Sale Return
-  /sale-return/search/{soNo}:
+  /sale-return/search:
     get:
       consumes:
       - application/json
-      description: Retrieve the details of a sale order by its SO number
-      operationId: search-sale-order
+      description: Retrieve the details of a order by its SO number or Order number
+      operationId: search-order
       parameters:
       - description: SO number
-        in: path
+        in: query
         name: soNo
-        required: true
+        type: string
+      - description: Order number
+        in: query
+        name: orderNo
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Sale order retrieved successfully
+          description: Order retrieved successfully
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
@@ -967,7 +970,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Search sale order by SO number
+      summary: Search order by SO number or Order number
       tags:
       - Sale Return
   /sale-return/update/{orderNo}:

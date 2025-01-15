@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -30,7 +31,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Use(jwtauth.Verifier(app.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
-		r.Get("/search/{soNo}", app.SearchSaleOrder)
+		r.Get("/search", app.SearchOrder)
 		r.Post("/create", app.CreateSaleReturn)
 		r.Put("/update/{orderNo}", app.UpdateSaleReturn)
 		r.Post("/confirm/{orderNo}", app.ConfirmSaleReturn)
@@ -245,42 +246,89 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 }
 
 // SearchSaleOrder godoc
-// @Summary Search sale order by SO number
-// @Description Retrieve the details of a sale order by its SO number
-// @ID search-sale-order
+// @Summary Search order by SO number or Order number
+// @Description Retrieve the details of a order by its SO number or Order number
+// @ID search-order
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// @Param soNo path string true "SO number"
-// @Success 200 {object} api.Response{data=response.SaleOrderResponse} "Sale order retrieved successfully"
+// @Param soNo query string false "SO number"
+// @Param orderNo query string false "Order number"
+// @Success 200 {object} api.Response{data=response.SaleOrderResponse} "Order retrieved successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 404 {object} api.Response "Sale order not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /sale-return/search/{soNo} [get]
-func (app *Application) SearchSaleOrder(w http.ResponseWriter, r *http.Request) {
-	soNo := chi.URLParam(r, "soNo")
-	result, err := app.Service.BefRO.SearchSaleOrder(r.Context(), soNo)
+// @Router /sale-return/search [get]
+func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
+	soNo := r.URL.Query().Get("soNo")
+	orderNo := r.URL.Query().Get("orderNo")
+
+	// 1. Validate input parameters
+	if soNo == "" && orderNo == "" {
+		app.Logger.Warn("No search criteria provided")
+		handleResponse(w, false, "Either SoNo or OrderNo is required", nil, http.StatusBadRequest)
+		return
+	}
+
+	// 2. Input sanitization (optional)
+	soNo = strings.TrimSpace(soNo)
+	orderNo = strings.TrimSpace(orderNo)
+
+	// 3. Authorization check
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		app.Logger.Error("Authorization failed", zap.Error(err))
+		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		return
+	}
+
+	// 4. Call service layer with error handling
+	result, err := app.Service.BefRO.SearchOrder(r.Context(), soNo, orderNo)
 	if err != nil {
-		handleError(w, err)
+		app.Logger.Error("Failed to search order",
+			zap.Error(err),
+			zap.String("soNo", soNo),
+			zap.String("orderNo", orderNo))
+
+		// Handle specific error types
+		switch {
+		case strings.Contains(err.Error(), "connection"):
+			handleResponse(w, false, "Database connection error", nil, http.StatusServiceUnavailable)
+		case strings.Contains(err.Error(), "invalid"):
+			handleResponse(w, false, "Invalid search parameters", nil, http.StatusBadRequest)
+		default:
+			handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
+		}
 		return
 	}
 
-	if result == nil {
-		handleResponse(w, false, "Sale order not found", nil, http.StatusNotFound)
+	// 5. Handle no results found
+	if result == nil || len(result) == 0 {
+		app.Logger.Info("No orders found",
+			zap.String("soNo", soNo),
+			zap.String("orderNo", orderNo))
+		handleResponse(w, false, "No orders found", nil, http.StatusNotFound)
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Sale Order Details ========== 📋\n")
+	// 6. Log successful search
+	app.Logger.Info("Successfully retrieved orders",
+		zap.String("soNo", soNo),
+		zap.String("orderNo", orderNo),
+		zap.Int("resultCount", len(result)))
+
+	// 7. Debug logging (always print for now, can be controlled by log level later)
+	fmt.Printf("\n📋 ========== Order Details ========== 📋\n")
 	for _, order := range result {
 		printSaleOrderDetails(&order)
-		fmt.Printf("\n📋 ========== Sale Order Line Details ========== 📋\n")
+		fmt.Printf("\n📋 ========== Order Line Details ========== 📋\n")
 		for _, line := range order.OrderLines {
 			printSaleOrderLineDetails(&line)
 		}
 	}
-	// fmt.Println("=====================================")
 
-	handleResponse(w, true, "Sale order retrieved successfully", result, http.StatusOK)
+	// 8. Send successful response
+	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
 }
 
 // CreateSaleReturn godoc
@@ -296,95 +344,45 @@ func (app *Application) SearchSaleOrder(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/create [post]
 func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request) {
-	var req request.BeforeReturnOrder
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	// Validation
-	if req.OrderNo == "" {
-		http.Error(w, "OrderNo is required", http.StatusBadRequest)
-		return
-	}
-	if req.SoNo == "" {
-		http.Error(w, "SoNo is required", http.StatusBadRequest)
-		return
-	}
-	if req.ChannelID == 0 {
-		http.Error(w, "ChannelID is required", http.StatusBadRequest)
-		return
-	}
-	if req.CustomerID == "" {
-		http.Error(w, "CustomerID is required", http.StatusBadRequest)
-		return
-	}
-	if req.WarehouseID == 0 {
-		http.Error(w, "WarehouseID is required", http.StatusBadRequest)
-		return
-	}
-	if req.ReturnType == "" {
-		http.Error(w, "ReturnType is required", http.StatusBadRequest)
-		return
-	}
-	if req.TrackingNo == "" {
-		http.Error(w, "TrackingNo is required", http.StatusBadRequest)
-		return
-	}
-	if len(req.BeforeReturnOrderLines) == 0 {
-		http.Error(w, "At least one order line is required", http.StatusBadRequest)
-		return
-	}
-	for _, line := range req.BeforeReturnOrderLines {
-		if line.SKU == "" {
-			http.Error(w, "SKU is required for all order lines", http.StatusBadRequest)
-			return
-		}
-		if line.QTY <= 0 {
-			http.Error(w, "QTY must be greater than 0 for all order lines", http.StatusBadRequest)
-			return
-		}
-		if line.ReturnQTY < 0 {
-			http.Error(w, "ReturnQTY cannot be negative for all order lines", http.StatusBadRequest)
-			return
-		}
-		if line.Price < 0 {
-			http.Error(w, "Price cannot be negative for all order lines", http.StatusBadRequest)
-			return
-		}
-	}
-
-	// Check if the order already exists
-	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-	if existingOrder != nil {
-		handleResponse(w, false, "Order already exists", nil, http.StatusConflict)
-		return
-	}
-
-	// ดึงค่า claims จาก JWT token
+	// 1. Authentication check
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
-	userID, ok := claims["userID"].(string)
-	if !ok || userID == "" {
-		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
+	userID, err := getUserIDFromClaims(claims)
+	if err != nil {
+		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
 		return
 	}
 
-	// Set CreateBy จาก claims
+	var req request.BeforeReturnOrder
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		app.Logger.Error("Failed to decode request", zap.Error(err))
+		handleResponse(w, false, "Invalid request format", nil, http.StatusBadRequest)
+		return
+	}
+
+	// Set user information from claims
 	req.CreateBy = userID
 
-	// Create a new order
+	// 4. Call service
 	result, err := app.Service.BefRO.CreateSaleReturn(r.Context(), req)
 	if err != nil {
-		handleError(w, err)
+		app.Logger.Error("Failed to create sale return",
+			zap.Error(err),
+			zap.String("orderNo", req.OrderNo))
+
+		// Handle specific error cases
+		switch {
+		case strings.Contains(err.Error(), "validation failed"):
+			handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
+		case strings.Contains(err.Error(), "already exists"):
+			handleResponse(w, false, err.Error(), nil, http.StatusConflict)
+		default:
+			handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -453,9 +451,9 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID, ok := claims["userID"].(string)
-	if !ok || userID == "" {
-		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
+	userID, err := getUserIDFromClaims(claims)
+	if err != nil {
+		handleError(w, err)
 		return
 	}
 
@@ -504,9 +502,9 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 	}
 
 	// 3. ดึงค่า userID จาก claims
-	userID, ok := claims["userID"].(string)
-	if !ok || userID == "" {
-		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
+	userID, err := getUserIDFromClaims(claims)
+	if err != nil {
+		handleError(w, err)
 		return
 	}
 
@@ -541,8 +539,8 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/cancel/{orderNo} [post]
 func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request) {
-	// 1. รับค่า orderNo จาก URL parameter
-	orderNo := chi.URLParam(r, "orderNo")
+	// 1. Validation ข้อมูล
+	orderNo := chi.URLParam(r, "orderNo") // รับค่า orderNo จาก URL
 	if orderNo == "" {
 		http.Error(w, "OrderNo is required", http.StatusBadRequest)
 		return
@@ -550,50 +548,46 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 
 	// 2. ตรวจสอบว่า order มีอยู่จริง
 	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-	if existingOrder == nil {
+	if err != nil || existingOrder == nil {
 		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
 		return
 	}
 
-	// 2. ดึงค่า claims จาก JWT token
+	// 3. Authentication - ตรวจสอบ JWT token
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		handleError(w, fmt.Errorf("unauthorized"))
 		return
 	}
 
-	// 3. ดึงค่า userID จาก claims
-	userID, ok := claims["userID"].(string)
-	if !ok || userID == "" {
-		handleError(w, fmt.Errorf("unauthorized: invalid user information"))
+	// 4. ดึง userID จาก token
+	userID, err := getUserIDFromClaims(claims)
+	if err != nil {
+		handleError(w, err)
 		return
 	}
 
-	// 3. รับและตรวจสอบข้อมูล request body
+	// 5. รับและตรวจสอบข้อมูล request
 	var req request.CancelSaleReturnRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// 4. ตรวจสอบข้อมูลที่จำเป็น
+	// 6. ตรวจสอบ Remark
 	if req.Remark == "" {
 		http.Error(w, "Remark is required", http.StatusBadRequest)
 		return
 	}
 
-	// 5. เรียกใช้ service
+	// 7. เรียกใช้ service
 	err = app.Service.BefRO.CancelSaleReturn(r.Context(), orderNo, userID, req.Remark)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	// 6. ส่ง response
+	// 8. สร้าง response
 	response := res.CancelSaleReturnResponse{
 		RefID:        orderNo,
 		CancelStatus: true,
@@ -601,7 +595,18 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 		Remark:       req.Remark,
 		CancelDate:   time.Now(),
 	}
+
+	// 9. ส่ง response กลับ
 	handleResponse(w, true, "Sale return order canceled successfully", response, http.StatusOK)
+}
+
+// Helper function สำหรับดึง userID จาก claims
+func getUserIDFromClaims(claims map[string]interface{}) (string, error) {
+	userID, ok := claims["userID"].(string)
+	if !ok || userID == "" {
+		return "", fmt.Errorf("invalid user information in token")
+	}
+	return userID, nil
 }
 
 func printOrderDetails(order *res.BeforeReturnOrderResponse) {

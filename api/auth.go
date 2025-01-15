@@ -145,7 +145,10 @@ func (app *Application) LoginFromLark(w http.ResponseWriter, r *http.Request) {
 		DepartmentNo: user.DepartmentNo,
 		Platform:     user.Platform,
 	}
+	fmt.Println("token data", tokenData)
+	
 	token := app.GenerateToken(tokenData)
+	fmt.Println("token: ", token)
 
 	http.SetCookie(w, &http.Cookie{
 		HttpOnly: false,

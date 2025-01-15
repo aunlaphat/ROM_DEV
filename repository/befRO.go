@@ -31,8 +31,8 @@ type BefRORepository interface {
 	//Cancle
 
 	// ************************ Create Sale Return ************************ //
-	//Search SoNo (Sale Order from Order - MKP)
-	SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error)
+	//Search Order (SoNo and OrderNo from Order - MKP)
+	SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error)
 	//Create
 	CreateSaleReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	//Insert SrNo (SR Create from AX)
@@ -531,17 +531,17 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 	return nil
 }
 
-func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*response.SaleOrderResponse, error) {
+func (repo repositoryDB) SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error) {
 	queryHead := `
         SELECT SoNo, OrderNo, StatusMKP, SalesStatus, CreateDate
         FROM ROM_V_OrderHeadDetail
-        WHERE SoNo = :SoNo
+        WHERE SoNo = :SoNo OR OrderNo = :OrderNo
     `
 
 	queryLines := `
         SELECT SKU, ItemName, QTY, Price
         FROM ROM_V_OrderLineDetail
-        WHERE SoNo = :SoNo
+        WHERE SoNo = :SoNo OR OrderNo = :OrderNo
     `
 
 	var orderHead response.SaleOrderResponse
@@ -551,7 +551,7 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*res
 	}
 	defer nstmtHead.Close()
 
-	err = nstmtHead.GetContext(ctx, &orderHead, map[string]interface{}{"SoNo": soNo})
+	err = nstmtHead.GetContext(ctx, &orderHead, map[string]interface{}{"SoNo": soNo, "OrderNo": orderNo})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -566,7 +566,7 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*res
 	}
 	defer nstmtLines.Close()
 
-	err = nstmtLines.SelectContext(ctx, &orderLines, map[string]interface{}{"SoNo": soNo})
+	err = nstmtLines.SelectContext(ctx, &orderLines, map[string]interface{}{"SoNo": soNo, "OrderNo": orderNo})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
 	}
@@ -577,6 +577,7 @@ func (repo repositoryDB) SearchSaleOrder(ctx context.Context, soNo string) (*res
 }
 
 func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
+	// 1. เริ่ม transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
@@ -592,36 +593,36 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 		}
 	}()
 
-	// Insert into BeforeReturnOrder
+	// 2. Insert BeforeReturnOrder (Header)
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
             OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, 
-            SoStatusID, MkpStatusID, ReturnDate, CreateBy
+            SoStatusID, MkpStatusID, ReturnDate, CreateBy, CreateDate
         ) VALUES (
             :OrderNo, :SoNo, :SrNo, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
-            :SoStatusID, :MkpStatusID, :ReturnDate, :CreateBy
+            :SoStatusID, :MkpStatusID, :ReturnDate, :CreateBy, GETDATE()
         )
     `
 	_, err = tx.NamedExecContext(ctx, queryOrder, map[string]interface{}{
-		"OrderNo":        order.OrderNo,
-		"SoNo":           order.SoNo,
-		"SrNo":           order.SrNo,
-		"ChannelID":      order.ChannelID,
-		"ReturnType":     order.ReturnType,
-		"CustomerID":     order.CustomerID,
-		"TrackingNo":     order.TrackingNo,
-		"Logistic":       order.Logistic,
-		"WarehouseID":    order.WarehouseID,
-		"SoStatusID":     order.SoStatusID,
-		"MkpStatusID":    order.MkpStatusID,
-		"ReturnDate":     order.ReturnDate,
-		"CreateBy":       order.CreateBy,
+		"OrderNo":     order.OrderNo,
+		"SoNo":        order.SoNo,
+		"SrNo":        order.SrNo,
+		"ChannelID":   order.ChannelID,
+		"ReturnType":  order.ReturnType,
+		"CustomerID":  order.CustomerID,
+		"TrackingNo":  order.TrackingNo,
+		"Logistic":    order.Logistic,
+		"WarehouseID": order.WarehouseID,
+		"SoStatusID":  order.SoStatusID,
+		"MkpStatusID": order.MkpStatusID,
+		"ReturnDate":  order.ReturnDate,
+		"CreateBy":    order.CreateBy,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create BeforeReturnOrder: %w", err)
 	}
 
-	// Insert into BeforeReturnOrderLine
+	// 3. Insert BeforeReturnOrderLine (Lines)
 	queryLine := `
         INSERT INTO BeforeReturnOrderLine (
             OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
@@ -644,7 +645,12 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 		}
 	}
 
-	// Fetch the created order to return as response
+	// 4. Commit transaction
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// 5. ดึงข้อมูลที่สร้างเสร็จแล้ว
 	createdOrder, err := repo.GetBeforeReturnOrderByOrderNo(ctx, order.OrderNo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch created order: %w", err)
@@ -768,45 +774,48 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo string, u
 		}
 	}()
 
-	// 2. อัพเดทสถานะการยกเลิก
-	query := `
-        UPDATE BeforeReturnOrder
-        SET StatusReturnID = 2, -- Cancel status
-            StatusConfID = 3,   -- Cancel status
-            CancelID = (SELECT ISNULL(MAX(CancelID), 0) + 1 FROM CancelStatus), -- สร้าง CancelID ใหม่
-            UpdateBy = :CancelBy,
-            UpdateDate = GETDATE()
-        WHERE OrderNo = :OrderNo
-    `
-	result, err := tx.NamedExecContext(ctx, query, map[string]interface{}{
-		"OrderNo":  orderNo,
-		"UpdateBy": updateBy,
-		"CancelBy": updateBy,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to update order status: %w", err)
-	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return fmt.Errorf("order not found: %s", orderNo)
-	}
-
-	// 3. บันทึกประวัติการยกเลิก
-	queryCancelStatus := `
+	// 2. สร้าง CancelID ใหม่
+	var newCancelID int
+	queryCancelID := `
         INSERT INTO CancelStatus (
             RefID, CancelStatus, Remark, CancelBy, CancelDate
         ) VALUES (
             :OrderNo, 1, :Remark, :CancelBy, GETDATE()
-        )
+        );
+        SELECT SCOPE_IDENTITY() AS CancelID;
     `
-	_, err = tx.NamedExecContext(ctx, queryCancelStatus, map[string]interface{}{
+	err = tx.GetContext(ctx, &newCancelID, queryCancelID, map[string]interface{}{
 		"OrderNo":  orderNo,
 		"Remark":   remark,
 		"CancelBy": updateBy,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to insert cancel status: %w", err)
+		return fmt.Errorf("failed to create cancel status: %w", err)
+	}
+
+	// 3. อัพเดทสถานะการยกเลิกใน BeforeReturnOrder ด้วย CancelID ที่สร้างใหม่
+	queryUpdate := `
+        UPDATE BeforeReturnOrder
+        SET StatusReturnID = 2,    -- Cancel status
+            StatusConfID = 3,      -- Cancel status
+            CancelID = :CancelID,
+            UpdateBy = :UpdateBy,
+            UpdateDate = GETDATE()
+        WHERE OrderNo = :OrderNo
+    `
+	result, err := tx.NamedExecContext(ctx, queryUpdate, map[string]interface{}{
+		"OrderNo":  orderNo,
+		"CancelID": newCancelID,
+		"UpdateBy": updateBy,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update order status: %w", err)
+	}
+
+	// 4. ตรวจสอบว่ามีการอัพเดทจริง
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("order not found: %s", orderNo)
 	}
 
 	return nil

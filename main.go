@@ -26,15 +26,17 @@ func main() {
 	if err != nil {
 		log.Fatalln("failed to load .env file: " + err.Error())
 	}
+
 	//Flag variable
-	logger, logClose, err := logs.NewLogger("./uploads/error/error.log", 1, 1, 7)
+	serviceName := "RETURN ORDER SERVICE"
+	logger, logClose, err := logs.NewLogger(serviceName, "./uploads/error/error.log", 1, 1, 7)
 	defer logClose()
 	if err != nil {
 		panic(err)
 	}
 
 	//Instance logger of service
-	logger.Info("BOILERPLATE SERVICE")
+	logger.Info(serviceName + " is starting...")
 
 	utils.LoadConfig()
 
