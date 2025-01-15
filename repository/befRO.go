@@ -657,7 +657,7 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 	}
 
 	// Logging
-    fmt.Println("Transaction committed")
+	fmt.Println("Transaction committed")
 
 	// 5. ดึงข้อมูลที่สร้างเสร็จแล้ว
 	createdOrder, err := repo.GetBeforeReturnOrderByOrderNo(ctx, order.OrderNo)
@@ -666,7 +666,7 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 	}
 
 	// Logging
-    fmt.Println("Fetched created order")
+	fmt.Println("Fetched created order")
 
 	return createdOrder, nil
 }
@@ -786,48 +786,50 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo string, u
 		}
 	}()
 
-	// 2. สร้าง CancelID ใหม่
-	var newCancelID int
-	queryCancelID := `
-        INSERT INTO CancelStatus (
-            RefID, CancelStatus, Remark, CancelBy, CancelDate
-        ) VALUES (
-            :OrderNo, 1, :Remark, :CancelBy, GETDATE()
-        );
-        SELECT SCOPE_IDENTITY() AS CancelID;
-    `
-	err = tx.GetContext(ctx, &newCancelID, queryCancelID, map[string]interface{}{
-		"OrderNo":  orderNo,
-		"Remark":   remark,
-		"CancelBy": updateBy,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create cancel status: %w", err)
-	}
-
-	// 3. อัพเดทสถานะการยกเลิกใน BeforeReturnOrder ด้วย CancelID ที่สร้างใหม่
-	queryUpdate := `
+	// 2. อัพเดทสถานะการยกเลิก
+	queryUpdateOrder := `
         UPDATE BeforeReturnOrder
-        SET StatusReturnID = 2,    -- Cancel status
-            StatusConfID = 3,      -- Cancel status
-            CancelID = :CancelID,
-            UpdateBy = :UpdateBy,
+        SET StatusReturnID = 2, -- Cancel status
+            StatusConfID = 3,   -- Cancel status
+            CancelID = (SELECT ISNULL(MAX(CancelID), 0) + 1 FROM CancelStatus), -- สร้าง CancelID ใหม่
+            UpdateBy = :CancelBy,
             UpdateDate = GETDATE()
         WHERE OrderNo = :OrderNo
     `
-	result, err := tx.NamedExecContext(ctx, queryUpdate, map[string]interface{}{
+	result, err := tx.NamedExecContext(ctx, queryUpdateOrder, map[string]interface{}{
 		"OrderNo":  orderNo,
-		"CancelID": newCancelID,
 		"UpdateBy": updateBy,
+		"CancelBy": updateBy,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to update order status: %w", err)
 	}
 
-	// 4. ตรวจสอบว่ามีการอัพเดทจริง
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
 		return fmt.Errorf("order not found: %s", orderNo)
+	}
+
+	// 3. บันทึกประวัติการยกเลิก
+	queryCancelStatus := `
+        INSERT INTO CancelStatus (
+            RefID, CancelStatus, Remark, CancelBy, CancelDate
+        ) VALUES (
+            :OrderNo, 1, :Remark, :CancelBy, GETDATE()
+        )
+    `
+	_, err = tx.NamedExecContext(ctx, queryCancelStatus, map[string]interface{}{
+		"OrderNo":  orderNo,
+		"Remark":   remark,
+		"CancelBy": updateBy,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to insert cancel status: %w", err)
+	}
+
+	// 4. Commit transaction
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
