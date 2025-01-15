@@ -6,6 +6,8 @@ import (
 	"boilerplate-backend-go/errors"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -48,7 +50,6 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Post("/cancel/{orderNo}", app.CancelTradeReturn)
 	})
 
-
 	apiRouter.Route("/sale-return", func(r chi.Router) {
 		// Add auth middleware for protected routes
 		r.Use(jwtauth.Verifier(app.TokenAuth))
@@ -85,62 +86,62 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 // @Router /trade-return/create-trade [post]
 func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request) {
 	var req request.BeforeReturnOrder
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
+	// if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// 	http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	// 	return
+	// }
 
 	// Validation
-	if req.OrderNo == "" {
-		http.Error(w, "OrderNo is required", http.StatusBadRequest)
-		return
-	}
-	if req.SoNo == "" {
-		http.Error(w, "SoNo is required", http.StatusBadRequest)
-		return
-	}
-	if req.ChannelID == 0 {
-		http.Error(w, "ChannelID is required", http.StatusBadRequest)
-		return
-	}
-	if req.CustomerID == "" {
-		http.Error(w, "CustomerID is required", http.StatusBadRequest)
-		return
-	}
-	if req.WarehouseID == 0 {
-		http.Error(w, "WarehouseID is required", http.StatusBadRequest)
-		return
-	}
-	if req.ReturnType == "" {
-		http.Error(w, "ReturnType is required", http.StatusBadRequest)
-		return
-	}
-	if req.TrackingNo == "" {
-		http.Error(w, "TrackingNo is required", http.StatusBadRequest)
-		return
-	}
-	if len(req.BeforeReturnOrderLines) == 0 {
-		http.Error(w, "At least one order line is required", http.StatusBadRequest)
-		return
-	}
-	for _, line := range req.BeforeReturnOrderLines {
-		if line.SKU == "" {
-			http.Error(w, "SKU is required for all order lines", http.StatusBadRequest)
-			return
-		}
-		if line.QTY <= 0 {
-			http.Error(w, "QTY must be greater than 0 for all order lines", http.StatusBadRequest)
-			return
-		}
-		if line.ReturnQTY < 0 {
-			http.Error(w, "ReturnQTY cannot be negative for all order lines", http.StatusBadRequest)
-			return
-		}
-		if line.Price < 0 {
-			http.Error(w, "Price cannot be negative for all order lines", http.StatusBadRequest)
-			return
-		}
-	}
+	// if req.OrderNo == "" {
+	// 	http.Error(w, "OrderNo is required", http.StatusBadRequest)
+	// 	return
+	// }
+	// if req.SoNo == "" {
+	// 	http.Error(w, "SoNo is required", http.StatusBadRequest)
+	// 	return
+	// }
+	// if req.ChannelID == 0 {
+	// 	http.Error(w, "ChannelID is required", http.StatusBadRequest)
+	// 	return
+	// }
+	// if req.CustomerID == "" {
+	// 	http.Error(w, "CustomerID is required", http.StatusBadRequest)
+	// 	return
+	// }
+	// if req.WarehouseID == 0 {
+	// 	http.Error(w, "WarehouseID is required", http.StatusBadRequest)
+	// 	return
+	// }
+	// if req.ReturnType == "" {
+	// 	http.Error(w, "ReturnType is required", http.StatusBadRequest)
+	// 	return
+	// }
+	// if req.TrackingNo == "" {
+	// 	http.Error(w, "TrackingNo is required", http.StatusBadRequest)
+	// 	return
+	// }
+	// if len(req.BeforeReturnOrderLines) == 0 {
+	// 	http.Error(w, "At least one order line is required", http.StatusBadRequest)
+	// 	return
+	// }
+	// for _, line := range req.BeforeReturnOrderLines {
+	// 	if line.SKU == "" {
+	// 		http.Error(w, "SKU is required for all order lines", http.StatusBadRequest)
+	// 		return
+	// 	}
+	// 	if line.QTY <= 0 {
+	// 		http.Error(w, "QTY must be greater than 0 for all order lines", http.StatusBadRequest)
+	// 		return
+	// 	}
+	// 	if line.ReturnQTY < 0 {
+	// 		http.Error(w, "ReturnQTY cannot be negative for all order lines", http.StatusBadRequest)
+	// 		return
+	// 	}
+	// 	if line.Price < 0 {
+	// 		http.Error(w, "Price cannot be negative for all order lines", http.StatusBadRequest)
+	// 		return
+	// 	}
+	// }
 
 	// เช็คว่า orderNo ที่สร้างไม่ซ้ำกับตัวที่มีอยู่แล้ว
 	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
@@ -170,7 +171,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 	req.CreateBy = userID
 
 	// Create a new order
-	result, err := app.Service.BefRO.CreateBeforeReturn(r.Context(), req)
+	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -696,6 +697,26 @@ func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *ht
 // @Router /sale-return/create [post]
 func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request) {
 	var req request.BeforeReturnOrder
+
+	// อ่านข้อมูลจาก request body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		return
+	}
+
+	// log JSON ที่ได้รับ
+	log.Printf("Received JSON payload: %s", string(body))
+
+	// Decode JSON
+	if err := json.Unmarshal(body, &req); err != nil {
+		log.Printf("Error decoding JSON: %v", err)
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Decoded struct: %+v", req)
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -1069,4 +1090,3 @@ func printDraftLineDetails(line *res.BeforeReturnOrderLineResponse) {
 	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
 	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate)
 }
-

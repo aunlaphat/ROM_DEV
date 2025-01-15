@@ -7,24 +7,24 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
+	//"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
-// เพิ่ม constant สำหรับ timeout
-const (
-	defaultTimeout = 10 * time.Second
-	txTimeout      = 30 * time.Second
-)
+// // เพิ่ม constant สำหรับ timeout
+// const (
+// 	defaultTimeout = 10 * time.Second
+// 	txTimeout      = 30 * time.Second
+// )
 
-// เพิ่ม constants สำหรับ status
-const (
-	StatusPending    = 1
-	StatusInProgress = 2
-	StatusCompleted  = 3
-	StatusCancelled  = 4
-)
+// // เพิ่ม constants สำหรับ status
+// const (
+// 	StatusPending    = 1
+// 	StatusInProgress = 2
+// 	StatusCompleted  = 3
+// 	StatusCancelled  = 4
+// )
 
 // ReturnOrderRepository interface กำหนด method สำหรับการทำงานกับฐานข้อมูล
 type BefRORepository interface {
@@ -385,8 +385,8 @@ func (repo repositoryDB) GetOrderDetailBySO(ctx context.Context, soNo string) (*
 // Implementation สำหรับ CreateBeforeReturnOrder
 func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error {
 	log.Printf("🚀 Starting CreateBeforeReturnOrder for OrderNo: %s", order.OrderNo)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	// defer cancel()
 
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
@@ -428,8 +428,8 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order requ
 // Implementation สำหรับ CreateBeforeReturnOrderLine
 func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error {
 	log.Printf("🚀 Starting CreateBeforeReturnOrderLine for OrderNo: %s", orderNo)
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	// defer cancel()
 
 	query := `
         INSERT INTO BeforeReturnOrderLine (
@@ -522,7 +522,7 @@ func (repo repositoryDB) CreateBeforeReturnOrderWithTransaction(ctx context.Cont
 			"QTY":        line.QTY,
 			"ReturnQTY":  line.ReturnQTY,
 			"Price":      line.Price,
-			"CreateBy":   "SYSTEM",
+			"CreateBy":   line.CreateBy,
 			"TrackingNo": trackingNo,
 		})
 		if err != nil {
@@ -950,14 +950,18 @@ func (repo repositoryDB) CreateBeforeReturn(ctx context.Context, order request.B
 	}
 	defer func() {
 		if p := recover(); p != nil {
+			log.Println("Rolling back due to panic")
 			tx.Rollback()
 			panic(p)
 		} else if err != nil {
+			log.Println("Rolling back due to error:", err)
 			tx.Rollback()
 		} else {
+			log.Println("Committing transaction")
 			err = tx.Commit()
 		}
 	}()
+	
 
 	// Insert into BeforeReturnOrder
 	queryOrder := `
@@ -989,27 +993,28 @@ func (repo repositoryDB) CreateBeforeReturn(ctx context.Context, order request.B
 	}
 
 	// Insert into BeforeReturnOrderLine
-	queryLine := `
-        INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
-        ) VALUES (
-            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
-        )
-    `
-	for _, line := range order.BeforeReturnOrderLines {
-		_, err = tx.NamedExecContext(ctx, queryLine, map[string]interface{}{
-			"OrderNo":    order.OrderNo,
-			"SKU":        line.SKU,
-			"QTY":        line.QTY,
-			"ReturnQTY":  line.ReturnQTY,
-			"Price":      line.Price,
-			"CreateBy":   line.CreateBy,
-			"TrackingNo": line.TrackingNo,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create BeforeReturnOrderLine: %w", err)
-		}
-	}
+	query := `
+	INSERT INTO BeforeReturnOrderLine (OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo)
+	VALUES (:OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo)
+`
+lines := []map[string]interface{}{}
+for _, line := range order.BeforeReturnOrderLines {
+	lines = append(lines, map[string]interface{}{
+		"OrderNo":    order.OrderNo,
+		"SKU":        line.SKU,
+		"QTY":        line.QTY,
+		"ReturnQTY":  line.ReturnQTY,
+		"Price":      line.Price,
+		"CreateBy":   line.CreateBy,
+		"TrackingNo": line.TrackingNo,
+	})
+}
+
+_, err = tx.NamedExecContext(ctx, query, lines)
+if err != nil {
+	return nil, fmt.Errorf("failed to batch insert BeforeReturnOrderLine: %w", err)
+}
+
 
 	// Fetch the created order to return as response
 	createdOrder, err := repo.GetBeforeReturnOrderByOrderNo(ctx, order.OrderNo)
