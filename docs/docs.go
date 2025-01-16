@@ -1665,6 +1665,9 @@ const docTemplate = `{
                 "itemName": {
                     "type": "string"
                 },
+                "orderNo": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number"
                 },
@@ -1672,6 +1675,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "sku": {
+                    "type": "string"
+                },
+                "soNo": {
                     "type": "string"
                 }
             }

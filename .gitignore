@@ -32,3 +32,4 @@ n
 ttt/
 .env
 *.log
+.air.toml

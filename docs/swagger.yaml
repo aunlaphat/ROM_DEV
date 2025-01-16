@@ -296,11 +296,15 @@ definitions:
     properties:
       itemName:
         type: string
+      orderNo:
+        type: string
       price:
         type: number
       qty:
         type: integer
       sku:
+        type: string
+      soNo:
         type: string
     type: object
   response.SaleOrderResponse:

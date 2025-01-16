@@ -219,6 +219,8 @@ func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, 
 		return nil, fmt.Errorf("failed to get order lines: %w", err)
 	}
 
+	fmt.Printf("Fetched %d lines from the database for OrderNo: %s\n", len(lines), orderNo) // Add logging for the number of lines
+
 	return lines, nil
 }
 
@@ -532,43 +534,81 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 }
 
 func (repo repositoryDB) SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error) {
-	queryHead := `
-        SELECT SoNo, OrderNo, StatusMKP, SalesStatus, CreateDate
-        FROM ROM_V_OrderHeadDetail
-        WHERE SoNo = :SoNo OR OrderNo = :OrderNo
-    `
+	var query string
+	var params map[string]interface{}
 
-	queryLines := `
-        SELECT SKU, ItemName, QTY, Price
-        FROM ROM_V_OrderLineDetail
-        WHERE SoNo = :SoNo OR OrderNo = :OrderNo
-    `
+	if soNo != "" {
+		query = `
+            SELECT 
+                h.SoNo, h.OrderNo, h.StatusMKP, h.SalesStatus, h.CreateDate,
+                l.SKU, l.ItemName, l.QTY, l.Price
+            FROM 
+                ROM_V_OrderHeadDetail h
+            INNER JOIN 
+                ROM_V_OrderLineDetail l ON h.SoNo = l.SoNo AND h.OrderNo = l.OrderNo
+            WHERE 
+                h.SoNo = :SoNo
+        `
+		params = map[string]interface{}{"SoNo": soNo}
+	} else if orderNo != "" {
+		query = `
+            SELECT 
+                h.SoNo, h.OrderNo, h.StatusMKP, h.SalesStatus, h.CreateDate,
+                l.SKU, l.ItemName, l.QTY, l.Price
+            FROM 
+                ROM_V_OrderHeadDetail h
+            INNER JOIN 
+                ROM_V_OrderLineDetail l ON h.SoNo = l.SoNo AND h.OrderNo = l.OrderNo
+            WHERE 
+                h.OrderNo = :OrderNo
+        `
+		params = map[string]interface{}{"OrderNo": orderNo}
+	} else /* if soNo != "" && orderNo != "" {
+			query = `
+	            SELECT
+	                h.SoNo, h.OrderNo, h.StatusMKP, h.SalesStatus, h.CreateDate,
+	                l.SKU, l.ItemName, l.QTY, l.Price
+	            FROM
+	                ROM_V_OrderHeadDetail h
+	            INNER JOIN
+	                ROM_V_OrderLineDetail l ON h.SoNo = l.SoNo AND h.OrderNo = l.OrderNo
+	            WHERE
+	                h.SoNo = :SoNo AND h.OrderNo = :OrderNo
+	        `
+			params = map[string]interface{}{"SoNo": soNo, "OrderNo": orderNo}
+		} else */{
+		return nil, fmt.Errorf("either SoNo or OrderNo must be provided")
+	}
 
 	var orderHead response.SaleOrderResponse
-	nstmtHead, err := repo.db.PrepareNamed(queryHead)
-	if err != nil {
-		return nil, fmt.Errorf("failed to prepare statement for order head: %w", err)
-	}
-	defer nstmtHead.Close()
-
-	err = nstmtHead.GetContext(ctx, &orderHead, map[string]interface{}{"SoNo": soNo, "OrderNo": orderNo})
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to fetch order head: %w", err)
-	}
-
 	var orderLines []response.SaleOrderLineResponse
-	nstmtLines, err := repo.db.PrepareNamed(queryLines)
-	if err != nil {
-		return nil, fmt.Errorf("failed to prepare statement for order lines: %w", err)
-	}
-	defer nstmtLines.Close()
 
-	err = nstmtLines.SelectContext(ctx, &orderLines, map[string]interface{}{"SoNo": soNo, "OrderNo": orderNo})
+	rows, err := repo.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var line response.SaleOrderLineResponse
+		err := rows.Scan(
+			&orderHead.SoNo, &orderHead.OrderNo, &orderHead.StatusMKP, &orderHead.SalesStatus, &orderHead.CreateDate,
+			&line.SKU, &line.ItemName, &line.QTY, &line.Price,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		line.SoNo = orderHead.SoNo
+		line.OrderNo = orderHead.OrderNo
+		orderLines = append(orderLines, line)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error: %w", err)
+	}
+
+	if len(orderLines) == 0 {
+		return nil, nil
 	}
 
 	orderHead.OrderLines = orderLines
@@ -631,9 +671,9 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 	// 3. Insert BeforeReturnOrderLine (Lines)
 	queryLine := `
         INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
+            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, CreateDate TrackingNo
         ) VALUES (
-            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
+            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), :TrackingNo
         )
     `
 	for _, line := range order.BeforeReturnOrderLines {

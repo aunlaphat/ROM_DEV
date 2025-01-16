@@ -108,23 +108,47 @@ func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderN
 		return nil, err
 	}
 	srv.logger.Info("✅ Successfully fetched return order lines",
-		zap.String("OrderNo", orderNo))
+		zap.String("OrderNo", orderNo),
+		zap.Int("TotalLines", len(lines))) // Add logging for the number of lines
 	return lines, nil
 }
 
+// ************************ Create Sale Return ************************ //
+
 func (srv service) SearchOrder(ctx context.Context, soNo, orderNo string) ([]response.SaleOrderResponse, error) {
-	srv.logger.Info("🏁 Starting to search sale order", zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
+	// เริ่มต้น Logging ของ API Call
+	deferFunc := srv.logger.LogAPICall("SearchOrder",
+		zap.String("SoNo", soNo),
+		zap.String("OrderNo", orderNo))
+	defer deferFunc("Completed", nil) // เริ่มต้นด้วยการตั้งค่า "Completed" และไม่มี Error
+
+	// Logging ว่าเริ่มการทำงาน
+	srv.logger.Info("🔎 Starting to search sale order", zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
+
+	// เรียก Repository เพื่อค้นหา Order ด้วย SoNo และ OrderNo
 	order, err := srv.befRORepo.SearchOrder(ctx, soNo, orderNo)
 	if err != nil {
+		// หากเกิดข้อผิดพลาด อัปเดต Log ที่ Error
+		deferFunc("Failed", err)
 		srv.logger.Error("❌ Failed to search sale orders", zap.Error(err))
 		return nil, err
 	}
+
+	// กรณีไม่พบข้อมูล
 	if order == nil {
-		srv.logger.Info("❗ No sale order found", zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
+		// หากเกิดข้อผิดพลาด อัปเดต Log ว่าไม่พบข้อมูล
+		deferFunc("Not Found", nil)
+		srv.logger.Warn("❗ No sale order found", zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
 		return nil, nil
 	}
-	srv.logger.Info("✅ Successfully searched sale orders",
-		zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
+
+	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
+	deferFunc("Success", nil)
+	/* srv.logger.Info("✅ Successfully searched sale orders",
+	zap.String("SoNo", soNo),
+	zap.String("OrderNo", orderNo)) */
+
+	// ส่งค่าผลลัพธ์กลับไป
 	return []response.SaleOrderResponse{*order}, nil
 }
 

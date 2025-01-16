@@ -2,7 +2,9 @@
 package logs
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -11,10 +13,6 @@ import (
 
 type Logger struct {
 	logger *zap.Logger
-}
-
-func (l Logger) Core() {
-	panic("unimplemented")
 }
 
 // New Logger instance with save to error.json for view error log when service is on server production
@@ -86,4 +84,28 @@ func (l *Logger) Panic(msg string, fields ...zap.Field) {
 }
 func (l *Logger) Sync() error {
 	return l.logger.Sync()
+}
+
+// log api call
+func (l *Logger) LogAPICall(apiName string, fields ...zap.Field) func(status string, err error) {
+	start := time.Now() // เก็บเวลาที่เริ่มต้น
+
+	// Log จุดเริ่มต้น
+	l.Info(fmt.Sprintf("⏳ Starting API Call: %s", apiName), fields...)
+
+	// ฟังก์ชันที่ทำงานเมื่อ `defer` ถูกเรียก
+	return func(status string, err error) {
+		duration := time.Since(start) // คำนวณระยะเวลาที่ใช้
+
+		// เพิ่ม Log Error หากเกิดข้อผิดพลาด
+		if err != nil {
+			l.Error(fmt.Sprintf("❌ API Call Failed: %s", apiName),
+				append(fields, zap.Duration("duration", duration), zap.String("status", status), zap.Error(err))...)
+			return
+		}
+
+		// Log สำเร็จ
+		l.Info(fmt.Sprintf("✅ Finished API Call: %s", apiName),
+			append(fields, zap.Duration("duration", duration), zap.String("status", status))...)
+	}
 }

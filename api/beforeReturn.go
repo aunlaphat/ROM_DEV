@@ -3,6 +3,7 @@ package api
 import (
 	"boilerplate-backend-go/dto/request"
 	res "boilerplate-backend-go/dto/response"
+	"boilerplate-backend-go/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -68,10 +69,10 @@ func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Re
 	fmt.Printf("\n📋 ========== All Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
 		fmt.Printf("\n📦 Order #%d:\n", i+1)
-		printOrderDetails(&order)
+		utils.PrintOrderDetails(&order)
 		for j, line := range order.BeforeReturnOrderLines {
 			fmt.Printf("\n📦 Order Line #%d:\n", j+1)
-			printOrderLineDetails(&line)
+			utils.PrintOrderLineDetails(&line)
 		}
 	}
 	// fmt.Println("=====================================")
@@ -107,7 +108,7 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 	}
 
 	fmt.Printf("\n📋 ========== Created Order ========== 📋\n")
-	printOrderDetails(result)
+	utils.PrintOrderDetails(result)
 	// fmt.Println("=====================================")
 
 	app.Logger.Info("✅ Successfully created order",
@@ -145,7 +146,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 	}
 
 	fmt.Printf("\n📋 ========== Updated Order ========== 📋\n")
-	printOrderDetails(result)
+	utils.PrintOrderDetails(result)
 	// fmt.Println("=====================================")
 
 	app.Logger.Info("✅ Successfully updated order",
@@ -174,7 +175,7 @@ func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *
 	}
 
 	fmt.Printf("\n📋 ========== Order Details ========== 📋\n")
-	printOrderDetails(result)
+	utils.PrintOrderDetails(result)
 	// fmt.Println("=====================================")
 
 	app.Logger.Info("✅ Successfully retrieved order",
@@ -203,7 +204,7 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 	fmt.Printf("\n📋 ========== All Order Lines (%d) ========== 📋\n", len(result))
 	for i, line := range result {
 		fmt.Printf("\n📦 Order Line #%d:\n", i+1)
-		printOrderLineDetails(&line)
+		utils.PrintOrderLineDetails(&line)
 	}
 	// fmt.Println("=====================================")
 
@@ -235,9 +236,9 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 	fmt.Printf("\n📋 ========== Order Lines for OrderNo: %s ========== 📋\n", orderNo)
 	for i, line := range result {
 		fmt.Printf("\n📦 Order Line #%d:\n", i+1)
-		printOrderLineDetails(&line)
+		utils.PrintOrderLineDetails(&line)
 	}
-	// fmt.Println("=====================================")
+	fmt.Printf("Total lines retrieved: %d\n", len(result)) // Add logging for the number of lines
 
 	app.Logger.Info("✅ Successfully retrieved order lines",
 		zap.String("OrderNo", orderNo),
@@ -263,18 +264,18 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 	soNo := r.URL.Query().Get("soNo")
 	orderNo := r.URL.Query().Get("orderNo")
 
-	// 1. Validate input parameters
+	// Validate input parameters
 	if soNo == "" && orderNo == "" {
 		app.Logger.Warn("No search criteria provided")
 		handleResponse(w, false, "Either SoNo or OrderNo is required", nil, http.StatusBadRequest)
 		return
 	}
 
-	// 2. Input sanitization (optional)
+	// Input sanitization (optional)
 	soNo = strings.TrimSpace(soNo)
 	orderNo = strings.TrimSpace(orderNo)
 
-	// 3. Authorization check
+	// Authorization check
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
 		app.Logger.Error("Authorization failed", zap.Error(err))
@@ -282,27 +283,28 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. Call service layer with error handling
+	// Call service layer with error handling
 	result, err := app.Service.BefRO.SearchOrder(r.Context(), soNo, orderNo)
 	if err != nil {
 		app.Logger.Error("Failed to search order",
 			zap.Error(err),
 			zap.String("soNo", soNo),
 			zap.String("orderNo", orderNo))
+		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
 
 		// Handle specific error types
-		switch {
+		/* switch {
 		case strings.Contains(err.Error(), "connection"):
 			handleResponse(w, false, "Database connection error", nil, http.StatusServiceUnavailable)
 		case strings.Contains(err.Error(), "invalid"):
 			handleResponse(w, false, "Invalid search parameters", nil, http.StatusBadRequest)
 		default:
 			handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
-		}
+		} */
 		return
 	}
 
-	// 5. Handle no results found
+	// Handle no results found
 	if result == nil || len(result) == 0 {
 		app.Logger.Info("No orders found",
 			zap.String("soNo", soNo),
@@ -311,23 +313,20 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 6. Log successful search
-	app.Logger.Info("Successfully retrieved orders",
-		zap.String("soNo", soNo),
-		zap.String("orderNo", orderNo),
-		zap.Int("resultCount", len(result)))
-
-	// 7. Debug logging (always print for now, can be controlled by log level later)
+	// Debug logging (always print for now, can be controlled by log level later)
 	fmt.Printf("\n📋 ========== Order Details ========== 📋\n")
 	for _, order := range result {
-		printSaleOrderDetails(&order)
+		utils.PrintSaleOrderDetails(&order)
 		fmt.Printf("\n📋 ========== Order Line Details ========== 📋\n")
-		for _, line := range order.OrderLines {
-			printSaleOrderLineDetails(&line)
+		for i, line := range order.OrderLines {
+			fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+			utils.PrintSaleOrderLineDetails(&line)
 		}
+		fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(order.OrderLines)) // Add logging for the number of lines
+		fmt.Println("=====================================")
 	}
 
-	// 8. Send successful response
+	// Send successful response
 	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
 }
 
@@ -360,7 +359,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	var req request.BeforeReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		app.Logger.Error("Failed to decode request", zap.Error(err))
-		handleResponse(w, false, "Invalid request format", nil, http.StatusBadRequest)
+		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -381,16 +380,16 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 		case strings.Contains(err.Error(), "already exists"):
 			handleResponse(w, false, err.Error(), nil, http.StatusConflict)
 		default:
-			handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
+			handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
 		}
 		return
 	}
 
 	fmt.Printf("\n📋 ========== Created Sale Return Order ========== 📋\n")
-	printOrderDetails(result)
+	utils.PrintOrderDetails(result)
 	fmt.Printf("\n📋 ========== Sale Return Order Line Details ========== 📋\n")
 	for _, line := range result.BeforeReturnOrderLines {
-		printOrderLineDetails(&line)
+		utils.PrintOrderLineDetails(&line)
 	}
 
 	handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
@@ -607,71 +606,4 @@ func getUserIDFromClaims(claims map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("invalid user information in token")
 	}
 	return userID, nil
-}
-
-func printOrderDetails(order *res.BeforeReturnOrderResponse) {
-	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
-	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
-	fmt.Printf("🔄 SrNo: %s\n", order.SrNo)
-	fmt.Printf("📡 ChannelID: %d\n", order.ChannelID)
-	fmt.Printf("🔙 ReturnType: %s\n", order.ReturnType)
-	fmt.Printf("👤 CustomerID: %s\n", order.CustomerID)
-	fmt.Printf("📦 TrackingNo: %s\n", order.TrackingNo)
-	fmt.Printf("🚚 Logistic: %s\n", order.Logistic)
-	fmt.Printf("🏢 WarehouseID: %d\n", order.WarehouseID)
-	fmt.Printf("📄 SoStatusID: %v\n", order.SoStatusID)
-	fmt.Printf("📊 MkpStatusID: %v\n", order.MkpStatusID)
-	fmt.Printf("📅 ReturnDate: %v\n", order.ReturnDate)
-	fmt.Printf("🔖 StatusReturnID: %d\n", order.StatusReturnID)
-	fmt.Printf("✅ StatusConfID: %d\n", order.StatusConfID)
-	fmt.Printf("👤 ConfirmBy: %v\n", order.ConfirmBy)
-	fmt.Printf("👤 CreateBy: %s\n", order.CreateBy)
-	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate)
-	fmt.Printf("👤 UpdateBy: %v\n", order.UpdateBy)
-	fmt.Printf("📅 UpdateDate: %v\n", order.UpdateDate)
-	fmt.Printf("❌ CancelID: %v\n", order.CancelID)
-}
-
-func printOrderLineDetails(line *res.BeforeReturnOrderLineResponse) {
-	fmt.Printf("🔢 SKU: %s\n", line.SKU)
-	fmt.Printf("🔢 QTY: %d\n", line.QTY)
-	fmt.Printf("🔢 ReturnQTY: %d\n", line.ReturnQTY)
-	fmt.Printf("💲 Price: %.2f\n", line.Price)
-	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
-	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate)
-}
-
-func printSaleOrderDetails(order *res.SaleOrderResponse) {
-	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
-	fmt.Printf("🔢 SoNo: %s\n", order.SoNo)
-	fmt.Printf("📊 StatusMKP: %s\n", order.StatusMKP)
-	fmt.Printf("📊 SalesStatus: %s\n", order.SalesStatus)
-	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate)
-}
-
-func printSaleOrderLineDetails(line *res.SaleOrderLineResponse) {
-	fmt.Printf("🔢 SKU: %s\n", line.SKU)
-	fmt.Printf("🚩 ItemName: %s\n", line.ItemName)
-	fmt.Printf("🔢 QTY: %d\n", line.QTY)
-	fmt.Printf("💲 Price: %.2f\n", line.Price)
-}
-
-func printDraftDetails(draft *res.BeforeReturnOrderResponse) {
-	fmt.Printf("📦 OrderNo: %s\n", draft.OrderNo)
-	fmt.Printf("🛒 SoNo: %s\n", draft.SoNo)
-	fmt.Printf("👤 Customer: %s\n", draft.CustomerID)
-	fmt.Printf("🔄 SrNo: %s\n", draft.SrNo)
-	fmt.Printf("📦 TrackingNo: %s\n", draft.TrackingNo)
-	fmt.Printf("📡 Channel: %d\n", draft.ChannelID)
-	fmt.Printf("📅 CreateDate: %v\n", draft.CreateDate)
-	fmt.Printf("🏢 Warehouse: %d\n", draft.WarehouseID)
-}
-
-func printDraftLineDetails(line *res.BeforeReturnOrderLineResponse) {
-	fmt.Printf("🔢 SKU: %s\n", line.SKU)
-	fmt.Printf("🔢 QTY: %d\n", line.QTY)
-	fmt.Printf("🔢 ReturnQTY: %d\n", line.ReturnQTY)
-	fmt.Printf("💲 Price: %.2f\n", line.Price)
-	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
-	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate)
 }
