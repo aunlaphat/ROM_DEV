@@ -47,44 +47,44 @@ func (srv service) Login(req request.LoginWeb) (response.Login, error) {
 
 // Login: Lark
 func (srv service) LoginLark(req request.LoginLark) (response.Login, error) {
-    srv.logger.Debug("🚀 Starting LoginLark", 
-        zap.String("username", req.UserName),
-        zap.String("userID", req.UserID))
+	srv.logger.Debug("🚀 Starting LoginLark",
+		zap.String("username", req.UserName),
+		zap.String("userID", req.UserID))
 
-    res := response.Login{}
-    if req.UserName == "" || req.UserID == "" {
-        srv.logger.Warn("❌ Invalid login attempt: empty username or userID",
-            zap.String("username", req.UserName),
-            zap.String("userID", req.UserID))
-        return res, errors.ValidationError("username or userid must not be null")
-    }
+	res := response.Login{}
+	if req.UserName == "" || req.UserID == "" {
+		srv.logger.Warn("❌ Invalid login attempt: empty username or userID",
+			zap.String("username", req.UserName),
+			zap.String("userID", req.UserID))
+		return res, errors.ValidationError("username or userid must not be null")
+	}
 
-    ctx := context.Background()
-    srv.logger.Debug("Attempting to get user from Lark",
-        zap.String("username", req.UserName),
-        zap.String("userID", req.UserID))
+	ctx := context.Background()
+	srv.logger.Debug("Attempting to get user from Lark",
+		zap.String("username", req.UserName),
+		zap.String("userID", req.UserID))
 
-    user, err := srv.userRepo.GetUserFromLark(ctx, req.UserID, req.UserName)
-    if err != nil {
-        switch {
-        case err == sql.ErrNoRows:
-            srv.logger.Warn("❌ No user found with provided Lark credentials",
-                zap.String("username", req.UserName),
-                zap.String("userID", req.UserID))
-            return res, errors.UnauthorizedError("user not found in system")
-        default:
-            srv.logger.Error("❌ Database error while getting user from Lark",
-                zap.Error(err),
-                zap.String("username", req.UserName),
-                zap.String("userID", req.UserID))
-            return res, errors.UnexpectedError()
-        }
-    }
+	user, err := srv.userRepo.GetUserFromLark(ctx, req.UserID, req.UserName)
+	if err != nil {
+		switch {
+		case err == sql.ErrNoRows:
+			srv.logger.Warn("❌ No user found with provided Lark credentials",
+				zap.String("username", req.UserName),
+				zap.String("userID", req.UserID))
+			return res, errors.UnauthorizedError("user not found in system")
+		default:
+			srv.logger.Error("❌ Database error while getting user from Lark",
+				zap.Error(err),
+				zap.String("username", req.UserName),
+				zap.String("userID", req.UserID))
+			return res, errors.UnexpectedError()
+		}
+	}
 
-    srv.logger.Info("✅ Successfully logged in via Lark",
-        zap.String("username", user.UserName),
-        zap.String("userID", user.UserID))
-    return user, nil
+	srv.logger.Info("✅ Successfully logged in via Lark",
+		zap.String("username", user.UserName),
+		zap.String("userID", user.UserID))
+	return user, nil
 }
 
 func (srv service) GetUser(ctx context.Context, username, password string) (response.Login, error) {

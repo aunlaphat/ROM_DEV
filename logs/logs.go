@@ -88,24 +88,39 @@ func (l *Logger) Sync() error {
 
 // log api call
 func (l *Logger) LogAPICall(apiName string, fields ...zap.Field) func(status string, err error) {
-	start := time.Now() // เก็บเวลาที่เริ่มต้น
-
+	start := time.Now()
+	
 	// Log จุดเริ่มต้น
 	l.Info(fmt.Sprintf("⏳ Starting API Call: %s", apiName), fields...)
 
-	// ฟังก์ชันที่ทำงานเมื่อ `defer` ถูกเรียก
 	return func(status string, err error) {
-		duration := time.Since(start) // คำนวณระยะเวลาที่ใช้
+		duration := time.Since(start)
+		logFields := append(fields, 
+			zap.Duration("duration", duration),
+			zap.String("status", status))
 
-		// เพิ่ม Log Error หากเกิดข้อผิดพลาด
-		if err != nil {
-			l.Error(fmt.Sprintf("❌ API Call Failed: %s", apiName),
-				append(fields, zap.Duration("duration", duration), zap.String("status", status), zap.Error(err))...)
-			return
+		// สร้าง message ตาม status
+		var msg string
+		switch status {
+		case "Success":
+			msg = fmt.Sprintf("✅ API Call Success: %s", apiName)
+			l.Info(msg, logFields...)
+		case "Failed":
+			msg = fmt.Sprintf("❌ API Call Failed: %s", apiName)
+			if err != nil {
+				// ใช้เฉพาะ error message โดยไม่แสดง stacktrace
+				logFields = append(logFields, zap.String("error", err.Error()))
+				l.Error(msg, logFields...)
+			}
+		case "Not Found":
+			msg = fmt.Sprintf("⚠️ API Call Not Found: %s", apiName)
+			if err != nil {
+				logFields = append(logFields, zap.String("error", err.Error()))
+			}
+			l.Warn(msg, logFields...)
+		default:
+			msg = fmt.Sprintf("🔄 API Call Completed: %s", apiName)
+			l.Info(msg, logFields...)
 		}
-
-		// Log สำเร็จ
-		l.Info(fmt.Sprintf("✅ Finished API Call: %s", apiName),
-			append(fields, zap.Duration("duration", duration), zap.String("status", status))...)
 	}
 }

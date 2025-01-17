@@ -219,6 +219,8 @@ func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, 
 		return nil, fmt.Errorf("failed to get order lines: %w", err)
 	}
 
+	fmt.Printf("Fetched %d lines from the database for OrderNo: %s\n", len(lines), orderNo) // Add logging for the number of lines
+
 	return lines, nil
 }
 
@@ -669,7 +671,7 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 	// 3. Insert BeforeReturnOrderLine (Lines)
 	queryLine := `
         INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo
+            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, CreateDate TrackingNo
         ) VALUES (
             :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), :TrackingNo
         )
@@ -702,6 +704,9 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch created order: %w", err)
 	}
+
+	// Logging
+	fmt.Println("Fetched created order")
 
 	return createdOrder, nil
 }

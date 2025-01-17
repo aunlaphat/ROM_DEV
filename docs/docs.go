@@ -1471,8 +1471,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "password": {
+                    "description": "change password lastest in 17 January 2025",
                     "type": "string",
-                    "example": "ekna1234"
+                    "example": "EKna1234"
                 },
                 "userName": {
                     "type": "string",

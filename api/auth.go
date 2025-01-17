@@ -146,7 +146,7 @@ func (app *Application) LoginFromLark(w http.ResponseWriter, r *http.Request) {
 		Platform:     user.Platform,
 	}
 	fmt.Println("token data", tokenData)
-	
+
 	token := app.GenerateToken(tokenData)
 	fmt.Println("token: ", token)
 

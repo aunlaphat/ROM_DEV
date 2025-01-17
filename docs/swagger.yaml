@@ -166,7 +166,8 @@ definitions:
   request.LoginWeb:
     properties:
       password:
-        example: ekna1234
+        description: change password lastest in 17 January 2025
+        example: EKna1234
         type: string
       userName:
         example: eknarin.ler
