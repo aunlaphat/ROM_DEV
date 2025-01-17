@@ -24,6 +24,8 @@ type BeforeReturnOrderResponse struct {
 	UpdateBy               *string                         `json:"updateBy" db:"UpdateBy"`
 	UpdateDate             *time.Time                      `json:"updateDate" db:"UpdateDate"`
 	CancelID               *int                            `json:"cancelId" db:"CancelID"`
+	IsEdited               *bool                           `json:"isEdited" db:"isEdited"`
+	IsCNCreated            *bool                           `json:"isCNCreated" db:"isCNCreated"`
 	BeforeReturnOrderLines []BeforeReturnOrderLineResponse `json:"beforeReturnOrderLines"`
 }
 

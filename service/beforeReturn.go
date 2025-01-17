@@ -6,7 +6,9 @@ import (
 	"boilerplate-backend-go/utils"
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/go-chi/jwtauth"
 	"go.uber.org/zap"
 )
 
@@ -282,39 +284,61 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 	// ตรวจสอบสถานะปัจจุบันของ order
 	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
-		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากเกิดข้อผิดพลาด
 		deferFunc("Failed", fmt.Errorf("failed to get order: %v", err))
 		return err
 	}
 	if order == nil {
-		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากไม่พบ order
 		err = fmt.Errorf("order not found: %s", orderNo)
 		deferFunc("Not Found", err)
 		return err
 	}
 
-	// ตรวจสอบว่า order ถูก confirm ไปแล้วหรือไม่
-	if order.StatusReturnID != nil && *order.StatusReturnID != 1 {
-		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจาก order ไม่ได้เริ่มต้น
-		err = fmt.Errorf("order %s is not in pending status", orderNo)
-		deferFunc("Failed", err)
-		return err
+	// ดึงค่า roleID จาก claims
+	_, claims, err := jwtauth.FromContext(ctx)
+	if err != nil || claims == nil {
+		return fmt.Errorf("unauthorized: missing or invalid token")
 	}
-	if order.StatusConfID != nil && *order.StatusConfID == 1 {
-		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจาก order ถูกยืนยันข้อมูลไปแล้ว
-		err = fmt.Errorf("order %s is already confirmed", orderNo)
+	roleID, ok := claims["roleID"].(string)
+	if !ok || roleID == "" {
+		return fmt.Errorf("invalid role information in token")
+	}
+
+	// ตรวจสอบ role และดำเนินการตาม business logic
+	switch roleID {
+	case "Accounting":
+		if order.IsCNCreated == nil || !*order.IsCNCreated {
+			err = srv.befRORepo.CreateCN(ctx, order)
+			if err != nil {
+				deferFunc("Failed", fmt.Errorf("failed to create CN: %v", err))
+				return err
+			}
+			isCreated := true
+			order.IsCNCreated = &isCreated
+		}
+	case "Warehouse":
+		if order.IsEdited == nil || !*order.IsEdited {
+			order.StatusReturnID = 3 // booking
+			order.StatusConfID = 2   // confirm
+		} else {
+			order.StatusReturnID = 1 // pending
+			order.StatusConfID = 1   // draft
+		}
+	default:
+		err = fmt.Errorf("unauthorized: role %s not allowed", roleID)
 		deferFunc("Failed", err)
 		return err
 	}
 
-	// เรียกใช้ repository layer
-	if err := srv.befRORepo.ConfirmSaleReturn(ctx, orderNo, confirmBy); err != nil {
-		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากเกิดข้อผิดพลาด
-		deferFunc("Failed", fmt.Errorf("failed to confirm order: %v", err))
+	// อัพเดทข้อมูล
+	order.UpdateBy = &confirmBy
+	now := time.Now()
+	order.UpdateDate = &now
+
+	if err := srv.befRORepo.UpdateBeforeReturnOrder(ctx, order); err != nil {
+		deferFunc("Failed", fmt.Errorf("failed to update order: %v", err))
 		return err
 	}
 
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	deferFunc("Success", nil)
 	return nil
 }

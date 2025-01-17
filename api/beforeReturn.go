@@ -350,7 +350,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID, err := getUserIDFromClaims(claims)
+	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
 		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
 		return
@@ -455,7 +455,7 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID, err := getUserIDFromClaims(claims)
+	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -505,15 +505,15 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// 3. ดึงค่า userID จาก claims
-	userID, err := getUserIDFromClaims(claims)
+	// 3. ดึงค่า userID และ roleID จาก claims
+	userID, roleID, err := utils.GetUserInfoFromClaims(claims)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
 	// 4. เรียกใช้ service layer เพื่อดำเนินการ confirm
-	err = app.Service.BefRO.ConfirmSaleReturn(r.Context(), orderNo, userID)
+	err = app.Service.BefRO.ConfirmSaleReturn(r.Context(), orderNo, userID, roleID)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -565,7 +565,7 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 4. ดึง userID จาก token
-	userID, err := getUserIDFromClaims(claims)
+	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -602,13 +602,4 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 
 	// 9. ส่ง response กลับ
 	handleResponse(w, true, "Sale return order canceled successfully", response, http.StatusOK)
-}
-
-// Helper function สำหรับดึง userID จาก claims
-func getUserIDFromClaims(claims map[string]interface{}) (string, error) {
-	userID, ok := claims["userID"].(string)
-	if !ok || userID == "" {
-		return "", fmt.Errorf("invalid user information in token")
-	}
-	return userID, nil
 }
