@@ -282,17 +282,26 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 	// ตรวจสอบสถานะปัจจุบันของ order
 	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
+		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากเกิดข้อผิดพลาด
 		deferFunc("Failed", fmt.Errorf("failed to get order: %v", err))
 		return err
 	}
 	if order == nil {
+		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากไม่พบ order
 		err = fmt.Errorf("order not found: %s", orderNo)
 		deferFunc("Not Found", err)
 		return err
 	}
 
 	// ตรวจสอบว่า order ถูก confirm ไปแล้วหรือไม่
+	if order.StatusReturnID != nil && *order.StatusReturnID != 1 {
+		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจาก order ไม่ได้เริ่มต้น
+		err = fmt.Errorf("order %s is not in pending status", orderNo)
+		deferFunc("Failed", err)
+		return err
+	}
 	if order.StatusConfID != nil && *order.StatusConfID == 1 {
+		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจาก order ถูกยืนยันข้อมูลไปแล้ว
 		err = fmt.Errorf("order %s is already confirmed", orderNo)
 		deferFunc("Failed", err)
 		return err
@@ -300,49 +309,67 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 
 	// เรียกใช้ repository layer
 	if err := srv.befRORepo.ConfirmSaleReturn(ctx, orderNo, confirmBy); err != nil {
+		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากเกิดข้อผิดพลาด
 		deferFunc("Failed", fmt.Errorf("failed to confirm order: %v", err))
 		return err
 	}
 
+	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	deferFunc("Success", nil)
 	return nil
 }
 
 func (srv service) CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error {
-	// 1. Input validation
-	if orderNo == "" || updateBy == "" || remark == "" {
-		return fmt.Errorf("orderNo, updateBy and remark are required")
-	}
-
-	// 2. ตรวจสอบสถานะปัจจุบันของ order
-	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
-	if err != nil {
-		srv.logger.Error("Failed to get order status", zap.Error(err))
-		return err
-	}
-	if order == nil {
-		return fmt.Errorf("order not found: %s", orderNo)
-	}
-
-	// 3. ตรวจสอบว่าถูกยกเลิกไปแล้วหรือไม่
-	if order.StatusConfID != nil && *order.StatusConfID == 3 {
-		srv.logger.Error("Order already canceled",
-			zap.String("OrderNo", orderNo))
-		return fmt.Errorf("order already canceled")
-	}
-
-	// 4. เรียกใช้ repository layer เพื่อยกเลิก order และสร้าง cancel status
-	err = srv.befRORepo.CancelSaleReturn(ctx, orderNo, updateBy, remark)
-	if err != nil {
-		srv.logger.Error("Failed to process cancellation", zap.Error(err))
-		return err
-	}
-
-	// 5. Log สำเร็จ
-	srv.logger.Info("Successfully canceled sale return",
+	// เริ่มต้น Logging ของ API Call
+	deferFunc := srv.logger.LogAPICall("CancelSaleReturn",
 		zap.String("OrderNo", orderNo),
 		zap.String("UpdateBy", updateBy),
 		zap.String("Remark", remark))
+	defer deferFunc("Completed", nil)
 
+	// Input validation
+	if orderNo == "" || updateBy == "" || remark == "" {
+		// อัปเดต Log ว่าไม่สามารถยกเลิก order ได้ เนื่องจากข้อมูลไม่ครบ
+		err := fmt.Errorf("orderNo, updateBy and remark are required")
+		deferFunc("Failed", err)
+		return err
+	}
+
+	// ตรวจสอบสถานะปัจจุบันของ order
+	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
+	if err != nil {
+		// อัปเดต Log ว่าไม่สามารถยกเลิก order ได้ เนื่องจากเกิดข้อผิดพลาด
+		deferFunc("Failed", fmt.Errorf("failed to get order: %v", err))
+		return err
+	}
+	if order == nil {
+		// อัปเดต Log ว่าไม่สามารถยกเลิก order ได้ เนื่องจากไม่พบ order
+		err = fmt.Errorf("order not found: %s", orderNo)
+		deferFunc("Not Found", err)
+		return err
+	}
+
+	// ตรวจสอบว่าถูกยกเลิกไปแล้วหรือไม่
+	if order.StatusConfID != nil && *order.StatusConfID == 3 {
+		// อัปเดต Log ว่าไม่สามารถยกเลิก order ได้ เนื่องจาก order ถูกยกเลิกไปแล้ว
+		err = fmt.Errorf("order %s is already canceled", orderNo)
+		deferFunc("Failed", err)
+		return err
+	}
+	if order.StatusReturnID != nil && *order.StatusReturnID == 2 {
+		// อัปเดต Log ว่าไม่สามารถยกเลิก order ได้ เนื่องจาก order ถูกยกเลิกไปแล้ว
+		err = fmt.Errorf("order %s is already canceled", orderNo)
+		deferFunc("Failed", err)
+		return err
+	}
+
+	// เรียกใช้ repository layer เพื่อยกเลิก order
+	if err = srv.befRORepo.CancelSaleReturn(ctx, orderNo, updateBy, remark); err != nil {
+		deferFunc("Failed", fmt.Errorf("failed to cancel order: %v", err))
+		return err
+	}
+
+	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
+	deferFunc("Success", nil)
 	return nil
 }
