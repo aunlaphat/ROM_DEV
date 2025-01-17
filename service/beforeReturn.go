@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-chi/jwtauth"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +23,7 @@ type BefROService interface {
 	SearchOrder(ctx context.Context, soNo, orderNo string) ([]response.SaleOrderResponse, error)
 	CreateSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error
-	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
+	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string, roleID string) error
 	CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
 }
 
@@ -275,7 +274,7 @@ func (srv service) UpdateSaleReturn(ctx context.Context, orderNo string, srNo st
 	return nil
 }
 
-func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error {
+func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string, roleID string) error {
 	deferFunc := srv.logger.LogAPICall("ConfirmSaleReturn",
 		zap.String("OrderNo", orderNo),
 		zap.String("ConfirmBy", confirmBy))
@@ -293,16 +292,6 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 		return err
 	}
 
-	// ดึงค่า roleID จาก claims
-	_, claims, err := jwtauth.FromContext(ctx)
-	if err != nil || claims == nil {
-		return fmt.Errorf("unauthorized: missing or invalid token")
-	}
-	roleID, ok := claims["roleID"].(string)
-	if !ok || roleID == "" {
-		return fmt.Errorf("invalid role information in token")
-	}
-
 	// ตรวจสอบ role และดำเนินการตาม business logic
 	switch roleID {
 	case "Accounting":
@@ -316,7 +305,7 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 			order.IsCNCreated = &isCreated
 		}
 	case "Warehouse":
-		if order.IsEdited == nil || !*order.IsEdited {
+		if order.IsEdited {
 			order.StatusReturnID = 3 // booking
 			order.StatusConfID = 2   // confirm
 		} else {
@@ -334,7 +323,7 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 	now := time.Now()
 	order.UpdateDate = &now
 
-	if err := srv.befRORepo.UpdateBeforeReturnOrder(ctx, order); err != nil {
+	if err := srv.befRORepo.UpdateBeforeReturnOrder(ctx, *order); err != nil {
 		deferFunc("Failed", fmt.Errorf("failed to update order: %v", err))
 		return err
 	}

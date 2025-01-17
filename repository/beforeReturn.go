@@ -778,30 +778,43 @@ func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, orderNo string, 
 		}
 	}()
 
-	// 1. กำหนด SQL query สำหรับ update สถานะ
-	query := `
-        UPDATE BeforeReturnOrder
-        SET StatusReturnID = 1, -- Pending status
-            StatusConfID = 1,   -- Draft status
-            ConfirmBy = :ConfirmBy,
-            ComfirmDate = GETDATE()
+	// ตรวจสอบสถานะปัจจุบันของ order
+	var currentStatusReturnID, currentStatusConfID int
+	checkQuery := `
+        SELECT StatusReturnID, StatusConfID 
+        FROM BeforeReturnOrder 
         WHERE OrderNo = :OrderNo
     `
-	// 2. กำหนด parameters สำหรับ query
-	params := map[string]interface{}{
-		"OrderNo":   orderNo,
-		"ConfirmBy": confirmBy,
+	err = tx.QueryRowContext(ctx, checkQuery, sql.Named("OrderNo", orderNo)).Scan(&currentStatusReturnID, &currentStatusConfID)
+	if err == sql.ErrNoRows {
+		return fmt.Errorf("order not found: %s", orderNo)
 	}
-
-	// 3. เตรียม statement
-	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
-		return fmt.Errorf("failed to prepare statement for confirming sale return: %w", err)
+		return fmt.Errorf("failed to check order status: %w", err)
 	}
-	defer nstmt.Close()
 
-	// 4. execute query
-	_, err = nstmt.ExecContext(ctx, params)
+	// ตรวจสอบว่าสามารถ confirm ได้หรือไม่
+	if currentStatusConfID == 3 {
+		return fmt.Errorf("order is already confirmed")
+	}
+
+	// อัพเดทสถานะ
+	query := `
+        UPDATE BeforeReturnOrder
+        SET StatusReturnID = :StatusReturnID,
+            StatusConfID = :StatusConfID,
+            ConfirmBy = :ConfirmBy,
+            ConfirmDate = GETDATE()
+        WHERE OrderNo = :OrderNo
+    `
+	params := map[string]interface{}{
+		"OrderNo":        orderNo,
+		"StatusReturnID": 1, // pending
+		"StatusConfID":   1, // draft
+		"ConfirmBy":      confirmBy,
+	}
+
+	_, err = tx.NamedExecContext(ctx, query, params)
 	if err != nil {
 		return fmt.Errorf("failed to confirm sale return: %w", err)
 	}
