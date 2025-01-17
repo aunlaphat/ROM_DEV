@@ -26,8 +26,6 @@ type BeforeReturnOrder struct {
 	UpdateBy       *string    `db:"UpdateBy"`       // ผู้แก้ไขล่าสุด
 	UpdateDate     *time.Time `db:"UpdateDate"`     // วันที่แก้ไขล่าสุด
 	CancelID       *int       `db:"CancelID"`       // รหัสการยกเลิก
-	IsEdited       *bool      `db:"isEdited"`       // ข้อมูลนี้ถูกแก้ไขหรือไม่
-	IsCNCreated    *bool      `db:"isCNCreated"`    // มีการสร้างใบ CN แล้วหรือยัง
 }
 
 // BeforeReturnOrderLine คือตารางสำหรับเก็บรายการสินค้าที่ต้องการคืน

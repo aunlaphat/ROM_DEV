@@ -6,7 +6,6 @@ import (
 	"boilerplate-backend-go/utils"
 	"context"
 	"fmt"
-	"time"
 
 	"go.uber.org/zap"
 )
@@ -23,7 +22,7 @@ type BefROService interface {
 	SearchOrder(ctx context.Context, soNo, orderNo string) ([]response.SaleOrderResponse, error)
 	CreateSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error
-	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string, roleID string) error
+	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
 	CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
 }
 
@@ -274,7 +273,7 @@ func (srv service) UpdateSaleReturn(ctx context.Context, orderNo string, srNo st
 	return nil
 }
 
-func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string, roleID string) error {
+func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error {
 	deferFunc := srv.logger.LogAPICall("ConfirmSaleReturn",
 		zap.String("OrderNo", orderNo),
 		zap.String("ConfirmBy", confirmBy))
@@ -283,51 +282,39 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 	// ตรวจสอบสถานะปัจจุบันของ order
 	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
+		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากเกิดข้อผิดพลาด
 		deferFunc("Failed", fmt.Errorf("failed to get order: %v", err))
 		return err
 	}
 	if order == nil {
+		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากไม่พบ order
 		err = fmt.Errorf("order not found: %s", orderNo)
 		deferFunc("Not Found", err)
 		return err
 	}
 
-	// ตรวจสอบ role และดำเนินการตาม business logic
-	switch roleID {
-	case "Accounting":
-		if order.IsCNCreated == nil || !*order.IsCNCreated {
-			err = srv.befRORepo.CreateCN(ctx, order)
-			if err != nil {
-				deferFunc("Failed", fmt.Errorf("failed to create CN: %v", err))
-				return err
-			}
-			isCreated := true
-			order.IsCNCreated = &isCreated
-		}
-	case "Warehouse":
-		if order.IsEdited {
-			order.StatusReturnID = 3 // booking
-			order.StatusConfID = 2   // confirm
-		} else {
-			order.StatusReturnID = 1 // pending
-			order.StatusConfID = 1   // draft
-		}
-	default:
-		err = fmt.Errorf("unauthorized: role %s not allowed", roleID)
+	// ตรวจสอบว่า order ถูก confirm ไปแล้วหรือไม่
+	if order.StatusReturnID != nil && *order.StatusReturnID != 1 {
+		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจาก order ไม่ได้เริ่มต้น
+		err = fmt.Errorf("order %s is not in pending status", orderNo)
+		deferFunc("Failed", err)
+		return err
+	}
+	if order.StatusConfID != nil && *order.StatusConfID == 1 {
+		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจาก order ถูกยืนยันข้อมูลไปแล้ว
+		err = fmt.Errorf("order %s is already confirmed", orderNo)
 		deferFunc("Failed", err)
 		return err
 	}
 
-	// อัพเดทข้อมูล
-	order.UpdateBy = &confirmBy
-	now := time.Now()
-	order.UpdateDate = &now
-
-	if err := srv.befRORepo.UpdateBeforeReturnOrder(ctx, *order); err != nil {
-		deferFunc("Failed", fmt.Errorf("failed to update order: %v", err))
+	// เรียกใช้ repository layer
+	if err := srv.befRORepo.ConfirmSaleReturn(ctx, orderNo, confirmBy); err != nil {
+		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากเกิดข้อผิดพลาด
+		deferFunc("Failed", fmt.Errorf("failed to confirm order: %v", err))
 		return err
 	}
 
+	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	deferFunc("Success", nil)
 	return nil
 }
