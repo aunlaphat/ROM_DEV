@@ -2175,6 +2175,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/trade-return/confirm/{orderNo}": {
+            "post": {
+                "description": "Confirm a trade return order based on the provided order number (OrderNo) and input lines for ReturnOrderLine.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Confirm a trade return order",
+                "operationId": "confirm-to-return",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OrderNo",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated trade return request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ConfirmToReturnRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Trade return order confirmed successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.ConfirmToReturnOrder"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/trade-return/create-trade": {
             "post": {
                 "description": "Create a new trade return order with multiple order lines",
@@ -2748,6 +2814,24 @@ const docTemplate = `{
                 }
             }
         },
+        "request.ConfirmToReturnRequest": {
+            "type": "object",
+            "properties": {
+                "importLinesActual": {
+                    "description": "รายการสินค้า",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.ImportLinesActual"
+                    }
+                },
+                "updateToReturn": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.UpdateToReturn"
+                    }
+                }
+            }
+        },
         "request.ConfirmTradeReturnRequest": {
             "type": "object",
             "properties": {
@@ -2824,6 +2908,17 @@ const docTemplate = `{
                 "trackingNo": {
                     "type": "string",
                     "example": "12345678TH"
+                }
+            }
+        },
+        "request.ImportLinesActual": {
+            "type": "object",
+            "properties": {
+                "price": {
+                    "type": "number"
+                },
+                "returnQty": {
+                    "type": "integer"
                 }
             }
         },
@@ -2953,6 +3048,14 @@ const docTemplate = `{
                 "srNo": {
                     "type": "string",
                     "example": "SR-123456"
+                }
+            }
+        },
+        "request.UpdateToReturn": {
+            "type": "object",
+            "properties": {
+                "srNo": {
+                    "type": "string"
                 }
             }
         },

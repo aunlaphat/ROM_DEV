@@ -68,7 +68,8 @@ type BefRORepository interface {
 
 	CheckOrderNoExists(ctx context.Context, orderNo string) (bool, error)
 	CreateTradeReturnLine(ctx context.Context, orderNo string, line request.TradeReturnLineRequest) error
-	ConfirmToReturnOrder(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
+	ConfirmToReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error 
+	ConfirmTradeReturn(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
 
 	CancelBeforeReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
 	GetTrackingNoByOrderNo(ctx context.Context, orderNo string) (string, error)
@@ -202,7 +203,111 @@ func (repo repositoryDB) ConfirmBeforeReturn(ctx context.Context, orderNo string
 	return nil
 }
 
-func (repo repositoryDB) ConfirmToReturnOrder(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
+func (repo repositoryDB) ConfirmToReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error {
+    tx, err := repo.db.BeginTxx(ctx, nil)
+    if err != nil {
+        return fmt.Errorf("failed to start transaction: %w", err)
+    }
+    defer func() {
+        if p := recover(); p != nil {
+            tx.Rollback()
+            panic(p)
+        } else if err != nil {
+            tx.Rollback()
+        } else {
+            err = tx.Commit()
+        }
+    }()
+
+    queryUpdateBeforeReturnOrder := `
+        UPDATE BeforeReturnOrder
+        SET StatusReturnID = 6, --success Status
+            UpdateBy = :UpdateBy,
+            UpdateDate = GETDATE()
+        WHERE OrderNo = :OrderNo
+    `
+    _, err = tx.NamedExec(queryUpdateBeforeReturnOrder, map[string]interface{}{
+        "OrderNo": req.OrderNo,
+        "UpdateBy": updateBy,
+    })
+    if err != nil {
+        return fmt.Errorf("failed to update BeforeReturnOrder: %w", err)
+    }
+
+		// 2. ดึงข้อมูลจาก BeforeReturnOrder
+		querySelectOrder := `
+        SELECT UpdateBy, UpdateDate
+        FROM BeforeReturnOrder
+        WHERE OrderNo = :OrderNo
+    `
+	var returnOrderData struct {
+		UpdateBy     string `db:"UpdateBy"`
+		UpdateDate   string `db:"UpdateDate"`
+		StatusCheckID int   `db:"StatusCheckID"`
+	}
+
+	rows, err := tx.NamedQuery(querySelectOrder, map[string]interface{}{
+		"OrderNo": req.OrderNo,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to fetch BeforeReturnOrder: %w", err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		if err = rows.StructScan(&returnOrderData); err != nil {
+			return fmt.Errorf("failed to scan BeforeReturnOrder: %w", err)
+		}
+	}
+
+	// กำหนดค่าเริ่มต้นให้กับ StatusCheckID
+	returnOrderData.StatusCheckID = 2 //Confirm Status
+
+	// 3. Insert ข้อมูลลงใน ReturnOrder
+	for _, head := range req.UpdateToReturn {
+        queryUpdateSrHead := `
+            UPDATE ReturnOrderLine
+            SET StatusCheckID = 2, --Confirm Status
+				SrNo = :SrNo
+            WHERE OrderNo = :OrderNo
+        `
+        _, err = tx.NamedExec(queryUpdateSrHead, map[string]interface{}{
+            "OrderNo": req.OrderNo,
+            "SrNo": head.SrNo,
+            "UpdateBy": returnOrderData.UpdateBy,
+            "UpdateDate": returnOrderData.UpdateDate,
+        })
+        if err != nil {
+            return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
+        }
+    }
+
+    for _, line := range req.ImportLinesActual {
+        queryUpdateLine := `
+            UPDATE ReturnOrderLine
+            SET ActualQTY = :ActualQTY,
+                Price = :Price,
+                UpdateBy = :UpdateBy,
+                UpdateDate = :UpdateDate
+            WHERE OrderNo = :OrderNo AND SKU = :SKU
+        `
+        _, err = tx.NamedExec(queryUpdateLine, map[string]interface{}{
+            "OrderNo": req.OrderNo,
+            "ActualQTY": line.ActualQTY,
+            "Price": line.Price,
+            "UpdateBy": returnOrderData.UpdateBy,
+            "UpdateDate": returnOrderData.UpdateDate,
+        })
+        if err != nil {
+            return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
+        }
+    }
+
+    return nil
+}
+
+
+func (repo repositoryDB) ConfirmTradeReturn(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
 	// เริ่ม transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {

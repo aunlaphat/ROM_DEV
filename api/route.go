@@ -65,6 +65,8 @@ func (app *Application) routes() http.Handler {
 	app.BefRORoute(apiRouter)
 	app.ReturnOrders(apiRouter)
 	app.ImportOrderRoute(apiRouter)
+	app.TradeReturnRoute(apiRouter)
+
 
 	router.Mount("/api", apiRouter)
 	return router

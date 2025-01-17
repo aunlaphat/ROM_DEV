@@ -271,6 +271,18 @@ definitions:
           CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
         type: string
     type: object
+  request.ConfirmToReturnRequest:
+    properties:
+      importLinesActual:
+        description: รายการสินค้า
+        items:
+          $ref: '#/definitions/request.ImportLinesActual'
+        type: array
+      updateToReturn:
+        items:
+          $ref: '#/definitions/request.UpdateToReturn'
+        type: array
+    type: object
   request.ConfirmTradeReturnRequest:
     properties:
       importLines:
@@ -327,6 +339,13 @@ definitions:
       trackingNo:
         example: 12345678TH
         type: string
+    type: object
+  request.ImportLinesActual:
+    properties:
+      price:
+        type: number
+      returnQty:
+        type: integer
     type: object
   request.Login:
     properties:
@@ -418,6 +437,11 @@ definitions:
         type: string
     required:
     - srNo
+    type: object
+  request.UpdateToReturn:
+    properties:
+      srNo:
+        type: string
     type: object
   response.BeforeReturnOrderLineResponse:
     properties:
@@ -2014,6 +2038,48 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/request.ConfirmTradeReturnRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trade return order confirmed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.ConfirmToReturnOrder'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Confirm a trade return order
+      tags:
+      - Trade Return
+  /trade-return/confirm/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Confirm a trade return order based on the provided order number
+        (OrderNo) and input lines for ReturnOrderLine.
+      operationId: confirm-to-return
+      parameters:
+      - description: OrderNo
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: Updated trade return request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ConfirmToReturnRequest'
       produces:
       - application/json
       responses:

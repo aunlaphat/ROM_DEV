@@ -34,7 +34,8 @@ type BefROService interface {
 	CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
 
 	CreateTradeReturnLine(ctx context.Context, orderNo string, line request.TradeReturnLineRequest) error
-	ConfirmToReturnOrder(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error 
+	ConfirmTradeReturn(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
+	ConfirmToReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
 	CancelBeforeReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
 }
 
@@ -57,7 +58,28 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 	return nil
 }
 
-func (srv service) ConfirmToReturnOrder(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
+func (srv service) ConfirmToReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error {
+    srv.logger.Info("🏁 Starting return confirmation process",
+        zap.String("OrderNo", req.OrderNo),
+        zap.String("UpdateBy", updateBy))
+
+    if req.OrderNo == "" || updateBy == "" {
+        return fmt.Errorf("OrderNo and updateBy are required")
+    }
+
+    if err := srv.befRORepo.ConfirmToReturn(ctx, req, updateBy); err != nil {
+        srv.logger.Error("❌ Failed to confirm return order", zap.Error(err))
+        return err
+    }
+
+    srv.logger.Info("✅ Successfully confirmed return",
+        zap.String("OrderNo", req.OrderNo),
+        zap.String("UpdateBy", updateBy))
+    return nil
+}
+
+
+func (srv service) ConfirmTradeReturn(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
 	srv.logger.Info("🏁 Starting trade return confirmation process",
 		zap.String("Identifier", req.Identifier),
 		zap.String("UpdateBy", updateBy))
@@ -68,7 +90,7 @@ func (srv service) ConfirmToReturnOrder(ctx context.Context, req request.Confirm
 	}
 
 	// เรียกใช้ repository
-	err := srv.befRORepo.ConfirmToReturnOrder(ctx, req, updateBy)
+	err := srv.befRORepo.ConfirmTradeReturn(ctx, req, updateBy)
 	if err != nil {
 		srv.logger.Error("❌ Failed to confirm trade return", zap.Error(err))
 		return err

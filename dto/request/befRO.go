@@ -80,6 +80,18 @@ type TradeReturnLineRequest struct {
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 }
 
+// ConfirmTradeReturnRequest ใช้สำหรับยืนยันสินค้าเข้าระบบจริง stepสุดท้าย
+type ConfirmToReturnRequest struct {
+	OrderNo string         `json:"-"` // ใช้ได้ทั้ง OrderNo หรือ TrackingNo
+	UpdateToReturn []UpdateToReturn `json:"updateToReturn"`  
+	ImportLinesActual []ImportLinesActual `json:"importLinesActual"`  // รายการสินค้า
+}
+
+type ImportLinesActual struct {
+	ActualQTY int     `json:"returnQty" db:"ActualQTY"`
+	Price     float64 `json:"price" db:"Price"`
+}
+
 type UpdateSaleReturnRequest struct {
 	SrNo string `json:"srNo" validate:"required" example:"SR-123456"`
 }
@@ -95,4 +107,8 @@ type CancelReturnRequest struct {
 	CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
 	CancelBy     string `json:"cancelBy" db:"CancelBy"`
 	Remark       string `json:"remark" db:"Remark"`
+}
+
+type UpdateToReturn struct {
+	SrNo       string    `json:"srNo" db:"SrNo"`
 }

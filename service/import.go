@@ -17,21 +17,21 @@ type ImportOrderService interface {
 }
 
 func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error) {
-	srv.logger.Info("🏁 Starting to search sale order", zap.String("Search", search))
+	srv.logger.Info("🏁 Starting to search OrderNo or TrackingNo", zap.String("Search", search))
 
 	// เรียก repository เพื่อค้นหาข้อมูล
 	order, err := srv.importOrderRepo.SearchOrderORTracking(ctx, search)
 	if err != nil {
-		srv.logger.Error("❌ Failed to search sale orders", zap.Error(err))
+		srv.logger.Error("❌ Failed to search OrderNo or TrackingNo", zap.Error(err))
 		return nil, err
 	}
 
 	if order == nil {
-		srv.logger.Info("❗ No sale order found", zap.String("Search", search))
+		srv.logger.Info("❗ No OrderNo or TrackingNo order found", zap.String("Search", search))
 		return nil, nil
 	}
 
-	srv.logger.Info("✅ Successfully searched sale orders", zap.String("Search", search))
+	srv.logger.Info("✅ Successfully searched OrderNo or TrackingNo", zap.String("Search", search))
 	return []response.ImportOrderResponse{*order}, nil
 }
 
