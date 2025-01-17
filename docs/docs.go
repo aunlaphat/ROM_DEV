@@ -1091,9 +1091,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/import-order/search": {
+            "get": {
+                "description": "Retrieve the details of an order by its OrderNo or TrackingNo using a single input",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Search order by OrderNo or TrackingNo",
+                "operationId": "search-orderNo-or-trackingNo-single",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OrderNo or TrackingNo",
+                        "name": "search",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.ImportOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "OrderNo or TrackingNo not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/importorder/salereturn": {
             "post": {
-                "description": "Upload multiple images for a specific SaleOrder",
+                "description": "Upload multiple images for a specific SoNo",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1108,7 +1171,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Sale Order Number",
-                        "name": "saleOrder",
+                        "name": "soNo",
                         "in": "formData",
                         "required": true
                     },
@@ -1331,7 +1394,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/delete/{returnID}": {
+        "/reorder/delete/{orderNo}": {
             "delete": {
                 "description": "Delete an order",
                 "consumes": [
@@ -1349,7 +1412,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Return ID",
-                        "name": "returnID",
+                        "name": "orderNo",
                         "in": "path",
                         "required": true
                     }
@@ -1400,7 +1463,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/getbyID/{returnID}": {
+        "/reorder/getbyID/{orderNo}": {
             "get": {
                 "description": "Get details of an order by its return id",
                 "consumes": [
@@ -1418,7 +1481,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Return ID",
-                        "name": "returnID",
+                        "name": "orderNo",
                         "in": "path",
                         "required": true
                     }
@@ -1466,7 +1529,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/getlinebyID/{returnID}": {
+        "/reorder/getlinebyID/{orderNo}": {
             "get": {
                 "description": "Get details of an order line by its return id",
                 "consumes": [
@@ -1484,7 +1547,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Return ID",
-                        "name": "returnID",
+                        "name": "orderNo",
                         "in": "path",
                         "required": true
                     }
@@ -1532,9 +1595,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/update/{returnID}": {
+        "/reorder/update/{orderNo}": {
             "patch": {
-                "description": "Update an existing return order using returnID in the path",
+                "description": "Update an existing return order using orderNo in the path",
                 "consumes": [
                     "application/json"
                 ],
@@ -1550,7 +1613,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Return ID",
-                        "name": "returnID",
+                        "name": "orderNo",
                         "in": "path",
                         "required": true
                     },
@@ -1732,7 +1795,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Sale Return Order",
-                        "name": "saleReturn",
+                        "name": "srNo",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -2046,9 +2109,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/trade-return/confirm/{orderNo}": {
+        "/trade-return/confirm/{identifier}": {
             "post": {
-                "description": "Confirm a sale return order based on the provided details",
+                "description": "Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2058,20 +2121,29 @@ const docTemplate = `{
                 "tags": [
                     "Trade Return"
                 ],
-                "summary": "Confirm a sale return order",
+                "summary": "Confirm a trade return order",
                 "operationId": "confirm-trade-return",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Order number",
-                        "name": "orderNo",
+                        "description": "OrderNo or TrackingNo",
+                        "name": "identifier",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Trade return request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ConfirmTradeReturnRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Sale return order confirmed successfully",
+                        "description": "Trade return order confirmed successfully",
                         "schema": {
                             "allOf": [
                                 {
@@ -2081,7 +2153,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/response.ConfirmReturnResponse"
+                                            "$ref": "#/definitions/response.ConfirmToReturnOrder"
                                         }
                                     }
                                 }
@@ -2425,11 +2497,11 @@ const docTemplate = `{
                     "description": "เลขที่ใบคืนสินค้า (PK - Generate จากระบบ)",
                     "type": "string"
                 },
-                "saleOrder": {
+                "soNo": {
                     "description": "เลขที่ใบกำกับภาษี",
                     "type": "string"
                 },
-                "saleReturn": {
+                "srNo": {
                     "description": "เลขที่ใบลดหนี้",
                     "type": "string"
                 },
@@ -2458,10 +2530,6 @@ const docTemplate = `{
                     "description": "รหัสสินค้าทดแทน",
                     "type": "string"
                 },
-                "checkQTY": {
-                    "description": "จำนวนที่ตรวจสอบแล้ว",
-                    "type": "integer"
-                },
                 "createBy": {
                     "description": "ผู้สร้างรายการ",
                     "type": "string"
@@ -2477,6 +2545,10 @@ const docTemplate = `{
                 "price": {
                     "description": "ราคาต่อหน่วย",
                     "type": "number"
+                },
+                "qty": {
+                    "description": "จำนวนที่ตรวจสอบแล้ว",
+                    "type": "integer"
                 },
                 "recID": {
                     "description": "รหัสอ้างอิงอัตโนมัติ - (PK - Auto Increment)",
@@ -2676,6 +2748,18 @@ const docTemplate = `{
                 }
             }
         },
+        "request.ConfirmTradeReturnRequest": {
+            "type": "object",
+            "properties": {
+                "importLines": {
+                    "description": "รายการสินค้า",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.TradeReturnLineRequest"
+                    }
+                }
+            }
+        },
         "request.CreateReturnOrder": {
             "type": "object",
             "properties": {
@@ -2725,15 +2809,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": ""
                 },
-                "returnId": {
-                    "type": "string",
-                    "example": "RID0001"
-                },
-                "saleOrder": {
+                "soNo": {
                     "type": "string",
                     "example": "SO0001"
                 },
-                "saleReturn": {
+                "srNo": {
                     "type": "string",
                     "example": "SR0001"
                 },
@@ -2776,13 +2856,13 @@ const docTemplate = `{
         "request.ReturnOrderLine": {
             "type": "object",
             "properties": {
-                "checkQTY": {
-                    "type": "integer",
-                    "example": 5
-                },
                 "price": {
                     "type": "number",
                     "example": 199.99
+                },
+                "qty": {
+                    "type": "integer",
+                    "example": 5
                 },
                 "returnQTY": {
                     "type": "integer",
@@ -2850,7 +2930,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": ""
                 },
-                "saleReturn": {
+                "srNo": {
                     "type": "string",
                     "example": "SR0001"
                 },
@@ -3016,7 +3096,7 @@ const docTemplate = `{
                 }
             }
         },
-        "response.ConfirmReturnResponse": {
+        "response.ConfirmSaleReturnResponse": {
             "type": "object",
             "properties": {
                 "confirmBy": {
@@ -3030,16 +3110,56 @@ const docTemplate = `{
                 }
             }
         },
-        "response.ConfirmSaleReturnResponse": {
+        "response.ConfirmToReturnOrder": {
             "type": "object",
             "properties": {
-                "confirmBy": {
+                "orderNo": {
                     "type": "string"
                 },
-                "confirmDate": {
+                "updateBy": {
                     "type": "string"
+                },
+                "updateDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ImportOrderLineResponse": {
+            "type": "object",
+            "properties": {
+                "itemName": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ImportOrderResponse": {
+            "type": "object",
+            "properties": {
+                "createDate": {
+                    "type": "string"
+                },
+                "orderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.ImportOrderLineResponse"
+                    }
                 },
                 "orderNo": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "trackingNo": {
                     "type": "string"
                 }
             }

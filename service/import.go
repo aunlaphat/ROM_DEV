@@ -2,25 +2,49 @@ package service
 
 import (
 	"boilerplate-backend-go/dto/request"
+	"boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
 	"context"
 	"fmt"
+
 	"go.uber.org/zap"
 )
 
 type ImportOrderService interface {
-	GetReturnDetailsFromSaleOrder(ctx context.Context, saleOrder string) (string, string, error)
+	SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
+	GetReturnDetailsFromSaleOrder(ctx context.Context, soNo string) (string, string, error)
 	SaveImageMetadata(ctx context.Context, image request.Images) (int, error)
 }
 
-// GetReturnDetailsFromSaleOrder retrieves ReturnID and OrderNo based on SaleOrder
-func (srv service) GetReturnDetailsFromSaleOrder(ctx context.Context, saleOrder string) (string, string, error) {
-	srv.logger.Info("Service: Fetching ReturnID and OrderNo from SaleOrder", zap.String("SaleOrder", saleOrder))
+func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error) {
+	srv.logger.Info("🏁 Starting to search sale order", zap.String("Search", search))
 
-	returnID, orderNo, err := srv.importOrderRepo.FetchReturnDetailsBySaleOrder(ctx, saleOrder)
+	// เรียก repository เพื่อค้นหาข้อมูล
+	order, err := srv.importOrderRepo.SearchOrderORTracking(ctx, search)
+	if err != nil {
+		srv.logger.Error("❌ Failed to search sale orders", zap.Error(err))
+		return nil, err
+	}
+
+	if order == nil {
+		srv.logger.Info("❗ No sale order found", zap.String("Search", search))
+		return nil, nil
+	}
+
+	srv.logger.Info("✅ Successfully searched sale orders", zap.String("Search", search))
+	return []response.ImportOrderResponse{*order}, nil
+}
+
+
+
+// GetReturnDetailsFromSaleOrder retrieves ReturnID and OrderNo based on SoNo
+func (srv service) GetReturnDetailsFromSaleOrder(ctx context.Context, soNo string) (string, string, error) {
+	srv.logger.Info("Service: Fetching ReturnID and OrderNo from SoNo", zap.String("SoNo", soNo))
+
+	returnID, orderNo, err := srv.importOrderRepo.FetchReturnDetailsBySaleOrder(ctx, soNo)
 	if err != nil {
 		srv.logger.Error("Service: Error fetching ReturnID and OrderNo", zap.Error(err))
-		return "", "", errors.ValidationError(fmt.Sprintf("Invalid SaleOrder: %s", saleOrder))
+		return "", "", errors.ValidationError(fmt.Sprintf("Invalid SoNo: %s", soNo))
 	}
 
 	srv.logger.Info("Service: Successfully fetched ReturnID and OrderNo", zap.String("ReturnID", returnID), zap.String("OrderNo", orderNo))

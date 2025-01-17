@@ -64,21 +64,20 @@ type OrderLineRequest struct {
 /********** Return Order ***************/
 
 type CreateReturnOrder struct {
-	ReturnID        string          `json:"returnId" db:"ReturnID" example:"RID0001"`                    
-	OrderNo         string          `json:"orderNo" db:"OrderNo" example:"ORD0001"`                         
-	SaleOrder       string          `json:"saleOrder" db:"SaleOrder" example:"SO0001"`           
-	SaleReturn      string          `json:"saleReturn" db:"SaleReturn" example:"SR0001"`          
-	TrackingNo      string          `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`         
-	PlatfID         *int            `json:"platfId" db:"PlatfID" example:"1"`              
-	ChannelID       *int            `json:"channelId" db:"ChannelID" example:"2"`          
-	OptStatusID     *int            `json:"optStatusId" db:"OptStatusID" example:"1"`       
-	AxStatusID      *int            `json:"axStatusId" db:"AxStatusID" example:"1"`         
-	PlatfStatusID   *int            `json:"platfStatusId" db:"PlatfStatusID" example:"1"`    
-	Remark          *string         `json:"remark" db:"Remark" example:""`
-	CancelID        *int            `json:"cancelId" db:"CancelID" example:"1"`             
-	StatusCheckID   *int            `json:"statusCheckId" db:"StatusCheckID" example:"1"`    
-	CheckBy         *string         `json:"checkBy" db:"CheckBy" example:"dev03"`                
-	Description     *string         `json:"description" db:"Description" example:""`
+	OrderNo       string  `json:"orderNo" db:"OrderNo" example:"ORD0001"`
+	SoNo          string  `json:"soNo" db:"SoNo" example:"SO0001"`
+	SrNo          string  `json:"srNo" db:"SrNo" example:"SR0001"`
+	TrackingNo    string  `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	PlatfID       *int    `json:"platfId" db:"PlatfID" example:"1"`
+	ChannelID     *int    `json:"channelId" db:"ChannelID" example:"2"`
+	OptStatusID   *int    `json:"optStatusId" db:"OptStatusID" example:"1"`
+	AxStatusID    *int    `json:"axStatusId" db:"AxStatusID" example:"1"`
+	PlatfStatusID *int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
+	Remark        *string `json:"remark" db:"Remark" example:""`
+	CancelID      *int    `json:"cancelId" db:"CancelID" example:"1"`
+	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
+	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
+	Description   *string `json:"description" db:"Description" example:""`
 	// CreateBy      string     	`json:"createBy" db:"CreateBy"`		// 'USER'
 	// CreateDate   *time.Time      `json:"createDate" db:"CreateDate"` // MSSQL SYSDATETIME() function
 
@@ -86,43 +85,40 @@ type CreateReturnOrder struct {
 }
 
 type UpdateReturnOrder struct {
-	ReturnID        string          `json:"-" db:"ReturnID"`                    
-	OrderNo         string          `json:"-" db:"OrderNo"`                         
-	SaleOrder       string          `json:"-" db:"SaleOrder"`           
-	SaleReturn      *string         `json:"saleReturn" db:"SaleReturn" example:"SR0001"`          
-	TrackingNo      *string         `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`         
-	PlatfID         *int            `json:"platfId" db:"PlatfID" example:"1"`              
-	ChannelID       *int            `json:"channelId" db:"ChannelID" example:"2"`          
-	OptStatusID     *int            `json:"optStatusId" db:"OptStatusID" example:"1"`       
-	AxStatusID      *int            `json:"axStatusId" db:"AxStatusID" example:"1"`         
-	PlatfStatusID   *int            `json:"platfStatusId" db:"PlatfStatusID" example:"1"`    
-	Remark          *string         `json:"remark" db:"Remark" example:""`
-	CancelID        *int            `json:"cancelId" db:"CancelID" example:"1"`             
-	StatusCheckID   *int            `json:"statusCheckId" db:"StatusCheckID" example:"1"`    
-	CheckBy         *string         `json:"checkBy" db:"CheckBy" example:"dev03"`                
-	Description     *string         `json:"description" db:"Description" example:""`
+	OrderNo       string  `json:"-" db:"OrderNo"`
+	SoNo          string  `json:"-" db:"SoNo"`
+	SrNo          *string `json:"srNo" db:"SrNo" example:"SR0001"`
+	TrackingNo    *string `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	PlatfID       *int    `json:"platfId" db:"PlatfID" example:"1"`
+	ChannelID     *int    `json:"channelId" db:"ChannelID" example:"2"`
+	OptStatusID   *int    `json:"optStatusId" db:"OptStatusID" example:"1"`
+	AxStatusID    *int    `json:"axStatusId" db:"AxStatusID" example:"1"`
+	PlatfStatusID *int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
+	Remark        *string `json:"remark" db:"Remark" example:""`
+	CancelID      *int    `json:"cancelId" db:"CancelID" example:"1"`
+	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
+	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
+	Description   *string `json:"description" db:"Description" example:""`
 	// UpdateBy     *string    	    `json:"updateBy" db:"UpdateBy"`     // 'USER'
 	// UpdateDate   *time.Time      `json:"updateDate" db:"UpdateDate"` // MSSQL SYSDATETIME() function
 
 }
 
-type ReturnOrderLine struct {       
-	ReturnID        string          `json:"-" db:"ReturnID"`             
-	OrderNo         string          `json:"-" db:"OrderNo"`                                  
-	TrackingNo      string          `json:"-" db:"TrackingNo"`   
-    SKU             string          `json:"sku" db:"SKU" example:"SKU12345"`         
-    ReturnQTY       int             `json:"returnQTY" db:"ReturnQTY" example:"5"` 
-    CheckQTY        *int            `json:"checkQTY" db:"CheckQTY" example:"5"`
-    Price           float64         `json:"price" db:"Price" example:"199.99"`      
-	// AlterSKU        *string         `json:"-" db:"AlterSKU" `  
+type ReturnOrderLine struct {
+	OrderNo    string  `json:"-" db:"OrderNo"`
+	TrackingNo string  `json:"-" db:"TrackingNo"`
+	SKU        string  `json:"sku" db:"SKU" example:"SKU12345"`
+	ReturnQTY  int     `json:"returnQTY" db:"ReturnQTY" example:"5"`
+	QTY        *int    `json:"qty" db:"QTY" example:"5"`
+	Price      float64 `json:"price" db:"Price" example:"199.99"`
+	// AlterSKU        *string         `json:"-" db:"AlterSKU" `
 }
 
 type Images struct {
-    ReturnID    string `json:"returnID" db:"ReturnID"`
-    SKU         string `json:"sku" db:"SKU"`
-    FilePath    string `json:"filePath" db:"FilePath"`
-    ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"`
-    CreateBy    string `json:"createBy" db:"CreateBy"`
-    OrderNo     string `json:"orderNo" db:"OrderNo"` 
+	ReturnID    string `json:"returnID" db:"ReturnID"`
+	SKU         string `json:"sku" db:"SKU"`
+	FilePath    string `json:"filePath" db:"FilePath"`
+	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"`
+	CreateBy    string `json:"createBy" db:"CreateBy"`
+	OrderNo     string `json:"orderNo" db:"OrderNo"`
 }
-

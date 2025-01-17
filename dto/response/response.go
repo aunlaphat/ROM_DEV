@@ -54,10 +54,9 @@ type OrderLineResponse struct {
 /********** Return Order ***************/
 
 type ReturnOrder struct {
-	ReturnID      string     `json:"returnId" db:"ReturnID"`
 	OrderNo       string     `json:"orderNo" db:"OrderNo"`
-	SaleOrder     string     `json:"saleOrder" db:"SaleOrder"`
-	SaleReturn    *string    `json:"saleReturn" db:"SaleReturn"`
+	SoNo          string     `json:"soNo" db:"SoNo"`
+	SrNo          *string    `json:"srNo" db:"SrNo"`
 	TrackingNo    *string    `json:"trackingNo" db:"TrackingNo"`
 	PlatfID       *int       `json:"platfId" db:"PlatfID"`
 	ChannelID     *int       `json:"channelId" db:"ChannelID"`
@@ -78,13 +77,11 @@ type ReturnOrder struct {
 }
 
 type ReturnOrderLine struct {
-	RecID      int        `json:"recId" db:"RecID"`
-	ReturnID   string     `json:"returnId" db:"ReturnID"`
 	OrderNo    string     `json:"orderNo" db:"OrderNo"`
 	TrackingNo string     `json:"trackingNo" db:"TrackingNo"`
 	SKU        string     `json:"sku" db:"SKU"`
 	ReturnQTY  int        `json:"returnQTY" db:"ReturnQTY"`
-	CheckQTY   *int       `json:"checkQTY" db:"CheckQTY"`
+	QTY        *int       `json:"qty" db:"QTY"`
 	Price      float64    `json:"price" db:"Price"`
 	CreateBy   string     `json:"createBy" db:"CreateBy"`
 	CreateDate time.Time  `json:"createDate" db:"CreateDate"`

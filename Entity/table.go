@@ -69,8 +69,8 @@ type CancelStatus struct {
 type ReturnOrder struct {
 	ReturnID      string     `db:"ReturnID"`      // เลขที่ใบคืนสินค้า (PK - Generate จากระบบ)
 	OrderNo       string     `db:"OrderNo"`       // เลขที่ใบสั่งซื้อ
-	SaleOrder     string     `db:"SaleOrder"`     // เลขที่ใบกำกับภาษี
-	SaleReturn    string     `db:"SaleReturn"`    // เลขที่ใบลดหนี้
+	SoNo          string     `db:"SoNo"`          // เลขที่ใบกำกับภาษี
+	SrNo          string     `db:"SrNo"`          // เลขที่ใบลดหนี้
 	TrackingNo    string     `db:"TrackingNo"`    // เลขพัสดุ
 	PlatfID       *int       `db:"PlatfID"`       // รหัสแพลตฟอร์ม (FK -> Platforms)
 	ChannelID     *int       `db:"ChannelID"`     // รหัสช่องทางการขาย (FK -> Channel)
@@ -96,7 +96,7 @@ type ReturnOrderLine struct {
 	TrackingNo string     `db:"TrackingNo"` // เลขพัสดุ
 	SKU        string     `db:"SKU"`        // รหัสสินค้า
 	ReturnQTY  int        `db:"ReturnQTY"`  // จำนวนที่คืน
-	CheckQTY   *int       `db:"CheckQTY"`   // จำนวนที่ตรวจสอบแล้ว
+	QTY        *int       `db:"QTY"`        // จำนวนที่ตรวจสอบแล้ว
 	Price      float64    `db:"Price"`      // ราคาต่อหน่วย
 	CreateBy   string     `db:"CreateBy"`   // ผู้สร้างรายการ
 	CreateDate time.Time  `db:"CreateDate"` // วันที่สร้างรายการ

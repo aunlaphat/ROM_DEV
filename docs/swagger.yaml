@@ -90,10 +90,10 @@ definitions:
       returnID:
         description: เลขที่ใบคืนสินค้า (PK - Generate จากระบบ)
         type: string
-      saleOrder:
+      soNo:
         description: เลขที่ใบกำกับภาษี
         type: string
-      saleReturn:
+      srNo:
         description: เลขที่ใบลดหนี้
         type: string
       statusCheckID:
@@ -114,9 +114,6 @@ definitions:
       alterSKU:
         description: รหัสสินค้าทดแทน
         type: string
-      checkQTY:
-        description: จำนวนที่ตรวจสอบแล้ว
-        type: integer
       createBy:
         description: ผู้สร้างรายการ
         type: string
@@ -129,6 +126,9 @@ definitions:
       price:
         description: ราคาต่อหน่วย
         type: number
+      qty:
+        description: จำนวนที่ตรวจสอบแล้ว
+        type: integer
       recID:
         description: รหัสอ้างอิงอัตโนมัติ - (PK - Auto Increment)
         type: integer
@@ -271,6 +271,14 @@ definitions:
           CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
         type: string
     type: object
+  request.ConfirmTradeReturnRequest:
+    properties:
+      importLines:
+        description: รายการสินค้า
+        items:
+          $ref: '#/definitions/request.TradeReturnLineRequest'
+        type: array
+    type: object
   request.CreateReturnOrder:
     properties:
       ReturnOrderLine:
@@ -307,13 +315,10 @@ definitions:
       remark:
         example: ""
         type: string
-      returnId:
-        example: RID0001
-        type: string
-      saleOrder:
+      soNo:
         example: SO0001
         type: string
-      saleReturn:
+      srNo:
         example: SR0001
         type: string
       statusCheckId:
@@ -343,12 +348,12 @@ definitions:
     type: object
   request.ReturnOrderLine:
     properties:
-      checkQTY:
-        example: 5
-        type: integer
       price:
         example: 199.99
         type: number
+      qty:
+        example: 5
+        type: integer
       returnQTY:
         example: 5
         type: integer
@@ -396,7 +401,7 @@ definitions:
       remark:
         example: ""
         type: string
-      saleReturn:
+      srNo:
         example: SR0001
         type: string
       statusCheckId:
@@ -506,7 +511,7 @@ definitions:
       remark:
         type: string
     type: object
-  response.ConfirmReturnResponse:
+  response.ConfirmSaleReturnResponse:
     properties:
       confirmBy:
         type: string
@@ -515,13 +520,39 @@ definitions:
       orderNo:
         type: string
     type: object
-  response.ConfirmSaleReturnResponse:
+  response.ConfirmToReturnOrder:
     properties:
-      confirmBy:
-        type: string
-      confirmDate:
-        type: string
       orderNo:
+        type: string
+      updateBy:
+        type: string
+      updateDate:
+        type: string
+    type: object
+  response.ImportOrderLineResponse:
+    properties:
+      itemName:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      sku:
+        type: string
+    type: object
+  response.ImportOrderResponse:
+    properties:
+      createDate:
+        type: string
+      orderLines:
+        items:
+          $ref: '#/definitions/response.ImportOrderLineResponse'
+        type: array
+      orderNo:
+        type: string
+      soNo:
+        type: string
+      trackingNo:
         type: string
     type: object
   response.Login:
@@ -1323,15 +1354,55 @@ paths:
       summary: Get Warehouse
       tags:
       - Constants
+  /import-order/search:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of an order by its OrderNo or TrackingNo using
+        a single input
+      operationId: search-orderNo-or-trackingNo-single
+      parameters:
+      - description: OrderNo or TrackingNo
+        in: query
+        name: search
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.ImportOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: OrderNo or TrackingNo not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search order by OrderNo or TrackingNo
+      tags:
+      - Import Order
   /importorder/salereturn:
     post:
       consumes:
       - multipart/form-data
-      description: Upload multiple images for a specific SaleOrder
+      description: Upload multiple images for a specific SoNo
       parameters:
       - description: Sale Order Number
         in: formData
-        name: saleOrder
+        name: soNo
         required: true
         type: string
       - description: Type of the image (1, 2, or 3)
@@ -1474,7 +1545,7 @@ paths:
       summary: Create Order
       tags:
       - ReturnOrder
-  /reorder/delete/{returnID}:
+  /reorder/delete/{orderNo}:
     delete:
       consumes:
       - application/json
@@ -1483,7 +1554,7 @@ paths:
       parameters:
       - description: Return ID
         in: path
-        name: returnID
+        name: orderNo
         required: true
         type: string
       produces:
@@ -1517,7 +1588,7 @@ paths:
       summary: Delete Order
       tags:
       - ReturnOrder
-  /reorder/getbyID/{returnID}:
+  /reorder/getbyID/{orderNo}:
     get:
       consumes:
       - application/json
@@ -1526,7 +1597,7 @@ paths:
       parameters:
       - description: Return ID
         in: path
-        name: returnID
+        name: orderNo
         required: true
         type: string
       produces:
@@ -1558,7 +1629,7 @@ paths:
       summary: Get Return Order by ID
       tags:
       - ReturnOrder
-  /reorder/getlinebyID/{returnID}:
+  /reorder/getlinebyID/{orderNo}:
     get:
       consumes:
       - application/json
@@ -1567,7 +1638,7 @@ paths:
       parameters:
       - description: Return ID
         in: path
-        name: returnID
+        name: orderNo
         required: true
         type: string
       produces:
@@ -1599,16 +1670,16 @@ paths:
       summary: Get Return Order Line by ID
       tags:
       - ReturnOrder
-  /reorder/update/{returnID}:
+  /reorder/update/{orderNo}:
     patch:
       consumes:
       - application/json
-      description: Update an existing return order using returnID in the path
+      description: Update an existing return order using orderNo in the path
       operationId: Update-ReturnOrder
       parameters:
       - description: Return ID
         in: path
-        name: returnID
+        name: orderNo
         required: true
         type: string
       - description: Updated Order Data
@@ -1724,7 +1795,7 @@ paths:
       parameters:
       - description: Sale Return Order
         in: body
-        name: saleReturn
+        name: srNo
         required: true
         schema:
           $ref: '#/definitions/request.BeforeReturnOrder'
@@ -1924,29 +1995,36 @@ paths:
       summary: Cancel a sale return order
       tags:
       - Trade Return
-  /trade-return/confirm/{orderNo}:
+  /trade-return/confirm/{identifier}:
     post:
       consumes:
       - application/json
-      description: Confirm a sale return order based on the provided details
+      description: Confirm a trade return order based on the provided identifier (OrderNo
+        or TrackingNo) and input lines for ReturnOrderLine.
       operationId: confirm-trade-return
       parameters:
-      - description: Order number
+      - description: OrderNo or TrackingNo
         in: path
-        name: orderNo
+        name: identifier
         required: true
         type: string
+      - description: Trade return request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ConfirmTradeReturnRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Sale return order confirmed successfully
+          description: Trade return order confirmed successfully
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/response.ConfirmReturnResponse'
+                  $ref: '#/definitions/response.ConfirmToReturnOrder'
               type: object
         "400":
           description: Bad Request
@@ -1956,7 +2034,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Confirm a sale return order
+      summary: Confirm a trade return order
       tags:
       - Trade Return
   /trade-return/create-trade:

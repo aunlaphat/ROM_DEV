@@ -64,6 +64,12 @@ type BeforeReturnOrderLine struct {
 	//UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"` // MSSQL GetDate()
 }
 
+// ConfirmTradeReturnRequest ใช้สำหรับส่งข้อมูลการยืนยันคืนสินค้า
+type ConfirmTradeReturnRequest struct {
+	Identifier string         `json:"-"` // ใช้ได้ทั้ง OrderNo หรือ TrackingNo
+	ImportLines []TradeReturnLineRequest `json:"importLines"`  // รายการสินค้า
+}
+
 type TradeReturnLineRequest struct {
 	SKU       string  `json:"sku" db:"SKU"`
 	QTY       int     `json:"qty" db:"QTY"`

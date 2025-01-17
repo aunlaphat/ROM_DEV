@@ -68,8 +68,9 @@ type BefRORepository interface {
 
 	CheckOrderNoExists(ctx context.Context, orderNo string) (bool, error)
 	CreateTradeReturnLine(ctx context.Context, orderNo string, line request.TradeReturnLineRequest) error
-	ConfirmOrderNo(ctx context.Context, orderNo string, confirmBy string) error
-	CancelOrderNo(ctx context.Context, orderNo string, cancelBy string, remark string) error
+	ConfirmToReturnOrder(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
+
+	CancelBeforeReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
 	GetTrackingNoByOrderNo(ctx context.Context, orderNo string) (string, error)
 }
 
@@ -154,14 +155,29 @@ func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo stri
 	return nil
 }
 
-func (repo repositoryDB) ConfirmOrderNo(ctx context.Context, orderNo string, confirmBy string) error {
+func (repo repositoryDB) ConfirmBeforeReturn(ctx context.Context, orderNo string, confirmBy string) error {
+	// เริ่ม transaction
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
 	// 1. กำหนด SQL query สำหรับ update สถานะ
 	query := `
         UPDATE BeforeReturnOrder
-        SET StatusReturnID = 1, -- Pending status
-            StatusConfID = 1,   -- Draft status
-            ConfirmBy = :ConfirmBy
-			ComfirmDate = GETDATE()
+        SET StatusReturnID = 3, -- Booking status
+            ConfirmBy = :ConfirmBy,
+            ComfirmDate = GETDATE()
         WHERE OrderNo = :OrderNo
     `
 	// 2. กำหนด parameters สำหรับ query
@@ -186,7 +202,118 @@ func (repo repositoryDB) ConfirmOrderNo(ctx context.Context, orderNo string, con
 	return nil
 }
 
-func (repo repositoryDB) CancelOrderNo(ctx context.Context, orderNo string, cancelBy string, remark string) error {
+func (repo repositoryDB) ConfirmToReturnOrder(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
+	// เริ่ม transaction
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	// 1. Update สถานะใน BeforeReturnOrder
+	queryUpdate := `
+        UPDATE BeforeReturnOrder
+        SET StatusReturnID = 7, -- WAITING status
+            UpdateBy = :UpdateBy,
+            UpdateDate = GETDATE()
+        WHERE OrderNo = :Identifier OR TrackingNo = :Identifier
+    `
+	params := map[string]interface{}{
+		"Identifier": req.Identifier,
+		"UpdateBy":   updateBy,
+	}
+	_, err = tx.NamedExec(queryUpdate, params)
+	if err != nil {
+		return fmt.Errorf("failed to update BeforeReturnOrder: %w", err)
+	}
+
+	// 2. ดึงข้อมูลจาก BeforeReturnOrder
+	querySelectOrder := `
+        SELECT OrderNo, SoNo, SrNo, TrackingNo, 
+               ChannelID, UpdateBy AS CreateBy, UpdateDate AS CreateDate
+        FROM BeforeReturnOrder
+        WHERE OrderNo = :Identifier OR TrackingNo = :Identifier
+    `
+	var returnOrderData struct {
+		OrderNo      string `db:"OrderNo"`
+		SoNo         string `db:"SoNo"`
+		SrNo         string `db:"SrNo"`
+		TrackingNo   string `db:"TrackingNo"`
+		ChannelID    int    `db:"ChannelID"`
+		CreateBy     string `db:"CreateBy"`
+		CreateDate   string `db:"CreateDate"`
+		StatusCheckID int   `db:"StatusCheckID"`
+	}
+
+	rows, err := tx.NamedQuery(querySelectOrder, map[string]interface{}{
+		"Identifier": req.Identifier,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to fetch BeforeReturnOrder: %w", err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		if err = rows.StructScan(&returnOrderData); err != nil {
+			return fmt.Errorf("failed to scan BeforeReturnOrder: %w", err)
+		}
+	}
+
+	// กำหนดค่าเริ่มต้นให้กับ StatusCheckID
+	returnOrderData.StatusCheckID = 1
+
+	// 3. Insert ข้อมูลลงใน ReturnOrder
+	queryInsertOrder := `
+        INSERT INTO ReturnOrder (
+            OrderNo, SoNo, SrNo, TrackingNo, ChannelID, CreateBy, CreateDate, StatusCheckID
+        ) VALUES (
+            :OrderNo, :SoNo, :SrNo, :TrackingNo, :ChannelID, :CreateBy, :CreateDate, :StatusCheckID
+        )
+    `
+	_, err = tx.NamedExec(queryInsertOrder, returnOrderData)
+	if err != nil {
+		return fmt.Errorf("failed to insert into ReturnOrder: %w", err)
+	}
+
+	// 4. Insert ข้อมูลจาก importLines ลงใน ReturnOrderLine
+	queryInsertLine := `
+        INSERT INTO ReturnOrderLine (
+            OrderNo, SKU, QTY, ReturnQTY, Price, TrackingNo, CreateBy, CreateDate
+        ) VALUES (
+            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :TrackingNo, :CreateBy, :CreateDate
+        )
+    `
+	for _, line := range req.ImportLines {
+		lineParams := map[string]interface{}{
+			"OrderNo":    returnOrderData.OrderNo,
+			"SKU":        line.SKU,
+			"QTY":        line.QTY,
+			"ReturnQTY":  line.ReturnQTY,
+			"Price":      line.Price,
+			"TrackingNo": returnOrderData.TrackingNo,
+			"CreateBy":   returnOrderData.CreateBy,
+			"CreateDate": returnOrderData.CreateDate,
+		}
+		_, err = tx.NamedExec(queryInsertLine, lineParams)
+		if err != nil {
+			return fmt.Errorf("failed to insert into ReturnOrderLine: %w", err)
+		}
+	}
+
+	return nil
+}
+
+
+func (repo repositoryDB) CancelBeforeReturn(ctx context.Context, orderNo string, updateBy string, remark string) error {
 	// 1. เริ่ม transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -203,43 +330,47 @@ func (repo repositoryDB) CancelOrderNo(ctx context.Context, orderNo string, canc
 		}
 	}()
 
-	// 2. อัพเดทสถานะการยกเลิก
-	query := `
+	// 2. สร้าง CancelID ใหม่
+	var newCancelID int
+	queryCancelID := `
+        INSERT INTO CancelStatus (
+            RefID, CancelStatus, Remark, CancelBy, CancelDate
+        ) VALUES (
+            :OrderNo, 1, :Remark, :CancelBy, GETDATE()
+        );
+        SELECT SCOPE_IDENTITY() AS CancelID;
+    `
+	err = tx.GetContext(ctx, &newCancelID, queryCancelID, map[string]interface{}{
+		"OrderNo":  orderNo,
+		"Remark":   remark,
+		"CancelBy": updateBy,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create cancel status: %w", err)
+	}
+
+	// 3. อัพเดทสถานะการยกเลิกใน BeforeReturnOrder ด้วย CancelID ที่สร้างใหม่
+	queryUpdate := `
         UPDATE BeforeReturnOrder
-        SET StatusReturnID = 2, -- Cancel status
-            StatusConfID = 3,   -- Cancel status
-            CancelID = (SELECT ISNULL(MAX(CancelID), 0) + 1 FROM CancelStatus), -- สร้าง CancelID ใหม่
-            UpdateBy = :CancelBy
+        SET StatusReturnID = 3,    -- Booking status
+            CancelID = :CancelID,
+            UpdateBy = :UpdateBy,
+            UpdateDate = GETDATE()
         WHERE OrderNo = :OrderNo
     `
-	result, err := tx.NamedExecContext(ctx, query, map[string]interface{}{
+	result, err := tx.NamedExecContext(ctx, queryUpdate, map[string]interface{}{
 		"OrderNo":  orderNo,
-		"CancelBy": cancelBy,
+		"CancelID": newCancelID,
+		"UpdateBy": updateBy,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to update order status: %w", err)
 	}
 
+	// 4. ตรวจสอบว่ามีการอัพเดทจริง
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
 		return fmt.Errorf("order not found: %s", orderNo)
-	}
-
-	// 3. บันทึกประวัติการยกเลิก
-	queryCancelStatus := `
-        INSERT INTO CancelStatus (
-            RefID, CancelStatus, Remark, CancelBy, CancelDate
-        ) VALUES (
-            :OrderNo, 1, :Remark, :CancelBy, GETDATE()
-        )
-    `
-	_, err = tx.NamedExecContext(ctx, queryCancelStatus, map[string]interface{}{
-		"OrderNo":  orderNo,
-		"Remark":   remark,
-		"CancelBy": cancelBy,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to insert cancel status: %w", err)
 	}
 
 	return nil
@@ -1010,8 +1141,8 @@ func (repo repositoryDB) CreateBeforeReturn(ctx context.Context, order request.B
 				"QTY":        line.QTY,
 				"ReturnQTY":  line.ReturnQTY,
 				"Price":      line.Price,
-				"CreateBy":   line.CreateBy,
-				"TrackingNo": line.TrackingNo,
+				"CreateBy":   order.CreateBy,
+				"TrackingNo": order.TrackingNo,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to create BeforeReturnOrderLine: %w", err)
@@ -1153,45 +1284,48 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo string, u
 		}
 	}()
 
-	// 2. อัพเดทสถานะการยกเลิก
-	query := `
-        UPDATE BeforeReturnOrder
-        SET StatusReturnID = 2, -- Cancel status
-            StatusConfID = 3,   -- Cancel status
-            CancelID = (SELECT ISNULL(MAX(CancelID), 0) + 1 FROM CancelStatus), -- สร้าง CancelID ใหม่
-            UpdateBy = :CancelBy,
-            UpdateDate = GETDATE()
-        WHERE OrderNo = :OrderNo
-    `
-	result, err := tx.NamedExecContext(ctx, query, map[string]interface{}{
-		"OrderNo":  orderNo,
-		"UpdateBy": updateBy,
-		"CancelBy": updateBy,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to update order status: %w", err)
-	}
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return fmt.Errorf("order not found: %s", orderNo)
-	}
-
-	// 3. บันทึกประวัติการยกเลิก
-	queryCancelStatus := `
+	// 2. สร้าง CancelID ใหม่
+	var newCancelID int
+	queryCancelID := `
         INSERT INTO CancelStatus (
             RefID, CancelStatus, Remark, CancelBy, CancelDate
         ) VALUES (
             :OrderNo, 1, :Remark, :CancelBy, GETDATE()
-        )
+        );
+        SELECT SCOPE_IDENTITY() AS CancelID;
     `
-	_, err = tx.NamedExecContext(ctx, queryCancelStatus, map[string]interface{}{
+	err = tx.GetContext(ctx, &newCancelID, queryCancelID, map[string]interface{}{
 		"OrderNo":  orderNo,
 		"Remark":   remark,
 		"CancelBy": updateBy,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to insert cancel status: %w", err)
+		return fmt.Errorf("failed to create cancel status: %w", err)
+	}
+
+	// 3. อัพเดทสถานะการยกเลิกใน BeforeReturnOrder ด้วย CancelID ที่สร้างใหม่
+	queryUpdate := `
+        UPDATE BeforeReturnOrder
+        SET StatusReturnID = 2,    -- Cancel status
+            StatusConfID = 3,      -- Cancel status
+            CancelID = :CancelID,
+            UpdateBy = :UpdateBy,
+            UpdateDate = GETDATE()
+        WHERE OrderNo = :OrderNo
+    `
+	result, err := tx.NamedExecContext(ctx, queryUpdate, map[string]interface{}{
+		"OrderNo":  orderNo,
+		"CancelID": newCancelID,
+		"UpdateBy": updateBy,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update order status: %w", err)
+	}
+
+	// 4. ตรวจสอบว่ามีการอัพเดทจริง
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("order not found: %s", orderNo)
 	}
 
 	return nil

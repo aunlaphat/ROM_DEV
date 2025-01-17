@@ -45,7 +45,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		/******** Trade Retrun ********/
 		r.Post("/create-trade", app.CreateTradeReturn)
 		r.Post("/add-line/{orderNo}", app.AddTradeReturnLine)
-		r.Post("/confirm/{orderNo}", app.ConfirmTradeReturn)
+		r.Post("/confirm/{identifier}", app.ConfirmTradeReturn)
 		r.Post("/cancel/{orderNo}", app.CancelTradeReturn)
 	})
 
@@ -222,49 +222,66 @@ func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Reques
 	handleResponse(w, true, "Trade return line created successfully", nil, http.StatusCreated)
 }
 
-// ConfirmSaleReturn godoc
-// @Summary Confirm a sale return order
-// @Description Confirm a sale return order based on the provided details
+// ConfirmTradeReturn godoc
+// @Summary Confirm a trade return order
+// @Description Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.
 // @ID confirm-trade-return
 // @Tags Trade Return
 // @Accept json
 // @Produce json
-// @Param orderNo path string true "Order number"
-// @Success 200 {object} api.Response{data=response.ConfirmReturnResponse} "Sale return order confirmed successfully"
+// @Param identifier path string true "OrderNo or TrackingNo"
+// @Param request body request.ConfirmTradeReturnRequest true "Trade return request details"
+// @Success 200 {object} api.Response{data=response.ConfirmToReturnOrder} "Trade return order confirmed successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /trade-return/confirm/{orderNo} [post]
+// @Router /trade-return/confirm/{identifier} [post]
 func (app *Application) ConfirmTradeReturn(w http.ResponseWriter, r *http.Request) {
-	// 1. รับค่า orderNo จาก URL parameter
-	orderNo := chi.URLParam(r, "orderNo")
-
-	// 2. ดึงข้อมูล claims (ข้อมูลผู้ใช้) จาก context (มาจาก JWT authentication)
-	claims, ok := r.Context().Value("claims").(map[string]interface{})
-	if !ok {
-		handleError(w, fmt.Errorf("user claims are missing or invalid"))
+	// 1. รับค่า identifier จาก URL parameter
+	identifier := chi.URLParam(r, "identifier")
+	if identifier == "" {
+		handleError(w, fmt.Errorf("identifier (OrderNo or TrackingNo) is required"))
 		return
 	}
 
-	// 3. ดึง username จาก claims เพื่อใช้เป็น confirmBy
-	confirmBy, ok := claims["username"].(string)
-	if !ok || confirmBy == "" {
-		handleError(w, fmt.Errorf("username is missing or invalid"))
+	// 1. รับค่า identifier จาก request body
+	var req request.ConfirmTradeReturnRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body: %w", http.StatusBadRequest)
+		return
+	}
+
+	// 3. กำหนดค่า identifier จาก path parameter
+	req.Identifier = identifier
+
+	// 2. ดึงค่า claims จาก JWT token
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		return
+	}
+
+	// 3. ดึงค่า userID จาก claims
+	userID, err := getUserIDFromClaims(claims)
+	if err != nil {
+		handleError(w, err)
 		return
 	}
 
 	// 4. เรียกใช้ service layer เพื่อดำเนินการ confirm
-	err := app.Service.BefRO.ConfirmReturn(r.Context(), orderNo, confirmBy)
+	err = app.Service.BefRO.ConfirmToReturnOrder(r.Context(), req, userID)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
 	// 5. สร้าง response และส่งกลับ
-	response := res.ConfirmReturnResponse{
-		OrderNo:   orderNo,
-		ConfirmBy: confirmBy,
+	response := res.ConfirmToReturnOrder{
+		OrderNo:    req.Identifier,
+		UpdateBy:   userID,
+		UpdateDate: time.Now(),
 	}
-	handleResponse(w, true, "Trade Return Order confirm successfully", response, http.StatusOK)
+
+	handleResponse(w, true, "Trade return order confirmed successfully", response, http.StatusOK)
 }
 
 // CancelSaleReturn godoc
@@ -317,7 +334,7 @@ func (app *Application) CancelTradeReturn(w http.ResponseWriter, r *http.Request
 	}
 
 	// 5. เรียกใช้ service
-	err = app.Service.BefRO.CancelReturn(r.Context(), orderNo, req.CancelBy, req.Remark)
+	err = app.Service.BefRO.CancelBeforeReturn(r.Context(), orderNo, req.CancelBy, req.Remark)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -670,7 +687,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *http.Request) {
 	recID := chi.URLParam(r, "recID")
 	if recID == "" {
-		handleError(w, errors.ValidationError("ReturnID is required in the path"))
+		handleError(w, errors.ValidationError("RecID is required in the path"))
 		return
 	}
 
@@ -689,7 +706,7 @@ func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *ht
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// @Param saleReturn body request.BeforeReturnOrder true "Sale Return Order"
+// @Param srNo body request.BeforeReturnOrder true "Sale Return Order"
 // @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "Sale return order created successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
@@ -951,6 +968,15 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 		CancelDate:   time.Now(),
 	}
 	handleResponse(w, true, "Sale return order canceled successfully", response, http.StatusOK)
+}
+
+// Helper function สำหรับดึง userID จาก claims
+func getUserIDFromClaims(claims map[string]interface{}) (string, error) {
+	userID, ok := claims["userID"].(string)
+	if !ok || userID == "" {
+		return "", fmt.Errorf("invalid user information in token")
+	}
+	return userID, nil
 }
 
 func printOrderDetails(order *res.BeforeReturnOrderResponse) {
