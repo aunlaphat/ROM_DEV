@@ -305,7 +305,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Handle no results found
-	if result == nil || len(result) == 0 {
+	if len(result) == 0 {
 		app.Logger.Info("No orders found",
 			zap.String("soNo", soNo),
 			zap.String("orderNo", orderNo))
@@ -385,13 +385,18 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Debug logging (always print for now, can be controlled by log level later)
 	fmt.Printf("\n📋 ========== Created Sale Return Order ========== 📋\n")
 	utils.PrintOrderDetails(result)
 	fmt.Printf("\n📋 ========== Sale Return Order Line Details ========== 📋\n")
-	for _, line := range result.BeforeReturnOrderLines {
+	for i, line := range result.BeforeReturnOrderLines {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
+	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.BeforeReturnOrderLines)) // Add logging for the number of lines
+	fmt.Println("=====================================")
 
+	// Send successful response
 	handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
 }
 
