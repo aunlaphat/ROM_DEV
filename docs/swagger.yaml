@@ -131,6 +131,8 @@ definitions:
         type: string
       createBy:
         type: string
+      itemName:
+        type: string
       orderNo:
         type: string
       price:
@@ -184,6 +186,8 @@ definitions:
   response.BeforeReturnOrderLineResponse:
     properties:
       createDate:
+        type: string
+      itemName:
         type: string
       orderNo:
         type: string
@@ -268,6 +272,27 @@ definitions:
         type: string
       orderNo:
         type: string
+    type: object
+  response.ListDraftConfirmOrdersResponse:
+    properties:
+      channelId:
+        type: integer
+      createDate:
+        type: string
+      customerId:
+        type: string
+      logistic:
+        type: string
+      orderNo:
+        type: string
+      soNo:
+        type: string
+      srNo:
+        type: string
+      trackingNo:
+        type: string
+      warehouseId:
+        type: integer
     type: object
   response.Login:
     properties:
@@ -824,6 +849,41 @@ paths:
       summary: Get Warehouse
       tags:
       - Constants
+  /draft-confirm/list-confirms:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all confirm orders
+      operationId: list-confirm-orders
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: All Confirm orders retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.ListDraftConfirmOrdersResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Confirm orders not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: List all confirm orders
+      tags:
+      - Draft & Confirm
   /draft-confirm/list-drafts:
     get:
       consumes:
@@ -834,7 +894,22 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: All Draft orders retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.ListDraftConfirmOrdersResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Draft orders not found
           schema:
             $ref: '#/definitions/api.Response'
         "500":

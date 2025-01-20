@@ -39,7 +39,8 @@ type BefRORepository interface {
 
 	// Draft & Confirm
 	// ************************ Draft & Confirm ************************ //
-	ListDraftOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
+	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
+	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -668,15 +669,16 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 	// 3. Insert BeforeReturnOrderLine (Lines)
 	queryLine := `
         INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo
+            OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo
         ) VALUES (
-            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), :TrackingNo
+            :OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), :TrackingNo
         )
     `
 	for _, line := range order.BeforeReturnOrderLines {
 		_, err = tx.NamedExecContext(ctx, queryLine, map[string]interface{}{
 			"OrderNo":    order.OrderNo,
 			"SKU":        line.SKU,
+			"ItemName":   line.ItemName,
 			"QTY":        line.QTY,
 			"ReturnQTY":  line.ReturnQTY,
 			"Price":      line.Price,
@@ -908,14 +910,14 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo string, u
 
 // ************************ Draft & Confirm ************************ //
 
-func (repo repositoryDB) ListDraftOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
+func (repo repositoryDB) ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error) {
 	query := `
         SELECT OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
         FROM BeforeReturnOrder
         WHERE StatusConfID = 1 -- Draft status
     `
 
-	var orders []response.BeforeReturnOrderResponse
+	var orders []response.ListDraftConfirmOrdersResponse
 	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare statement: %w", err)
@@ -927,12 +929,26 @@ func (repo repositoryDB) ListDraftOrders(ctx context.Context) ([]response.Before
 		return nil, fmt.Errorf("failed to list draft orders: %w", err)
 	}
 
-	for i := range orders {
-		lines, err := repo.ListBeforeReturnOrderLinesByOrderNo(ctx, orders[i].OrderNo)
-		if err != nil {
-			return nil, err
-		}
-		orders[i].BeforeReturnOrderLines = lines
+	return orders, nil
+}
+
+func (repo repositoryDB) ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error) {
+	query := `
+        SELECT OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
+        FROM BeforeReturnOrder
+        WHERE StatusConfID = 2 -- Confirm status
+    `
+
+	var orders []response.ListDraftConfirmOrdersResponse
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
+
+	err = nstmt.SelectContext(ctx, &orders, map[string]interface{}{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list confirm orders: %w", err)
 	}
 
 	return orders, nil

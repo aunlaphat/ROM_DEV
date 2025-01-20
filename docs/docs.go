@@ -760,6 +760,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/draft-confirm/list-confirms": {
+            "get": {
+                "description": "Retrieve a list of all confirm orders",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "List all confirm orders",
+                "operationId": "list-confirm-orders",
+                "responses": {
+                    "200": {
+                        "description": "All Confirm orders retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ListDraftConfirmOrdersResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Confirm orders not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/draft-confirm/list-drafts": {
             "get": {
                 "description": "Retrieve a list of all draft orders",
@@ -776,7 +833,34 @@ const docTemplate = `{
                 "operationId": "list-draft-orders",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "All Draft orders retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ListDraftConfirmOrdersResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Draft orders not found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -1452,6 +1536,9 @@ const docTemplate = `{
                 "createBy": {
                     "type": "string"
                 },
+                "itemName": {
+                    "type": "string"
+                },
                 "orderNo": {
                     "type": "string"
                 },
@@ -1527,6 +1614,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "createDate": {
+                    "type": "string"
+                },
+                "itemName": {
                     "type": "string"
                 },
                 "orderNo": {
@@ -1654,6 +1744,38 @@ const docTemplate = `{
                 },
                 "orderNo": {
                     "type": "string"
+                }
+            }
+        },
+        "response.ListDraftConfirmOrdersResponse": {
+            "type": "object",
+            "properties": {
+                "channelId": {
+                    "type": "integer"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "customerId": {
+                    "type": "string"
+                },
+                "logistic": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "srNo": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "warehouseId": {
+                    "type": "integer"
                 }
             }
         },

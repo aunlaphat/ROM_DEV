@@ -43,6 +43,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 
 	apiRouter.Route("/draft-confirm", func(r chi.Router) {
 		r.Get("/list-drafts", app.ListDraftOrders)
+		r.Get("/list-confirms", app.ListConfirmOrders)
 		//r.Put("/edit-order/{orderNo}", app.EditDraftCF)
 		//r.Post("/confirm-order", app.ConfirmOrder)
 	})
@@ -610,27 +611,73 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Tags Draft & Confirm
 // @Accept json
 // @Produce json
-// @Success 200 {object} api.Response
-// @Failure 500 {object} api.Response
+// @Success 200 {object} api.Response{data=[]response.ListDraftConfirmOrdersResponse} "All Draft orders retrieved successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 404 {object} api.Response "Draft orders not found"
+// @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /draft-confirm/list-drafts [get]
 func (app *Application) ListDraftOrders(w http.ResponseWriter, r *http.Request) {
+	// Call service layer with error handling
 	result, err := app.Service.BefRO.ListDraftOrders(r.Context())
 	if err != nil {
-		handleError(w, err)
+		app.Logger.Error("Failed to list draft orders", zap.Error(err))
+		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
 		return
 	}
 
+	// Handle no results found
+	if len(result) == 0 {
+		app.Logger.Info("No draft orders found")
+		handleResponse(w, false, "No draft orders found", nil, http.StatusOK)
+		return
+	}
+
+	// Debug logging (always print for now, can be controlled by log level later)
 	fmt.Printf("\n📋 ========== All Draft Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
 		fmt.Printf("\n📦 Draft Order #%d:\n", i+1)
-		utils.PrintOrderDetails(&order)
-		for j, line := range order.BeforeReturnOrderLines {
-			fmt.Printf("\n📦 Draft Order Line #%d:\n", j+1)
-			utils.PrintOrderLineDetails(&line)
-		}
+		utils.PrintDraftConfirmOrderDetails(&order)
 	}
 
-	app.Logger.Info("✅ Successfully retrieved all draft orders",
-		zap.Int("totalDraftOrders", len(result)))
-	handleResponse(w, true, "📚 Draft orders retrieved successfully", response, http.StatusOK)
+	// Send successful response
+	handleResponse(w, true, "Draft orders retrieved successfully", result, http.StatusOK)
+}
+
+// ListConfirmOrders godoc
+// @Summary List all confirm orders
+// @Description Retrieve a list of all confirm orders
+// @ID list-confirm-orders
+// @Tags Draft & Confirm
+// @Accept json
+// @Produce json
+// @Success 200 {object} api.Response{data=[]response.ListDraftConfirmOrdersResponse} "All Confirm orders retrieved successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 404 {object} api.Response "Confirm orders not found"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /draft-confirm/list-confirms [get]
+func (app *Application) ListConfirmOrders(w http.ResponseWriter, r *http.Request) {
+	// Call service layer with error handling
+	result, err := app.Service.BefRO.ListConfirmOrders(r.Context())
+	if err != nil {
+		app.Logger.Error("Failed to list confirm orders", zap.Error(err))
+		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
+		return
+	}
+
+	// Handle no results found
+	if len(result) == 0 {
+		app.Logger.Info("No confirm orders found")
+		handleResponse(w, false, "No confirm orders found", nil, http.StatusOK)
+		return
+	}
+
+	// Debug logging (always print for now, can be controlled by log level later)
+	fmt.Printf("\n📋 ========== All Confirm Orders (%d) ========== 📋\n", len(result))
+	for i, order := range result {
+		fmt.Printf("\n📦 Confirm Order #%d:\n", i+1)
+		utils.PrintDraftConfirmOrderDetails(&order)
+	}
+
+	// Send successful response
+	handleResponse(w, true, "Confirm orders retrieved successfully", result, http.StatusOK)
 }

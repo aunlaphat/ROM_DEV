@@ -30,6 +30,7 @@ type BeforeReturnOrderResponse struct {
 type BeforeReturnOrderLineResponse struct {
 	OrderNo    string    `json:"orderNo" db:"OrderNo"`
 	SKU        string    `json:"sku" db:"SKU"`
+	ItemName   string    `json:"itemName" db:"ItemName"`
 	QTY        int       `json:"qty" db:"QTY"`
 	ReturnQTY  int       `json:"returnQty" db:"ReturnQTY"`
 	Price      float64   `json:"price" db:"Price"`
@@ -76,7 +77,7 @@ type CancelSaleReturnResponse struct {
 	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
 }
 
-type ListDraftOrdersResponse struct {
+type ListDraftConfirmOrdersResponse struct {
 	OrderNo     string    `json:"orderNo" db:"OrderNo"`
 	SoNo        string    `json:"soNo" db:"SoNo"`
 	SrNo        string    `json:"srNo" db:"SrNo"`
@@ -86,4 +87,12 @@ type ListDraftOrdersResponse struct {
 	ChannelID   int       `json:"channelId" db:"ChannelID"`
 	CreateDate  time.Time `json:"createDate" db:"CreateDate"`
 	WarehouseID int       `json:"warehouseId" db:"WarehouseID"`
+}
+
+type ListDraftConfirmOrderLinesResponse struct {
+	OrderNo  string  `json:"orderNo" db:"OrderNo"`
+	SKU      string  `json:"sku" db:"SKU"`
+	ItemName string  `json:"itemName" db:"ItemName"`
+	QTY      int     `json:"qty" db:"QTY"`
+	Price    float64 `json:"price" db:"Price"`
 }

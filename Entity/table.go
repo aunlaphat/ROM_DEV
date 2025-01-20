@@ -34,6 +34,7 @@ type BeforeReturnOrderLine struct {
 	RecID      int        `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ (PK - Auto Increment)
 	OrderNo    string     `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ (FK -> BeforeReturnOrder)
 	SKU        string     `db:"SKU"`        // รหัสสินค้า
+	ItemName   string     `db:"ItemName"`   // ชื่อสินค้า
 	QTY        *int       `db:"QTY"`        // จำนวนสินค้าที่ซื้อ
 	ReturnQTY  *int       `db:"ReturnQTY"`  // จำนวนที่ต้องการคืน
 	Price      *float64   `db:"Price"`      // ราคาต่อหน่วย

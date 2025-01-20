@@ -54,22 +54,22 @@ func PrintSaleOrderLineDetails(line *res.SaleOrderLineResponse) {
 	fmt.Printf("💲 Price: %.2f ฿\n", line.Price)
 }
 
-func PrintDraftDetails(draft *res.BeforeReturnOrderResponse) {
+func PrintDraftConfirmOrderDetails(draft *res.ListDraftConfirmOrdersResponse) {
 	fmt.Printf("📦 OrderNo: %s\n", draft.OrderNo)
 	fmt.Printf("🛒 SoNo: %s\n", draft.SoNo)
 	fmt.Printf("👤 Customer: %s\n", draft.CustomerID)
 	fmt.Printf("🔄 SrNo: %s\n", draft.SrNo)
 	fmt.Printf("📦 TrackingNo: %s\n", draft.TrackingNo)
+	fmt.Printf("🚚 Logistic: %s\n", draft.Logistic)
 	fmt.Printf("📡 Channel: %d\n", draft.ChannelID)
 	fmt.Printf("📅 CreateDate: %v\n", draft.CreateDate)
 	fmt.Printf("🏢 Warehouse: %d\n", draft.WarehouseID)
 }
 
-func PrintDraftLineDetails(line *res.BeforeReturnOrderLineResponse) {
+func PrintDraftConfirmOrderLineDetails(line *res.ListDraftConfirmOrderLinesResponse) {
 	fmt.Printf("🔖 SKU: %s\n", line.SKU)
+	fmt.Printf("🏷️  ItemName: %s\n", line.ItemName)
 	fmt.Printf("📱 QTY: %d\n", line.QTY)
-	fmt.Printf("📲 ReturnQTY: %d\n", line.ReturnQTY)
+	//fmt.Printf("📲 ReturnQTY: %d\n", line.ReturnQTY)
 	fmt.Printf("💲 Price: %.2f\n", line.Price)
-	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
-	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate)
 }
