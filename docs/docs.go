@@ -1380,10 +1380,10 @@ const docTemplate = `{
                     "description": "RecID\t\t  int        ` + "`" + `json:\"recID\" db:\"RecID\"` + "`" + ` // (PK - Auto Increment)",
                     "type": "string"
                 },
-                "returnDate": {
+                "reason": {
                     "type": "string"
                 },
-                "returnType": {
+                "returnDate": {
                     "type": "string"
                 },
                 "soNo": {
@@ -1558,10 +1558,10 @@ const docTemplate = `{
                 "orderNo": {
                     "type": "string"
                 },
-                "returnDate": {
+                "reason": {
                     "type": "string"
                 },
-                "returnType": {
+                "returnDate": {
                     "type": "string"
                 },
                 "soNo": {

@@ -8,7 +8,7 @@ type BeforeReturnOrder struct {
 	SoNo           string     `json:"soNo" db:"SoNo"`
 	SrNo           string     `json:"srNo" db:"SrNo"`
 	ChannelID      int        `json:"channelID" db:"ChannelID"`
-	ReturnType     string     `json:"returnType" db:"ReturnType"`
+	Reason         string     `json:"reason" db:"Reason"`
 	CustomerID     string     `json:"customerID" db:"CustomerID"`
 	TrackingNo     string     `json:"trackingNo" db:"TrackingNo"`
 	Logistic       string     `json:"logistic" db:"Logistic"`

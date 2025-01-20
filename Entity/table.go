@@ -9,7 +9,7 @@ type BeforeReturnOrder struct {
 	SoNo           string     `db:"SoNo"`           // เลขที่ใบสั่งขาย
 	SrNo           string     `db:"SrNo"`           // เลขที่ใบลดหนี้
 	ChannelID      int        `db:"ChannelID"`      // รหัสช่องทางการขาย
-	ReturnType     string     `db:"ReturnType"`     // ประเภทการคืนสินค้า
+	Reason         string     `db:"Reason"`         // เหตุผลในการคืนสินค้า
 	CustomerID     string     `db:"CustomerID"`     // รหัสลูกค้า
 	TrackingNo     string     `db:"TrackingNo"`     // เลขพัสดุ
 	Logistic       string     `db:"Logistic"`       // ขนส่ง

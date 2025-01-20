@@ -7,7 +7,7 @@ type BeforeReturnOrderResponse struct {
 	SoNo                   string                          `json:"soNo" db:"SoNo"`
 	SrNo                   string                          `json:"srNo" db:"SrNo"`
 	ChannelID              int                             `json:"channelId" db:"ChannelID"`
-	ReturnType             string                          `json:"returnType" db:"ReturnType"`
+	Reson                  string                          `json:"reason" db:"Reason"`
 	CustomerID             string                          `json:"customerId" db:"CustomerID"`
 	TrackingNo             string                          `json:"trackingNo" db:"TrackingNo"`
 	Logistic               string                          `json:"logistic" db:"Logistic"`
