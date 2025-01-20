@@ -27,6 +27,9 @@ type BefROService interface {
 
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
 	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
+	GetCodeR(ctx context.Context) ([]response.CodeRResponse, error)
+	AddCodeR(ctx context.Context, req request.CodeRRequest) error
+	DeleteCodeR(ctx context.Context, sku string) error
 }
 
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -411,4 +414,56 @@ func (srv service) ListConfirmOrders(ctx context.Context) ([]response.ListDraftC
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	deferFunc("Success", nil)
 	return orders, nil
+}
+
+func (srv service) GetCodeR(ctx context.Context) ([]response.CodeRResponse, error) {
+	// เริ่มต้น Logging ของ API Call
+	deferFunc := srv.logger.LogAPICall("GetCodeR")
+	defer deferFunc("Completed", nil)
+
+	// เรียก Repository เพื่อค้นหา CodeR ทั้งหมด
+	codeR, err := srv.befRORepo.GetCodeR(ctx)
+	if err != nil {
+		// หากเกิดข้อผิดพลาด อัปเดต Log ที่ Error
+		deferFunc("Failed", fmt.Errorf("❌ Failed to get CodeR : %v", err))
+		return nil, err
+	}
+
+	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
+	deferFunc("Success", nil)
+	return codeR, nil
+}
+
+func (srv service) AddCodeR(ctx context.Context, req request.CodeRRequest) error {
+	// เริ่มต้น Logging ของ API Call
+	deferFunc := srv.logger.LogAPICall("AddCodeR")
+	defer deferFunc("Completed", nil)
+
+	// เรียกใช้ repository layer
+	if err := srv.befRORepo.AddCodeR(ctx, req); err != nil {
+		// อัปเดต Log ว่าไม่สามารถเพิ่ม CodeR ได้ เนื่องจากเกิดข้อผิดพลาด
+		deferFunc("Failed", fmt.Errorf("failed to add CodeR: %v", err))
+		return err
+	}
+
+	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
+	deferFunc("Success", nil)
+	return nil
+}
+
+func (srv service) DeleteCodeR(ctx context.Context, sku string) error {
+	// เริ่มต้น Logging ของ API Call
+	deferFunc := srv.logger.LogAPICall("DeleteCodeR", zap.String("SKU", sku))
+	defer deferFunc("Completed", nil)
+
+	// เรียกใช้ repository layer
+	if err := srv.befRORepo.DeleteCodeR(ctx, sku); err != nil {
+		// อัปเดต Log ว่าไม่สามารถลบ CodeR ได้ เนื่องจากเกิดข้อผิดพลาด
+		deferFunc("Failed", fmt.Errorf("failed to delete CodeR: %v", err))
+		return err
+	}
+
+	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
+	deferFunc("Success", nil)
+	return nil
 }

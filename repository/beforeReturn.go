@@ -41,6 +41,9 @@ type BefRORepository interface {
 	// ************************ Draft & Confirm ************************ //
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
 	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
+	GetCodeR(ctx context.Context) ([]response.CodeRResponse, error)
+	AddCodeR(ctx context.Context, codeR request.CodeRRequest) error
+	DeleteCodeR(ctx context.Context, sku string) error
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -952,4 +955,48 @@ func (repo repositoryDB) ListConfirmOrders(ctx context.Context) ([]response.List
 	}
 
 	return orders, nil
+}
+
+func (repo repositoryDB) GetCodeR(ctx context.Context) ([]response.CodeRResponse, error) {
+	query := `
+		SELECT SKU, NameAlias
+		FROM ROM_V_ProductAll
+		WHERE SKU LIKE 'R%'
+	`
+
+	var codeR []response.CodeRResponse
+	err := repo.db.SelectContext(ctx, &codeR, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get CodeR: %w", err)
+	}
+
+	return codeR, nil
+}
+
+func (repo repositoryDB) AddCodeR(ctx context.Context, codeR request.CodeRRequest) error {
+	query := `
+        INSERT INTO BeforeReturnOrderLine (OrderNo, SKU, ItemName, QTY, Price, CreateBy, CreateDate)
+        VALUES (:OrderNo, :SKU, :ItemName, :QTY, :Price, :CreateBy, GETDATE())
+    `
+
+	_, err := repo.db.NamedExecContext(ctx, query, codeR)
+	if err != nil {
+		return fmt.Errorf("failed to insert CodeR: %w", err)
+	}
+
+	return nil
+}
+
+func (repo repositoryDB) DeleteCodeR(ctx context.Context, sku string) error {
+	query := `
+        DELETE FROM BeforeReturnOrderLine
+        WHERE SKU = :SKU
+    `
+
+	_, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{"SKU": sku})
+	if err != nil {
+		return fmt.Errorf("failed to delete CodeR: %w", err)
+	}
+
+	return nil
 }

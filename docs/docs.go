@@ -760,6 +760,162 @@ const docTemplate = `{
                 }
             }
         },
+        "/draft-confirm/code-r": {
+            "get": {
+                "description": "Retrieve SKU and NameAlias from ROM_V_ProductAll",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Get CodeR",
+                "operationId": "get-code-r",
+                "responses": {
+                    "200": {
+                        "description": "CodeR retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.CodeRResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Add a new CodeR entry",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Add CodeR",
+                "operationId": "add-code-r",
+                "parameters": [
+                    {
+                        "description": "CodeR details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CodeRRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "CodeR added successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.BeforeReturnOrderLineResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/code-r/{sku}": {
+            "delete": {
+                "description": "Delete a CodeR entry by SKU",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Delete CodeR",
+                "operationId": "delete-code-r",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SKU",
+                        "name": "sku",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CodeR deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/draft-confirm/list-confirms": {
             "get": {
                 "description": "Retrieve a list of all confirm orders",
@@ -1126,11 +1282,6 @@ const docTemplate = `{
         },
         "/sale-return/update/{orderNo}": {
             "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Update the SR number for a sale return order based on the provided details",
                 "consumes": [
                     "application/json"
@@ -1571,6 +1722,29 @@ const docTemplate = `{
                 }
             }
         },
+        "request.CodeRRequest": {
+            "type": "object",
+            "properties": {
+                "createBy": {
+                    "type": "string"
+                },
+                "itemName": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
         "request.LoginLark": {
             "type": "object",
             "properties": {
@@ -1729,6 +1903,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "remark": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.CodeRResponse": {
+            "type": "object",
+            "properties": {
+                "nameAlias": {
+                    "type": "string"
+                },
+                "sku": {
                     "type": "string"
                 }
             }

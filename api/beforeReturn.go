@@ -39,13 +39,15 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Post("/cancel/{orderNo}", app.CancelSaleReturn)
 	})
 
-	apiRouter.Post("/login", app.Login)
-
 	apiRouter.Route("/draft-confirm", func(r chi.Router) {
+		r.Use(jwtauth.Verifier(app.TokenAuth))
+		r.Use(jwtauth.Authenticator)
+
 		r.Get("/list-drafts", app.ListDraftOrders)
 		r.Get("/list-confirms", app.ListConfirmOrders)
-		//r.Put("/edit-order/{orderNo}", app.EditDraftCF)
-		//r.Post("/confirm-order", app.ConfirmOrder)
+		r.Get("/code-r", app.GetCodeR)
+		r.Post("/code-r", app.AddCodeR)
+		r.Delete("/code-r/{sku}", app.DeleteCodeR)
 	})
 }
 
@@ -407,7 +409,6 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// @Security BearerAuth
 // @Param orderNo path string true "Order number"
 // @Param request body request.UpdateSaleReturnRequest true "SR number details"
 // @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "SR number updated successfully"
@@ -680,4 +681,104 @@ func (app *Application) ListConfirmOrders(w http.ResponseWriter, r *http.Request
 
 	// Send successful response
 	handleResponse(w, true, "Confirm orders retrieved successfully", result, http.StatusOK)
+}
+
+// GetCodeR godoc
+// @Summary Get CodeR
+// @Description Retrieve SKU and NameAlias from ROM_V_ProductAll
+// @ID get-code-r
+// @Tags Draft & Confirm
+// @Accept json
+// @Produce json
+// @Success 200 {object} api.Response{data=[]response.CodeRResponse} "CodeR retrieved successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /draft-confirm/code-r [get]
+func (app *Application) GetCodeR(w http.ResponseWriter, r *http.Request) {
+	// Call service layer with error handling
+	result, err := app.Service.BefRO.GetCodeR(r.Context())
+	if err != nil {
+		app.Logger.Error("Failed to get CodeR", zap.Error(err))
+		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
+		return
+	}
+
+	// Send successful response
+	handleResponse(w, true, "CodeR retrieved successfully", result, http.StatusOK)
+}
+
+// AddCodeR godoc
+// @Summary Add CodeR
+// @Description Add a new CodeR entry
+// @ID add-code-r
+// @Tags Draft & Confirm
+// @Accept json
+// @Produce json
+// @Param body body request.CodeRRequest true "CodeR details"
+// @Success 201 {object} api.Response{data=[]response.BeforeReturnOrderLineResponse} "CodeR added successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /draft-confirm/code-r [post]
+func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
+	var req request.CodeRRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleResponse(w, false, "Invalid request payload", nil, http.StatusBadRequest)
+		return
+	}
+
+	// Extract userID from claims
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := utils.GetUserIDFromClaims(claims)
+	if err != nil {
+		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
+		return
+	}
+
+	// Set CreateBy from claims
+	req.CreateBy = userID
+
+	err = app.Service.BefRO.AddCodeR(r.Context(), req)
+	if err != nil {
+		app.Logger.Error("Failed to add CodeR", zap.Error(err))
+		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
+		return
+	}
+
+	app.Logger.Info("✅ Successfully added CodeR", zap.String("SKU", req.SKU))
+	handleResponse(w, true, "CodeR added successfully", nil, http.StatusCreated)
+}
+
+// DeleteCodeR godoc
+// @Summary Delete CodeR
+// @Description Delete a CodeR entry by SKU
+// @ID delete-code-r
+// @Tags Draft & Confirm
+// @Accept json
+// @Produce json
+// @Param sku path string true "SKU"
+// @Success 200 {object} api.Response "CodeR deleted successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /draft-confirm/code-r/{sku} [delete]
+func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
+	sku := chi.URLParam(r, "sku")
+	if sku == "" {
+		handleResponse(w, false, "SKU is required", nil, http.StatusBadRequest)
+		return
+	}
+
+	err := app.Service.BefRO.DeleteCodeR(r.Context(), sku)
+	if err != nil {
+		app.Logger.Error("Failed to delete CodeR", zap.Error(err))
+		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
+		return
+	}
+
+	app.Logger.Info("✅ Successfully deleted CodeR", zap.String("SKU", sku))
+	handleResponse(w, true, "CodeR deleted successfully", nil, http.StatusOK)
 }

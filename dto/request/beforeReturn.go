@@ -52,3 +52,12 @@ type CancelSaleReturnRequest struct {
 	//CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
 	Remark string `json:"remark" db:"Remark"`
 }
+
+type CodeRRequest struct {
+	OrderNo  string  `json:"orderNo" db:"OrderNo"`
+	SKU      string  `json:"sku" db:"SKU"`
+	ItemName string  `json:"itemName" db:"ItemName"`
+	QTY      int     `json:"qty" db:"QTY"`
+	Price    float64 `json:"price" db:"Price"`
+	CreateBy string  `json:"createBy" db:"CreateBy"`
+}

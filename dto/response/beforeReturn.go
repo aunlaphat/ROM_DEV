@@ -96,3 +96,8 @@ type ListDraftConfirmOrderLinesResponse struct {
 	QTY      int     `json:"qty" db:"QTY"`
 	Price    float64 `json:"price" db:"Price"`
 }
+
+type CodeRResponse struct {
+	SKU       string `json:"sku" db:"SKU"`
+	NameAlias string `json:"nameAlias" db:"NameAlias"`
+}
