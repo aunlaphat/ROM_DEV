@@ -41,12 +41,11 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 
 	apiRouter.Post("/login", app.Login)
 
-	/* 	apiRouter.Route("/draft-confirm", func(r chi.Router) {
-	//r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
-	r.Get("/list-drafts", app.ListDrafts)
-	r.Put("/edit-order/{orderNo}", app.EditDraftCF)
-	r.Post("/confirm-order", app.ConfirmOrder)
-	*/
+	apiRouter.Route("/draft-confirm", func(r chi.Router) {
+		r.Get("/list-drafts", app.ListDraftOrders)
+		//r.Put("/edit-order/{orderNo}", app.EditDraftCF)
+		//r.Post("/confirm-order", app.ConfirmOrder)
+	})
 }
 
 // ListReturnOrders godoc
@@ -602,4 +601,36 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 
 	// 9. ส่ง response กลับ
 	handleResponse(w, true, "Sale return order canceled successfully", response, http.StatusOK)
+}
+
+// ListDraftOrders godoc
+// @Summary List all draft orders
+// @Description Retrieve a list of all draft orders
+// @ID list-draft-orders
+// @Tags Draft & Confirm
+// @Accept json
+// @Produce json
+// @Success 200 {object} api.Response
+// @Failure 500 {object} api.Response
+// @Router /draft-confirm/list-drafts [get]
+func (app *Application) ListDraftOrders(w http.ResponseWriter, r *http.Request) {
+	result, err := app.Service.BefRO.ListDraftOrders(r.Context())
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== All Draft Orders (%d) ========== 📋\n", len(result))
+	for i, order := range result {
+		fmt.Printf("\n📦 Draft Order #%d:\n", i+1)
+		utils.PrintOrderDetails(&order)
+		for j, line := range order.BeforeReturnOrderLines {
+			fmt.Printf("\n📦 Draft Order Line #%d:\n", j+1)
+			utils.PrintOrderLineDetails(&line)
+		}
+	}
+
+	app.Logger.Info("✅ Successfully retrieved all draft orders",
+		zap.Int("totalDraftOrders", len(result)))
+	handleResponse(w, true, "📚 Draft orders retrieved successfully", response, http.StatusOK)
 }

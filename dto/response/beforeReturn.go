@@ -75,3 +75,15 @@ type CancelSaleReturnResponse struct {
 	CancelBy     string    `json:"cancelBy" db:"CancelBy"`
 	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
 }
+
+type ListDraftOrdersResponse struct {
+	OrderNo     string    `json:"orderNo" db:"OrderNo"`
+	SoNo        string    `json:"soNo" db:"SoNo"`
+	SrNo        string    `json:"srNo" db:"SrNo"`
+	CustomerID  string    `json:"customerId" db:"CustomerID"`
+	TrackingNo  string    `json:"trackingNo" db:"TrackingNo"`
+	Logistic    string    `json:"logistic" db:"Logistic"`
+	ChannelID   int       `json:"channelId" db:"ChannelID"`
+	CreateDate  time.Time `json:"createDate" db:"CreateDate"`
+	WarehouseID int       `json:"warehouseId" db:"WarehouseID"`
+}

@@ -31,20 +31,15 @@ type BefRORepository interface {
 	//Cancle
 
 	// ************************ Create Sale Return ************************ //
-	//Search Order (SoNo and OrderNo from Order - MKP)
 	SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error)
-	//Create
 	CreateSaleReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
-	//Insert SrNo (SR Create from AX)
 	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error
-
 	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
-
 	CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
 
 	// Draft & Confirm
-	//ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
-	//EditOrder(ctx context.Context, req request.EditOrderRequest) error
+	// ************************ Draft & Confirm ************************ //
+	ListDraftOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -533,6 +528,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 	return nil
 }
 
+// ************************ Create Sale Return ************************ //
+
 func (repo repositoryDB) SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error) {
 	var query string
 	var params map[string]interface{}
@@ -907,4 +904,36 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo string, u
 	}
 
 	return nil
+}
+
+// ************************ Draft & Confirm ************************ //
+
+func (repo repositoryDB) ListDraftOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
+	query := `
+        SELECT OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
+        FROM BeforeReturnOrder
+        WHERE StatusConfID = 1 -- Draft status
+    `
+
+	var orders []response.BeforeReturnOrderResponse
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
+
+	err = nstmt.SelectContext(ctx, &orders, map[string]interface{}{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list draft orders: %w", err)
+	}
+
+	for i := range orders {
+		lines, err := repo.ListBeforeReturnOrderLinesByOrderNo(ctx, orders[i].OrderNo)
+		if err != nil {
+			return nil, err
+		}
+		orders[i].BeforeReturnOrderLines = lines
+	}
+
+	return orders, nil
 }

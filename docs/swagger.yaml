@@ -824,6 +824,26 @@ paths:
       summary: Get Warehouse
       tags:
       - Constants
+  /draft-confirm/list-drafts:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all draft orders
+      operationId: list-draft-orders
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: List all draft orders
+      tags:
+      - Draft & Confirm
   /sale-return/cancel/{orderNo}:
     post:
       consumes:

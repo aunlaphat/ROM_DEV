@@ -24,6 +24,8 @@ type BefROService interface {
 	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error
 	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
 	CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
+
+	ListDraftOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
 }
 
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -372,4 +374,22 @@ func (srv service) CancelSaleReturn(ctx context.Context, orderNo string, updateB
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	deferFunc("Success", nil)
 	return nil
+}
+
+func (srv service) ListDraftOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
+	// เริ่มต้น Logging ของ API Call
+	deferFunc := srv.logger.LogAPICall("ListDraftOrders")
+	defer deferFunc("Completed", nil)
+
+	// เรียก Repository เพื่อค้นหา Order ทั้งหมดที่ Status เป็น Draft
+	orders, err := srv.befRORepo.ListDraftOrders(ctx)
+	if err != nil {
+		// หากเกิดข้อผิดพลาด อัปเดต Log ที่ Error
+		deferFunc("Failed", fmt.Errorf("❌ Failed to list draft orders : %v", err))
+		return nil, err
+	}
+
+	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
+	deferFunc("Success", nil)
+	return orders, nil
 }
