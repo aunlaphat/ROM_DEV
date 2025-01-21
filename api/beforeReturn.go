@@ -18,7 +18,6 @@ import (
 // ReturnOrderRoute defines the routes for return order operations
 func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/before-return-order", func(r chi.Router) {
-		//r.Use(middleware.AuthMiddleware(app.Logger.Logger, "TRADE_CONSIGN", "WAREHOUSE", "VIEWER", "ACCOUNTING", "SYSTEM_ADMIN"))
 		r.Get("/list-orders", app.ListBeforeReturnOrders)
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
 		r.Put("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
@@ -28,7 +27,6 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
-		// Add auth middleware for protected routes
 		r.Use(jwtauth.Verifier(app.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
@@ -43,11 +41,15 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Use(jwtauth.Verifier(app.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
+		// Draft
 		r.Get("/list-drafts", app.ListDraftOrders)
-		r.Get("/list-confirms", app.ListConfirmOrders)
+		r.Get("/draft/{orderNo}", app.GetDraftOrderByOrderNo)
 		r.Get("/code-r", app.GetCodeR)
 		r.Post("/code-r", app.AddCodeR)
 		r.Delete("/code-r/{sku}", app.DeleteCodeR)
+
+		// Confirm
+		r.Get("/list-confirms", app.ListConfirmOrders)
 	})
 }
 
@@ -324,7 +326,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("📦 Order Line #%d 📦\n", i+1)
 			utils.PrintSaleOrderLineDetails(&line)
 		}
-		fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(order.OrderLines)) // Add logging for the number of lines
+		fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(order.OrderLines))
 		fmt.Println("=====================================")
 	}
 
@@ -722,7 +724,8 @@ func (app *Application) GetCodeR(w http.ResponseWriter, r *http.Request) {
 func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
 	var req request.CodeRRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleResponse(w, false, "Invalid request payload", nil, http.StatusBadRequest)
+		app.Logger.Error("Failed to decode request", zap.Error(err))
+		handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
 		return
 	}
 
@@ -781,4 +784,28 @@ func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
 
 	app.Logger.Info("✅ Successfully deleted CodeR", zap.String("SKU", sku))
 	handleResponse(w, true, "CodeR deleted successfully", nil, http.StatusOK)
+}
+
+// GetDraftOrderByOrderNo godoc
+// @Summary Get draft order by order number
+// @Description Retrieve the details of a specific draft order by its order number
+// @ID get-draft-order-by-order-no
+// @Tags Draft & Confirm
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order number"
+// @Success 200 {object} api.Response{data=[]response.DraftHeadResponse} "Draft order retrieved successfully"
+// @Failure 404 {object} api.Response
+// @Failure 500 {object} api.Response
+// @Router /draft-confirm/draft/{orderNo} [get]
+func (app *Application) GetDraftOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
+	orderNo := chi.URLParam(r, "orderNo")
+	result, err := app.Service.BefRO.GetDraftOrderByOrderNo(r.Context(), orderNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	app.Logger.Info("✅ Successfully retrieved draft order", zap.String("OrderNo", orderNo))
+	handleResponse(w, true, "Draft order retrieved successfully", result, http.StatusOK)
 }

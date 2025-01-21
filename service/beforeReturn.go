@@ -27,6 +27,7 @@ type BefROService interface {
 
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
 	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
+	GetDraftOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error)
 	GetCodeR(ctx context.Context) ([]response.CodeRResponse, error)
 	AddCodeR(ctx context.Context, req request.CodeRRequest) error
 	DeleteCodeR(ctx context.Context, sku string) error
@@ -385,6 +386,8 @@ func (srv service) ListDraftOrders(ctx context.Context) ([]response.ListDraftCon
 	deferFunc := srv.logger.LogAPICall("ListDraftOrders")
 	defer deferFunc("Completed", nil)
 
+	srv.logger.Info("🏁 Starting to list all draft orders")
+
 	// เรียก Repository เพื่อค้นหา Order ทั้งหมดที่ Status เป็น Draft
 	orders, err := srv.befRORepo.ListDraftOrders(ctx)
 	if err != nil {
@@ -403,6 +406,8 @@ func (srv service) ListConfirmOrders(ctx context.Context) ([]response.ListDraftC
 	deferFunc := srv.logger.LogAPICall("ListConfirmOrders")
 	defer deferFunc("Completed", nil)
 
+	srv.logger.Info("🏁 Starting to list all confirm orders")
+
 	// เรียก Repository เพื่อค้นหา Order ทั้งหมดที่ Status เป็น Confirm
 	orders, err := srv.befRORepo.ListConfirmOrders(ctx)
 	if err != nil {
@@ -414,6 +419,26 @@ func (srv service) ListConfirmOrders(ctx context.Context) ([]response.ListDraftC
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	deferFunc("Success", nil)
 	return orders, nil
+}
+
+func (srv service) GetDraftOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error) {
+	// เริ่มต้น Logging ของ API Call
+	deferFunc := srv.logger.LogAPICall("GetDraftOrderByOrderNo", zap.String("OrderNo", orderNo))
+	defer deferFunc("Completed", nil)
+
+	srv.logger.Info("🏁 Starting to get draft order by order number", zap.String("OrderNo", orderNo))
+	head, lines, err := srv.befRORepo.GetDraftConfirmOrderByOrderNo(ctx, orderNo)
+	if err != nil {
+		// อัปเดต Log ว่าไม่สามารถดึงข้อมูลได้
+		deferFunc("Failed", fmt.Errorf("❌ Failed to get draft order : %v", err))
+		return nil, err
+	}
+
+	head.OrderLines = lines
+
+	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
+	deferFunc("Success", nil)
+	return head, nil
 }
 
 func (srv service) GetCodeR(ctx context.Context) ([]response.CodeRResponse, error) {

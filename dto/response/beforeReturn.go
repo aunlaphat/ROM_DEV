@@ -89,12 +89,18 @@ type ListDraftConfirmOrdersResponse struct {
 	WarehouseID int       `json:"warehouseId" db:"WarehouseID"`
 }
 
-type ListDraftConfirmOrderLinesResponse struct {
-	OrderNo  string  `json:"orderNo" db:"OrderNo"`
-	SKU      string  `json:"sku" db:"SKU"`
-	ItemName string  `json:"itemName" db:"ItemName"`
-	QTY      int     `json:"qty" db:"QTY"`
-	Price    float64 `json:"price" db:"Price"`
+type DraftHeadResponse struct {
+	OrderNo    string              `db:"OrderNo"`
+	SoNo       string              `db:"SoNo"`
+	SrNo       string              `db:"SrNo"`
+	OrderLines []DraftLineResponse `db:"OrderLines"`
+}
+
+type DraftLineResponse struct {
+	SKU      string  `db:"SKU"`
+	ItemName string  `db:"ItemName"`
+	QTY      int     `db:"QTY"`
+	Price    float64 `db:"Price"`
 }
 
 type CodeRResponse struct {

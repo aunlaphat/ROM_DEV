@@ -6,6 +6,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // ReturnOrderRepository interface กำหนด method สำหรับการทำงานกับฐานข้อมูล
@@ -41,6 +43,7 @@ type BefRORepository interface {
 	// ************************ Draft & Confirm ************************ //
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
 	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
+	GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, []response.DraftLineResponse, error)
 	GetCodeR(ctx context.Context) ([]response.CodeRResponse, error)
 	AddCodeR(ctx context.Context, codeR request.CodeRRequest) error
 	DeleteCodeR(ctx context.Context, sku string) error
@@ -314,13 +317,12 @@ func (repo repositoryDB) ListBeforeReturnOrderLines(ctx context.Context) ([]resp
 }
 
 // ฟังก์ชันพื้นฐานสำหรับการดึงข้อมูล
-func (repo repositoryDB) listBeforeReturnOrders(ctx context.Context, condition string, params map[string]interface{}) ([]response.BeforeReturnOrderResponse, error) {
-	query := fmt.Sprintf(`
+func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
+	query := `
         SELECT OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         FROM BeforeReturnOrder
-        WHERE %s
-        ORDER BY CreateDate ASC
-    `, condition)
+        ORDER BY RecID ASC
+    `
 
 	var orders []response.BeforeReturnOrderResponse
 	nstmt, err := repo.db.PrepareNamed(query)
@@ -329,7 +331,7 @@ func (repo repositoryDB) listBeforeReturnOrders(ctx context.Context, condition s
 	}
 	defer nstmt.Close()
 
-	err = nstmt.SelectContext(ctx, &orders, params)
+	err = nstmt.SelectContext(ctx, &orders, map[string]interface{}{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list orders: %w", err)
 	}
@@ -343,16 +345,6 @@ func (repo repositoryDB) listBeforeReturnOrders(ctx context.Context, condition s
 	}
 
 	return orders, nil
-}
-
-// ฟังก์ชันสำหรับดึงข้อมูล BeforeReturnOrders ทั้งหมด
-func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
-	return repo.listBeforeReturnOrders(ctx, "1=1", map[string]interface{}{})
-}
-
-// ฟังก์ชันสำหรับดึงข้อมูล Drafts
-func (repo repositoryDB) ListDrafts(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
-	return repo.listBeforeReturnOrders(ctx, "StatusConfID = 1", map[string]interface{}{})
 }
 
 func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error {
@@ -647,21 +639,7 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
             :SoStatusID, :MkpStatusID, :ReturnDate, :CreateBy, GETDATE()
         )
     `
-	_, err = tx.NamedExecContext(ctx, queryOrder, map[string]interface{}{
-		"OrderNo":     order.OrderNo,
-		"SoNo":        order.SoNo,
-		"SrNo":        order.SrNo,
-		"ChannelID":   order.ChannelID,
-		"Reason":      order.Reason,
-		"CustomerID":  order.CustomerID,
-		"TrackingNo":  order.TrackingNo,
-		"Logistic":    order.Logistic,
-		"WarehouseID": order.WarehouseID,
-		"SoStatusID":  order.SoStatusID,
-		"MkpStatusID": order.MkpStatusID,
-		"ReturnDate":  order.ReturnDate,
-		"CreateBy":    order.CreateBy,
-	})
+	_, err = tx.NamedExecContext(ctx, queryOrder, order)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create BeforeReturnOrder: %w", err)
 	}
@@ -957,6 +935,51 @@ func (repo repositoryDB) ListConfirmOrders(ctx context.Context) ([]response.List
 	return orders, nil
 }
 
+func (repo repositoryDB) GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, []response.DraftLineResponse, error) {
+	var head response.DraftHeadResponse
+	var lines []response.DraftLineResponse
+
+	headQuery := `
+        SELECT 
+            OrderNo,
+            SoNo,
+            SrNo
+        FROM BeforeReturnOrder
+        WHERE OrderNo = :OrderNo
+    `
+
+	headQuery, args, err := sqlx.Named(headQuery, map[string]interface{}{"OrderNo": orderNo})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to prepare head query: %w", err)
+	}
+	headQuery = repo.db.Rebind(headQuery)
+	err = repo.db.GetContext(ctx, &head, headQuery, args...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get head data: %w", err)
+	}
+
+	lineQuery := `
+        SELECT 
+            SKU,
+            ItemName,
+            QTY,
+            Price
+        FROM BeforeReturnOrderLine
+        WHERE OrderNo = :OrderNo
+    `
+	lineQuery, args, err = sqlx.Named(lineQuery, map[string]interface{}{"OrderNo": orderNo})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to prepare line query: %w", err)
+	}
+	lineQuery = repo.db.Rebind(lineQuery)
+	err = repo.db.SelectContext(ctx, &lines, lineQuery, args...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get line data: %w", err)
+	}
+
+	return &head, lines, nil
+}
+
 func (repo repositoryDB) GetCodeR(ctx context.Context) ([]response.CodeRResponse, error) {
 	query := `
 		SELECT SKU, NameAlias
@@ -974,9 +997,11 @@ func (repo repositoryDB) GetCodeR(ctx context.Context) ([]response.CodeRResponse
 }
 
 func (repo repositoryDB) AddCodeR(ctx context.Context, codeR request.CodeRRequest) error {
+	codeR.ReturnQTY = codeR.QTY
+
 	query := `
-        INSERT INTO BeforeReturnOrderLine (OrderNo, SKU, ItemName, QTY, Price, CreateBy, CreateDate)
-        VALUES (:OrderNo, :SKU, :ItemName, :QTY, :Price, :CreateBy, GETDATE())
+        INSERT INTO BeforeReturnOrderLine (OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate)
+        VALUES (:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE())
     `
 
 	_, err := repo.db.NamedExecContext(ctx, query, codeR)

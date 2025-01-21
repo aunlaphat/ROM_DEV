@@ -916,6 +916,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/draft-confirm/draft/{orderNo}": {
+            "get": {
+                "description": "Retrieve the details of a specific draft order by its order number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Get draft order by order number",
+                "operationId": "get-draft-order-by-order-no",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Draft order retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.DraftHeadResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/draft-confirm/list-confirms": {
             "get": {
                 "description": "Retrieve a list of all confirm orders",
@@ -1740,6 +1800,9 @@ const docTemplate = `{
                 "qty": {
                     "type": "integer"
                 },
+                "returnQty": {
+                    "type": "integer"
+                },
                 "sku": {
                     "type": "string"
                 }
@@ -1928,6 +1991,43 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "orderNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.DraftHeadResponse": {
+            "type": "object",
+            "properties": {
+                "orderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.DraftLineResponse"
+                    }
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "srNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.DraftLineResponse": {
+            "type": "object",
+            "properties": {
+                "itemName": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "sku": {
                     "type": "string"
                 }
             }
