@@ -27,7 +27,7 @@ type BefROService interface {
 
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
 	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
-	GetDraftOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error)
+	GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error)
 	GetCodeR(ctx context.Context) ([]response.CodeRResponse, error)
 	AddCodeR(ctx context.Context, req request.CodeRRequest) error
 	DeleteCodeR(ctx context.Context, sku string) error
@@ -421,7 +421,7 @@ func (srv service) ListConfirmOrders(ctx context.Context) ([]response.ListDraftC
 	return orders, nil
 }
 
-func (srv service) GetDraftOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error) {
+func (srv service) GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "GetDraftOrderByOrderNo", zap.String("OrderNo", orderNo))
 	defer logFinish("Completed", nil)

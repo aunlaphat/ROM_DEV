@@ -43,7 +43,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 
 		// Draft
 		r.Get("/list-drafts", app.ListDraftOrders)
-		r.Get("/draft/{orderNo}", app.GetDraftOrderByOrderNo)
+		r.Get("/detail/{orderNo}", app.GetDraftConfirmOrderByOrderNo)
 		r.Get("/code-r", app.GetCodeR)
 		r.Post("/code-r", app.AddCodeR)
 		r.Delete("/code-r/{sku}", app.DeleteCodeR)
@@ -797,15 +797,31 @@ func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} api.Response{data=[]response.DraftHeadResponse} "Draft order retrieved successfully"
 // @Failure 404 {object} api.Response
 // @Failure 500 {object} api.Response
-// @Router /draft-confirm/draft/{orderNo} [get]
-func (app *Application) GetDraftOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
+// @Router /draft-confirm/detail/{orderNo} [get]
+func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
+	// เริ่มต้น Logging ของ API Call
+	logFinish := app.Logger.LogAPICall(r.Context(), "GetDraftOrderByOrderNo", zap.String("OrderNo", chi.URLParam(r, "orderNo")))
+	defer logFinish("Completed", nil)
+
 	orderNo := chi.URLParam(r, "orderNo")
-	result, err := app.Service.BefRO.GetDraftOrderByOrderNo(r.Context(), orderNo)
+	result, err := app.Service.BefRO.GetDraftConfirmOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
+		logFinish("Failed", err)
 		handleError(w, err)
 		return
 	}
 
+	fmt.Printf("\n📋 ========== Draft Order Details ========== 📋\n")
+	utils.PrintDraftOrderDetails(result)
+	fmt.Printf("\n📋 ========== Draft Order Line Details ========== 📋\n")
+	for i, line := range result.OrderLines {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintDraftOrderLineDetails(&line)
+	}
+	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.OrderLines))
+	fmt.Println("=====================================")
+
+	logFinish("Success", nil)
 	app.Logger.Info("✅ Successfully retrieved draft order", zap.String("OrderNo", orderNo))
 	handleResponse(w, true, "Draft order retrieved successfully", result, http.StatusOK)
 }
