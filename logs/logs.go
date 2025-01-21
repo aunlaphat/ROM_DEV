@@ -1,7 +1,7 @@
-// Log package บันทึกข้อมูลและ error ที่เกิดขั้นภายในระบบ
 package logs
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -15,9 +15,8 @@ type Logger struct {
 	logger *zap.Logger
 }
 
-// New Logger instance with save to error.json for view error log when service is on server production
+// NewLogger สร้าง instance ใหม่ของ Logger พร้อมการหมุนเวียนไฟล์และการตั้งค่าที่กำหนดเอง
 func NewLogger(serviceName, logPath string, maxSize, maxBackups, maxAge int) (*Logger, func(), error) {
-
 	hook := &lumberjack.Logger{
 		Filename:   logPath,
 		MaxSize:    maxSize,
@@ -27,16 +26,15 @@ func NewLogger(serviceName, logPath string, maxSize, maxBackups, maxAge int) (*L
 	}
 
 	config := zap.NewProductionEncoderConfig()
-
 	config.EncodeTime = zapcore.ISO8601TimeEncoder
 	jsonEncoder := zapcore.NewJSONEncoder(config)
 
-	filePiority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+	filePriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return lvl >= zapcore.ErrorLevel
 	})
 
 	core := zapcore.NewTee(
-		zapcore.NewCore(jsonEncoder, zapcore.AddSync(hook), filePiority),
+		zapcore.NewCore(jsonEncoder, zapcore.AddSync(hook), filePriority),
 		zapcore.NewCore(jsonEncoder, zapcore.AddSync(os.Stdout), zapcore.DebugLevel),
 	)
 
@@ -45,7 +43,8 @@ func NewLogger(serviceName, logPath string, maxSize, maxBackups, maxAge int) (*L
 		zap.Fields(zap.String("service", serviceName)),
 		zap.AddCaller(),
 		zap.AddCallerSkip(1),
-		zap.AddStacktrace(zap.ErrorLevel))
+		zap.AddStacktrace(zap.ErrorLevel),
+	)
 
 	close := func() {
 		logger.Sync()
@@ -54,6 +53,7 @@ func NewLogger(serviceName, logPath string, maxSize, maxBackups, maxAge int) (*L
 	return &Logger{logger: logger}, close, nil
 }
 
+// ฟังก์ชันทั่วไปสำหรับการบันทึก log
 func (l *Logger) Info(msg string, fields ...zap.Field) {
 	l.logger.Info(msg, fields...)
 }
@@ -82,24 +82,31 @@ func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 func (l *Logger) Panic(msg string, fields ...zap.Field) {
 	l.logger.Panic(msg, fields...)
 }
+
 func (l *Logger) Sync() error {
 	return l.logger.Sync()
 }
 
-// log api call
-func (l *Logger) LogAPICall(apiName string, fields ...zap.Field) func(status string, err error) {
+// LogAPICall บันทึกการเริ่มต้นและสิ้นสุดของการเรียก API
+func (l *Logger) LogAPICall(ctx context.Context, apiName string, fields ...zap.Field) func(status string, err error) {
 	start := time.Now()
-	
-	// Log จุดเริ่มต้น
+
+	// ดึง RequestID จาก context (ถ้ามี)
+	requestID, _ := ctx.Value("RequestID").(string)
+	if requestID != "" {
+		fields = append(fields, zap.String("RequestID", requestID))
+	}
+
+	// บันทึกการเริ่มต้นของการเรียก API
 	l.Info(fmt.Sprintf("⏳ Starting API Call: %s", apiName), fields...)
 
 	return func(status string, err error) {
 		duration := time.Since(start)
-		logFields := append(fields, 
+		logFields := append(fields,
 			zap.Duration("duration", duration),
 			zap.String("status", status))
 
-		// สร้าง message ตาม status
+		// สร้างข้อความตามสถานะ
 		var msg string
 		switch status {
 		case "Success":
@@ -108,10 +115,9 @@ func (l *Logger) LogAPICall(apiName string, fields ...zap.Field) func(status str
 		case "Failed":
 			msg = fmt.Sprintf("❌ API Call Failed: %s", apiName)
 			if err != nil {
-				// ใช้เฉพาะ error message โดยไม่แสดง stacktrace
 				logFields = append(logFields, zap.String("error", err.Error()))
-				l.Error(msg, logFields...)
 			}
+			l.Error(msg, logFields...)
 		case "Not Found":
 			msg = fmt.Sprintf("⚠️ API Call Not Found: %s", apiName)
 			if err != nil {
@@ -124,3 +130,25 @@ func (l *Logger) LogAPICall(apiName string, fields ...zap.Field) func(status str
 		}
 	}
 }
+/* 
+// LogDatabaseCall บันทึกการเริ่มต้นและสิ้นสุดของการเรียกฐานข้อมูล
+func (l *Logger) LogDatabaseCall(ctx context.Context, query string, fields ...zap.Field) func(status string, err error) {
+	start := time.Now()
+	requestID, _ := ctx.Value("RequestID").(string)
+	if requestID != "" {
+		fields = append(fields, zap.String("requestID", requestID))
+	}
+	l.Debug(fmt.Sprintf("🛢️ Starting DB Query: %s", query), fields...)
+
+	return func(status string, err error) {
+		duration := time.Since(start)
+		logFields := append(fields, zap.Duration("duration", duration), zap.String("status", status))
+
+		if status == "Failed" && err != nil {
+			logFields = append(logFields, zap.String("error", err.Error()))
+		}
+
+		l.Info(fmt.Sprintf("✅ DB Query Completed: %s", query), logFields...)
+	}
+}
+ */

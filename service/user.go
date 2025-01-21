@@ -22,8 +22,14 @@ type UserService interface {
 }
 
 func (srv service) Login(req request.LoginWeb) (response.Login, error) {
+	// เริ่มต้น Logging ของ API Call
+	logFinish := srv.logger.LogAPICall(context.Background(), "Login", zap.String("username", req.UserName))
+	defer logFinish("Completed", nil)
+
 	res := response.Login{}
 	if req.UserName == "" || req.Password == "" {
+		logFinish("Failed", fmt.Errorf("username or password must not be null"))
+		srv.logger.Warn("❌ Invalid login attempt: empty username or password", zap.String("username", req.UserName))
 		return res, errors.ValidationError("username or password must not be null")
 	}
 
@@ -35,93 +41,111 @@ func (srv service) Login(req request.LoginWeb) (response.Login, error) {
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
+			logFinish("Not Found", nil)
 			srv.logger.Warn("❌ No user found with provided credentials", zap.String("username", req.UserName))
 			return res, errors.UnauthorizedError("username or password is not valid")
 		default:
+			logFinish("Failed", err)
 			srv.logger.Error("❌ Unexpected error occurred while getting user", zap.Error(err))
 			return res, errors.UnexpectedError()
 		}
 	}
+
+	logFinish("Success", nil)
+	srv.logger.Info("✅ Successfully logged in", zap.String("username", req.UserName))
 	return user, nil
 }
 
 // Login: Lark
 func (srv service) LoginLark(req request.LoginLark) (response.Login, error) {
-	srv.logger.Debug("🚀 Starting LoginLark",
-		zap.String("username", req.UserName),
-		zap.String("userID", req.UserID))
+	// เริ่มต้น Logging ของ API Call
+	logFinish := srv.logger.LogAPICall(context.Background(), "LoginLark", zap.String("username", req.UserName), zap.String("userID", req.UserID))
+	defer logFinish("Completed", nil)
+
+	srv.logger.Debug("🚀 Starting LoginLark", zap.String("username", req.UserName), zap.String("userID", req.UserID))
 
 	res := response.Login{}
 	if req.UserName == "" || req.UserID == "" {
-		srv.logger.Warn("❌ Invalid login attempt: empty username or userID",
-			zap.String("username", req.UserName),
-			zap.String("userID", req.UserID))
+		logFinish("Failed", fmt.Errorf("username or userid must not be null"))
+		srv.logger.Warn("❌ Invalid login attempt: empty username or userID", zap.String("username", req.UserName), zap.String("userID", req.UserID))
 		return res, errors.ValidationError("username or userid must not be null")
 	}
 
 	ctx := context.Background()
-	srv.logger.Debug("Attempting to get user from Lark",
-		zap.String("username", req.UserName),
-		zap.String("userID", req.UserID))
+	srv.logger.Debug("Attempting to get user from Lark", zap.String("username", req.UserName), zap.String("userID", req.UserID))
 
 	user, err := srv.userRepo.GetUserFromLark(ctx, req.UserID, req.UserName)
 	if err != nil {
 		switch {
 		case err == sql.ErrNoRows:
-			srv.logger.Warn("❌ No user found with provided Lark credentials",
-				zap.String("username", req.UserName),
-				zap.String("userID", req.UserID))
+			logFinish("Not Found", nil)
+			srv.logger.Warn("❌ No user found with provided Lark credentials", zap.String("username", req.UserName), zap.String("userID", req.UserID))
 			return res, errors.UnauthorizedError("user not found in system")
 		default:
-			srv.logger.Error("❌ Database error while getting user from Lark",
-				zap.Error(err),
-				zap.String("username", req.UserName),
-				zap.String("userID", req.UserID))
+			logFinish("Failed", err)
+			srv.logger.Error("❌ Database error while getting user from Lark", zap.Error(err), zap.String("username", req.UserName), zap.String("userID", req.UserID))
 			return res, errors.UnexpectedError()
 		}
 	}
 
-	srv.logger.Info("✅ Successfully logged in via Lark",
-		zap.String("username", user.UserName),
-		zap.String("userID", user.UserID))
+	logFinish("Success", nil)
+	srv.logger.Info("✅ Successfully logged in via Lark", zap.String("username", user.UserName), zap.String("userID", user.UserID))
 	return user, nil
 }
 
 func (srv service) GetUser(ctx context.Context, username, password string) (response.Login, error) {
+	// เริ่มต้น Logging ของ API Call
+	logFinish := srv.logger.LogAPICall(ctx, "GetUser", zap.String("username", username))
+	defer logFinish("Completed", nil)
+
 	srv.logger.Debug("🚀 Starting GetUser", zap.String("username", username))
 
 	user, err := srv.userRepo.GetUser(ctx, username, password)
 	if err != nil {
+		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to get user", zap.Error(err))
 		return response.Login{}, fmt.Errorf("failed to get user: %w", err)
 	}
 
+	logFinish("Success", nil)
 	srv.logger.Debug("✅ Successfully retrieved user", zap.String("username", username))
 	return user, nil
 }
 
 func (srv service) GetUserFromLark(ctx context.Context, userID, username string) (response.Login, error) {
+	// เริ่มต้น Logging ของ API Call
+	logFinish := srv.logger.LogAPICall(ctx, "GetUserFromLark", zap.String("username", username), zap.String("userID", userID))
+	defer logFinish("Completed", nil)
+
 	srv.logger.Debug("🚀 Starting GetUserFromLark", zap.String("username", username))
 
 	user, err := srv.userRepo.GetUserFromLark(ctx, userID, username)
 	if err != nil {
+		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to get user from Lark", zap.Error(err))
 		return response.Login{}, fmt.Errorf("failed to get user from Lark: %w", err)
 	}
 
+	logFinish("Success", nil)
 	srv.logger.Debug("✅ Successfully retrieved user from Lark", zap.String("username", username))
 	return user, nil
 }
 
 func (srv service) GetUserWithPermission(ctx context.Context, username, password string) (response.UserPermission, error) {
-	srv.logger.Debug("🚀 Starting GetUser", zap.String("username", username))
+	// เริ่มต้น Logging ของ API Call
+	logFinish := srv.logger.LogAPICall(ctx, "GetUserWithPermission", zap.String("username", username))
+	defer logFinish("Completed", nil)
+
+	srv.logger.Debug("🚀 Starting GetUserWithPermission", zap.String("username", username))
 
 	user, err := srv.userRepo.GetUserWithPermission(ctx, username, password)
 	if err != nil {
-		srv.logger.Error("❌ Failed to get user", zap.Error(err))
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to get user with permission", zap.Error(err))
 		return response.UserPermission{}, fmt.Errorf("failed to get user: %w", err)
 	}
 
-	srv.logger.Debug("✅ Successfully retrieved user", zap.String("username", username))
+	logFinish("Success", nil)
+	srv.logger.Debug("✅ Successfully retrieved user with permission", zap.String("username", username))
 	return user, nil
 }

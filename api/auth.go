@@ -88,7 +88,7 @@ func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
 		DepartmentNo: user.DepartmentNo,
 		Platform:     user.Platform,
 	}
-	fmt.Println("token data", tokenData)
+	//fmt.Println("token data", tokenData)
 
 	// 4. สร้าง JWT token จากข้อมูลผู้ใช้ (claims) -> func GenerateToken
 	token := app.GenerateToken(tokenData)
@@ -145,7 +145,7 @@ func (app *Application) LoginFromLark(w http.ResponseWriter, r *http.Request) {
 		DepartmentNo: user.DepartmentNo,
 		Platform:     user.Platform,
 	}
-	fmt.Println("token data", tokenData)
+	//fmt.Println("token data", tokenData)
 
 	token := app.GenerateToken(tokenData)
 	fmt.Println("token: ", token)
@@ -197,12 +197,8 @@ func (app *Application) Logout(w http.ResponseWriter, r *http.Request) {
 // @Router /auth [get]
 // ตรวจสอบว่าผู้ใช้ได้รับการตรวจสอบสิทธิ์แล้วหรือไม่
 func (app *Application) CheckAuthen(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Context())
-
 	// ดึง claims จาก context (ถูกเพิ่มโดย middleware)
 	_, claims, _ := jwtauth.FromContext(r.Context())
-
-	fmt.Println("claims: ", claims)
 
 	// ส่ง claims กลับเพื่อแสดงข้อมูลผู้ใช้
 	handleResponse(w, true, "Checked", claims, http.StatusOK)
