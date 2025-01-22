@@ -1154,7 +1154,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/importorder/salereturn": {
+        "/import-order/upload": {
             "post": {
                 "description": "Upload multiple images for a specific SoNo",
                 "consumes": [
@@ -2011,7 +2011,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.TradeReturnLineRequest"
+                            "$ref": "#/definitions/request.TradeReturnLine"
                         }
                     }
                 ],
@@ -2043,73 +2043,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/trade-return/cancel/{orderNo}": {
-            "post": {
-                "description": "Cancel a sale return order based on the provided details",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Trade Return"
-                ],
-                "summary": "Cancel a sale return order",
-                "operationId": "cancel-trade-return",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Order number",
-                        "name": "orderNo",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Cancel details",
-                        "name": "cancelDetails",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.CancelReturnRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Sale return order canceled successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.CancelReturnResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/trade-return/confirm/{identifier}": {
+        "/trade-return/confirm-receipt/{identifier}": {
             "post": {
                 "description": "Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.",
                 "consumes": [
@@ -2153,7 +2087,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/response.ConfirmToReturnOrder"
+                                            "$ref": "#/definitions/response.ConfirmReceipt"
                                         }
                                     }
                                 }
@@ -2175,8 +2109,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/trade-return/confirm/{orderNo}": {
-            "post": {
+        "/trade-return/confirm-return/{orderNo}": {
+            "patch": {
                 "description": "Confirm a trade return order based on the provided order number (OrderNo) and input lines for ReturnOrderLine.",
                 "consumes": [
                     "application/json"
@@ -2719,10 +2653,10 @@ const docTemplate = `{
                     "description": "RecID\t\t  int        ` + "`" + `json:\"recID\" db:\"RecID\"` + "`" + ` // (PK - Auto Increment)",
                     "type": "string"
                 },
-                "returnDate": {
+                "reason": {
                     "type": "string"
                 },
-                "returnType": {
+                "returnDate": {
                     "type": "string"
                 },
                 "soNo": {
@@ -2765,6 +2699,9 @@ const docTemplate = `{
                 "createBy": {
                     "type": "string"
                 },
+                "itemName": {
+                    "type": "string"
+                },
                 "orderNo": {
                     "type": "string"
                 },
@@ -2788,23 +2725,6 @@ const docTemplate = `{
                 }
             }
         },
-        "request.CancelReturnRequest": {
-            "type": "object",
-            "properties": {
-                "cancelBy": {
-                    "type": "string"
-                },
-                "cancelStatus": {
-                    "type": "boolean"
-                },
-                "orderNo": {
-                    "type": "string"
-                },
-                "remark": {
-                    "type": "string"
-                }
-            }
-        },
         "request.CancelSaleReturnRequest": {
             "type": "object",
             "properties": {
@@ -2818,13 +2738,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "importLinesActual": {
-                    "description": "รายการสินค้า",
+                    "description": "รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/request.ImportLinesActual"
                     }
                 },
                 "updateToReturn": {
+                    "description": "เลข sr สุ่มจาก ax",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/request.UpdateToReturn"
@@ -2834,6 +2755,9 @@ const docTemplate = `{
         },
         "request.ConfirmTradeReturnRequest": {
             "type": "object",
+            "required": [
+                "importLines"
+            ],
             "properties": {
                 "importLines": {
                     "description": "รายการสินค้า",
@@ -2914,11 +2838,17 @@ const docTemplate = `{
         "request.ImportLinesActual": {
             "type": "object",
             "properties": {
+                "actualQty": {
+                    "type": "integer"
+                },
                 "price": {
                     "type": "number"
                 },
-                "returnQty": {
-                    "type": "integer"
+                "sku": {
+                    "type": "string"
+                },
+                "statusDelete": {
+                    "type": "boolean"
                 }
             }
         },
@@ -2969,9 +2899,30 @@ const docTemplate = `{
                 }
             }
         },
-        "request.TradeReturnLineRequest": {
+        "request.TradeReturnLine": {
             "type": "object",
             "properties": {
+                "tradeReturnLine": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.TradeReturnLineRequest"
+                    }
+                }
+            }
+        },
+        "request.TradeReturnLineRequest": {
+            "type": "object",
+            "required": [
+                "itemName",
+                "price",
+                "qty",
+                "returnQty",
+                "sku"
+            ],
+            "properties": {
+                "itemName": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number"
                 },
@@ -3124,10 +3075,10 @@ const docTemplate = `{
                 "orderNo": {
                     "type": "string"
                 },
-                "returnDate": {
+                "reason": {
                     "type": "string"
                 },
-                "returnType": {
+                "returnDate": {
                     "type": "string"
                 },
                 "soNo": {
@@ -3159,7 +3110,7 @@ const docTemplate = `{
                 }
             }
         },
-        "response.CancelReturnResponse": {
+        "response.CancelSaleReturnResponse": {
             "type": "object",
             "properties": {
                 "cancelBy": {
@@ -3179,22 +3130,22 @@ const docTemplate = `{
                 }
             }
         },
-        "response.CancelSaleReturnResponse": {
+        "response.ConfirmReceipt": {
             "type": "object",
             "properties": {
-                "cancelBy": {
+                "identifier": {
                     "type": "string"
                 },
-                "cancelDate": {
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.ImageResponse"
+                    }
+                },
+                "updateBy": {
                     "type": "string"
                 },
-                "cancelStatus": {
-                    "type": "boolean"
-                },
-                "refId": {
-                    "type": "string"
-                },
-                "remark": {
+                "updateDate": {
                     "type": "string"
                 }
             }
@@ -3216,6 +3167,12 @@ const docTemplate = `{
         "response.ConfirmToReturnOrder": {
             "type": "object",
             "properties": {
+                "confirmToReturnRequest": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.ConfirmToReturnRequest"
+                    }
+                },
                 "orderNo": {
                     "type": "string"
                 },
@@ -3223,6 +3180,50 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updateDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ConfirmToReturnRequest": {
+            "type": "object",
+            "properties": {
+                "importLinesActual": {
+                    "description": "รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.ImportLinesActual"
+                    }
+                },
+                "updateToReturn": {
+                    "description": "เลข sr สุ่มจาก ax",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.UpdateToReturn"
+                    }
+                }
+            }
+        },
+        "response.ImageResponse": {
+            "type": "object",
+            "properties": {
+                "filePath": {
+                    "type": "string"
+                },
+                "imageID": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.ImportLinesActual": {
+            "type": "object",
+            "properties": {
+                "actualQty": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "sku": {
                     "type": "string"
                 }
             }
@@ -3304,6 +3305,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "OrderHeadDetail": {
+                    "description": "json =\u003e OrderHeadDetail[ OrderLineDetail[ {},{},..] ]",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/response.OrderHeadDetail"
@@ -3398,6 +3400,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "statusMKP": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.UpdateToReturn": {
+            "type": "object",
+            "properties": {
+                "srNo": {
                     "type": "string"
                 }
             }

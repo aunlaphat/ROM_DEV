@@ -389,7 +389,7 @@ func (repo repositoryDB) DeleteReturnOrder(ctx context.Context, orderNo string) 
 	})
 }
 
-// CheckOrderNoExists - เพิ่มการตรวจสอบ OrderNo ว่ามีอยู่ในฐานข้อมูล
+// CheckBefOrderNoExists - เพิ่มการตรวจสอบ OrderNo ว่ามีอยู่ในฐานข้อมูล
 func (repo repositoryDB) CheckOrderNoExist(ctx context.Context, orderNo string) (bool, error) {
 	var exists bool
 	query := `

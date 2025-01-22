@@ -27,6 +27,8 @@ func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
 		r.Use(jwtauth.Authenticator)
 
 		r.Get("/search", app.SearchOrderORTracking)
+		r.Post("/upload", app.UploadImages)
+		
 	})
 }
 
@@ -69,7 +71,7 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 	}
 
 	// หากไม่พบข้อมูล
-	if result == nil || len(result) == 0 {
+	if len(result) == 0 {
 		handleResponse(w, false, "No orders found for the given input", nil, http.StatusNotFound)
 		return
 	}
@@ -94,7 +96,7 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 // @Success 200 {object} Response "Successful upload"
 // @Failure 400 {object} Response "Invalid input"
 // @Failure 500 {object} Response "Internal Server Error"
-// @Router /importorder/salereturn [post]
+// @Router /import-order/upload [post]
 func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		handleError(w, errors.ValidationError("Unable to parse form data"))
@@ -121,7 +123,7 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get ReturnID and OrderNo from SoNo
-	returnID, orderNo, err := app.Service.ImportOrder.GetReturnDetailsFromSaleOrder(r.Context(), soNo)
+	orderNo, err := app.Service.ImportOrder.GetReturnDetailsFromSaleOrder(r.Context(), soNo)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -158,7 +160,6 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 		}
 
 		image := request.Images{
-			ReturnID:    returnID,
 			OrderNo:     orderNo,
 			FilePath:    filePath,
 			ImageTypeID: imageTypeID,

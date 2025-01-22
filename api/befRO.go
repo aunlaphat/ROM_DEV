@@ -694,7 +694,7 @@ func printOrderDetails(order *res.BeforeReturnOrderResponse) {
 	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
 	fmt.Printf("🔄 SrNo: %s\n", order.SrNo)
 	fmt.Printf("📡 ChannelID: %d\n", order.ChannelID)
-	fmt.Printf("🔙 ReturnType: %s\n", order.ReturnType)
+	fmt.Printf("🔙 Reason: %s\n", order.Reason)
 	fmt.Printf("👤 CustomerID: %s\n", order.CustomerID)
 	fmt.Printf("📦 TrackingNo: %s\n", order.TrackingNo)
 	fmt.Printf("🚚 Logistic: %s\n", order.Logistic)

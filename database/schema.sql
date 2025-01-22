@@ -4,7 +4,7 @@ CREATE TABLE [BeforeReturnOrder](
 	[SoNo] [varchar](20) NOT NULL,
 	[SrNo] [varchar](50) NOT NULL,
 	[ChannelID] [int] NOT NULL,
-	[ReturnType] [varchar](50) NOT NULL,
+	[Reason] [varchar](50) NOT NULL,
 	[CustomerID] [varchar](50) NOT NULL,
 	[TrackingNo] [varchar](50) NOT NULL,
 	[Logistic] [varchar](100) NOT NULL,

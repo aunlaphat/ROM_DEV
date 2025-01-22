@@ -12,7 +12,7 @@ import (
 
 type ImportOrderService interface {
 	SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
-	GetReturnDetailsFromSaleOrder(ctx context.Context, soNo string) (string, string, error)
+	GetReturnDetailsFromSaleOrder(ctx context.Context, soNo string) (string, error)
 	SaveImageMetadata(ctx context.Context, image request.Images) (int, error)
 }
 
@@ -38,17 +38,17 @@ func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]
 
 
 // GetReturnDetailsFromSaleOrder retrieves ReturnID and OrderNo based on SoNo
-func (srv service) GetReturnDetailsFromSaleOrder(ctx context.Context, soNo string) (string, string, error) {
-	srv.logger.Info("Service: Fetching ReturnID and OrderNo from SoNo", zap.String("SoNo", soNo))
+func (srv service) GetReturnDetailsFromSaleOrder(ctx context.Context, soNo string) (string, error) {
+	srv.logger.Info("Service: Fetching OrderNo from SoNo", zap.String("SoNo", soNo))
 
-	returnID, orderNo, err := srv.importOrderRepo.FetchReturnDetailsBySaleOrder(ctx, soNo)
+	orderNo, err := srv.importOrderRepo.FetchReturnDetailsBySaleOrder(ctx, soNo)
 	if err != nil {
-		srv.logger.Error("Service: Error fetching ReturnID and OrderNo", zap.Error(err))
-		return "", "", errors.ValidationError(fmt.Sprintf("Invalid SoNo: %s", soNo))
+		srv.logger.Error("Service: Error fetching OrderNo", zap.Error(err))
+		return "", errors.ValidationError(fmt.Sprintf("Invalid SoNo: %s", soNo))
 	}
 
-	srv.logger.Info("Service: Successfully fetched ReturnID and OrderNo", zap.String("ReturnID", returnID), zap.String("OrderNo", orderNo))
-	return returnID, orderNo, nil
+	srv.logger.Info("Service: Successfully fetched ReturnID and OrderNo", zap.String("OrderNo", orderNo))
+	return orderNo, nil
 }
 
 // SaveImageMetadata saves image metadata to the database

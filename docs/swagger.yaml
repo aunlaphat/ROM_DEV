@@ -204,9 +204,9 @@ definitions:
         description: "RecID\t\t  int        `json:\"recID\" db:\"RecID\"` // (PK -
           Auto Increment)"
         type: string
-      returnDate:
+      reason:
         type: string
-      returnType:
+      returnDate:
         type: string
       soNo:
         type: string
@@ -237,6 +237,8 @@ definitions:
         type: string
       createBy:
         type: string
+      itemName:
+        type: string
       orderNo:
         type: string
       price:
@@ -252,17 +254,6 @@ definitions:
       updateBy:
         type: string
     type: object
-  request.CancelReturnRequest:
-    properties:
-      cancelBy:
-        type: string
-      cancelStatus:
-        type: boolean
-      orderNo:
-        type: string
-      remark:
-        type: string
-    type: object
   request.CancelSaleReturnRequest:
     properties:
       remark:
@@ -274,11 +265,12 @@ definitions:
   request.ConfirmToReturnRequest:
     properties:
       importLinesActual:
-        description: รายการสินค้า
+        description: รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี
         items:
           $ref: '#/definitions/request.ImportLinesActual'
         type: array
       updateToReturn:
+        description: เลข sr สุ่มจาก ax
         items:
           $ref: '#/definitions/request.UpdateToReturn'
         type: array
@@ -290,6 +282,8 @@ definitions:
         items:
           $ref: '#/definitions/request.TradeReturnLineRequest'
         type: array
+    required:
+    - importLines
     type: object
   request.CreateReturnOrder:
     properties:
@@ -342,10 +336,14 @@ definitions:
     type: object
   request.ImportLinesActual:
     properties:
+      actualQty:
+        type: integer
       price:
         type: number
-      returnQty:
-        type: integer
+      sku:
+        type: string
+      statusDelete:
+        type: boolean
     type: object
   request.Login:
     properties:
@@ -380,8 +378,17 @@ definitions:
         example: SKU12345
         type: string
     type: object
+  request.TradeReturnLine:
+    properties:
+      tradeReturnLine:
+        items:
+          $ref: '#/definitions/request.TradeReturnLineRequest'
+        type: array
+    type: object
   request.TradeReturnLineRequest:
     properties:
+      itemName:
+        type: string
       price:
         type: number
       qty:
@@ -390,6 +397,12 @@ definitions:
         type: integer
       sku:
         type: string
+    required:
+    - itemName
+    - price
+    - qty
+    - returnQty
+    - sku
     type: object
   request.UpdateReturnOrder:
     properties:
@@ -486,9 +499,9 @@ definitions:
         type: integer
       orderNo:
         type: string
-      returnDate:
+      reason:
         type: string
-      returnType:
+      returnDate:
         type: string
       soNo:
         type: string
@@ -509,19 +522,6 @@ definitions:
       warehouseId:
         type: integer
     type: object
-  response.CancelReturnResponse:
-    properties:
-      cancelBy:
-        type: string
-      cancelDate:
-        type: string
-      cancelStatus:
-        type: boolean
-      refId:
-        type: string
-      remark:
-        type: string
-    type: object
   response.CancelSaleReturnResponse:
     properties:
       cancelBy:
@@ -535,6 +535,19 @@ definitions:
       remark:
         type: string
     type: object
+  response.ConfirmReceipt:
+    properties:
+      identifier:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/response.ImageResponse'
+        type: array
+      updateBy:
+        type: string
+      updateDate:
+        type: string
+    type: object
   response.ConfirmSaleReturnResponse:
     properties:
       confirmBy:
@@ -546,11 +559,44 @@ definitions:
     type: object
   response.ConfirmToReturnOrder:
     properties:
+      confirmToReturnRequest:
+        items:
+          $ref: '#/definitions/response.ConfirmToReturnRequest'
+        type: array
       orderNo:
         type: string
       updateBy:
         type: string
       updateDate:
+        type: string
+    type: object
+  response.ConfirmToReturnRequest:
+    properties:
+      importLinesActual:
+        description: รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี
+        items:
+          $ref: '#/definitions/response.ImportLinesActual'
+        type: array
+      updateToReturn:
+        description: เลข sr สุ่มจาก ax
+        items:
+          $ref: '#/definitions/response.UpdateToReturn'
+        type: array
+    type: object
+  response.ImageResponse:
+    properties:
+      filePath:
+        type: string
+      imageID:
+        type: integer
+    type: object
+  response.ImportLinesActual:
+    properties:
+      actualQty:
+        type: integer
+      price:
+        type: number
+      sku:
         type: string
     type: object
   response.ImportOrderLineResponse:
@@ -606,6 +652,7 @@ definitions:
   response.OrderDetail:
     properties:
       OrderHeadDetail:
+        description: json => OrderHeadDetail[ OrderLineDetail[ {},{},..] ]
         items:
           $ref: '#/definitions/response.OrderHeadDetail'
         type: array
@@ -670,6 +717,11 @@ definitions:
       soNo:
         type: string
       statusMKP:
+        type: string
+    type: object
+  response.UpdateToReturn:
+    properties:
+      srNo:
         type: string
     type: object
   response.UserPermission:
@@ -1418,7 +1470,7 @@ paths:
       summary: Search order by OrderNo or TrackingNo
       tags:
       - Import Order
-  /importorder/salereturn:
+  /import-order/upload:
     post:
       consumes:
       - multipart/form-data
@@ -1955,7 +2007,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/request.TradeReturnLineRequest'
+          $ref: '#/definitions/request.TradeReturnLine'
       produces:
       - application/json
       responses:
@@ -1978,48 +2030,7 @@ paths:
       summary: Add a new trade return line to an existing order
       tags:
       - Trade Return
-  /trade-return/cancel/{orderNo}:
-    post:
-      consumes:
-      - application/json
-      description: Cancel a sale return order based on the provided details
-      operationId: cancel-trade-return
-      parameters:
-      - description: Order number
-        in: path
-        name: orderNo
-        required: true
-        type: string
-      - description: Cancel details
-        in: body
-        name: cancelDetails
-        required: true
-        schema:
-          $ref: '#/definitions/request.CancelReturnRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Sale return order canceled successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/response.CancelReturnResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Cancel a sale return order
-      tags:
-      - Trade Return
-  /trade-return/confirm/{identifier}:
+  /trade-return/confirm-receipt/{identifier}:
     post:
       consumes:
       - application/json
@@ -2048,7 +2059,7 @@ paths:
             - $ref: '#/definitions/api.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/response.ConfirmToReturnOrder'
+                  $ref: '#/definitions/response.ConfirmReceipt'
               type: object
         "400":
           description: Bad Request
@@ -2061,8 +2072,8 @@ paths:
       summary: Confirm a trade return order
       tags:
       - Trade Return
-  /trade-return/confirm/{orderNo}:
-    post:
+  /trade-return/confirm-return/{orderNo}:
+    patch:
       consumes:
       - application/json
       description: Confirm a trade return order based on the provided order number

@@ -12,7 +12,7 @@ import (
 type ImportOrderRepository interface {
 	SearchOrderORTracking(ctx context.Context, search string) (*response.ImportOrderResponse, error)
 
-	FetchReturnDetailsBySaleOrder(ctx context.Context, soNo string) (string, string, error)
+	FetchReturnDetailsBySaleOrder(ctx context.Context, soNo string) (string, error)
 	InsertImageMetadata(ctx context.Context, image request.Images) (int, error)
 }
 
@@ -73,40 +73,39 @@ func (repo repositoryDB) SearchOrderORTracking(ctx context.Context, search strin
 
 
 // FetchReturnDetailsBySaleOrder retrieves ReturnID and OrderNo from SoNo
-func (repo repositoryDB) FetchReturnDetailsBySaleOrder(ctx context.Context, soNo string) (string, string, error) {
-	log.Printf("Repository: Fetching ReturnID and OrderNo for SoNo: %s", soNo)
+func (repo repositoryDB) FetchReturnDetailsBySaleOrder(ctx context.Context, soNo string) (string, error) {
+	log.Printf("Repository: Fetching OrderNo for SoNo: %s", soNo)
 
 	query := `
-		SELECT ReturnID, OrderNo
+		SELECT OrderNo
 		FROM ReturnOrder
 		WHERE SoNo = @SoNo
 	`
 
-	var returnID, orderNo string
-	err := repo.db.QueryRowContext(ctx, query, sql.Named("SoNo", soNo)).Scan(&returnID, &orderNo)
+	var orderNo string
+	err := repo.db.QueryRowContext(ctx, query, sql.Named("SoNo", soNo)).Scan(&orderNo)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("Repository: No records found for SoNo: %s", soNo)
-			return "", "", fmt.Errorf("no records found for SoNo: %s", soNo)
+			return "", fmt.Errorf("no records found for SoNo: %s", soNo)
 		}
 		log.Printf("Repository: Error querying database - %v", err)
-		return "", "", fmt.Errorf("database query error: %w", err)
+		return "", fmt.Errorf("database query error: %w", err)
 	}
 
-	log.Printf("Repository: Successfully fetched ReturnID: %s, OrderNo: %s for SoNo: %s", returnID, orderNo, soNo)
-	return returnID, orderNo, nil
+	log.Printf("Repository: Successfully fetched OrderNo: %s for SoNo: %s", orderNo, soNo)
+	return orderNo, nil
 }
 
 // InsertImageMetadata inserts image metadata into the database
 func (repo repositoryDB) InsertImageMetadata(ctx context.Context, image request.Images) (int, error) {
 	query := `
-		INSERT INTO Images (ReturnID, SKU, OrderNo, FilePath, ImageTypeID, CreateBy, CreateDate)
-		VALUES (:ReturnID, :SKU, :OrderNo, :FilePath, :ImageTypeID, :CreateBy, GETDATE());
+		INSERT INTO Images (SKU, OrderNo, FilePath, ImageTypeID, CreateBy, CreateDate)
+		VALUES (:SKU, :OrderNo, :FilePath, :ImageTypeID, :CreateBy, GETDATE());
 		SELECT SCOPE_IDENTITY();
 	`
 
 	params := map[string]interface{}{
-		"ReturnID":    image.ReturnID,
 		"SKU":         image.SKU,
 		"OrderNo":     image.OrderNo,
 		"FilePath":    image.FilePath,
