@@ -13,7 +13,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// @title Return Order Management Service API
+// @title Return Order Management Service API ⭐
 // @version 1.0
 // @description This is a Return Order Management Service API server.
 // contact.name API Support
@@ -28,7 +28,7 @@ func main() {
 	}
 
 	//Flag variable
-	serviceName := "RETURN ORDER SERVICE"
+	serviceName := "RETURN ORDER MANAGEMENT SERVICE"
 	logger, logClose, err := logs.NewLogger(serviceName, "./uploads/error/error.log", 1, 1, 7)
 	defer logClose()
 	if err != nil {
@@ -36,7 +36,7 @@ func main() {
 	}
 
 	//Instance logger of service
-	logger.Info(serviceName + " is starting...")
+	logger.Info(serviceName + " is starting... 🪂 ")
 
 	utils.LoadConfig()
 

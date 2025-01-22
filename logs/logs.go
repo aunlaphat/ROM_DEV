@@ -34,7 +34,6 @@ func NewLogger(serviceName, logPath string, maxSize, maxBackups, maxAge int) (*L
 	config.EncodeTime = zapcore.RFC3339TimeEncoder
 	// Output: "2024-03-20T15:04:05Z07:00"
 
-
 	jsonEncoder := zapcore.NewJSONEncoder(config)
 
 	filePriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
@@ -111,17 +110,16 @@ func (l *Logger) LogAPICall(ctx context.Context, apiName string, fields ...zap.F
 	// เพิ่มข้อมูลพื้นฐานสำหรับการบันทึก log
 	baseFields := append(fields,
 		//zap.String("traceID", traceID), // เพิ่ม traceID
-		zap.String("apiName", apiName),    // เพิ่มชื่อ API
-		zap.Time("startTime", time.Now())) // เพิ่มเวลาที่เริ่มต้น
+		zap.String("apiName", apiName)) // เพิ่มชื่อ API
 
 	// ดึงข้อมูลจาก context และเพิ่มลงใน log fields
-	for _, key := range []string{"RequestID", "UserID", "ClientIP", "UserAgent"} {
+	/* for _, key := range []string{"RequestID", "UserID", "ClientIP", "UserAgent"} {
 		if val, ok := ctx.Value(key).(string); ok {
 			baseFields = append(baseFields, zap.String(key, val)) // เพิ่มข้อมูลจาก context
 		}
-	}
+	} */
 
-	l.Info("⏳ Starting API Call", baseFields...) // บันทึก log ว่าเริ่มต้นการเรียก API
+	l.Info("⏰ Starting API Call ⏰", baseFields...) // บันทึก log ว่าเริ่มต้นการเรียก API
 
 	return func(status string, err error, additionalFields ...zap.Field) {
 		duration := time.Since(start) // คำนวณระยะเวลาที่ใช้ในการเรียก API

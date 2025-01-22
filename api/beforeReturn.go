@@ -75,7 +75,7 @@ func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Re
 
 	fmt.Printf("\n📋 ========== All Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
-		fmt.Printf("\n📦 Order #%d:\n", i+1)
+		fmt.Printf("\n📦 Order #%d 📦\n", i+1)
 		utils.PrintOrderDetails(&order)
 		for j, line := range order.BeforeReturnOrderLines {
 			fmt.Printf("\n📦 Order Line #%d 📦\n", j+1)
@@ -218,7 +218,7 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 
 	fmt.Printf("\n📋 ========== All Order Lines (%d) ========== 📋\n", len(result))
 	for i, line := range result {
-		fmt.Printf("\n📦 Order Line #%d:\n", i+1)
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
 	fmt.Println("=====================================")
@@ -248,7 +248,7 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 
 	fmt.Printf("\n📋 ========== Order Lines for OrderNo: %s ========== 📋\n", orderNo)
 	for i, line := range result {
-		fmt.Printf("\n📦 Order Line #%d:\n", i+1)
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
 	fmt.Println("=====================================")
@@ -639,7 +639,7 @@ func (app *Application) ListDraftOrders(w http.ResponseWriter, r *http.Request) 
 	// Debug logging (always print for now, can be controlled by log level later)
 	fmt.Printf("\n📋 ========== All Draft Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
-		fmt.Printf("\n📦 Draft Order #%d:\n", i+1)
+		fmt.Printf("\n📦 Draft Order #%d 📦\n", i+1)
 		utils.PrintDraftConfirmOrderDetails(&order)
 	}
 
@@ -677,7 +677,7 @@ func (app *Application) ListConfirmOrders(w http.ResponseWriter, r *http.Request
 	// Debug logging (always print for now, can be controlled by log level later)
 	fmt.Printf("\n📋 ========== All Confirm Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
-		fmt.Printf("\n📦 Confirm Order #%d:\n", i+1)
+		fmt.Printf("\n📦 Confirm Order #%d 📦\n", i+1)
 		utils.PrintDraftConfirmOrderDetails(&order)
 	}
 
