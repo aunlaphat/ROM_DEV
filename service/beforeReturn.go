@@ -10,117 +10,141 @@ import (
 	"go.uber.org/zap"
 )
 
+// BefROService interface กำหนด method สำหรับการทำงานกับ Before Return Order
 type BefROService interface {
+	// Method สำหรับสร้าง Before Return Order พร้อมกับ Lines
 	CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
+	// Method สำหรับดึงรายการ Before Return Orders ทั้งหมด
 	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
+	// Method สำหรับดึง Before Return Order โดยใช้ OrderNo
 	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
+	// Method สำหรับดึงรายการ Before Return Order Lines ทั้งหมด
 	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
+	// Method สำหรับดึง Before Return Order Lines โดยใช้ OrderNo
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
+	// Method สำหรับอัพเดท Before Return Order พร้อมกับ Lines
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 
 	// ************************ Create Sale Return ************************ //
+	// Method สำหรับค้นหา Order โดยใช้ SoNo และ OrderNo
 	SearchOrder(ctx context.Context, soNo, orderNo string) ([]response.SaleOrderResponse, error)
+	// Method สำหรับสร้าง Sale Return
 	CreateSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
+	// Method สำหรับอัพเดท Sale Return
 	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error
+	// Method สำหรับยืนยัน Sale Return
 	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
+	// Method สำหรับยกเลิก Sale Return
 	CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
 
+	// Method สำหรับดึงรายการ Draft Orders ทั้งหมด
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
+	// Method สำหรับดึงรายการ Confirm Orders ทั้งหมด
 	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
+	// Method สำหรับดึง Draft Confirm Order โดยใช้ OrderNo
 	GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error)
+	// Method สำหรับดึง CodeR ทั้งหมด
 	GetCodeR(ctx context.Context) ([]response.CodeRResponse, error)
+	// Method สำหรับเพิ่ม CodeR
 	AddCodeR(ctx context.Context, req request.CodeRRequest) error
+	// Method สำหรับลบ CodeR
 	DeleteCodeR(ctx context.Context, sku string) error
+	// Method สำหรับอัพเดท Draft Order
 	UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error
 }
 
+// Method สำหรับสร้าง Before Return Order พร้อมกับ Lines
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
-	srv.logger.Info("🏁 Starting order creation process", zap.String("OrderNo", req.OrderNo))
-	srv.logger.Debug("Creating order head", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo))
+	srv.logger.Info("🔎 Starting order creation process", zap.String("OrderNo", req.OrderNo))                  // Logging ว่าเริ่มการสร้าง order
+	srv.logger.Debug("Creating order head", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo)) // Logging ว่ากำลังสร้าง order head
 
-	err := srv.befRORepo.CreateBeforeReturnOrderWithTransaction(ctx, req)
+	err := srv.befRORepo.CreateBeforeReturnOrderWithTransaction(ctx, req) // เรียก repository เพื่อสร้าง order พร้อมกับ transaction
 	if err != nil {
-		srv.logger.Error("❌ Failed to create order with lines", zap.Error(err))
+		srv.logger.Error("❌ Failed to create order with lines", zap.Error(err)) // Logging ว่าการสร้าง order ล้มเหลว
 		return nil, err
 	}
 
-	createdOrder, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
+	createdOrder, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo) // ดึงข้อมูล order ที่สร้างเสร็จแล้ว
 	if err != nil {
-		srv.logger.Error("❌ Failed to fetch created order", zap.Error(err))
+		srv.logger.Error("❌ Failed to fetch created order", zap.Error(err)) // Logging ว่าการดึงข้อมูล order ล้มเหลว
 		return nil, err
 	}
 
-	srv.logger.Info("✅ Successfully created order with lines",
-		zap.String("OrderNo", req.OrderNo))
+	srv.logger.Info("✅ Successfully created order with lines", zap.String("OrderNo", req.OrderNo)) // Logging ว่าการสร้าง order สำเร็จ
 	return createdOrder, nil
 }
 
+// Method สำหรับอัพเดท Before Return Order พร้อมกับ Lines
 func (srv service) UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
-	srv.logger.Info("🏁 Starting order update process", zap.String("OrderNo", req.OrderNo))
-	srv.logger.Debug("Updating order head", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo))
+	srv.logger.Info("🔎 Starting order update process", zap.String("OrderNo", req.OrderNo))                    // Logging ว่าเริ่มการอัพเดท order
+	srv.logger.Debug("Updating order head", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo)) // Logging ว่ากำลังอัพเดท order head
 
-	err := srv.befRORepo.UpdateBeforeReturnOrderWithTransaction(ctx, req)
+	err := srv.befRORepo.UpdateBeforeReturnOrderWithTransaction(ctx, req) // เรียก repository เพื่ออัพเดท order พร้อมกับ transaction
 	if err != nil {
-		srv.logger.Error("❌ Failed to update order with lines", zap.Error(err))
+		srv.logger.Error("❌ Failed to update order with lines", zap.Error(err)) // Logging ว่าการอัพเดท order ล้มเหลว
 		return nil, err
 	}
 
-	updatedOrder, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
+	updatedOrder, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo) // ดึงข้อมูล order ที่อัพเดทเสร็จแล้ว
 	if err != nil {
-		srv.logger.Error("❌ Failed to fetch updated order", zap.Error(err))
+		srv.logger.Error("❌ Failed to fetch updated order", zap.Error(err)) // Logging ว่าการดึงข้อมูล order ล้มเหลว
 		return nil, err
 	}
 
-	srv.logger.Info("✅ Successfully updated order with lines",
-		zap.String("OrderNo", req.OrderNo))
+	srv.logger.Info("✅ Successfully updated order with lines", zap.String("OrderNo", req.OrderNo)) // Logging ว่าการอัพเดท order สำเร็จ
 	return updatedOrder, nil
 }
 
+// Method สำหรับดึงรายการ Before Return Orders ทั้งหมด
 func (srv service) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
-	srv.logger.Info("🏁 Starting to list all return orders")
-	orders, err := srv.befRORepo.ListBeforeReturnOrders(ctx)
+	srv.logger.Info("🔎 Starting to list all return orders")  // Logging ว่าเริ่มการดึงรายการ return orders ทั้งหมด
+	orders, err := srv.befRORepo.ListBeforeReturnOrders(ctx) // เรียก repository เพื่อดึงรายการ return orders ทั้งหมด
 	if err != nil {
-		srv.logger.Error("❌ Failed to list return orders", zap.Error(err))
+		srv.logger.Error("❌ Failed to list return orders", zap.Error(err)) // Logging ว่าการดึงรายการ return orders ล้มเหลว
 		return nil, err
 	}
-	srv.logger.Info("✅ Successfully listed return orders")
+	srv.logger.Info("✅ Successfully listed return orders") // Logging ว่าการดึงรายการ return orders สำเร็จ
 	return orders, nil
 }
 
+// Method สำหรับดึง Before Return Order โดยใช้ OrderNo
 func (srv service) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error) {
-	srv.logger.Info("🏁 Starting to get return order by order number", zap.String("OrderNo", orderNo))
-	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
+	srv.logger.Info("🔎 Starting to get return order by order number", zap.String("OrderNo", orderNo)) // Logging ว่าเริ่มการดึง return order โดยใช้ order number
+	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)                           // เรียก repository เพื่อดึง return order โดยใช้ order number
 	if err != nil {
-		srv.logger.Error("❌ Failed to get return order by order number", zap.Error(err))
+		srv.logger.Error("❌ Failed to get return order by order number", zap.Error(err)) // Logging ว่าการดึง return order ล้มเหลว
 		return nil, err
 	}
 	return order, nil
 }
 
+// Method สำหรับดึงรายการ Before Return Order Lines ทั้งหมด
 func (srv service) ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error) {
-	srv.logger.Info("🏁 Starting to list all return order lines")
-	lines, err := srv.befRORepo.ListBeforeReturnOrderLines(ctx)
+	srv.logger.Info("🔎 Starting to list all return order lines") // Logging ว่าเริ่มการดึงรายการ return order lines ทั้งหมด
+	lines, err := srv.befRORepo.ListBeforeReturnOrderLines(ctx)  // เรียก repository เพื่อดึงรายการ return order lines ทั้งหมด
 	if err != nil {
-		srv.logger.Error("❌ Failed to list return order lines", zap.Error(err))
+		srv.logger.Error("❌ Failed to list return order lines", zap.Error(err)) // Logging ว่าการดึงรายการ return order lines ล้มเหลว
 		return nil, err
 	}
-	srv.logger.Info("✅ Successfully listed return order lines")
+	srv.logger.Info("✅ Successfully listed return order lines") // Logging ว่าการดึงรายการ return order lines สำเร็จ
 	return lines, nil
 }
 
+// Method สำหรับดึง Before Return Order Lines โดยใช้ OrderNo
 func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
-	srv.logger.Info("🏁 Starting to get return order lines by order number", zap.String("OrderNo", orderNo))
-	lines, err := srv.befRORepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)
+	srv.logger.Info("🔎 Starting to get return order lines by order number", zap.String("OrderNo", orderNo)) // Logging ว่าเริ่มการดึง return order lines โดยใช้ order number
+	lines, err := srv.befRORepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)                             // เรียก repository เพื่อดึง return order lines โดยใช้ order number
 	if err != nil {
-		srv.logger.Error("❌ Failed to get return order lines by order number", zap.Error(err))
+		srv.logger.Error("❌ Failed to get return order lines by order number", zap.Error(err)) // Logging ว่าการดึง return order lines ล้มเหลว
 		return nil, err
 	}
-	srv.logger.Info("✅ Successfully fetched return order lines")
+	srv.logger.Info("✅ Successfully fetched return order lines") // Logging ว่าการดึง return order lines สำเร็จ
 	return lines, nil
 }
 
 // ************************ Create Sale Return ************************ //
 
+// Method สำหรับค้นหา Order โดยใช้ SoNo และ OrderNo
 func (srv service) SearchOrder(ctx context.Context, soNo, orderNo string) ([]response.SaleOrderResponse, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "SearchOrder", zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
@@ -156,6 +180,7 @@ func (srv service) SearchOrder(ctx context.Context, soNo, orderNo string) ([]res
 	return []response.SaleOrderResponse{*order}, nil
 }
 
+// Method สำหรับสร้าง Sale Return
 func (srv service) CreateSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "CreateSaleReturn", zap.String("OrderNo", req.OrderNo))
@@ -199,6 +224,7 @@ func (srv service) CreateSaleReturn(ctx context.Context, req request.BeforeRetur
 	return createdOrder, nil
 }
 
+// Method สำหรับอัพเดท Sale Return
 func (srv service) UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "UpdateSaleReturn", zap.String("OrderNo", orderNo), zap.String("SrNo", srNo), zap.String("UpdateBy", updateBy))
@@ -268,10 +294,14 @@ func (srv service) UpdateSaleReturn(ctx context.Context, orderNo string, srNo st
 	return nil
 }
 
+// Method สำหรับยืนยัน Sale Return
 func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "ConfirmSaleReturn", zap.String("OrderNo", orderNo), zap.String("ConfirmBy", confirmBy))
 	defer logFinish("Completed", nil)
+
+	// Logging ว่าเริ่มการทำงาน
+	srv.logger.Info("🔎 Starting sale return confirm process 🔎", zap.String("OrderNo", orderNo))
 
 	// ตรวจสอบสถานะปัจจุบันของ order
 	order, err := srv.befRORepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
@@ -323,6 +353,9 @@ func (srv service) CancelSaleReturn(ctx context.Context, orderNo string, updateB
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "CancelSaleReturn", zap.String("OrderNo", orderNo), zap.String("UpdateBy", updateBy), zap.String("Remark", remark))
 	defer logFinish("Completed", nil)
+
+	// Logging ว่าเริ่มการทำงาน
+	srv.logger.Info("🔎 Starting sale return cancel process 🔎", zap.String("OrderNo", orderNo))
 
 	// Input validation
 	if orderNo == "" || updateBy == "" || remark == "" {
@@ -378,12 +411,14 @@ func (srv service) CancelSaleReturn(ctx context.Context, orderNo string, updateB
 	return nil
 }
 
+// Method สำหรับดึงรายการ Draft Orders ทั้งหมด
 func (srv service) ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "ListDraftOrders")
 	defer logFinish("Completed", nil)
 
-	srv.logger.Info("🏁 Starting to list all draft orders")
+	// Logging ว่าเริ่มการทำงาน
+	srv.logger.Info("🔎 Starting to list all draft orders 🔎")
 
 	// เรียก Repository เพื่อค้นหา Order ทั้งหมดที่ Status เป็น Draft
 	orders, err := srv.befRORepo.ListDraftOrders(ctx)
@@ -400,12 +435,13 @@ func (srv service) ListDraftOrders(ctx context.Context) ([]response.ListDraftCon
 	return orders, nil
 }
 
+// Method สำหรับดึงรายการ Confirm Orders ทั้งหมด
 func (srv service) ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "ListConfirmOrders")
 	defer logFinish("Completed", nil)
 
-	srv.logger.Info("🏁 Starting to list all confirm orders")
+	srv.logger.Info("🔎 Starting to list all confirm orders 🔎")
 
 	// เรียก Repository เพื่อค้นหา Order ทั้งหมดที่ Status เป็น Confirm
 	orders, err := srv.befRORepo.ListConfirmOrders(ctx)
@@ -422,12 +458,15 @@ func (srv service) ListConfirmOrders(ctx context.Context) ([]response.ListDraftC
 	return orders, nil
 }
 
+// Method สำหรับดึง Draft Confirm Order โดยใช้ OrderNo
 func (srv service) GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "GetDraftOrderByOrderNo", zap.String("OrderNo", orderNo))
 	defer logFinish("Completed", nil)
 
-	srv.logger.Info("🏁 Starting to get draft order by order number", zap.String("OrderNo", orderNo))
+	// Logging ว่าเริ่มการทำงาน
+	srv.logger.Info("🔎 Starting to get draft order by order number 🔎", zap.String("OrderNo", orderNo))
+
 	head, lines, err := srv.befRORepo.GetDraftConfirmOrderByOrderNo(ctx, orderNo)
 	if err != nil {
 		// อัปเดต Log ว่าไม่สามารถดึงข้อมูลได้
@@ -444,10 +483,14 @@ func (srv service) GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo st
 	return head, nil
 }
 
+// Method สำหรับดึง CodeR ทั้งหมด
 func (srv service) GetCodeR(ctx context.Context) ([]response.CodeRResponse, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "GetCodeR")
 	defer logFinish("Completed", nil)
+
+	// Logging ว่าเริ่มการทำงาน
+	srv.logger.Info("🔎 Starting to get CodeR 🔎")
 
 	// เรียก Repository เพื่อค้นหา CodeR ทั้งหมด
 	codeR, err := srv.befRORepo.GetCodeR(ctx)
@@ -464,10 +507,14 @@ func (srv service) GetCodeR(ctx context.Context) ([]response.CodeRResponse, erro
 	return codeR, nil
 }
 
+// Method สำหรับเพิ่ม CodeR
 func (srv service) AddCodeR(ctx context.Context, req request.CodeRRequest) error {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "AddCodeR")
 	defer logFinish("Completed", nil)
+
+	// Logging ว่าเริ่มการทำงาน
+	srv.logger.Info("🔎 Starting to add CodeR 🔎")
 
 	// เรียกใช้ repository layer
 	if err := srv.befRORepo.AddCodeR(ctx, req); err != nil {
@@ -483,6 +530,7 @@ func (srv service) AddCodeR(ctx context.Context, req request.CodeRRequest) error
 	return nil
 }
 
+// Method สำหรับลบ CodeR
 func (srv service) DeleteCodeR(ctx context.Context, sku string) error {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "DeleteCodeR", zap.String("SKU", sku))
@@ -502,17 +550,25 @@ func (srv service) DeleteCodeR(ctx context.Context, sku string) error {
 	return nil
 }
 
+// Method สำหรับอัพเดท Draft Order
 func (srv service) UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error {
-	srv.logger.Info("🏁 Starting draft order update process", zap.String("OrderNo", orderNo))
+	// เริ่มต้น Logging ของ API Call
+	logFinish := srv.logger.LogAPICall(ctx, "UpdateDraftOrder", zap.String("OrderNo", orderNo), zap.String("UserID", userID))
+	defer logFinish("Completed", nil)
+
+	// Logging ว่าเริ่มการทำงาน
+	srv.logger.Info("🔎 Starting draft order update process 🔎", zap.String("OrderNo", orderNo))
 
 	// Update order status
 	err := srv.befRORepo.UpdateOrderStatus(ctx, orderNo, 2, 3, userID) // StatusConfID = 2 (Confirm), StatusReturnID = 3 (Booking)
 	if err != nil {
+		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to update order status", zap.Error(err))
 		return err
 	}
 
 	srv.logger.Info("✅ Successfully updated draft order",
 		zap.String("OrderNo", orderNo))
+	logFinish("Success", nil)
 	return nil
 }

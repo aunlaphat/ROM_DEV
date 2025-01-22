@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -87,68 +88,68 @@ func (l *Logger) Sync() error {
 	return l.logger.Sync()
 }
 
-// LogAPICall บันทึกการเริ่มต้นและสิ้นสุดของการเรียก API
-func (l *Logger) LogAPICall(ctx context.Context, apiName string, fields ...zap.Field) func(status string, err error) {
-	start := time.Now()
+type LogConfig struct {
+	ServiceName   string
+	LogPath       string
+	MaxSize       int
+	MaxBackups    int
+	MaxAge        int
+	SlowThreshold time.Duration
+}
 
-	// ดึง RequestID จาก context (ถ้ามี)
-	requestID, _ := ctx.Value("RequestID").(string)
-	if requestID != "" {
-		fields = append(fields, zap.String("RequestID", requestID))
+func (l *Logger) LogAPICall(ctx context.Context, apiName string, fields ...zap.Field) func(status string, err error, additionalFields ...zap.Field) {
+	start := time.Now() // บันทึกเวลาที่เริ่มต้นการเรียก API
+	traceID := uuid.New().String() // สร้าง traceID ที่ไม่ซ้ำกันสำหรับการติดตาม
+
+	// เพิ่มข้อมูลพื้นฐานสำหรับการบันทึก log
+	baseFields := append(fields,
+		zap.String("traceID", traceID), // เพิ่ม traceID
+		zap.String("apiName", apiName), // เพิ่มชื่อ API
+		zap.Time("startTime", start), // เพิ่มเวลาที่เริ่มต้น
+		zap.String("environment", os.Getenv("APP_ENV"))) // เพิ่มข้อมูลสภาพแวดล้อม
+
+	// ดึงข้อมูลจาก context และเพิ่มลงใน log fields
+	for _, key := range []string{"RequestID", "UserID", "ClientIP", "UserAgent"} {
+		if val, ok := ctx.Value(key).(string); ok {
+			baseFields = append(baseFields, zap.String(key, val)) // เพิ่มข้อมูลจาก context
+		}
 	}
 
-	// บันทึกการเริ่มต้นของการเรียก API
-	l.Info(fmt.Sprintf("⏳ Starting API Call: %s", apiName), fields...)
+	l.Info("⏳ Starting API Call", baseFields...) // บันทึก log ว่าเริ่มต้นการเรียก API
 
-	return func(status string, err error) {
-		duration := time.Since(start)
-		logFields := append(fields,
-			zap.Duration("duration", duration),
-			zap.String("status", status))
+	return func(status string, err error, additionalFields ...zap.Field) {
+		duration := time.Since(start) // คำนวณระยะเวลาที่ใช้ในการเรียก API
+		logFields := append(baseFields,
+			zap.Duration("duration", duration), // เพิ่มระยะเวลา
+			zap.String("status", status)) // เพิ่มสถานะของการเรียก API
 
-		// สร้างข้อความตามสถานะ
-		var msg string
+		// ตรวจสอบว่าการเรียก API ใช้เวลานานเกินไปหรือไม่
+		if duration > 5*time.Second {
+			logFields = append(logFields,
+				zap.Bool("slowExecution", true), // ระบุว่าการเรียก API ใช้เวลานาน
+				zap.Float64("durationSeconds", duration.Seconds())) // เพิ่มระยะเวลาในหน่วยวินาที
+		}
+
+		// ตรวจสอบว่ามีข้อผิดพลาดเกิดขึ้นหรือไม่
+		if err != nil {
+			logFields = append(logFields,
+				zap.String("error", err.Error()), // เพิ่มข้อความข้อผิดพลาด
+				zap.String("errorType", fmt.Sprintf("%T", err)), // เพิ่มประเภทของข้อผิดพลาด
+				zap.Stack("stackTrace")) // เพิ่ม stack trace ของข้อผิดพลาด
+		}
+
+		logFields = append(logFields, additionalFields...) // เพิ่มข้อมูลเพิ่มเติมลงใน log fields
+
+		// บันทึก log ตามสถานะของการเรียก API
 		switch status {
 		case "Success":
-			msg = fmt.Sprintf("✅ API Call Success: %s", apiName)
-			l.Info(msg, logFields...)
+			l.Info("✅ API Call Success", logFields...) // บันทึก log ว่าสำเร็จ
 		case "Failed":
-			msg = fmt.Sprintf("❌ API Call Failed: %s", apiName)
-			if err != nil {
-				logFields = append(logFields, zap.String("error", err.Error()))
-			}
-			l.Error(msg, logFields...)
+			l.Error("❌ API Call Failed", logFields...) // บันทึก log ว่าล้มเหลว
 		case "Not Found":
-			msg = fmt.Sprintf("⚠️ API Call Not Found: %s", apiName)
-			if err != nil {
-				logFields = append(logFields, zap.String("error", err.Error()))
-			}
-			l.Warn(msg, logFields...)
+			l.Warn("⚠️ API Call Not Found", logFields...) // บันทึก log ว่าไม่พบข้อมูล
 		default:
-			msg = fmt.Sprintf("🔄 API Call Completed: %s", apiName)
-			l.Info(msg, logFields...)
+			l.Info("🔄 API Call Completed", logFields...) // บันทึก log ว่าการเรียก API เสร็จสิ้น
 		}
 	}
 }
-/* 
-// LogDatabaseCall บันทึกการเริ่มต้นและสิ้นสุดของการเรียกฐานข้อมูล
-func (l *Logger) LogDatabaseCall(ctx context.Context, query string, fields ...zap.Field) func(status string, err error) {
-	start := time.Now()
-	requestID, _ := ctx.Value("RequestID").(string)
-	if requestID != "" {
-		fields = append(fields, zap.String("requestID", requestID))
-	}
-	l.Debug(fmt.Sprintf("🛢️ Starting DB Query: %s", query), fields...)
-
-	return func(status string, err error) {
-		duration := time.Since(start)
-		logFields := append(fields, zap.Duration("duration", duration), zap.String("status", status))
-
-		if status == "Failed" && err != nil {
-			logFields = append(logFields, zap.String("error", err.Error()))
-		}
-
-		l.Info(fmt.Sprintf("✅ DB Query Completed: %s", query), logFields...)
-	}
-}
- */

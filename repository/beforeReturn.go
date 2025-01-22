@@ -557,20 +557,7 @@ func (repo repositoryDB) SearchOrder(ctx context.Context, soNo, orderNo string) 
                 h.OrderNo = :OrderNo
         `
 		params = map[string]interface{}{"OrderNo": orderNo}
-	} else /* if soNo != "" && orderNo != "" {
-			query = `
-	            SELECT
-	                h.SoNo, h.OrderNo, h.StatusMKP, h.SalesStatus, h.CreateDate,
-	                l.SKU, l.ItemName, l.QTY, l.Price
-	            FROM
-	                ROM_V_OrderHeadDetail h
-	            INNER JOIN
-	                ROM_V_OrderLineDetail l ON h.SoNo = l.SoNo AND h.OrderNo = l.OrderNo
-	            WHERE
-	                h.SoNo = :SoNo AND h.OrderNo = :OrderNo
-	        `
-			params = map[string]interface{}{"SoNo": soNo, "OrderNo": orderNo}
-		} else */{
+	} else {
 		return nil, fmt.Errorf("either SoNo or OrderNo must be provided")
 	}
 
@@ -897,6 +884,7 @@ func (repo repositoryDB) ListDraftOrders(ctx context.Context) ([]response.ListDr
         SELECT OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
         FROM BeforeReturnOrder
         WHERE StatusConfID = 1 -- Draft status
+		ORDER BY CreateDate DESC
     `
 
 	var orders []response.ListDraftConfirmOrdersResponse
@@ -919,6 +907,7 @@ func (repo repositoryDB) ListConfirmOrders(ctx context.Context) ([]response.List
         SELECT OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
         FROM BeforeReturnOrder
         WHERE StatusConfID = 2 -- Confirm status
+		ORDER BY CreateDate DESC
     `
 
 	var orders []response.ListDraftConfirmOrdersResponse

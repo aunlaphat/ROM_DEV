@@ -41,9 +41,11 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Use(jwtauth.Verifier(app.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
+		// Draft & Confirm ใช้เหมือนกันในส่วนของการเปิด Modal และดูรายละเอียดของ Order
+		r.Get("/detail/{orderNo}", app.GetDraftConfirmOrderByOrderNo)
+
 		// Draft
 		r.Get("/list-drafts", app.ListDraftOrders)
-		r.Get("/detail/{orderNo}", app.GetDraftConfirmOrderByOrderNo)
 		r.Get("/code-r", app.GetCodeR)
 		r.Post("/code-r", app.AddCodeR)
 		r.Delete("/code-r/{sku}", app.DeleteCodeR)
