@@ -326,14 +326,13 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 		utils.PrintSaleOrderDetails(&order)
 		fmt.Printf("\n📋 ========== Order Line Details ========== 📋\n")
 		for i, line := range order.OrderLines {
-			fmt.Printf("📦 Order Line #%d 📦\n", i+1)
+			fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 			utils.PrintSaleOrderLineDetails(&line)
 		}
 		fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(order.OrderLines))
 		fmt.Println("=====================================")
 	}
 
-	// Send successful response
 	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 

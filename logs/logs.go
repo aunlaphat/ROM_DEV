@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -27,7 +26,15 @@ func NewLogger(serviceName, logPath string, maxSize, maxBackups, maxAge int) (*L
 	}
 
 	config := zap.NewProductionEncoderConfig()
-	config.EncodeTime = zapcore.ISO8601TimeEncoder
+	// ISO8601 (Default)
+	//config.EncodeTime = zapcore.ISO8601TimeEncoder
+	// Output: "2024-03-20T15:04:05.000Z0700"
+
+	// RFC3339 (Most common for APIs)
+	config.EncodeTime = zapcore.RFC3339TimeEncoder
+	// Output: "2024-03-20T15:04:05Z07:00"
+
+
 	jsonEncoder := zapcore.NewJSONEncoder(config)
 
 	filePriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
@@ -98,14 +105,14 @@ type LogConfig struct {
 }
 
 func (l *Logger) LogAPICall(ctx context.Context, apiName string, fields ...zap.Field) func(status string, err error, additionalFields ...zap.Field) {
-	start := time.Now()            // บันทึกเวลาที่เริ่มต้นการเรียก API
-	traceID := uuid.New().String() // สร้าง traceID ที่ไม่ซ้ำกันสำหรับการติดตาม
+	start := time.Now() // บันทึกเวลาที่เริ่มต้นการเรียก API
+	//traceID := uuid.New().String() // สร้าง traceID ที่ไม่ซ้ำกันสำหรับการติดตาม
 
 	// เพิ่มข้อมูลพื้นฐานสำหรับการบันทึก log
 	baseFields := append(fields,
-		zap.String("traceID", traceID), // เพิ่ม traceID
-		zap.String("apiName", apiName), // เพิ่มชื่อ API
-		zap.Time("startTime", start))   // เพิ่มเวลาที่เริ่มต้น)
+		//zap.String("traceID", traceID), // เพิ่ม traceID
+		zap.String("apiName", apiName),    // เพิ่มชื่อ API
+		zap.Time("startTime", time.Now())) // เพิ่มเวลาที่เริ่มต้น
 
 	// ดึงข้อมูลจาก context และเพิ่มลงใน log fields
 	for _, key := range []string{"RequestID", "UserID", "ClientIP", "UserAgent"} {

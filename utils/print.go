@@ -56,7 +56,7 @@ func PrintSaleOrderLineDetails(line *res.SaleOrderLineResponse) {
 
 // ************************ Draft & Confirm ************************ //
 
-// Draft
+// Draft & Confirm
 func PrintDraftConfirmOrderDetails(draft *res.ListDraftConfirmOrdersResponse) {
 	fmt.Printf("📦 OrderNo: %s\n", draft.OrderNo)
 	fmt.Printf("🛒 SoNo: %s\n", draft.SoNo)
@@ -69,7 +69,7 @@ func PrintDraftConfirmOrderDetails(draft *res.ListDraftConfirmOrdersResponse) {
 	fmt.Printf("🏢 Warehouse: %d\n", draft.WarehouseID)
 }
 
-// Modal Edit Draft
+// Modal Edit Draft & Show Confirm
 func PrintDraftOrderDetails(draft *res.DraftHeadResponse) {
 	fmt.Printf("📦 OrderNo: %s\n", draft.OrderNo)
 	fmt.Printf("🛒 SoNo: %s\n", draft.SoNo)
@@ -82,11 +82,3 @@ func PrintDraftOrderLineDetails(draft *res.DraftLineResponse) {
 	fmt.Printf("📱 QTY: %d\n", draft.QTY)
 	fmt.Printf("💲 Price: %.2f\n", draft.Price)
 }
-
-/* func PrintDraftConfirmOrderLineDetails(line *res.ListDraftConfirmOrderLinesResponse) {
-	fmt.Printf("🔖 SKU: %s\n", line.SKU)
-	fmt.Printf("🏷️  ItemName: %s\n", line.ItemName)
-	fmt.Printf("📱 QTY: %d\n", line.QTY)
-	fmt.Printf("💲 Price: %.2f\n", line.Price)
-}
-*/
