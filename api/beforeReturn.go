@@ -81,7 +81,7 @@ func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Re
 			fmt.Printf("\n📦 Order Line #%d 📦\n", j+1)
 			utils.PrintOrderLineDetails(&line)
 		}
-		fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(order.BeforeReturnOrderLines))
+		fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(order.BeforeReturnOrderLines))
 		fmt.Println("=====================================")
 	}
 
@@ -119,7 +119,7 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
-	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.BeforeReturnOrderLines))
+	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.BeforeReturnOrderLines))
 	fmt.Println("=====================================")
 
 	handleResponse(w, true, "⭐ Order created successfully ⭐", result, http.StatusCreated)
@@ -160,7 +160,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
-	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.BeforeReturnOrderLines))
+	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.BeforeReturnOrderLines))
 	fmt.Println("=====================================")
 
 	handleResponse(w, true, "⭐ Order updated successfully ⭐", result, http.StatusOK)
@@ -192,7 +192,7 @@ func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *
 		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
-	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.BeforeReturnOrderLines))
+	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.BeforeReturnOrderLines))
 	fmt.Println("=====================================")
 
 	handleResponse(w, true, "⭐ Order retrieved successfully ⭐", result, http.StatusOK)
@@ -316,7 +316,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Handle no results found
 	if len(result) == 0 {
-		handleResponse(w, false, "No orders found", nil, http.StatusNotFound)
+		handleResponse(w, false, "⚠️ No orders found ⚠️", nil, http.StatusNotFound)
 		return
 	}
 
@@ -329,7 +329,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 			utils.PrintSaleOrderLineDetails(&line)
 		}
-		fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(order.OrderLines))
+		fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(order.OrderLines))
 		fmt.Println("=====================================")
 	}
 
@@ -399,7 +399,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
-	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.BeforeReturnOrderLines)) // Add logging for the number of lines
+	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.BeforeReturnOrderLines)) // Add logging for the number of lines
 	fmt.Println("=====================================")
 
 	// Send successful response
@@ -449,7 +449,7 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if existingOrder == nil {
-		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
+		handleResponse(w, false, "⚠️ Order not found ⚠️", nil, http.StatusNotFound)
 		return
 	}
 
@@ -558,7 +558,7 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 	// 2. ตรวจสอบว่า order มีอยู่จริง
 	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
 	if err != nil || existingOrder == nil {
-		handleResponse(w, false, "Order not found", nil, http.StatusNotFound)
+		handleResponse(w, false, "⚠️ Order not found ⚠️", nil, http.StatusNotFound)
 		return
 	}
 
@@ -625,14 +625,14 @@ func (app *Application) ListDraftOrders(w http.ResponseWriter, r *http.Request) 
 	// Call service layer with error handling
 	result, err := app.Service.BefRO.ListDraftOrders(r.Context())
 	if err != nil {
-		app.Logger.Error("Failed to list draft orders", zap.Error(err))
+		app.Logger.Error("🚨 Failed to list draft orders 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
 		return
 	}
 
 	// Handle no results found
 	if len(result) == 0 {
-		handleResponse(w, false, "No draft orders found", nil, http.StatusOK)
+		handleResponse(w, false, "⚠️ No draft orders found ⚠️", nil, http.StatusOK)
 		return
 	}
 
@@ -663,14 +663,14 @@ func (app *Application) ListConfirmOrders(w http.ResponseWriter, r *http.Request
 	// Call service layer with error handling
 	result, err := app.Service.BefRO.ListConfirmOrders(r.Context())
 	if err != nil {
-		app.Logger.Error("Failed to list confirm orders", zap.Error(err))
+		app.Logger.Error("🚨 Failed to list confirm orders 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
 		return
 	}
 
 	// Handle no results found
 	if len(result) == 0 {
-		handleResponse(w, false, "No confirm orders found", nil, http.StatusOK)
+		handleResponse(w, false, "⚠️ No confirm orders found ⚠️", nil, http.StatusOK)
 		return
 	}
 
@@ -700,7 +700,7 @@ func (app *Application) GetCodeR(w http.ResponseWriter, r *http.Request) {
 	// Call service layer with error handling
 	result, err := app.Service.BefRO.GetCodeR(r.Context())
 	if err != nil {
-		app.Logger.Error("Failed to get CodeR", zap.Error(err))
+		app.Logger.Error("🚨 Failed to get CodeR 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
 		return
 	}
@@ -723,7 +723,7 @@ func (app *Application) GetCodeR(w http.ResponseWriter, r *http.Request) {
 func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
 	var req request.CodeRRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		app.Logger.Error("Failed to decode request", zap.Error(err))
+		app.Logger.Error("🚨 Failed to decode request 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
 		return
 	}
@@ -746,7 +746,7 @@ func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
 
 	err = app.Service.BefRO.AddCodeR(r.Context(), req)
 	if err != nil {
-		app.Logger.Error("Failed to add CodeR", zap.Error(err))
+		app.Logger.Error("🚨 Failed to add CodeR 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
 		return
 	}
@@ -775,7 +775,7 @@ func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
 
 	err := app.Service.BefRO.DeleteCodeR(r.Context(), sku)
 	if err != nil {
-		app.Logger.Error("Failed to delete CodeR", zap.Error(err))
+		app.Logger.Error("🚨 Failed to delete CodeR 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
 		return
 	}
@@ -810,7 +810,7 @@ func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *
 		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintDraftOrderLineDetails(&line)
 	}
-	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.OrderLines))
+	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.OrderLines))
 	fmt.Println("=====================================")
 
 	handleResponse(w, true, "⭐ Draft order retrieved successfully ⭐", result, http.StatusOK)
@@ -868,7 +868,7 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintDraftOrderLineDetails(&line)
 	}
-	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.OrderLines))
+	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.OrderLines))
 	fmt.Println("=====================================")
 
 	handleResponse(w, true, "⭐ Draft orders updated successfully ⭐", result, http.StatusOK)
