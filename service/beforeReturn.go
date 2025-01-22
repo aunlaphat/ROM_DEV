@@ -172,11 +172,6 @@ func (srv service) SearchOrder(ctx context.Context, soNo, orderNo string) ([]res
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Successfully searched sale orders",
-		zap.String("SoNo", soNo),
-		zap.String("OrderNo", orderNo))
-
-	// ส่งค่าผลลัพธ์กลับไป
 	return []response.SaleOrderResponse{*order}, nil
 }
 
@@ -220,7 +215,6 @@ func (srv service) CreateSaleReturn(ctx context.Context, req request.BeforeRetur
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Sale return created successfully", zap.String("OrderNo", req.OrderNo))
 	return createdOrder, nil
 }
 
@@ -286,11 +280,6 @@ func (srv service) UpdateSaleReturn(ctx context.Context, orderNo string, srNo st
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Successfully updated SR number",
-		zap.String("OrderNo", orderNo),
-		zap.String("SrNo", srNo),
-		zap.String("UpdateBy", updateBy))
-
 	return nil
 }
 
@@ -345,7 +334,6 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Successfully confirmed order", zap.String("OrderNo", orderNo))
 	return nil
 }
 
@@ -407,7 +395,6 @@ func (srv service) CancelSaleReturn(ctx context.Context, orderNo string, updateB
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Successfully canceled order", zap.String("OrderNo", orderNo))
 	return nil
 }
 
@@ -431,7 +418,6 @@ func (srv service) ListDraftOrders(ctx context.Context) ([]response.ListDraftCon
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Successfully listed draft orders")
 	return orders, nil
 }
 
@@ -454,7 +440,6 @@ func (srv service) ListConfirmOrders(ctx context.Context) ([]response.ListDraftC
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Successfully listed confirm orders")
 	return orders, nil
 }
 
@@ -479,7 +464,6 @@ func (srv service) GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo st
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Successfully fetched draft order", zap.String("OrderNo", orderNo))
 	return head, nil
 }
 
@@ -503,7 +487,6 @@ func (srv service) GetCodeR(ctx context.Context) ([]response.CodeRResponse, erro
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Successfully fetched CodeR")
 	return codeR, nil
 }
 
@@ -526,7 +509,6 @@ func (srv service) AddCodeR(ctx context.Context, req request.CodeRRequest) error
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Successfully added CodeR")
 	return nil
 }
 
@@ -546,7 +528,6 @@ func (srv service) DeleteCodeR(ctx context.Context, sku string) error {
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Successfully deleted CodeR", zap.String("SKU", sku))
 	return nil
 }
 
@@ -567,8 +548,7 @@ func (srv service) UpdateDraftOrder(ctx context.Context, orderNo string, userID 
 		return err
 	}
 
-	srv.logger.Info("✅ Successfully updated draft order",
-		zap.String("OrderNo", orderNo))
+	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
 	return nil
 }

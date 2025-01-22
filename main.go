@@ -13,9 +13,9 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// @title Boilerplate Service
+// @title Return Order Management Service API
 // @version 1.0
-// @description This is a sample server for Boilerplate project .
+// @description This is a Return Order Management Service API server.
 // contact.name API Support
 
 // @BasePath /api
