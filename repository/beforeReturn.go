@@ -47,6 +47,7 @@ type BefRORepository interface {
 	GetCodeR(ctx context.Context) ([]response.CodeRResponse, error)
 	AddCodeR(ctx context.Context, codeR request.CodeRRequest) error
 	DeleteCodeR(ctx context.Context, sku string) error
+	UpdateOrderStatus(ctx context.Context, orderNo string, statusConfID int, statusReturnID int, userID string) error
 }
 
 // Implementation สำหรับ CreateBeforeReturnOrder
@@ -1021,6 +1022,30 @@ func (repo repositoryDB) DeleteCodeR(ctx context.Context, sku string) error {
 	_, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{"SKU": sku})
 	if err != nil {
 		return fmt.Errorf("failed to delete CodeR: %w", err)
+	}
+
+	return nil
+}
+
+func (repo repositoryDB) UpdateOrderStatus(ctx context.Context, orderNo string, statusConfID int, statusReturnID int, userID string) error {
+	query := `
+        UPDATE BeforeReturnOrder
+        SET StatusConfID = :StatusConfID,
+            StatusReturnID = :StatusReturnID,
+            UpdateBy = :UpdateBy,
+            UpdateDate = GETDATE()
+        WHERE OrderNo = :OrderNo
+    `
+	params := map[string]interface{}{
+		"OrderNo":        orderNo,
+		"StatusConfID":   statusConfID,
+		"StatusReturnID": statusReturnID,
+		"UpdateBy":       userID,
+	}
+
+	_, err := repo.db.NamedExecContext(ctx, query, params)
+	if err != nil {
+		return fmt.Errorf("failed to update order status: %w", err)
 	}
 
 	return nil

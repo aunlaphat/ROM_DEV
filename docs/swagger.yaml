@@ -995,7 +995,7 @@ paths:
       summary: Delete CodeR
       tags:
       - Draft & Confirm
-  /draft-confirm/draft/{orderNo}:
+  /draft-confirm/detail/{orderNo}:
     get:
       consumes:
       - application/json
@@ -1100,6 +1100,43 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: List all draft orders
+      tags:
+      - Draft & Confirm
+  /draft-confirm/update-draft/{orderNo}:
+    put:
+      consumes:
+      - application/json
+      description: Update draft orders and change status to Confirm and Booking
+      operationId: update-draft-orders
+      parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Draft orders updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.DraftHeadResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Update draft orders
       tags:
       - Draft & Confirm
   /sale-return/cancel/{orderNo}:

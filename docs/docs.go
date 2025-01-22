@@ -916,7 +916,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/draft-confirm/draft/{orderNo}": {
+        "/draft-confirm/detail/{orderNo}": {
             "get": {
                 "description": "Retrieve the details of a specific draft order by its order number",
                 "consumes": [
@@ -1077,6 +1077,66 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Draft orders not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/update-draft/{orderNo}": {
+            "put": {
+                "description": "Update draft orders and change status to Confirm and Booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Update draft orders",
+                "operationId": "update-draft-orders",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Draft orders updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.DraftHeadResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }

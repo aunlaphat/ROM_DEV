@@ -47,6 +47,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 		r.Get("/code-r", app.GetCodeR)
 		r.Post("/code-r", app.AddCodeR)
 		r.Delete("/code-r/{sku}", app.DeleteCodeR)
+		r.Put("/update-draft/{orderNo}", app.UpdateDraftOrder)
 
 		// Confirm
 		r.Get("/list-confirms", app.ListConfirmOrders)
@@ -824,4 +825,62 @@ func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *
 	logFinish("Success", nil)
 	app.Logger.Info("✅ Successfully retrieved draft order", zap.String("OrderNo", orderNo))
 	handleResponse(w, true, "Draft order retrieved successfully", result, http.StatusOK)
+}
+
+// UpdateDraftOrders godoc
+// @Summary Update draft orders
+// @Description Update draft orders and change status to Confirm and Booking
+// @ID update-draft-orders
+// @Tags Draft & Confirm
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order number"
+// @Success 200 {object} api.Response{data=[]response.DraftHeadResponse} "Draft orders updated successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /draft-confirm/update-draft/{orderNo} [put]
+func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request) {
+	orderNo := chi.URLParam(r, "orderNo")
+	if orderNo == "" {
+		handleResponse(w, false, "Order number is required", nil, http.StatusBadRequest)
+		return
+	}
+
+	// Extract userID from claims
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := utils.GetUserIDFromClaims(claims)
+	if err != nil {
+		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
+		return
+	}
+
+	err = app.Service.BefRO.UpdateDraftOrder(r.Context(), orderNo, userID)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	// Fetch updated order details
+	result, err := app.Service.BefRO.GetDraftConfirmOrderByOrderNo(r.Context(), orderNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== Draft Orders Updated Successfully ========== 📋\n")
+	utils.PrintDraftOrderDetails(result)
+	fmt.Printf("\n📋 ========== Draft Order Line Details ========== 📋\n")
+	for i, line := range result.OrderLines {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintDraftOrderLineDetails(&line)
+	}
+	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.OrderLines))
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "Draft orders updated successfully", result, http.StatusOK)
 }

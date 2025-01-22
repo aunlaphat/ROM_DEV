@@ -31,6 +31,7 @@ type BefROService interface {
 	GetCodeR(ctx context.Context) ([]response.CodeRResponse, error)
 	AddCodeR(ctx context.Context, req request.CodeRRequest) error
 	DeleteCodeR(ctx context.Context, sku string) error
+	UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error
 }
 
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
@@ -498,5 +499,20 @@ func (srv service) DeleteCodeR(ctx context.Context, sku string) error {
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
 	srv.logger.Info("✅ Successfully deleted CodeR", zap.String("SKU", sku))
+	return nil
+}
+
+func (srv service) UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error {
+	srv.logger.Info("🏁 Starting draft order update process", zap.String("OrderNo", orderNo))
+
+	// Update order status
+	err := srv.befRORepo.UpdateOrderStatus(ctx, orderNo, 2, 3, userID) // StatusConfID = 2 (Confirm), StatusReturnID = 3 (Booking)
+	if err != nil {
+		srv.logger.Error("❌ Failed to update order status", zap.Error(err))
+		return err
+	}
+
+	srv.logger.Info("✅ Successfully updated draft order",
+		zap.String("OrderNo", orderNo))
 	return nil
 }
