@@ -78,15 +78,14 @@ func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Re
 		fmt.Printf("\n📦 Order #%d:\n", i+1)
 		utils.PrintOrderDetails(&order)
 		for j, line := range order.BeforeReturnOrderLines {
-			fmt.Printf("\n📦 Order Line #%d:\n", j+1)
+			fmt.Printf("\n📦 Order Line #%d 📦\n", j+1)
 			utils.PrintOrderLineDetails(&line)
 		}
+		fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(order.BeforeReturnOrderLines))
+		fmt.Println("=====================================")
 	}
-	// fmt.Println("=====================================")
 
-	app.Logger.Info("✅ Successfully retrieved all orders",
-		zap.Int("totalOrders", len(result)))
-	handleResponse(w, true, "📚 Orders retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // CreateOrderWithLines godoc
@@ -116,11 +115,14 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 
 	fmt.Printf("\n📋 ========== Created Order ========== 📋\n")
 	utils.PrintOrderDetails(result)
-	// fmt.Println("=====================================")
+	for i, line := range result.BeforeReturnOrderLines {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintOrderLineDetails(&line)
+	}
+	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.BeforeReturnOrderLines))
+	fmt.Println("=====================================")
 
-	app.Logger.Info("✅ Successfully created order",
-		zap.String("OrderNo", result.OrderNo))
-	handleResponse(w, true, "Order created successfully", result, http.StatusCreated)
+	handleResponse(w, true, "⭐ Order created successfully ⭐", result, http.StatusCreated)
 }
 
 // UpdateBeforeReturnOrderWithLines godoc
@@ -144,7 +146,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 		return
 	}
 
-	req.OrderNo = orderNo // Ensure the orderNo from the URL is used
+	req.OrderNo = orderNo
 
 	result, err := app.Service.BefRO.UpdateBeforeReturnOrderWithLines(r.Context(), req)
 	if err != nil {
@@ -154,11 +156,14 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 
 	fmt.Printf("\n📋 ========== Updated Order ========== 📋\n")
 	utils.PrintOrderDetails(result)
-	// fmt.Println("=====================================")
+	for i, line := range result.BeforeReturnOrderLines {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintOrderLineDetails(&line)
+	}
+	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.BeforeReturnOrderLines))
+	fmt.Println("=====================================")
 
-	app.Logger.Info("✅ Successfully updated order",
-		zap.String("OrderNo", result.OrderNo))
-	handleResponse(w, true, "Order updated successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Order updated successfully ⭐", result, http.StatusOK)
 }
 
 // GetBeforeReturnOrderByOrderNo godoc
@@ -183,11 +188,14 @@ func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *
 
 	fmt.Printf("\n📋 ========== Order Details ========== 📋\n")
 	utils.PrintOrderDetails(result)
-	// fmt.Println("=====================================")
+	for i, line := range result.BeforeReturnOrderLines {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintOrderLineDetails(&line)
+	}
+	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.BeforeReturnOrderLines))
+	fmt.Println("=====================================")
 
-	app.Logger.Info("✅ Successfully retrieved order",
-		zap.String("OrderNo", result.OrderNo))
-	handleResponse(w, true, "Order retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Order retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // ListBeforeReturnOrderLines godoc
@@ -213,11 +221,9 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 		fmt.Printf("\n📦 Order Line #%d:\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
-	// fmt.Println("=====================================")
+	fmt.Println("=====================================")
 
-	app.Logger.Info("✅ Successfully retrieved all order lines",
-		zap.Int("totalOrderLines", len(result)))
-	handleResponse(w, true, "Order lines retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Order lines retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // GetBeforeReturnOrderLineByOrderNo godoc
@@ -245,12 +251,9 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 		fmt.Printf("\n📦 Order Line #%d:\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
-	fmt.Printf("Total lines retrieved: %d\n", len(result)) // Add logging for the number of lines
+	fmt.Println("=====================================")
 
-	app.Logger.Info("✅ Successfully retrieved order lines",
-		zap.String("OrderNo", orderNo),
-		zap.Int("totalOrderLines", len(result)))
-	handleResponse(w, true, "Order lines retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Order lines retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // SearchSaleOrder godoc
@@ -313,9 +316,6 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Handle no results found
 	if len(result) == 0 {
-		app.Logger.Info("No orders found",
-			zap.String("soNo", soNo),
-			zap.String("orderNo", orderNo))
 		handleResponse(w, false, "No orders found", nil, http.StatusNotFound)
 		return
 	}
@@ -334,7 +334,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send successful response
-	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // CreateSaleReturn godoc
@@ -404,7 +404,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	fmt.Println("=====================================")
 
 	// Send successful response
-	handleResponse(w, true, "Sale return order created successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Sale return order created successfully ⭐", result, http.StatusOK)
 }
 
 // UpdateSaleReturn godoc
@@ -481,7 +481,7 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 		UpdateDate: time.Now(),
 	}
 
-	handleResponse(w, true, "SR number updated successfully", response, http.StatusOK)
+	handleResponse(w, true, "⭐ SR number updated successfully ⭐", response, http.StatusOK)
 }
 
 // ConfirmSaleReturn godoc
@@ -532,7 +532,7 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 		ConfirmDate: time.Now(),
 	}
 
-	handleResponse(w, true, "Sale return order confirmed successfully", response, http.StatusOK)
+	handleResponse(w, true, "⭐ Sale return order confirmed successfully ⭐", response, http.StatusOK)
 }
 
 // CancelSaleReturn godoc
@@ -607,7 +607,7 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 9. ส่ง response กลับ
-	handleResponse(w, true, "Sale return order canceled successfully", response, http.StatusOK)
+	handleResponse(w, true, "⭐ Sale return order canceled successfully ⭐", response, http.StatusOK)
 }
 
 // ListDraftOrders godoc
@@ -633,7 +633,6 @@ func (app *Application) ListDraftOrders(w http.ResponseWriter, r *http.Request) 
 
 	// Handle no results found
 	if len(result) == 0 {
-		app.Logger.Info("No draft orders found")
 		handleResponse(w, false, "No draft orders found", nil, http.StatusOK)
 		return
 	}
@@ -646,7 +645,7 @@ func (app *Application) ListDraftOrders(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Send successful response
-	handleResponse(w, true, "Draft orders retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Draft orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // ListConfirmOrders godoc
@@ -672,7 +671,6 @@ func (app *Application) ListConfirmOrders(w http.ResponseWriter, r *http.Request
 
 	// Handle no results found
 	if len(result) == 0 {
-		app.Logger.Info("No confirm orders found")
 		handleResponse(w, false, "No confirm orders found", nil, http.StatusOK)
 		return
 	}
@@ -685,7 +683,7 @@ func (app *Application) ListConfirmOrders(w http.ResponseWriter, r *http.Request
 	}
 
 	// Send successful response
-	handleResponse(w, true, "Confirm orders retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Confirm orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // GetCodeR godoc
@@ -708,8 +706,7 @@ func (app *Application) GetCodeR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send successful response
-	handleResponse(w, true, "CodeR retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ CodeR retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // AddCodeR godoc
@@ -755,8 +752,7 @@ func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.Logger.Info("✅ Successfully added CodeR", zap.String("SKU", req.SKU))
-	handleResponse(w, true, "CodeR added successfully", nil, http.StatusCreated)
+	handleResponse(w, true, "⭐ CodeR added successfully ⭐", nil, http.StatusCreated)
 }
 
 // DeleteCodeR godoc
@@ -785,8 +781,7 @@ func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.Logger.Info("✅ Successfully deleted CodeR", zap.String("SKU", sku))
-	handleResponse(w, true, "CodeR deleted successfully", nil, http.StatusOK)
+	handleResponse(w, true, "⭐ CodeR deleted successfully ⭐", nil, http.StatusOK)
 }
 
 // GetDraftConfirmOrderByOrderNo godoc
@@ -802,14 +797,9 @@ func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} api.Response
 // @Router /draft-confirm/detail/{orderNo} [get]
 func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
-	// เริ่มต้น Logging ของ API Call
-	logFinish := app.Logger.LogAPICall(r.Context(), "GetDraftConfirmOrderByOrderNo", zap.String("OrderNo", chi.URLParam(r, "orderNo")))
-	defer logFinish("Completed", nil)
-
 	orderNo := chi.URLParam(r, "orderNo")
 	result, err := app.Service.BefRO.GetDraftConfirmOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
-		logFinish("Failed", err)
 		handleError(w, err)
 		return
 	}
@@ -824,9 +814,7 @@ func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *
 	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.OrderLines))
 	fmt.Println("=====================================")
 
-	logFinish("Success", nil)
-	app.Logger.Info("✅ Successfully retrieved draft order", zap.String("OrderNo", orderNo))
-	handleResponse(w, true, "Draft order retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Draft order retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // UpdateDraftOrders godoc
@@ -884,5 +872,5 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 	fmt.Printf("\n🚨 Total lines: %d 🚨\n", len(result.OrderLines))
 	fmt.Println("=====================================")
 
-	handleResponse(w, true, "Draft orders updated successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Draft orders updated successfully ⭐", result, http.StatusOK)
 }

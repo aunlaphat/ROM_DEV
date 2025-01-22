@@ -142,13 +142,13 @@ func (l *Logger) LogAPICall(ctx context.Context, apiName string, fields ...zap.F
 		// บันทึก log ตามสถานะของการเรียก API
 		switch status {
 		case "Success":
-			l.Info("✅ API Call Success", logFields...) // บันทึก log ว่าสำเร็จ
+			l.Info("✅ API Call Success ✅", logFields...) // บันทึก log ว่าสำเร็จ
 		case "Failed":
-			l.Error("❌ API Call Failed", logFields...) // บันทึก log ว่าล้มเหลว
+			l.Error("❌ API Call Failed ❌", logFields...) // บันทึก log ว่าล้มเหลว
 		case "Not Found":
-			l.Warn("⚠️ API Call Not Found", logFields...) // บันทึก log ว่าไม่พบข้อมูล
+			l.Warn("⚠️ API Call Not Found ⚠️", logFields...) // บันทึก log ว่าไม่พบข้อมูล
 		default:
-			l.Info("🔄 API Call Completed", logFields...) // บันทึก log ว่าการเรียก API เสร็จสิ้น
+			l.Info("🔚 API Call End 🔚", logFields...) // บันทึก log ว่าการเรียก API เสร็จสิ้น
 		}
 	}
 }
