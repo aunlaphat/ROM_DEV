@@ -461,7 +461,7 @@ func (srv service) ListConfirmOrders(ctx context.Context) ([]response.ListDraftC
 // Method สำหรับดึง Draft Confirm Order โดยใช้ OrderNo
 func (srv service) GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error) {
 	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "GetDraftOrderByOrderNo", zap.String("OrderNo", orderNo))
+	logFinish := srv.logger.LogAPICall(ctx, "GetDraftConfirmOrderByOrderNo", zap.String("OrderNo", orderNo))
 	defer logFinish("Completed", nil)
 
 	// Logging ว่าเริ่มการทำงาน

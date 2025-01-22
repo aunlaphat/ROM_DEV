@@ -789,7 +789,7 @@ func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
 	handleResponse(w, true, "CodeR deleted successfully", nil, http.StatusOK)
 }
 
-// GetDraftOrderByOrderNo godoc
+// GetDraftConfirmOrderByOrderNo godoc
 // @Summary Get draft order by order number
 // @Description Retrieve the details of a specific draft order by its order number
 // @ID get-draft-order-by-order-no
@@ -803,7 +803,7 @@ func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
 // @Router /draft-confirm/detail/{orderNo} [get]
 func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
 	// เริ่มต้น Logging ของ API Call
-	logFinish := app.Logger.LogAPICall(r.Context(), "GetDraftOrderByOrderNo", zap.String("OrderNo", chi.URLParam(r, "orderNo")))
+	logFinish := app.Logger.LogAPICall(r.Context(), "GetDraftConfirmOrderByOrderNo", zap.String("OrderNo", chi.URLParam(r, "orderNo")))
 	defer logFinish("Completed", nil)
 
 	orderNo := chi.URLParam(r, "orderNo")
