@@ -16,27 +16,27 @@ type BefRORepository interface {
 	// Create
 	CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
 	CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error
-	CreateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	// Read
 	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
-	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
 	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
 	ListBeforeReturnOrderLinesByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
-
-	//SO
-	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
-	GetAllOrderDetails(ctx context.Context, offset, limit int) ([]response.OrderDetail, error)
-	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
 
 	// Update
 	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
 	UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error
 	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
-	// Update
-	//UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error
 
-	//Cancle
+	// SO
+	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
+	GetAllOrderDetails(ctx context.Context, offset, limit int) ([]response.OrderDetail, error)
+	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
+
+	// Create
+	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
+	CreateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
+
+	// Delete
 	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
 
 	// ************************ Create Sale Return ************************ //
@@ -58,16 +58,16 @@ type BefRORepository interface {
 	CheckBefLineSKUExists(ctx context.Context, sku string) (bool, error)
 	// ConfirmToReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
 
-	// ************************ Search Sale Return ************************ //
+	// ************************ ImportOrder: Search Sale Return ************************ //
 	GetTrackingNoByOrderNo(ctx context.Context, orderNo string) (string, error)
 
-	// ************************ Confirm To Return ************************ //
+	// ************************ Confirm Return ************************ //
 	CheckReLineSKUExists(ctx context.Context, sku string) (bool, error)
 	UpdateStatusToSuccess(ctx context.Context, orderNo, updateBy string) error
 	GetBeforeOrderDetails(ctx context.Context, orderNo string) (*response.ReturnOrderData, error)
 	UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ReturnOrderData) error
 
-	// ************************ Confirm Trade Return ************************ //
+	// ************************ Confirm Receipt ************************ //
 	InsertImages(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest, filePaths []string) error
 	InsertReturnOrderLine(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest) error
 	InsertReturnOrder(ctx context.Context, returnOrderData *response.ReturnOrderData) error

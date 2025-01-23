@@ -14,28 +14,27 @@ import (
 type BefROService interface {
 	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
 	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
-
-	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
-	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
-	GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error)
-
-	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
-	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
-
 	CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
-	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
 
-	CreateBeforeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
-
+	CreateBeforeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) // api CreateSaleReturn use
 	UpdateSaleReturn(ctx context.Context, orderNo string, srNo string, updateBy string) error
 	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
 	CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
 
+	
+	// BeforeReturnOrder
+	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
+	GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error)
+	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
+	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
+	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
+
 	//  CreateTrade Head + Line
+	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
 	CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
-	// CreateTrade Line
+	//  CreateTrade Line
 	CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) error
 
 	// ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string, filePaths []string) error

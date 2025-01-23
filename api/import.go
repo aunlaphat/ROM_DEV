@@ -46,14 +46,13 @@ func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /import-order/search [get]
 func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Request) {
-	// รับค่าจาก query parameter `search`
+	
 	search := r.URL.Query().Get("search")
 	if search == "" {
 		handleResponse(w, false, "Search input is required (OrderNo or TrackingNo)", nil, http.StatusBadRequest)
 		return
 	}
 
-	// Trim input
 	search = strings.TrimSpace(search)
 
 	// ตรวจสอบ JWT Token (Authorization)
@@ -79,8 +78,6 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 	// ส่งข้อมูลกลับ
 	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
 }
-
-
 
 // UploadImages handles image upload requests
 // UploadImagesHandler godoc
@@ -166,6 +163,7 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 			SKU:         skus,
 			CreateBy:    "user",
 		}
+		
 		imageID, err := app.Service.ImportOrder.SaveImageMetadata(r.Context(), image)
 		if err != nil {
 			handleError(w, errors.InternalError("Failed to save image metadata"))
