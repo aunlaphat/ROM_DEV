@@ -46,7 +46,7 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 
 		// Draft
 		r.Get("/list-drafts", app.ListDraftOrders)
-		r.Get("/code-r", app.ListCodeR)
+		r.Get("/list-code-r", app.ListCodeR)
 		r.Post("/code-r", app.AddCodeR)
 		r.Delete("/code-r/{orderNo}/{sku}", app.DeleteCodeR)
 		r.Put("/update-draft/{orderNo}", app.UpdateDraftOrder)

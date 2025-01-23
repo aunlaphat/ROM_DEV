@@ -108,8 +108,6 @@ type ReturnOrderLine struct {
 
 /********** Constants for dropdown ***************/
 
-/********** Constants for dropdown ***************/
-
 // View
 
 type ROM_V_ProductAll struct {
