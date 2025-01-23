@@ -12,11 +12,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth"
-	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
 
-// ReturnOrderRoute defines the routes for return order operations
 func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 	apiRouter.Post("/login", app.Login)
 
@@ -47,16 +45,16 @@ func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /trade-return/create-trade [post]
 func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request) {
+
 	var req request.BeforeReturnOrder
 
-	// เช็คว่า orderNo ที่สร้างไม่ซ้ำกับตัวที่มีอยู่แล้ว
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		app.Logger.Error("Failed to decode request", zap.Error(err))
 		handleResponse(w, false, "Invalid request format", nil, http.StatusBadRequest)
 		return
 	}
 
-	// ตรวจสอบว่า OrderNo ถูกตั้งค่า
+	// ตรวจสอบว่ามี OrderNo 
 	if req.OrderNo == "" {
 		handleResponse(w, false, "OrderNo is required", nil, http.StatusBadRequest)
 		return
@@ -64,15 +62,15 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 
 	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
 	if err != nil {
-		handleError(w, err) // Handle error if GetBeforeReturnOrderByOrderNo fails
+		handleError(w, err)
 		return
 	}
-	if existingOrder != nil {
+	if existingOrder != nil { // แจ้งเตือนถ้ามี OrderNo อยู่แล้ว
 		handleResponse(w, false, "Order already exists", nil, http.StatusConflict)
 		return
 	}
 
-	// 1. Authentication check
+	// Authentication check
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
 		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
@@ -88,14 +86,13 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 	// Set user information from claims
 	req.CreateBy = userID
 
-	// 4. Call service
+	// Call service
 	result, err := app.Service.BefRO.CreateTradeReturn(r.Context(), req)
 	if err != nil {
 		app.Logger.Error("Failed to create sale return",
 			zap.Error(err),
 			zap.String("orderNo", req.OrderNo))
 
-		// Handle specific error cases
 		switch {
 		case strings.Contains(err.Error(), "validation failed"):
 			handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
@@ -131,6 +128,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /trade-return/add-line/{orderNo} [post]
 func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Request) {
+
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
 		handleError(w, fmt.Errorf("OrderNo is required"))
@@ -138,6 +136,7 @@ func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req request.TradeReturnLine
+	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, fmt.Errorf("invalid request format: %v", err))
 		return
@@ -171,7 +170,136 @@ func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Reques
 	handleResponse(w, true, "Trade return line created successfully", nil, http.StatusCreated)
 }
 
-var validate = validator.New()
+// // @Summary Confirm the return order and upload image
+// // @Description This API confirms the return order and allows uploading an image.
+// // @Tags Trade Return
+// // @Accept multipart/form-data
+// // @Produce json
+// // @Param identifier path string true "OrderNo or TrackingNo"
+// // @Param request body request.ConfirmTradeReturnRequest true "Confirm Return Order Data"
+// // @Param image formData file true "Image File to Upload"
+// // @Success 200 {object} api.Response{data=response.ConfirmReceipt} "Trade return order confirmed successfully"
+// // @Failure 400 {object} api.Response "Bad Request"
+// // @Failure 500 {object} api.Response "Internal Server Error"
+// // @Router /trade-return/confirm-receipt/{identifier} [post]
+// func (app *Application) ConfirmReceipt(w http.ResponseWriter, r *http.Request) {
+// 	// รับค่า identifier จาก URL parameter
+// 	identifier := chi.URLParam(r, "identifier")
+// 	if identifier == "" {
+// 		handleError(w, fmt.Errorf("identifier (OrderNo or TrackingNo) is required"))
+// 		return
+// 	}
+
+// 	// parse multipart form (รับข้อมูล json + ไฟล์)
+// 	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
+// 	if err != nil {
+// 		handleError(w, fmt.Errorf("unable to parse multipart form: %w", err))
+// 		return
+// 	}
+
+// 	// รับข้อมูล JSON
+// 	var req request.ConfirmTradeReturnRequest
+// 	body, err := io.ReadAll(r.Body)
+// 	if err != nil {
+// 		handleError(w, fmt.Errorf("failed to read request body: %w", err))
+// 		return
+// 	}
+// 	fmt.Println("Request Body:", string(body)) // ดูข้อมูลที่รับมาจาก body
+
+// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+// 		handleError(w, fmt.Errorf("invalid request body: %w", err))
+// 		return
+// 	}
+
+// 	// รับไฟล์ภาพจากฟอร์ม
+// 	files := r.MultipartForm.File["images"] // key 'images' ใช้ในการส่งไฟล์
+// 	if len(files) == 0 {
+// 		handleError(w, fmt.Errorf("no images uploaded"))
+// 		return
+// 	}
+
+// 	// กำหนดค่า identifier
+// 	req.Identifier = identifier
+
+// 	// รับข้อมูล claims จาก JWT token
+// 	_, claims, err := jwtauth.FromContext(r.Context())
+// 	if err != nil || claims == nil {
+// 		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+// 		return
+// 	}
+
+// 	// ดึง userID จาก claims
+// 	userID, err := getUserIDFromClaims(claims)
+// 	if err != nil {
+// 		handleError(w, err)
+// 		return
+// 	}
+
+// 	// อัปโหลดไฟล์และรับเส้นทาง
+// 	filePaths := []string{}
+// 	for _, file := range files {
+// 		filePath, err := uploadImageFile(file)
+// 		if err != nil {
+// 			handleError(w, err)
+// 			return
+// 		}
+// 		filePaths = append(filePaths, filePath)
+// 	}
+
+// 	// เรียก service layer เพื่อดำเนินการ confirm
+// 	err = app.Service.BefRO.ConfirmReceipt(r.Context(), req, userID, filePaths)
+// 	if err != nil {
+// 		handleError(w, err)
+// 		return
+// 	}
+
+// 	response := res.ConfirmReceipt{
+// 		Identifier: req.Identifier,
+// 		UpdateBy:   userID,
+// 		UpdateDate: time.Now(),
+// 	}
+
+// 	handleResponse(w, true, "Trade return order confirmed successfully", response, http.StatusOK)
+// }
+
+// func uploadImageFile(file *multipart.FileHeader) (string, error) {
+// 	// กำหนดที่อยู่โฟลเดอร์ที่จะเก็บไฟล์
+// 	uploadDir := "uploads/images/"
+
+// 	// สร้างโฟลเดอร์หากยังไม่มี
+// 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+// 		return "", fmt.Errorf("failed to create upload directory: %w", err)
+// 	}
+
+// 	// สร้างชื่อไฟล์ใหม่ (เพิ่ม timestamp เพื่อหลีกเลี่ยงการซ้ำชื่อไฟล์)
+// 	timestamp := time.Now().UnixNano()
+// 	fileName := fmt.Sprintf("%d-%s", timestamp, file.Filename)
+
+// 	// สร้าง path ของไฟล์ที่จะเก็บ
+// 	filePath := filepath.Join(uploadDir, fileName)
+
+// 	// เปิดไฟล์ที่อัปโหลด
+// 	srcFile, err := file.Open()
+// 	if err != nil {
+// 		return "", fmt.Errorf("failed to open uploaded file: %w", err)
+// 	}
+// 	defer srcFile.Close()
+
+// 	// สร้างไฟล์เป้าหมายที่จะแนบไฟล์
+// 	destFile, err := os.Create(filePath)
+// 	if err != nil {
+// 		return "", fmt.Errorf("failed to create file: %w", err)
+// 	}
+// 	defer destFile.Close()
+
+// 	// คัดลอกข้อมูลจากไฟล์ต้นทางไปยังไฟล์เป้าหมาย
+// 	_, err = destFile.ReadFrom(srcFile)
+// 	if err != nil {
+// 		return "", fmt.Errorf("failed to copy file data: %w", err)
+// 	}
+
+// 	return filePath, nil
+// }
 
 // ConfirmTradeReturn godoc
 // @Summary Confirm a trade return order

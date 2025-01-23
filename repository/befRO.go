@@ -55,6 +55,7 @@ type BefRORepository interface {
 	CheckBefOrderNoExists(ctx context.Context, orderNo string) (bool, error)
 	CreateTradeReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	CreateTradeReturnLine(ctx context.Context, orderNo string, lines []request.TradeReturnLineRequest) error
+	CheckBefLineSKUExists(ctx context.Context, sku string) (bool, error)
 	// ConfirmToReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
 
 	// ************************ Search Sale Return ************************ //
@@ -67,6 +68,7 @@ type BefRORepository interface {
 	UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ReturnOrderData) error
 
 	// ************************ Confirm Trade Return ************************ //
+	InsertImages(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest, filePaths []string) error
 	InsertReturnOrderLine(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest) error
 	InsertReturnOrder(ctx context.Context, returnOrderData *response.ReturnOrderData) error
 	GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ReturnOrderData, error)
@@ -154,6 +156,7 @@ func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo stri
 }
 
 /************** Confirm To ReturnOrder ****************/
+// รวม func. UpdateStatusToSuccess + GetBeforeOrderDetails + UpdateReturnOrderAndLines + InsertReturnOrderLine in service
 
 // step 1: update status BeforeReturnOrder, เก็บค่าผู้ updateBy Date เพื่อนำไปใช้เข้าใน CreateBy Date => ReturnOrder,Line
 func (repo repositoryDB) UpdateStatusToSuccess(ctx context.Context, orderNo, updateBy string) error {
@@ -217,7 +220,9 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
                                         SET StatusCheckID = 2, --CONFIRM status
                                             SrNo = :SrNo, 
                                             UpdateBy = :UpdateBy, 
-                                            UpdateDate = :UpdateDate
+                                            UpdateDate = :UpdateDate,
+											CheckBy = :CheckBy, 
+                                            CheckDate = :CheckDate
                                         WHERE OrderNo = :OrderNo `
 			stmt, err := tx.PrepareNamed(queryUpdateReturnOrder)
 			if err != nil {
@@ -230,6 +235,8 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 				"SrNo":       head.SrNo,
 				"UpdateBy":   returnOrderData.UpdateBy,
 				"UpdateDate": returnOrderData.UpdateDate,
+				"CheckBy":    returnOrderData.UpdateBy,
+				"CheckDate":  returnOrderData.UpdateDate,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to update ReturnOrder: %w", err)
@@ -238,14 +245,15 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 
 		// Step 3: อัปเดต ReturnOrderLine
 		for _, line := range req.ImportLinesActual { // COALESCE => ฟิลด์ที่ไม่ได้ใช้จะดึงค่าเดิมมาแทน
+
 			queryUpdateReturnOrderLine := ` UPDATE ReturnOrderLine
-                                            SET COALESCE(:SKU, SKU),
-												COALESCE(:ActualQTY, ActualQTY),
-												COALESCE(:Price, Price),
-												COALESCE(:StatusDelete, StatusDelete),
-												COALESCE(:UpdateBy, UpdateBy),
-												COALESCE(:UpdateDate, UpdateDate),
-                                            WHERE OrderNo = :OrderNo AND SKU = :SKU `
+											SET SKU = COALESCE(NULLIF(:SKU, ''), SKU),
+												ActualQTY = COALESCE(NULLIF(:ActualQTY, 0), ActualQTY),
+												Price = COALESCE(NULLIF(:Price, 0), Price),
+												StatusDelete = COALESCE(NULLIF(:StatusDelete, 0), StatusDelete),
+												UpdateBy = COALESCE(:UpdateBy, UpdateBy),
+												UpdateDate = COALESCE(:UpdateDate, UpdateDate)
+											WHERE OrderNo = :OrderNo AND SKU = :SKU `
 			stmt, err := tx.PrepareNamed(queryUpdateReturnOrderLine)
 			if err != nil {
 				return fmt.Errorf("failed to prepare statement: %w", err)
@@ -269,6 +277,26 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 		// Step 4: Commit Transaction
 		return nil
 	})
+}
+
+func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, sku string) (bool, error) {
+	query := ` SELECT 1 FROM BeforeReturnOrderLine 
+			   WHERE SKU = :SKU `
+	stmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return false, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var exists int
+	err = stmt.QueryRowx(map[string]interface{}{"SKU": sku}).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, sku string) (bool, error) {
@@ -380,6 +408,34 @@ func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderD
 			_, err := tx.NamedExecContext(ctx, queryInsertLine, lineParams)
 			if err != nil {
 				return fmt.Errorf("failed to insert into ReturnOrderLine: %w", err)
+			}
+		}
+		return nil
+	})
+}
+
+// InsertImages ฟังก์ชันที่ใช้เพิ่มข้อมูลภาพลงในฐานข้อมูล
+func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest, filePaths []string) error {
+	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
+		queryInsertImage := `
+        INSERT INTO Images (
+            OrderNo, ImageTypeID, SKU, FilePath, CreateBy, CreateDate
+        ) VALUES (
+            :OrderNo, :ImageTypeID, :SKU, :FilePath, :CreateBy, :CreateDate
+        )
+    `
+		for _, line := range req.ImportLines {
+			imageParams := map[string]interface{}{
+				"OrderNo":     returnOrderData.OrderNo,
+				"ImageTypeID": line.ImageTypeID, // ใส่รหัสประเภทของภาพที่ต้องการ
+				"SKU":         line.SKU,
+				"FilePath":    filePaths, // เพิ่มไฟล์ที่อัพโหลด
+				"CreateBy":    returnOrderData.CreateBy,
+				"CreateDate":  returnOrderData.CreateDate,
+			}
+			_, err := tx.NamedExecContext(ctx, queryInsertImage, imageParams)
+			if err != nil {
+				return fmt.Errorf("failed to insert into Images: %w", err)
 			}
 		}
 		return nil

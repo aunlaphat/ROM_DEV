@@ -92,8 +92,8 @@ type TradeReturnLineRequest struct {
 	//TrackingNo string  `json:"trackingNo" db:"TrackingNo"`	// add form data BeforeReturnOrder
 	CreateBy   string  `json:"-" db:"CreateBy" `		    // from user login
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
-	// FilePath    string `json:"filePath" db:"FilePath" validate:"required"`
-	// ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID" validate:"required"`
+	FilePath    string `json:"filePath" db:"FilePath" validate:"required"`
+	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID" validate:"required"`
 }
 
 type Image struct {

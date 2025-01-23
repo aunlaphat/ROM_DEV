@@ -387,6 +387,12 @@ definitions:
     type: object
   request.TradeReturnLineRequest:
     properties:
+      filePath:
+        description: CreateDate *time.Time `json:"createDate" db:"CreateDate"` //
+          MSSQL GetDate()
+        type: string
+      imageTypeID:
+        type: integer
       itemName:
         type: string
       price:
@@ -398,6 +404,8 @@ definitions:
       sku:
         type: string
     required:
+    - filePath
+    - imageTypeID
     - itemName
     - price
     - qty
@@ -539,10 +547,6 @@ definitions:
     properties:
       identifier:
         type: string
-      images:
-        items:
-          $ref: '#/definitions/response.ImageResponse'
-        type: array
       updateBy:
         type: string
       updateDate:
@@ -582,13 +586,6 @@ definitions:
         items:
           $ref: '#/definitions/response.UpdateToReturn'
         type: array
-    type: object
-  response.ImageResponse:
-    properties:
-      filePath:
-        type: string
-      imageID:
-        type: integer
     type: object
   response.ImportLinesActual:
     properties:

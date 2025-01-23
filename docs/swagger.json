@@ -2906,6 +2906,8 @@
         "request.TradeReturnLineRequest": {
             "type": "object",
             "required": [
+                "filePath",
+                "imageTypeID",
                 "itemName",
                 "price",
                 "qty",
@@ -2913,6 +2915,13 @@
                 "sku"
             ],
             "properties": {
+                "filePath": {
+                    "description": "CreateDate *time.Time `json:\"createDate\" db:\"CreateDate\"` // MSSQL GetDate()",
+                    "type": "string"
+                },
+                "imageTypeID": {
+                    "type": "integer"
+                },
                 "itemName": {
                     "type": "string"
                 },
@@ -3129,12 +3138,6 @@
                 "identifier": {
                     "type": "string"
                 },
-                "images": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.ImageResponse"
-                    }
-                },
                 "updateBy": {
                     "type": "string"
                 },
@@ -3193,17 +3196,6 @@
                     "items": {
                         "$ref": "#/definitions/response.UpdateToReturn"
                     }
-                }
-            }
-        },
-        "response.ImageResponse": {
-            "type": "object",
-            "properties": {
-                "filePath": {
-                    "type": "string"
-                },
-                "imageID": {
-                    "type": "integer"
                 }
             }
         },

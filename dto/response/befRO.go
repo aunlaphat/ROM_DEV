@@ -134,7 +134,7 @@ type ConfirmReceipt struct {
 	Identifier string    `json:"identifier"`
 	UpdateBy   string    `json:"updateBy" db:"UpdateBy"`
 	UpdateDate time.Time `json:"updateDate" db:"UpdateDate"`
-	Images     []ImageResponse `json:"images"` 
+	// Images     []ImageResponse `json:"images"`
 }
 
 type ConfirmReturnResponse struct {
@@ -162,4 +162,7 @@ type ReturnOrderData struct {
 	UpdateBy      string `db:"UpdateBy"`
 	UpdateDate    string `db:"UpdateDate"`
 	StatusCheckID int    `db:"StatusCheckID"`
+	// ActualQTY     int    `db:"ActualQTY"`
+	// Price         float64 `db:"Price"`
+	// StatusDelete  bool `db:"StatusDelete"`
 }

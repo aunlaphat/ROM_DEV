@@ -2913,6 +2913,8 @@ const docTemplate = `{
         "request.TradeReturnLineRequest": {
             "type": "object",
             "required": [
+                "filePath",
+                "imageTypeID",
                 "itemName",
                 "price",
                 "qty",
@@ -2920,6 +2922,13 @@ const docTemplate = `{
                 "sku"
             ],
             "properties": {
+                "filePath": {
+                    "description": "CreateDate *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
+                    "type": "string"
+                },
+                "imageTypeID": {
+                    "type": "integer"
+                },
                 "itemName": {
                     "type": "string"
                 },
@@ -3136,12 +3145,6 @@ const docTemplate = `{
                 "identifier": {
                     "type": "string"
                 },
-                "images": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.ImageResponse"
-                    }
-                },
                 "updateBy": {
                     "type": "string"
                 },
@@ -3200,17 +3203,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/response.UpdateToReturn"
                     }
-                }
-            }
-        },
-        "response.ImageResponse": {
-            "type": "object",
-            "properties": {
-                "filePath": {
-                    "type": "string"
-                },
-                "imageID": {
-                    "type": "integer"
                 }
             }
         },
