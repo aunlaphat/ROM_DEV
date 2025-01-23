@@ -19,6 +19,9 @@ type UserService interface {
 	GetUser(ctx context.Context, req request.LoginWeb) (response.Login, error)
 	GetUserFromLark(ctx context.Context, username, password string) (response.Login, error)
 	GetUserWithPermission(ctx context.Context, req request.LoginLark) (response.UserPermission, error)
+	/* 	AddUser(ctx context.Context, user request.User) error
+	   	EditUser(ctx context.Context, user request.User) error
+	   	DeleteUser(ctx context.Context, userID string) error */
 }
 
 func (srv service) Login(req request.LoginWeb) (response.Login, error) {
@@ -149,3 +152,19 @@ func (srv service) GetUserWithPermission(ctx context.Context, req request.LoginL
 	srv.logger.Debug("✅ Successfully retrieved user with permission", zap.String("username", req.UserID))
 	return user, nil
 }
+
+/* // AddUser adds a new user to the database
+func (srv service) AddUser(ctx context.Context, user request.User) error {
+	return srv.userRepo.AddUser(ctx, user)
+}
+
+// EditUser updates the role and warehouse of an existing user
+func (srv service) EditUser(ctx context.Context, user request.User) error {
+	return srv.userRepo.EditUser(ctx, user)
+}
+
+// DeleteUser removes a user from the database
+func (srv service) DeleteUser(ctx context.Context, userID string) error {
+	return srv.userRepo.DeleteUser(ctx, userID)
+}
+*/

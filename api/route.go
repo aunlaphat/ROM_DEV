@@ -62,7 +62,7 @@ func (app *Application) routes() http.Handler {
 	app.Constants(apiRouter)
 	app.Excels(apiRouter)
 	app.UserRoute(apiRouter)
-	app.BefRORoute(apiRouter)
+	app.BeforeReturnRoute(apiRouter)
 
 	router.Mount("/api", apiRouter)
 	return router
