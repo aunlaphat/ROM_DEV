@@ -67,7 +67,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 // @Failure 500 {object} api.Response
 // @Router /before-return-order/list-orders [get]
 func (app *Application) ListBeforeReturnOrders(w http.ResponseWriter, r *http.Request) {
-	result, err := app.Service.BefRO.ListBeforeReturnOrders(r.Context())
+	result, err := app.Service.BeforeReturn.ListBeforeReturnOrders(r.Context())
 	if err != nil {
 		handleError(w, err)
 		return
@@ -107,7 +107,7 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 		return
 	}
 
-	result, err := app.Service.BefRO.CreateBeforeReturnOrderWithLines(r.Context(), req)
+	result, err := app.Service.BeforeReturn.CreateBeforeReturnOrderWithLines(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -148,7 +148,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 
 	req.OrderNo = orderNo
 
-	result, err := app.Service.BefRO.UpdateBeforeReturnOrderWithLines(r.Context(), req)
+	result, err := app.Service.BeforeReturn.UpdateBeforeReturnOrderWithLines(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -180,7 +180,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Router /before-return-order/{orderNo} [get]
 func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	result, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
+	result, err := app.Service.BeforeReturn.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -210,7 +210,7 @@ func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *
 // @Failure 500 {object} api.Response
 // @Router /before-return-order/list-lines [get]
 func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *http.Request) {
-	result, err := app.Service.BefRO.ListBeforeReturnOrderLines(r.Context())
+	result, err := app.Service.BeforeReturn.ListBeforeReturnOrderLines(r.Context())
 	if err != nil {
 		handleError(w, err)
 		return
@@ -240,7 +240,7 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 // @Router /before-return-order/line/{orderNo} [get]
 func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	result, err := app.Service.BefRO.GetBeforeReturnOrderLineByOrderNo(r.Context(), orderNo)
+	result, err := app.Service.BeforeReturn.GetBeforeReturnOrderLineByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -294,7 +294,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call service layer with error handling
-	result, err := app.Service.BefRO.SearchOrder(r.Context(), soNo, orderNo)
+	result, err := app.Service.BeforeReturn.SearchOrder(r.Context(), soNo, orderNo)
 	if err != nil {
 		app.Logger.Error("Failed to search order",
 			zap.Error(err),
@@ -371,7 +371,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	req.CreateBy = userID
 
 	// 4. Call service
-	result, err := app.Service.BefRO.CreateSaleReturn(r.Context(), req)
+	result, err := app.Service.BeforeReturn.CreateSaleReturn(r.Context(), req)
 	if err != nil {
 		app.Logger.Error("Failed to create sale return",
 			zap.Error(err),
@@ -441,7 +441,7 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 3. ตรวจสอบว่า order มีอยู่จริง
-	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
+	existingOrder, err := app.Service.BeforeReturn.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -465,7 +465,7 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// เรียกใช้ service พร้อมส่ง userID
-	err = app.Service.BefRO.UpdateSaleReturn(r.Context(), orderNo, req.SrNo, userID)
+	err = app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), orderNo, req.SrNo, userID)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -516,7 +516,7 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 	}
 
 	// 4. เรียกใช้ service layer เพื่อดำเนินการ confirm
-	err = app.Service.BefRO.ConfirmSaleReturn(r.Context(), orderNo, userID)
+	err = app.Service.BeforeReturn.ConfirmSaleReturn(r.Context(), orderNo, userID)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -554,7 +554,7 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 2. ตรวจสอบว่า order มีอยู่จริง
-	existingOrder, err := app.Service.BefRO.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
+	existingOrder, err := app.Service.BeforeReturn.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
 	if err != nil || existingOrder == nil {
 		handleResponse(w, false, "⚠️ Order not found ⚠️", nil, http.StatusNotFound)
 		return
@@ -588,7 +588,7 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 7. เรียกใช้ service
-	err = app.Service.BefRO.CancelSaleReturn(r.Context(), orderNo, userID, req.Remark)
+	err = app.Service.BeforeReturn.CancelSaleReturn(r.Context(), orderNo, userID, req.Remark)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -621,7 +621,7 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Router /draft-confirm/list-drafts [get]
 func (app *Application) ListDraftOrders(w http.ResponseWriter, r *http.Request) {
 	// Call service layer with error handling
-	result, err := app.Service.BefRO.ListDraftOrders(r.Context())
+	result, err := app.Service.BeforeReturn.ListDraftOrders(r.Context())
 	if err != nil {
 		app.Logger.Error("🚨 Failed to list draft orders 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
@@ -659,7 +659,7 @@ func (app *Application) ListDraftOrders(w http.ResponseWriter, r *http.Request) 
 // @Router /draft-confirm/list-confirms [get]
 func (app *Application) ListConfirmOrders(w http.ResponseWriter, r *http.Request) {
 	// Call service layer with error handling
-	result, err := app.Service.BefRO.ListConfirmOrders(r.Context())
+	result, err := app.Service.BeforeReturn.ListConfirmOrders(r.Context())
 	if err != nil {
 		app.Logger.Error("🚨 Failed to list confirm orders 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
@@ -696,7 +696,7 @@ func (app *Application) ListConfirmOrders(w http.ResponseWriter, r *http.Request
 // @Router /draft-confirm/list-code-r [get]
 func (app *Application) ListCodeR(w http.ResponseWriter, r *http.Request) {
 	// Call service layer with error handling
-	result, err := app.Service.BefRO.ListCodeR(r.Context())
+	result, err := app.Service.BeforeReturn.ListCodeR(r.Context())
 	if err != nil {
 		app.Logger.Error("🚨 Failed to get all CodeR 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
@@ -742,7 +742,7 @@ func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
 	// Set CreateBy from claims
 	req.CreateBy = userID
 
-	result, err := app.Service.BefRO.AddCodeR(r.Context(), req)
+	result, err := app.Service.BeforeReturn.AddCodeR(r.Context(), req)
 	if err != nil {
 		app.Logger.Error("🚨 Failed to add CodeR 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
@@ -773,7 +773,7 @@ func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := app.Service.BefRO.DeleteCodeR(r.Context(), orderNo, sku)
+	err := app.Service.BeforeReturn.DeleteCodeR(r.Context(), orderNo, sku)
 	if err != nil {
 		app.Logger.Error("🚨 Failed to delete CodeR 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
@@ -797,7 +797,7 @@ func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
 // @Router /draft-confirm/detail/{orderNo} [get]
 func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	result, err := app.Service.BefRO.GetDraftConfirmOrderByOrderNo(r.Context(), orderNo)
+	result, err := app.Service.BeforeReturn.GetDraftConfirmOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -848,14 +848,14 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = app.Service.BefRO.UpdateDraftOrder(r.Context(), orderNo, userID)
+	err = app.Service.BeforeReturn.UpdateDraftOrder(r.Context(), orderNo, userID)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
 	// Fetch updated order details
-	result, err := app.Service.BefRO.GetDraftConfirmOrderByOrderNo(r.Context(), orderNo)
+	result, err := app.Service.BeforeReturn.GetDraftConfirmOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return

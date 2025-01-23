@@ -11,12 +11,12 @@ type service struct {
 	userRepo  repository.UserRepository //Repository of service
 	logger    logs.Logger               //Logger of service
 	constant  repository.Constants
-	befRORepo repository.BefRORepository
+	beforeReturnRepo repository.BeforeReturnRepository
 }
 type AllOfService struct {
 	User     UserService
 	Constant Constants
-	BefRO    BefROService
+	BeforeReturn BeforeReturnService
 }
 
 func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
@@ -25,22 +25,11 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		userRepo:  repo,
 		logger:    logger,
 		constant:  repo,
-		befRORepo: repo,
+		beforeReturnRepo: repo,
 	}
 	return AllOfService{
 		User:     srv,
 		Constant: srv,
-		BefRO:    srv,
+		BeforeReturn:    srv,
 	}
 }
-
-/* type Login struct {
-	UserID       string `json:"userID"`
-	RoleID       int    `json:"roleID"`
-	PermissionID string `json:"permissionID"`
-	DeptNo       string `json:"deptNo"`
-	NickName     string `json:"nickName"`
-	FullNameTH   string `json:"fullNameTH"`
-	FullNameEN   string `json:"fullNameEN"`
-	Platfrom     string `json:"platfrom"`
-} */
