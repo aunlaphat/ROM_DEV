@@ -1,6 +1,8 @@
 package api
 
 import (
+	"boilerplate-backend-go/dto/request"
+	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -9,8 +11,8 @@ import (
 // UserRoute defines the routes for user operations
 func (app *Application) UserRoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/user", func(r chi.Router) {
-		r.Get("/get-user", app.GetUser) // New route for getting user
-		r.Get("/get-user-with-permission", app.GetUserWithPermission)
+		r.Post("/get-user", app.GetUser)
+		r.Post("/get-user-with-permission", app.GetUserWithPermission)
 	})
 }
 
@@ -21,23 +23,25 @@ func (app *Application) UserRoute(apiRouter *chi.Mux) {
 // @Tags User
 // @Accept json
 // @Produce json
-// @Param username query string true "Username"
-// @Param password query string true "Password"
+// @Param LoginWeb body request.LoginWeb true "User login credentials in JSON format"
 // @Success 200 {object} api.Response{data=response.Login} "User retrieved successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 404 {object} api.Response "User not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /user/get-user [get]
+// @Router /user/get-user [post]
 func (app *Application) GetUser(w http.ResponseWriter, r *http.Request) {
-	username := r.URL.Query().Get("username")
-	password := r.URL.Query().Get("password")
+	var req request.LoginWeb
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
 
-	if username == "" || password == "" {
+	if req.UserName == "" || req.Password == "" {
 		http.Error(w, "Username and password are required", http.StatusBadRequest)
 		return
 	}
 
-	user, err := app.Service.User.GetUser(r.Context(), username, password)
+	user, err := app.Service.User.GetUser(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -53,23 +57,25 @@ func (app *Application) GetUser(w http.ResponseWriter, r *http.Request) {
 // @Tags User
 // @Accept json
 // @Produce json
-// @Param username query string true "Username"
-// @Param password query string true "Password"
+// @Param login body request.LoginLark true "User login credentials in JSON format"
 // @Success 200 {object} api.Response{data=response.UserPermission} "User with permissions retrieved successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 404 {object} api.Response "User not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /user/get-user-with-permission [get]
+// @Router /user/get-user-with-permission [post]
 func (app *Application) GetUserWithPermission(w http.ResponseWriter, r *http.Request) {
-	username := r.URL.Query().Get("username")
-	password := r.URL.Query().Get("password")
+	var req request.LoginLark
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
 
-	if username == "" || password == "" {
+	if req.UserID == "" || req.UserName == "" {
 		http.Error(w, "Username and password are required", http.StatusBadRequest)
 		return
 	}
 
-	user, err := app.Service.User.GetUserWithPermission(r.Context(), username, password)
+	user, err := app.Service.User.GetUserWithPermission(r.Context(), req)
 	if err != nil {
 		handleError(w, err)
 		return

@@ -16,9 +16,9 @@ import (
 type UserService interface {
 	Login(req request.LoginWeb) (response.Login, error)
 	LoginLark(req request.LoginLark) (response.Login, error)
-	GetUser(ctx context.Context, username, password string) (response.Login, error)
+	GetUser(ctx context.Context, req request.LoginWeb) (response.Login, error)
 	GetUserFromLark(ctx context.Context, username, password string) (response.Login, error)
-	GetUserWithPermission(ctx context.Context, username, password string) (response.UserPermission, error)
+	GetUserWithPermission(ctx context.Context, req request.LoginLark) (response.UserPermission, error)
 }
 
 func (srv service) Login(req request.LoginWeb) (response.Login, error) {
@@ -93,14 +93,14 @@ func (srv service) LoginLark(req request.LoginLark) (response.Login, error) {
 	return user, nil
 }
 
-func (srv service) GetUser(ctx context.Context, username, password string) (response.Login, error) {
+func (srv service) GetUser(ctx context.Context, req request.LoginWeb) (response.Login, error) {
 	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "GetUser", zap.String("username", username))
+	logFinish := srv.logger.LogAPICall(ctx, "GetUser", zap.String("username", req.UserName))
 	defer logFinish("Completed", nil)
 
-	srv.logger.Debug("🚀 Starting GetUser", zap.String("username", username))
+	srv.logger.Debug("🚀 Starting GetUser", zap.String("username", req.UserName))
 
-	user, err := srv.userRepo.GetUser(ctx, username, password)
+	user, err := srv.userRepo.GetUser(ctx, req.UserName, req.Password)
 	if err != nil {
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to get user", zap.Error(err))
@@ -108,7 +108,7 @@ func (srv service) GetUser(ctx context.Context, username, password string) (resp
 	}
 
 	logFinish("Success", nil)
-	srv.logger.Debug("✅ Successfully retrieved user", zap.String("username", username))
+	srv.logger.Debug("✅ Successfully retrieved user", zap.String("username", req.UserName))
 	return user, nil
 }
 
@@ -131,14 +131,14 @@ func (srv service) GetUserFromLark(ctx context.Context, userID, username string)
 	return user, nil
 }
 
-func (srv service) GetUserWithPermission(ctx context.Context, username, password string) (response.UserPermission, error) {
+func (srv service) GetUserWithPermission(ctx context.Context, req request.LoginLark) (response.UserPermission, error) {
 	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "GetUserWithPermission", zap.String("username", username))
+	logFinish := srv.logger.LogAPICall(ctx, "GetUserWithPermission", zap.String("username", req.UserID))
 	defer logFinish("Completed", nil)
 
-	srv.logger.Debug("🚀 Starting GetUserWithPermission", zap.String("username", username))
+	srv.logger.Debug("🚀 Starting GetUserWithPermission", zap.String("username", req.UserID))
 
-	user, err := srv.userRepo.GetUserWithPermission(ctx, username, password)
+	user, err := srv.userRepo.GetUserWithPermission(ctx, req.UserID, req.UserName)
 	if err != nil {
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to get user with permission", zap.Error(err))
@@ -146,6 +146,6 @@ func (srv service) GetUserWithPermission(ctx context.Context, username, password
 	}
 
 	logFinish("Success", nil)
-	srv.logger.Debug("✅ Successfully retrieved user with permission", zap.String("username", username))
+	srv.logger.Debug("✅ Successfully retrieved user with permission", zap.String("username", req.UserID))
 	return user, nil
 }

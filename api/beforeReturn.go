@@ -16,7 +16,7 @@ import (
 )
 
 // ReturnOrderRoute defines the routes for return order operations
-func (app *Application) BefRORoute(apiRouter *chi.Mux) {
+func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/before-return-order", func(r chi.Router) {
 		r.Get("/list-orders", app.ListBeforeReturnOrders)
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
@@ -46,7 +46,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 
 		// Draft
 		r.Get("/list-drafts", app.ListDraftOrders)
-		r.Get("/code-r", app.ListCodeR)
+		r.Get("/list-code-r", app.ListCodeR)
 		r.Post("/code-r", app.AddCodeR)
 		r.Delete("/code-r/{orderNo}/{sku}", app.DeleteCodeR)
 		r.Put("/update-draft/{orderNo}", app.UpdateDraftOrder)
