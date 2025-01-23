@@ -1918,22 +1918,18 @@ paths:
       tags:
       - Sale Return
   /user/get-user:
-    get:
+    post:
       consumes:
       - application/json
       description: Retrieve the details of a user by their username and password
       operationId: get-user
       parameters:
-      - description: Username
-        in: query
-        name: username
+      - description: User login credentials in JSON format
+        in: body
+        name: LoginWeb
         required: true
-        type: string
-      - description: Password
-        in: query
-        name: password
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/request.LoginWeb'
       produces:
       - application/json
       responses:
@@ -1962,23 +1958,19 @@ paths:
       tags:
       - User
   /user/get-user-with-permission:
-    get:
+    post:
       consumes:
       - application/json
       description: Retrieve the details of a user with permissions by their username
         and password
       operationId: get-user-with-permission
       parameters:
-      - description: Username
-        in: query
-        name: username
+      - description: User login credentials in JSON format
+        in: body
+        name: login
         required: true
-        type: string
-      - description: Password
-        in: query
-        name: password
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/request.LoginLark'
       produces:
       - application/json
       responses:

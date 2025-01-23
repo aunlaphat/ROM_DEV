@@ -2058,7 +2058,7 @@ const docTemplate = `{
             }
         },
         "/user/get-user": {
-            "get": {
+            "post": {
                 "description": "Retrieve the details of a user by their username and password",
                 "consumes": [
                     "application/json"
@@ -2073,18 +2073,13 @@ const docTemplate = `{
                 "operationId": "get-user",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Username",
-                        "name": "username",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Password",
-                        "name": "password",
-                        "in": "query",
-                        "required": true
+                        "description": "User login credentials in JSON format",
+                        "name": "LoginWeb",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.LoginWeb"
+                        }
                     }
                 ],
                 "responses": {
@@ -2128,7 +2123,7 @@ const docTemplate = `{
             }
         },
         "/user/get-user-with-permission": {
-            "get": {
+            "post": {
                 "description": "Retrieve the details of a user with permissions by their username and password",
                 "consumes": [
                     "application/json"
@@ -2143,18 +2138,13 @@ const docTemplate = `{
                 "operationId": "get-user-with-permission",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Username",
-                        "name": "username",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Password",
-                        "name": "password",
-                        "in": "query",
-                        "required": true
+                        "description": "User login credentials in JSON format",
+                        "name": "login",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.LoginLark"
+                        }
                     }
                 ],
                 "responses": {
