@@ -12,16 +12,16 @@ import (
 	"github.com/go-chi/jwtauth"
 )
 
+// กำหนดเส้นทางสำหรับการตรวจสอบสิทธิ์
 func (app *Application) AuthRoute(apiRouter *chi.Mux) {
-
 	apiRouter.Route("/auth", func(r chi.Router) {
-		r.Post("/login", app.Login)
-		r.Post("/login-lark", app.LoginFromLark)
+		r.Post("/login", app.Login)              // สำหรับ login
+		r.Post("/login-lark", app.LoginFromLark) // สำหรับ login ผ่าน Lark
 		r.Group(func(router chi.Router) {
-			router.Use(jwtauth.Verifier(app.TokenAuth))
-			router.Use(jwtauth.Authenticator)
-			router.Get("/", app.CheckAuthen)
-			router.Post("/logout", app.Logout)
+			router.Use(jwtauth.Verifier(app.TokenAuth)) // middleware ตรวจสอบ token
+			router.Use(jwtauth.Authenticator)           // middleware ยืนยันตัวตน
+			router.Get("/", app.CheckAuthen)            // ตรวจสอบสถานะการ authentication
+			router.Post("/logout", app.Logout)          // สำหรับ logout
 		})
 	})
 }
@@ -29,15 +29,19 @@ func (app *Application) AuthRoute(apiRouter *chi.Mux) {
 var contentType = "content-type"
 var appJson = "application/json"
 
-// Generate JWT token with username's payload
+// สร้าง JWT token โดยใช้ข้อมูลผู้ใช้
 func (app *Application) GenerateToken(tokenData res.Login) string {
+	// สร้าง claims (ข้อมูลที่จะเก็บใน token)
 	data := map[string]interface{}{
 		"userID":     tokenData.UserID,
+		"userName":   tokenData.UserName,
 		"roleID":     tokenData.RoleID,
-		"nickName":   tokenData.NickName,
 		"fullNameTH": tokenData.FullNameTH,
-		"plateform":  tokenData.Platform,
+		"nickName":   tokenData.NickName,
+		"department": tokenData.DepartmentNo,
+		"platform":   tokenData.Platform,
 	}
+	// สร้างและเข้ารหัส token
 	_, tokenString, _ := app.TokenAuth.Encode(data)
 	return tokenString
 }
@@ -53,11 +57,15 @@ func (app *Application) GenerateToken(tokenData res.Login) string {
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /auth/login [post]
+// จัดการการเข้าสู่ระบบของผู้ใช้และสร้าง JWT token
 func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
+	// 1. ตรวจสอบ content-type
 	if r.Header.Get(contentType) != appJson {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
+
+	// 2. รับข้อมูล login จาก request body
 	req := req.LoginWeb{}
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -65,21 +73,28 @@ func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 3. เรียกใช้ service เพื่อตรวจสอบ credentials
 	user, err := app.Service.User.Login(req)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 	tokenData := res.Login{
-		UserID:     user.UserID,
-		RoleID:     user.RoleID,
-		NickName:   user.NickName,
-		FullNameTH: user.FullNameTH,
-		Platform:   user.Platform,
+		UserID:       user.UserID,
+		UserName:     user.UserName,
+		RoleID:       user.RoleID,
+		FullNameTH:   user.FullNameTH,
+		NickName:     user.NickName,
+		DepartmentNo: user.DepartmentNo,
+		Platform:     user.Platform,
 	}
-	fmt.Println("token data", tokenData)
+	//fmt.Println("token data", tokenData)
+
+	// 4. สร้าง JWT token จากข้อมูลผู้ใช้ (claims) -> func GenerateToken
 	token := app.GenerateToken(tokenData)
 	fmt.Println("token: ", token)
+
+	// 5. ตั้งค่า cookie ที่มี token
 	http.SetCookie(w, &http.Cookie{
 		HttpOnly: false,
 		Expires:  time.Now().Add(4 * time.Hour), //4 hours life
@@ -88,6 +103,7 @@ func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 	})
+	// 6. ส่ง response กลับ
 	handleResponse(w, true, "login Success", token, http.StatusOK)
 }
 
@@ -102,6 +118,7 @@ func (app *Application) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /auth/login-lark [post]
+// จัดการการเข้าสู่ระบบจาก Lark และสร้าง JWT token
 func (app *Application) LoginFromLark(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("content-type") != "application/json" {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -120,13 +137,18 @@ func (app *Application) LoginFromLark(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tokenData := res.Login{
-		UserID:     user.UserID,
-		RoleID:     user.RoleID,
-		NickName:   user.NickName,
-		FullNameTH: user.FullNameTH,
-		Platform:   user.Platform,
+		UserID:       user.UserID,
+		UserName:     user.UserName,
+		RoleID:       user.RoleID,
+		FullNameTH:   user.FullNameTH,
+		NickName:     user.NickName,
+		DepartmentNo: user.DepartmentNo,
+		Platform:     user.Platform,
 	}
+	//fmt.Println("token data", tokenData)
+
 	token := app.GenerateToken(tokenData)
+	fmt.Println("token: ", token)
 
 	http.SetCookie(w, &http.Cookie{
 		HttpOnly: false,
@@ -151,16 +173,16 @@ func (app *Application) LoginFromLark(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} Response{result=string} "Logout successful"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /auth/logout [post]
+// จัดการการออกจากระบบของผู้ใช้โดยการลบ JWT token
 func (app *Application) Logout(w http.ResponseWriter, r *http.Request) {
+	// ลบ cookie โดยการตั้ง MaxAge เป็นค่าลบ
 	http.SetCookie(w, &http.Cookie{
 		HttpOnly: true,
-		MaxAge:   -1, // Delete the cookie.
+		MaxAge:   -1, // ลบ cookie
 		SameSite: http.SameSiteLaxMode,
 		Name:     "jwt",
 		Value:    "",
 	})
-	handleResponse(w, true, "login Success", "None", http.StatusOK)
-
 }
 
 // @Summary Check Authentication
@@ -173,8 +195,11 @@ func (app *Application) Logout(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} Response "Unauthorized"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /auth [get]
+// ตรวจสอบว่าผู้ใช้ได้รับการตรวจสอบสิทธิ์แล้วหรือไม่
 func (app *Application) CheckAuthen(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Context())
+	// ดึง claims จาก context (ถูกเพิ่มโดย middleware)
 	_, claims, _ := jwtauth.FromContext(r.Context())
+
+	// ส่ง claims กลับเพื่อแสดงข้อมูลผู้ใช้
 	handleResponse(w, true, "Checked", claims, http.StatusOK)
 }

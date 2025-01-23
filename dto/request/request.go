@@ -1,25 +1,24 @@
 // ส่งข้อมูลเข้ามาด้านหลัง
 package request
 
-/********** Login ***************/
+/*
+type Login struct {
+	UserID   string `json:"userID" db:"UserID" example:"DC65060"`
+	Password string `json:"password" db:"Password" example:"xxxxxxxx"`
+}
 
 type LoginWeb struct {
-	UserName string `json:"userName" db:"userID" example:"eknarin"`
-	Password string `json:"password," db:"password" example:"asdfhdskjf"`
+	UserName string `json:"userName" db:"Username" example:"eknarin.ler"`
+	Password string `json:"password" db:"Password" example:"xxxxxxxx"`
 }
 
 type LoginLark struct {
-	UserName string `json:"userName" db:"userName" example:"eknarin"`
-	UserID   string `json:"userID" db:"userID" example:"DC99999"`
-}
-
-type Login struct {
-	UserID string `json:"userID" db:"UserID" example:"DC53002"`
-	Password string `json:"password," db:"Password" example:"string"`
+	UserID   string `json:"userID" db:"userID" example:"DC65060"`
+	UserName string `json:"userName" db:"userName" example:"eknarin.ler"`
 }
 
 type LoginJWT struct {
-	UserID string `json:"userID" db:"UserID" example:"DC53002"`
+	UserID   string `json:"userID" db:"UserID" example:"DC53002"`
 	UserName string `json:"userName" db:"Username" example:"string"`
 }
 

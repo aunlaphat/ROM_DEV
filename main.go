@@ -13,9 +13,9 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// @title Boilerplate Service
+// @title Return Order Management Service API ⭐
 // @version 1.0
-// @description This is a sample server for Boilerplate project .
+// @description This is a Return Order Management Service API server.
 // contact.name API Support
 
 // @BasePath /api
@@ -26,15 +26,17 @@ func main() {
 	if err != nil {
 		log.Fatalln("failed to load .env file: " + err.Error())
 	}
+
 	//Flag variable
-	logger, logClose, err := logs.NewLogger("./uploads/error/error.log", 1, 1, 7)
+	serviceName := "RETURN ORDER MANAGEMENT SERVICE"
+	logger, logClose, err := logs.NewLogger(serviceName, "./uploads/error/error.log", 1, 1, 7)
 	defer logClose()
 	if err != nil {
 		panic(err)
 	}
 
 	//Instance logger of service
-	logger.Info("BOILERPLATE SERVICE")
+	logger.Info(serviceName + " is starting... 🪂 ")
 
 	utils.LoadConfig()
 

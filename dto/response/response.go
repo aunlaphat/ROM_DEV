@@ -5,15 +5,15 @@ import "time"
 
 /********** Login ***************/
 
-type Login struct {
+/* type Login struct {
+	UserID       string `json:"userID,omitempty" db:"UserID" example:"DC-XXXXX"`
 	UserName     string `json:"userName,omitempty" db:"UserName" example:"userName"`
-	UserID       string `json:"userID,omitempty" db:"UserID" example:"userID"`
-	RoleID       int    `json:"roleID,omitempty" db:"RoleID" example:"1"`
-	FullNameTH   string `json:"fullNameTH,omitempty" db:"FullNameTH" example:"test1234"`
-	NickName     string `json:"nickName,omitempty" db:"NickName" example:"test1234"`
+	RoleID       int    `json:"roleID,omitempty" db:"RoleID" example:"0"`
+	FullNameTH   string `json:"fullNameTH,omitempty" db:"FullNameTH" example:"Firstname Lastname"`
+	NickName     string `json:"nickName,omitempty" db:"NickName" example:"Nickname"`
 	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo" example:"G07"`
-	Platform     string `json:"platform" db:"Platform" example:"test1234"`
-}
+	Platform     string `json:"platform" db:"Platform" example:"Platform"`
+} */
 
 type UserInform struct {
 	UserID       string `json:"userID,omitempty" db:"UserID" example:"DC64205"`

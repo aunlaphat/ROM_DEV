@@ -218,66 +218,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/before-return-order/add-line/{orderNo}": {
-            "post": {
-                "description": "Add a new trade return line based on the provided order number and line details",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Trade Return"
-                ],
-                "summary": "Add a new trade return line to an existing order",
-                "operationId": "add-trade-return-line",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Order number",
-                        "name": "orderNo",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Trade Return Line Details",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.TradeReturnLineRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Trade return line created successfully",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request - Invalid input or missing required fields",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found - Order not found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/before-return-order/create": {
             "post": {
                 "description": "Create a new return order with the provided details",
@@ -312,318 +252,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/before-return-order/create-trade": {
-            "post": {
-                "description": "Create a new trade return order with multiple order lines",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Trade Return"
-                ],
-                "summary": "Create a new trade return order",
-                "operationId": "create-trade-return",
-                "parameters": [
-                    {
-                        "description": "Trade Return Detail",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.BeforeReturnOrder"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Trade return created successfully",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request - Invalid input or missing required fields",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found - Order not found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/before-return-order/delete-befodline/{recID}": {
-            "delete": {
-                "description": "Delete an order line",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Before Return Order"
-                ],
-                "summary": "Delete Order line",
-                "operationId": "delete-BeforeReturnOrderLine",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Rec ID",
-                        "name": "recID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Before ReturnOrderLine Deleted",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Order Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/before-return-order/get-order": {
-            "get": {
-                "description": "Get all Before Return Order",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Before Return Order"
-                ],
-                "summary": "Get Before Return Order",
-                "operationId": "Allget-BefReturnOrder",
-                "responses": {
-                    "200": {
-                        "description": "Get All",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/response.OrderDetail"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "not found endpoint",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/before-return-order/get-orderbySO/{soNo}": {
-            "get": {
-                "description": "Get details of an order by its SO number",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Before Return Order"
-                ],
-                "summary": "Get Before Return Order by SO",
-                "operationId": "GetBySO-BefReturnOrder",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "soNo",
-                        "name": "soNo",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Get by SO",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/response.OrderDetail"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "not found endpoint",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/before-return-order/get-orders": {
-            "get": {
-                "description": "Get all Before Return Order with pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Before Return Order"
-                ],
-                "summary": "Get Paginated Before Return Order",
-                "operationId": "Get-BefReturnOrder-Paginated",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 10,
-                        "description": "Page size",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Get Paginated Orders",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/response.OrderDetail"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -748,53 +376,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/before-return-order/search/{soNo}": {
-            "get": {
-                "description": "Retrieve the details of a sale order by its SO number",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Search Sale Order"
-                ],
-                "summary": "Search sale order by SO number",
-                "operationId": "search-sale-order",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SO number",
-                        "name": "soNo",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/before-return-order/update/{orderNo}": {
-            "patch": {
+            "put": {
                 "description": "Update an existing return order with the provided details",
                 "consumes": [
                     "application/json"
@@ -1236,6 +819,402 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "SubDistrict not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/code-r": {
+            "post": {
+                "description": "Add a new CodeR entry",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Add CodeR",
+                "operationId": "add-code-r",
+                "parameters": [
+                    {
+                        "description": "CodeR details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CodeRRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "CodeR added successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.DraftLineResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/code-r/{orderNo}/{sku}": {
+            "delete": {
+                "description": "Delete a CodeR entry by SKU and OrderNo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Delete CodeR",
+                "operationId": "delete-code-r",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU",
+                        "name": "sku",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CodeR deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/detail/{orderNo}": {
+            "get": {
+                "description": "Retrieve the details of a specific draft order by its order number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Get draft order by order number",
+                "operationId": "get-draft-order-by-order-no",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Draft order retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.DraftHeadResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/list-code-r": {
+            "get": {
+                "description": "Retrieve a list of all codeR",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "List all CodeR",
+                "operationId": "list-code-r",
+                "responses": {
+                    "200": {
+                        "description": "CodeR retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.CodeRResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/list-confirms": {
+            "get": {
+                "description": "Retrieve a list of all confirm orders",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "List all confirm orders",
+                "operationId": "list-confirm-orders",
+                "responses": {
+                    "200": {
+                        "description": "All Confirm orders retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ListDraftConfirmOrdersResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Confirm orders not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/list-drafts": {
+            "get": {
+                "description": "Retrieve a list of all draft orders",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "List all draft orders",
+                "operationId": "list-draft-orders",
+                "responses": {
+                    "200": {
+                        "description": "All Draft orders retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ListDraftConfirmOrdersResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Draft orders not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/update-draft/{orderNo}": {
+            "put": {
+                "description": "Update draft orders and change status to Confirm and Booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "Update draft orders",
+                "operationId": "update-draft-orders",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Draft orders updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.DraftHeadResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -1760,7 +1739,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Trade Return"
+                    "Sale Return"
                 ],
                 "summary": "Cancel a sale return order",
                 "operationId": "cancel-sale-return",
@@ -1773,12 +1752,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Cancel details",
-                        "name": "cancelDetails",
+                        "description": "Cancel Sale Return",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.CancelReturnRequest"
+                            "$ref": "#/definitions/request.CancelSaleReturnRequest"
                         }
                     }
                 ],
@@ -1794,7 +1773,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/response.CancelReturnResponse"
+                                            "$ref": "#/definitions/response.CancelSaleReturnResponse"
                                         }
                                     }
                                 }
@@ -1826,7 +1805,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Trade Return"
+                    "Sale Return"
                 ],
                 "summary": "Confirm a sale return order",
                 "operationId": "confirm-sale-return",
@@ -1851,7 +1830,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/response.ConfirmReturnResponse"
+                                            "$ref": "#/definitions/response.ConfirmSaleReturnResponse"
                                         }
                                     }
                                 }
@@ -1873,9 +1852,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/test/login": {
+        "/sale-return/create": {
             "post": {
-                "description": "Handles user login requests and generates a token for the authenticated user.",
+                "description": "Create a new sale return order based on the provided details",
                 "consumes": [
                     "application/json"
                 ],
@@ -1883,24 +1862,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "LoginTest"
+                    "Sale Return"
                 ],
-                "summary": "User Login with UserID",
-                "operationId": "usertest-login",
+                "summary": "Create a new sale return order",
+                "operationId": "create-sale-return",
                 "parameters": [
                     {
-                        "description": "User login credentials in JSON format",
-                        "name": "login-request",
+                        "description": "Sale Return Order",
+                        "name": "saleReturn",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.Login"
+                            "$ref": "#/definitions/request.BeforeReturnOrder"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "JWT token",
+                        "description": "Sale return order created successfully",
                         "schema": {
                             "allOf": [
                                 {
@@ -1909,8 +1888,8 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "result": {
-                                            "type": "string"
+                                        "data": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
                                         }
                                     }
                                 }
@@ -1919,6 +1898,152 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/sale-return/search": {
+            "get": {
+                "description": "Retrieve the details of a order by its SO number or Order number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sale Return"
+                ],
+                "summary": "Search order by SO number or Order number",
+                "operationId": "search-order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SO number",
+                        "name": "soNo",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.SaleOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Sale order not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/sale-return/update/{orderNo}": {
+            "put": {
+                "description": "Update the SR number for a sale return order based on the provided details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sale Return"
+                ],
+                "summary": "Update the SR number for a sale return order",
+                "operationId": "update-sale-return",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "SR number details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.UpdateSaleReturnRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SR number updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid input or missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Order not found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2198,7 +2323,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "returnID": {
-                    "description": "เลขที่ใบคืนสินค้า (Primary Key)",
+                    "description": "เลขที่ใบคืนสินค้า (PK - Generate จากระบบ)",
                     "type": "string"
                 },
                 "saleOrder": {
@@ -2255,7 +2380,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "recID": {
-                    "description": "รหัสอ้างอิงอัตโนมัติ",
+                    "description": "รหัสอ้างอิงอัตโนมัติ - (PK - Auto Increment)",
                     "type": "integer"
                 },
                 "returnID": {
@@ -2312,7 +2437,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "warehouseID": {
-                    "description": "รหัสคลังสินค้า",
+                    "description": "รหัสคลังสินค้า (PK - Auto Increment)",
                     "type": "integer"
                 },
                 "warehouseName": {
@@ -2331,7 +2456,7 @@ const docTemplate = `{
                     }
                 },
                 "cancelID": {
-                    "description": "UpdateDate             *time.Time              ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + ` // MSSQL GetDate() function",
+                    "description": "UpdateDate             *time.Time              ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + ` // MSSQL GetDate()",
                     "type": "integer"
                 },
                 "channelID": {
@@ -2354,12 +2479,13 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "orderNo": {
+                    "description": "RecID\t\t  int        ` + "`" + `json:\"recID\" db:\"RecID\"` + "`" + ` // (PK - Auto Increment)",
+                    "type": "string"
+                },
+                "reason": {
                     "type": "string"
                 },
                 "returnDate": {
-                    "type": "string"
-                },
-                "returnType": {
                     "type": "string"
                 },
                 "soNo": {
@@ -2381,7 +2507,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updateBy": {
-                    "description": "CreateDate             *time.Time              ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate() function",
+                    "description": "CreateDate             *time.Time              ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
                     "type": "string"
                 },
                 "warehouseID": {
@@ -2396,6 +2522,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "createBy": {
+                    "type": "string"
+                },
+                "itemName": {
                     "type": "string"
                 },
                 "orderNo": {
@@ -2414,7 +2543,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "trackingNo": {
-                    "description": "CreateDate *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
                     "type": "string"
                 },
                 "updateBy": {
@@ -2422,19 +2550,37 @@ const docTemplate = `{
                 }
             }
         },
-        "request.CancelReturnRequest": {
+        "request.CancelSaleReturnRequest": {
             "type": "object",
             "properties": {
-                "cancelBy": {
+                "remark": {
+                    "description": "OrderNo      string ` + "`" + `json:\"orderNo\" db:\"OrderNo\"` + "`" + `\nCancelStatus bool   ` + "`" + `json:\"cancelStatus\" db:\"CancelStatus\"` + "`" + `",
+                    "type": "string"
+                }
+            }
+        },
+        "request.CodeRRequest": {
+            "type": "object",
+            "properties": {
+                "createBy": {
                     "type": "string"
                 },
-                "cancelStatus": {
-                    "type": "boolean"
+                "itemName": {
+                    "type": "string"
                 },
                 "orderNo": {
                     "type": "string"
                 },
-                "remark": {
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
                     "type": "string"
                 }
             }
@@ -2510,29 +2656,16 @@ const docTemplate = `{
                 }
             }
         },
-        "request.Login": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string",
-                    "example": "string"
-                },
-                "userID": {
-                    "type": "string",
-                    "example": "DC53002"
-                }
-            }
-        },
         "request.LoginLark": {
             "type": "object",
             "properties": {
                 "userID": {
                     "type": "string",
-                    "example": "DC99999"
+                    "example": "DC65060"
                 },
                 "userName": {
                     "type": "string",
-                    "example": "eknarin"
+                    "example": "eknarin.ler"
                 }
             }
         },
@@ -2540,12 +2673,13 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "password": {
+                    "description": "change password lastest in 17 January 2025",
                     "type": "string",
-                    "example": "asdfhdskjf"
+                    "example": "EKna1234"
                 },
                 "userName": {
                     "type": "string",
-                    "example": "eknarin"
+                    "example": "eknarin.ler"
                 }
             }
         },
@@ -2567,23 +2701,6 @@ const docTemplate = `{
                 "sku": {
                     "type": "string",
                     "example": "SKU12345"
-                }
-            }
-        },
-        "request.TradeReturnLineRequest": {
-            "type": "object",
-            "properties": {
-                "price": {
-                    "type": "number"
-                },
-                "qty": {
-                    "type": "integer"
-                },
-                "returnQty": {
-                    "type": "integer"
-                },
-                "sku": {
-                    "type": "string"
                 }
             }
         },
@@ -2640,7 +2757,122 @@ const docTemplate = `{
                 }
             }
         },
-        "response.CancelReturnResponse": {
+        "request.UpdateSaleReturnRequest": {
+            "type": "object",
+            "required": [
+                "srNo"
+            ],
+            "properties": {
+                "srNo": {
+                    "type": "string",
+                    "example": "SR-123456"
+                }
+            }
+        },
+        "response.BeforeReturnOrderLineResponse": {
+            "type": "object",
+            "properties": {
+                "createDate": {
+                    "type": "string"
+                },
+                "itemName": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.BeforeReturnOrderResponse": {
+            "type": "object",
+            "properties": {
+                "beforeReturnOrderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.BeforeReturnOrderLineResponse"
+                    }
+                },
+                "cancelId": {
+                    "type": "integer"
+                },
+                "channelId": {
+                    "type": "integer"
+                },
+                "confirmBy": {
+                    "type": "string"
+                },
+                "confirmDate": {
+                    "type": "string"
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "customerId": {
+                    "type": "string"
+                },
+                "logistic": {
+                    "type": "string"
+                },
+                "mkpStatusId": {
+                    "type": "integer"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "returnDate": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "soStatusId": {
+                    "type": "integer"
+                },
+                "srNo": {
+                    "type": "string"
+                },
+                "statusConfId": {
+                    "type": "integer"
+                },
+                "statusReturnId": {
+                    "type": "integer"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "type": "string"
+                },
+                "updateDate": {
+                    "type": "string"
+                },
+                "warehouseId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.CancelSaleReturnResponse": {
             "type": "object",
             "properties": {
                 "cancelBy": {
@@ -2660,7 +2892,18 @@ const docTemplate = `{
                 }
             }
         },
-        "response.ConfirmReturnResponse": {
+        "response.CodeRResponse": {
+            "type": "object",
+            "properties": {
+                "nameAlias": {
+                    "type": "string"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ConfirmSaleReturnResponse": {
             "type": "object",
             "properties": {
                 "confirmBy": {
@@ -2674,6 +2917,75 @@ const docTemplate = `{
                 }
             }
         },
+        "response.DraftHeadResponse": {
+            "type": "object",
+            "properties": {
+                "orderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.DraftLineResponse"
+                    }
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "srNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.DraftLineResponse": {
+            "type": "object",
+            "properties": {
+                "itemName": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ListDraftConfirmOrdersResponse": {
+            "type": "object",
+            "properties": {
+                "channelId": {
+                    "type": "integer"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "customerId": {
+                    "type": "string"
+                },
+                "logistic": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "srNo": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "warehouseId": {
+                    "type": "integer"
+                }
+            }
+        },
         "response.Login": {
             "type": "object",
             "properties": {
@@ -2683,23 +2995,23 @@ const docTemplate = `{
                 },
                 "fullNameTH": {
                     "type": "string",
-                    "example": "test1234"
+                    "example": "Firstname Lastname"
                 },
                 "nickName": {
                     "type": "string",
-                    "example": "test1234"
+                    "example": "Nickname"
                 },
                 "platform": {
                     "type": "string",
-                    "example": "test1234"
+                    "example": "Platform"
                 },
                 "roleID": {
                     "type": "integer",
-                    "example": 1
+                    "example": 0
                 },
                 "userID": {
                     "type": "string",
-                    "example": "userID"
+                    "example": "DC-XXXXX"
                 },
                 "userName": {
                     "type": "string",
@@ -2707,61 +3019,51 @@ const docTemplate = `{
                 }
             }
         },
-        "response.OrderDetail": {
-            "type": "object",
-            "properties": {
-                "OrderHeadDetail": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.OrderHeadDetail"
-                    }
-                }
-            }
-        },
-        "response.OrderHeadDetail": {
-            "type": "object",
-            "properties": {
-                "OrderLineDetail": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.OrderLineDetail"
-                    }
-                },
-                "orderNo": {
-                    "description": "เลขที่ใบสั่งซื้อ",
-                    "type": "string"
-                },
-                "salesStatus": {
-                    "description": "สถานะการขาย",
-                    "type": "string"
-                },
-                "soNo": {
-                    "description": "เลขที่ใบสั่งขาย",
-                    "type": "string"
-                },
-                "statusMKP": {
-                    "description": "สถานะในตลาด",
-                    "type": "string"
-                }
-            }
-        },
-        "response.OrderLineDetail": {
+        "response.SaleOrderLineResponse": {
             "type": "object",
             "properties": {
                 "itemName": {
-                    "description": "ชื่อสินค้า",
+                    "type": "string"
+                },
+                "orderNo": {
                     "type": "string"
                 },
                 "price": {
-                    "description": "ราคาต่อหน่วย",
                     "type": "number"
                 },
                 "qty": {
-                    "description": "จำนวนสินค้า",
                     "type": "integer"
                 },
                 "sku": {
-                    "description": "รหัสสินค้า",
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.SaleOrderResponse": {
+            "type": "object",
+            "properties": {
+                "createDate": {
+                    "type": "string"
+                },
+                "orderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.SaleOrderLineResponse"
+                    }
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "salesStatus": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "statusMKP": {
                     "type": "string"
                 }
             }
@@ -2807,8 +3109,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
-	Title:            "Boilerplate Service",
-	Description:      "This is a sample server for Boilerplate project .",
+	Title:            "Return Order Management Service API ⭐",
+	Description:      "This is a Return Order Management Service API server.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

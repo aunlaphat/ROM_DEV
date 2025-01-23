@@ -10,5 +10,4 @@
         "diffEditor.ignoreTrimWhitespace": true,
         "git.autofetch": true,
         "chat.editing.confirmEditRequestRetry": false,
-        "files.autoSave": "afterDelay",
 }

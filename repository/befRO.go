@@ -1,18 +1,6 @@
 package repository
 
-import (
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/dto/response"
-	"context"
-	"database/sql"
-	"fmt"
-	"log"
-	"time"
-
-	"github.com/jmoiron/sqlx"
-)
-
-// เพิ่ม constant สำหรับ timeout
+/* // เพิ่ม constant สำหรับ timeout
 const (
 	defaultTimeout = 10 * time.Second
 	txTimeout      = 30 * time.Second
@@ -70,9 +58,9 @@ func (repo repositoryDB) CheckOrderNoExists(ctx context.Context, orderNo string)
 	var exists bool
 
 	query := `
-		SELECT CASE 
-			WHEN EXISTS (SELECT 1 FROM BeforeReturnOrder WHERE OrderNo = @OrderNo) 
-			THEN 1 ELSE 0 
+		SELECT CASE
+			WHEN EXISTS (SELECT 1 FROM BeforeReturnOrder WHERE OrderNo = @OrderNo)
+			THEN 1 ELSE 0
 		END
 	`
 
@@ -244,7 +232,7 @@ func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, 
 	defer cancel()
 
 	query := `
-        SELECT 
+        SELECT
             OrderNo,
             SKU,
             QTY,
@@ -323,7 +311,7 @@ func (repo repositoryDB) ListBeforeReturnOrderLinesByOrderNo(ctx context.Context
 	defer cancel()
 
 	query := `
-        SELECT 
+        SELECT
             OrderNo,
             SKU,
             QTY,
@@ -362,7 +350,7 @@ func (repo repositoryDB) ListBeforeReturnOrderLines(ctx context.Context) ([]resp
 	defer cancel()
 
 	query := `
-        SELECT 
+        SELECT
             OrderNo,
             SKU,
             QTY,
@@ -492,7 +480,7 @@ func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit i
         SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
         FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
         WHERE OrderNo IN (
-            SELECT OrderNo 
+            SELECT OrderNo
             FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
             ORDER BY OrderNo
             OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
@@ -714,10 +702,10 @@ func (repo repositoryDB) CreateReturnOrderWithTransaction(ctx context.Context, o
 
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
-            OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID, 
+            OrderNo, SoNo, SrNo, ChannelID, ReturnType, CustomerID, TrackingNo, Logistic, WarehouseID,
             SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate
         ) VALUES (
-            :OrderNo, :SoNo, :SrNo, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
+            :OrderNo, :SoNo, :SrNo, :ChannelID, :ReturnType, :CustomerID, :TrackingNo, :Logistic, :WarehouseID,
             :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, GETDATE()
         )
     `
@@ -792,7 +780,7 @@ func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order requ
 	defer cancel()
 
 	query := `
-        UPDATE BeforeReturnOrder 
+        UPDATE BeforeReturnOrder
         SET SoNo = COALESCE(:SoNo, SoNo),
             SrNo = COALESCE(:SrNo, SrNo),
             ChannelID = COALESCE(:ChannelID, ChannelID),
@@ -848,7 +836,7 @@ func (repo repositoryDB) UpdateBeforeReturnOrderLine(ctx context.Context, orderN
 	defer cancel()
 
 	query := `
-        UPDATE BeforeReturnOrderLine 
+        UPDATE BeforeReturnOrderLine
         SET QTY = COALESCE(:QTY, QTY),
             ReturnQTY = COALESCE(:ReturnQTY, ReturnQTY),
             Price = COALESCE(:Price, Price),
@@ -900,7 +888,7 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 
 	// Update BeforeReturnOrderLine first
 	queryLine := `
-        UPDATE BeforeReturnOrderLine 
+        UPDATE BeforeReturnOrderLine
         SET QTY = COALESCE(:QTY, QTY),
             ReturnQTY = COALESCE(:ReturnQTY, ReturnQTY),
             Price = COALESCE(:Price, Price),
@@ -938,7 +926,7 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 
 	// Update BeforeReturnOrder
 	queryOrder := `
-        UPDATE BeforeReturnOrder 
+        UPDATE BeforeReturnOrder
         SET SoNo = COALESCE(:SoNo, SoNo),
             SrNo = COALESCE(:SrNo, SrNo),
             ChannelID = COALESCE(:ChannelID, ChannelID),
@@ -1008,3 +996,4 @@ func (repo repositoryDB) DeleteBeforeReturnOrderLine(ctx context.Context, recID 
 		return nil
 	})
 }
+*/

@@ -1,18 +1,8 @@
 package service
 
-import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
-	"context"
-	"database/sql"
-	"fmt"
-
-	"go.uber.org/zap"
-)
-
+/*
 type BefROService interface {
-	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
+ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
 	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
 
 	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
@@ -20,7 +10,7 @@ type BefROService interface {
 	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
 	GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error)
 
-	GetOrderDetailBySO(ctx context.Context,soNo string) (*response.OrderDetail, error)
+	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
 	SearchSaleOrder(ctx context.Context, soNo string) ([]response.SaleOrderResponse, error)
 
 	CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
@@ -29,7 +19,7 @@ type BefROService interface {
 
 	CreateTradeReturnLine(ctx context.Context, orderNo string, line request.TradeReturnLineRequest) error
 	ConfirmReturn(ctx context.Context, orderNo string, confirmBy string) error
-	CancelReturn(ctx context.Context, orderNo string, cancelBy string, remark string) error 
+	CancelReturn(ctx context.Context, orderNo string, cancelBy string, remark string) error
 }
 
 func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, line request.TradeReturnLineRequest) error {
@@ -51,7 +41,7 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 	return nil
 }
 
-func (srv service) ConfirmReturn(ctx context.Context, orderNo string, confirmBy string) error {
+/* func (srv service) ConfirmReturn(ctx context.Context, orderNo string, confirmBy string) error {
 	// 1. เริ่มต้น log การทำงาน
 	srv.logger.Info("🏁 Starting sale return confirmation process",
 		zap.String("OrderNo", orderNo),
@@ -103,7 +93,6 @@ func (srv service) CancelReturn(ctx context.Context, orderNo string, cancelBy st
 		zap.String("CancelBy", cancelBy))
 	return nil
 }
-
 
 func (srv service) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
 	srv.logger.Debug("🚀 Starting ListBeforeReturnOrders")
@@ -181,7 +170,6 @@ func (srv service) GetAllOrderDetails(ctx context.Context, page, limit int) ([]r
 	return allorder, nil
 }
 
-
 func (srv service) GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error) {
 	soOrder, err := srv.befRORepo.GetOrderDetailBySO(ctx, soNo)
 	if err != nil {
@@ -257,3 +245,4 @@ func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, recID string
 
 	return nil
 }
+*/

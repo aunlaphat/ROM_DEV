@@ -1,18 +1,10 @@
 package api
 
-import (
-	req "boilerplate-backend-go/dto/request"
-	res "boilerplate-backend-go/dto/response"
-	"encoding/json"
-	"fmt"
-	"net/http"
+//	"time"
 
-	//	"time"
+//"github.com/go-chi/jwtauth"
 
-	"github.com/go-chi/chi/v5"
-	//"github.com/go-chi/jwtauth"
-)
-
+/*
 func (app *Application) UserTestRoute(apiRouter *chi.Mux) {
 
 	apiRouter.Route("/test", func(r chi.Router) {
@@ -26,7 +18,7 @@ func (app *Application) GenerateTokenLogin(user res.UserInform) string {
 		"userName": user.UserName,
 	}
 	_, tokenString, _ := app.TokenAuth.Encode(data) // ใช้ `TokenAuth` สำหรับ JWT
-	
+
 	return tokenString
 }
 
@@ -85,3 +77,4 @@ func (app *Application) LoginTest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
+*/

@@ -1,17 +1,4 @@
-package api
-
-import (
-	"boilerplate-backend-go/dto/request"
-	res "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"strconv"
-
-	"github.com/go-chi/chi/v5"
-)
-
+/*
 // ReturnOrderRoute defines the routes for return order operations
 func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/before-return-order", func(r chi.Router) {
@@ -33,7 +20,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 
 		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine)
 
-		/******** Trade Retrun ********/
+		// Trade Retrun
 		r.Post("/create-trade", app.CreateTradeReturn)
 		r.Post("/add-line/{orderNo}", app.AddTradeReturnLine)
 		r.Post("/confirm/{orderNo}", app.ConfirmTradeReturn)
@@ -510,3 +497,4 @@ func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *ht
 
 	handleResponse(w, true, "Order lines deleted successfully", nil, http.StatusOK)
 }
+*/
