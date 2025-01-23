@@ -46,9 +46,9 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 
 		// Draft
 		r.Get("/list-drafts", app.ListDraftOrders)
-		r.Get("/code-r", app.GetCodeR)
+		r.Get("/code-r", app.ListCodeR)
 		r.Post("/code-r", app.AddCodeR)
-		r.Delete("/code-r/{sku}", app.DeleteCodeR)
+		r.Delete("/code-r/{orderNo}/{sku}", app.DeleteCodeR)
 		r.Put("/update-draft/{orderNo}", app.UpdateDraftOrder)
 
 		// Confirm
@@ -301,16 +301,6 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 			zap.String("soNo", soNo),
 			zap.String("orderNo", orderNo))
 		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
-
-		// Handle specific error types
-		/* switch {
-		case strings.Contains(err.Error(), "connection"):
-			handleResponse(w, false, "Database connection error", nil, http.StatusServiceUnavailable)
-		case strings.Contains(err.Error(), "invalid"):
-			handleResponse(w, false, "Invalid search parameters", nil, http.StatusBadRequest)
-		default:
-			handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
-		} */
 		return
 	}
 
@@ -318,6 +308,14 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 	if len(result) == 0 {
 		handleResponse(w, false, "⚠️ No orders found ⚠️", nil, http.StatusNotFound)
 		return
+	}
+
+	// Correctly populate soNo and orderNo in orderLines
+	for i := range result {
+		for j := range result[i].OrderLines {
+			result[i].OrderLines[j].SoNo = result[i].SoNo
+			result[i].OrderLines[j].OrderNo = result[i].OrderNo
+		}
 	}
 
 	// Debug logging (always print for now, can be controlled by log level later)
@@ -685,22 +683,22 @@ func (app *Application) ListConfirmOrders(w http.ResponseWriter, r *http.Request
 	handleResponse(w, true, "⭐ Confirm orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
-// GetCodeR godoc
-// @Summary Get CodeR
-// @Description Retrieve SKU and NameAlias from ROM_V_ProductAll
-// @ID get-code-r
+// ListCodeR godoc
+// @Summary List all CodeR
+// @Description Retrieve a list of all codeR
+// @ID list-code-r
 // @Tags Draft & Confirm
 // @Accept json
 // @Produce json
 // @Success 200 {object} api.Response{data=[]response.CodeRResponse} "CodeR retrieved successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /draft-confirm/code-r [get]
-func (app *Application) GetCodeR(w http.ResponseWriter, r *http.Request) {
+// @Router /draft-confirm/list-code-r [get]
+func (app *Application) ListCodeR(w http.ResponseWriter, r *http.Request) {
 	// Call service layer with error handling
-	result, err := app.Service.BefRO.GetCodeR(r.Context())
+	result, err := app.Service.BefRO.ListCodeR(r.Context())
 	if err != nil {
-		app.Logger.Error("🚨 Failed to get CodeR 🚨", zap.Error(err))
+		app.Logger.Error("🚨 Failed to get all CodeR 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
 		return
 	}
@@ -716,7 +714,7 @@ func (app *Application) GetCodeR(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param body body request.CodeRRequest true "CodeR details"
-// @Success 201 {object} api.Response{data=[]response.BeforeReturnOrderLineResponse} "CodeR added successfully"
+// @Success 201 {object} api.Response{data=response.DraftLineResponse} "CodeR added successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /draft-confirm/code-r [post]
@@ -744,36 +742,38 @@ func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
 	// Set CreateBy from claims
 	req.CreateBy = userID
 
-	err = app.Service.BefRO.AddCodeR(r.Context(), req)
+	result, err := app.Service.BefRO.AddCodeR(r.Context(), req)
 	if err != nil {
 		app.Logger.Error("🚨 Failed to add CodeR 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
 		return
 	}
 
-	handleResponse(w, true, "⭐ CodeR added successfully ⭐", nil, http.StatusCreated)
+	handleResponse(w, true, "⭐ CodeR added successfully ⭐", result, http.StatusCreated)
 }
 
 // DeleteCodeR godoc
 // @Summary Delete CodeR
-// @Description Delete a CodeR entry by SKU
+// @Description Delete a CodeR entry by SKU and OrderNo
 // @ID delete-code-r
 // @Tags Draft & Confirm
 // @Accept json
 // @Produce json
+// @Param orderNo path string true "Order number"
 // @Param sku path string true "SKU"
 // @Success 200 {object} api.Response "CodeR deleted successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /draft-confirm/code-r/{sku} [delete]
+// @Router /draft-confirm/code-r/{orderNo}/{sku} [delete]
 func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
+	orderNo := chi.URLParam(r, "orderNo")
 	sku := chi.URLParam(r, "sku")
-	if sku == "" {
-		handleResponse(w, false, "SKU is required", nil, http.StatusBadRequest)
+	if orderNo == "" || sku == "" {
+		handleResponse(w, false, "OrderNo and SKU are required", nil, http.StatusBadRequest)
 		return
 	}
 
-	err := app.Service.BefRO.DeleteCodeR(r.Context(), sku)
+	err := app.Service.BefRO.DeleteCodeR(r.Context(), orderNo, sku)
 	if err != nil {
 		app.Logger.Error("🚨 Failed to delete CodeR 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)

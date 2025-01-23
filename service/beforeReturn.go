@@ -44,11 +44,11 @@ type BefROService interface {
 	// Method สำหรับดึง Draft Confirm Order โดยใช้ OrderNo
 	GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error)
 	// Method สำหรับดึง CodeR ทั้งหมด
-	GetCodeR(ctx context.Context) ([]response.CodeRResponse, error)
+	ListCodeR(ctx context.Context) ([]response.CodeRResponse, error)
 	// Method สำหรับเพิ่ม CodeR
-	AddCodeR(ctx context.Context, req request.CodeRRequest) error
+	AddCodeR(ctx context.Context, req request.CodeRRequest) (*response.DraftLineResponse, error)
 	// Method สำหรับลบ CodeR
-	DeleteCodeR(ctx context.Context, sku string) error
+	DeleteCodeR(ctx context.Context, orderNo string, sku string) error
 	// Method สำหรับอัพเดท Draft Order
 	UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error
 }
@@ -468,7 +468,7 @@ func (srv service) GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo st
 }
 
 // Method สำหรับดึง CodeR ทั้งหมด
-func (srv service) GetCodeR(ctx context.Context) ([]response.CodeRResponse, error) {
+func (srv service) ListCodeR(ctx context.Context) ([]response.CodeRResponse, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "GetCodeR")
 	defer logFinish("Completed", nil)
@@ -477,7 +477,7 @@ func (srv service) GetCodeR(ctx context.Context) ([]response.CodeRResponse, erro
 	srv.logger.Info("🔎 Starting to get CodeR 🔎")
 
 	// เรียก Repository เพื่อค้นหา CodeR ทั้งหมด
-	codeR, err := srv.befRORepo.GetCodeR(ctx)
+	codeR, err := srv.befRORepo.ListCodeR(ctx)
 	if err != nil {
 		// หากเกิดข้อผิดพลาด อัปเดต Log ที่ Error
 		logFinish("Failed", fmt.Errorf("❌ Failed to get CodeR : %v", err))
@@ -491,7 +491,7 @@ func (srv service) GetCodeR(ctx context.Context) ([]response.CodeRResponse, erro
 }
 
 // Method สำหรับเพิ่ม CodeR
-func (srv service) AddCodeR(ctx context.Context, req request.CodeRRequest) error {
+func (srv service) AddCodeR(ctx context.Context, req request.CodeRRequest) (*response.DraftLineResponse, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "AddCodeR")
 	defer logFinish("Completed", nil)
@@ -499,27 +499,44 @@ func (srv service) AddCodeR(ctx context.Context, req request.CodeRRequest) error
 	// Logging ว่าเริ่มการทำงาน
 	srv.logger.Info("🔎 Starting to add CodeR 🔎")
 
+	// ตรวจสอบว่า SKU มีอยู่แล้วหรือไม่
+	existingLines, err := srv.befRORepo.GetBeforeReturnOrderLineByOrderNo(ctx, req.OrderNo)
+	if err != nil {
+		logFinish("Failed", fmt.Errorf("failed to check existing SKUs: %v", err))
+		srv.logger.Error("❌ Failed to check existing SKUs", zap.Error(err))
+		return nil, err
+	}
+
+	for _, line := range existingLines {
+		if line.SKU == req.SKU {
+			err := fmt.Errorf("SKU already exists for OrderNo: %s", req.OrderNo)
+			logFinish("Failed", err)
+			srv.logger.Warn("⚠️ Duplicate SKU found", zap.String("OrderNo", req.OrderNo), zap.String("SKU", req.SKU))
+			return nil, err
+		}
+	}
+
 	// เรียกใช้ repository layer
-	if err := srv.befRORepo.AddCodeR(ctx, req); err != nil {
-		// อัปเดต Log ว่าไม่สามารถเพิ่ม CodeR ได้ เนื่องจากเกิดข้อผิดพลาด
+	result, err := srv.befRORepo.AddCodeR(ctx, req)
+	if err != nil {
 		logFinish("Failed", fmt.Errorf("failed to add CodeR: %v", err))
 		srv.logger.Error("❌ Failed to add CodeR", zap.Error(err))
-		return err
+		return nil, err
 	}
 
 	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
-	return nil
+	return result, nil
 }
 
 // Method สำหรับลบ CodeR
-func (srv service) DeleteCodeR(ctx context.Context, sku string) error {
+func (srv service) DeleteCodeR(ctx context.Context, orderNo string, sku string) error {
 	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "DeleteCodeR", zap.String("SKU", sku))
+	logFinish := srv.logger.LogAPICall(ctx, "DeleteCodeR", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
 	defer logFinish("Completed", nil)
 
 	// เรียกใช้ repository layer
-	if err := srv.befRORepo.DeleteCodeR(ctx, sku); err != nil {
+	if err := srv.befRORepo.DeleteCodeR(ctx, orderNo, sku); err != nil {
 		// อัปเดต Log ว่าไม่สามารถลบ CodeR ได้ เนื่องจากเกิดข้อผิดพลาด
 		logFinish("Failed", fmt.Errorf("failed to delete CodeR: %v", err))
 		srv.logger.Error("❌ Failed to delete CodeR", zap.Error(err))

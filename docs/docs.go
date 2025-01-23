@@ -761,55 +761,6 @@ const docTemplate = `{
             }
         },
         "/draft-confirm/code-r": {
-            "get": {
-                "description": "Retrieve SKU and NameAlias from ROM_V_ProductAll",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Draft \u0026 Confirm"
-                ],
-                "summary": "Get CodeR",
-                "operationId": "get-code-r",
-                "responses": {
-                    "200": {
-                        "description": "CodeR retrieved successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/response.CodeRResponse"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            },
             "post": {
                 "description": "Add a new CodeR entry",
                 "consumes": [
@@ -846,10 +797,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/response.BeforeReturnOrderLineResponse"
-                                            }
+                                            "$ref": "#/definitions/response.DraftLineResponse"
                                         }
                                     }
                                 }
@@ -871,9 +819,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/draft-confirm/code-r/{sku}": {
+        "/draft-confirm/code-r/{orderNo}/{sku}": {
             "delete": {
-                "description": "Delete a CodeR entry by SKU",
+                "description": "Delete a CodeR entry by SKU and OrderNo",
                 "consumes": [
                     "application/json"
                 ],
@@ -886,6 +834,13 @@ const docTemplate = `{
                 "summary": "Delete CodeR",
                 "operationId": "delete-code-r",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "SKU",
@@ -963,6 +918,57 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/list-code-r": {
+            "get": {
+                "description": "Retrieve a list of all codeR",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm"
+                ],
+                "summary": "List all CodeR",
+                "operationId": "list-code-r",
+                "responses": {
+                    "200": {
+                        "description": "CodeR retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.CodeRResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }

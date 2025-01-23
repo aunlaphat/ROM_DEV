@@ -44,9 +44,9 @@ type BefRORepository interface {
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
 	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
 	GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, []response.DraftLineResponse, error)
-	GetCodeR(ctx context.Context) ([]response.CodeRResponse, error)
-	AddCodeR(ctx context.Context, codeR request.CodeRRequest) error
-	DeleteCodeR(ctx context.Context, sku string) error
+	ListCodeR(ctx context.Context) ([]response.CodeRResponse, error)
+	AddCodeR(ctx context.Context, codeR request.CodeRRequest) (*response.DraftLineResponse, error)
+	DeleteCodeR(ctx context.Context, orderNo string, sku string) error
 	UpdateOrderStatus(ctx context.Context, orderNo string, statusConfID int, statusReturnID int, userID string) error
 }
 
@@ -91,9 +91,9 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order requ
 func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error {
 	query := `
         INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
+            OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, TrackingNo
         ) VALUES (
-            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
+            :OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
         )
     `
 	for _, line := range lines {
@@ -105,6 +105,7 @@ func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderN
 		params := map[string]interface{}{
 			"OrderNo":    orderNo,
 			"SKU":        line.SKU,
+			"ItemName":   line.ItemName,
 			"QTY":        line.QTY,
 			"ReturnQTY":  line.ReturnQTY,
 			"Price":      line.Price,
@@ -160,26 +161,20 @@ func (repo repositoryDB) CreateBeforeReturnOrderWithTransaction(ctx context.Cont
 
 	queryLine := `
         INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, QTY, ReturnQTY, Price, CreateBy, TrackingNo
+            OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, TrackingNo
         ) VALUES (
-            :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
+            :OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
         )
     `
 	for _, line := range order.BeforeReturnOrderLines {
-		// Ensure TrackingNo is not NULL
-		trackingNo := line.TrackingNo
-		if trackingNo == "" {
-			trackingNo = "N/A" // Default value if TrackingNo is not provided
-		}
-
 		_, err = tx.NamedExecContext(ctx, queryLine, map[string]interface{}{
-			"OrderNo":    order.OrderNo,
-			"SKU":        line.SKU,
-			"QTY":        line.QTY,
-			"ReturnQTY":  line.ReturnQTY,
-			"Price":      line.Price,
-			"CreateBy":   order.CreateBy,
-			"TrackingNo": trackingNo,
+			"OrderNo":   order.OrderNo,
+			"SKU":       line.SKU,
+			"ItemName":  line.ItemName,
+			"QTY":       line.QTY,
+			"ReturnQTY": line.ReturnQTY,
+			"Price":     line.Price,
+			"CreateBy":  order.CreateBy,
 		})
 		if err != nil {
 			tx.Rollback()
@@ -201,6 +196,7 @@ func (repo repositoryDB) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, 
         SELECT 
             OrderNo,
             SKU,
+			ItemName,
             QTY,
             ReturnQTY,
             Price,
@@ -263,6 +259,7 @@ func (repo repositoryDB) ListBeforeReturnOrderLinesByOrderNo(ctx context.Context
         SELECT 
             OrderNo,
             SKU,
+			ItemName,
             QTY,
             ReturnQTY,
             Price,
@@ -293,6 +290,7 @@ func (repo repositoryDB) ListBeforeReturnOrderLines(ctx context.Context) ([]resp
         SELECT 
             OrderNo,
             SKU,
+			ItemName,
             QTY,
             ReturnQTY,
             Price,
@@ -398,7 +396,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order requ
 func (repo repositoryDB) UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error {
 	query := `
         UPDATE BeforeReturnOrderLine 
-        SET QTY = COALESCE(:QTY, QTY),
+        SET ItemName = COALESCE(:ItemName, ItemName),
+			QTY = COALESCE(:QTY, QTY),
             ReturnQTY = COALESCE(:ReturnQTY, ReturnQTY),
             Price = COALESCE(:Price, Price),
             UpdateBy = COALESCE(:UpdateBy, UpdateBy),
@@ -409,6 +408,7 @@ func (repo repositoryDB) UpdateBeforeReturnOrderLine(ctx context.Context, orderN
 	params := map[string]interface{}{
 		"OrderNo":    orderNo,
 		"SKU":        line.SKU,
+		"ItemName":   line.ItemName,
 		"QTY":        line.QTY,
 		"ReturnQTY":  line.ReturnQTY,
 		"Price":      line.Price,
@@ -444,7 +444,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 	// Update BeforeReturnOrderLine first
 	queryLine := `
         UPDATE BeforeReturnOrderLine 
-        SET QTY = COALESCE(:QTY, QTY),
+        SET ItemName = COALESCE(:ItemName, ItemName),
+			QTY = COALESCE(:QTY, QTY),
             ReturnQTY = COALESCE(:ReturnQTY, ReturnQTY),
             Price = COALESCE(:Price, Price),
             UpdateBy = COALESCE(:UpdateBy, UpdateBy),
@@ -457,6 +458,7 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 		paramsLine := map[string]interface{}{
 			"OrderNo":    line.OrderNo,
 			"SKU":        line.SKU,
+			"ItemName":   line.ItemName,
 			"QTY":        line.QTY,
 			"ReturnQTY":  line.ReturnQTY,
 			"Price":      line.Price,
@@ -528,72 +530,80 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 // ************************ Create Sale Return ************************ //
 
 func (repo repositoryDB) SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error) {
-	var query string
-	var params map[string]interface{}
+	// 1. Optimize SQL query
+	query := `
+        SELECT 
+            h.SoNo, 
+            h.OrderNo, 
+            h.StatusMKP, 
+            h.SalesStatus, 
+            h.CreateDate,
+            l.SKU, 
+            l.ItemName, 
+            l.QTY, 
+            l.Price
+        FROM ROM_V_OrderHeadDetail h
+        INNER JOIN ROM_V_OrderLineDetail l ON h.SoNo = l.SoNo AND h.OrderNo = l.OrderNo
+        WHERE ((:SoNo != '' AND h.SoNo = :SoNo) 
+           OR (:OrderNo != '' AND h.OrderNo = :OrderNo))
+        ORDER BY l.SKU` // Add index-based ordering
 
-	if soNo != "" { // หาด้วย SoNo
-		query = `
-            SELECT 
-                h.SoNo, h.OrderNo, h.StatusMKP, h.SalesStatus, h.CreateDate,
-                l.SKU, l.ItemName, l.QTY, l.Price
-            FROM 
-                ROM_V_OrderHeadDetail h
-            INNER JOIN 
-                ROM_V_OrderLineDetail l ON h.SoNo = l.SoNo AND h.OrderNo = l.OrderNo
-            WHERE 
-                h.SoNo = :SoNo
-        `
-		params = map[string]interface{}{"SoNo": soNo}
-	} else if orderNo != "" { // หาด้วย OrderNo
-		query = `
-            SELECT 
-                h.SoNo, h.OrderNo, h.StatusMKP, h.SalesStatus, h.CreateDate,
-                l.SKU, l.ItemName, l.QTY, l.Price
-            FROM 
-                ROM_V_OrderHeadDetail h
-            INNER JOIN 
-                ROM_V_OrderLineDetail l ON h.SoNo = l.SoNo AND h.OrderNo = l.OrderNo
-            WHERE 
-                h.OrderNo = :OrderNo
-        `
-		params = map[string]interface{}{"OrderNo": orderNo}
-	} else {
-		return nil, fmt.Errorf("either SoNo or OrderNo must be provided")
+	// 2. Input validation
+	if soNo == "" && orderNo == "" {
+		return nil, fmt.Errorf("🚩 Either SoNo or OrderNo must be provided 🚩")
 	}
 
-	var orderHead response.SaleOrderResponse
-	var orderLines []response.SaleOrderLineResponse
+	// 3. Prepare query parameters
+	params := map[string]interface{}{
+		"SoNo":    soNo,
+		"OrderNo": orderNo,
+	}
 
+	// 4. Execute query with timeout context
 	rows, err := repo.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 	defer rows.Close()
 
+	// 5. Process results efficiently
+	var (
+		orderHead  response.SaleOrderResponse
+		orderLines = make([]response.SaleOrderLineResponse, 0, 10)
+		isFirst    = true
+	)
+
+	// 6. Scan results with error handling
 	for rows.Next() {
 		var line response.SaleOrderLineResponse
-		err := rows.Scan(
-			&orderHead.SoNo, &orderHead.OrderNo, &orderHead.StatusMKP, &orderHead.SalesStatus, &orderHead.CreateDate,
-			&line.SKU, &line.ItemName, &line.QTY, &line.Price,
-		)
-		if err != nil {
+		scanData := struct {
+			*response.SaleOrderResponse
+			*response.SaleOrderLineResponse
+		}{&orderHead, &line}
+
+		if err := rows.StructScan(&scanData); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
-		line.SoNo = orderHead.SoNo
-		line.OrderNo = orderHead.OrderNo
+
+		// Only copy header data once
+		if isFirst {
+			isFirst = false
+		}
 		orderLines = append(orderLines, line)
 	}
 
+	// 7. Check for errors after iteration
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error: %w", err)
+		return nil, fmt.Errorf("error during row iteration: %w", err)
 	}
 
+	// 8. Handle no results case
 	if len(orderLines) == 0 {
 		return nil, nil
 	}
 
+	// 9. Construct final response
 	orderHead.OrderLines = orderLines
-
 	return &orderHead, nil
 }
 
@@ -970,7 +980,8 @@ func (repo repositoryDB) GetDraftConfirmOrderByOrderNo(ctx context.Context, orde
 	return &head, lines, nil
 }
 
-func (repo repositoryDB) GetCodeR(ctx context.Context) ([]response.CodeRResponse, error) {
+// Implementation สำหรับ ListCodeR
+func (repo repositoryDB) ListCodeR(ctx context.Context) ([]response.CodeRResponse, error) {
 	query := `
 		SELECT SKU, NameAlias
 		FROM ROM_V_ProductAll
@@ -986,7 +997,7 @@ func (repo repositoryDB) GetCodeR(ctx context.Context) ([]response.CodeRResponse
 	return codeR, nil
 }
 
-func (repo repositoryDB) AddCodeR(ctx context.Context, codeR request.CodeRRequest) error {
+func (repo repositoryDB) AddCodeR(ctx context.Context, codeR request.CodeRRequest) (*response.DraftLineResponse, error) {
 	codeR.ReturnQTY = codeR.QTY
 
 	query := `
@@ -996,19 +1007,29 @@ func (repo repositoryDB) AddCodeR(ctx context.Context, codeR request.CodeRReques
 
 	_, err := repo.db.NamedExecContext(ctx, query, codeR)
 	if err != nil {
-		return fmt.Errorf("failed to insert CodeR: %w", err)
+		return nil, fmt.Errorf("failed to insert CodeR: %w", err)
 	}
 
-	return nil
+	result := &response.DraftLineResponse{
+		SKU:      codeR.SKU,
+		ItemName: codeR.ItemName,
+		QTY:      codeR.QTY,
+		Price:    codeR.Price,
+	}
+
+	return result, nil
 }
 
-func (repo repositoryDB) DeleteCodeR(ctx context.Context, sku string) error {
+func (repo repositoryDB) DeleteCodeR(ctx context.Context, orderNo string, sku string) error {
 	query := `
         DELETE FROM BeforeReturnOrderLine
-        WHERE SKU = :SKU
+        WHERE OrderNo = :OrderNo AND SKU = :SKU
     `
 
-	_, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{"SKU": sku})
+	_, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{
+		"OrderNo": orderNo,
+		"SKU":     sku,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to delete CodeR: %w", err)
 	}

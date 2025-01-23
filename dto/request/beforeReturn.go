@@ -62,3 +62,8 @@ type CodeRRequest struct {
 	Price     float64 `json:"price" db:"Price"`
 	CreateBy  string  `json:"createBy" db:"CreateBy"`
 }
+
+type CodeR struct {
+	OrderNo string `json:"orderNo" db:"OrderNo"`
+	SKU     string `json:"sku" db:"SKU"`
+}

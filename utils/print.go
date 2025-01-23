@@ -30,6 +30,7 @@ func PrintOrderDetails(order *res.BeforeReturnOrderResponse) {
 
 func PrintOrderLineDetails(line *res.BeforeReturnOrderLineResponse) {
 	fmt.Printf("🔖 SKU: %s\n", line.SKU)
+	fmt.Printf("🏷️  ItemName: %s\n", line.ItemName)
 	fmt.Printf("📱 QTY: %d\n", line.QTY)
 	fmt.Printf("📲 ReturnQTY: %d\n", line.ReturnQTY)
 	fmt.Printf("💲 Price: %.2f ฿\n", line.Price)

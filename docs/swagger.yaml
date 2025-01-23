@@ -898,36 +898,6 @@ paths:
       tags:
       - Constants
   /draft-confirm/code-r:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve SKU and NameAlias from ROM_V_ProductAll
-      operationId: get-code-r
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: CodeR retrieved successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/response.CodeRResponse'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get CodeR
-      tags:
-      - Draft & Confirm
     post:
       consumes:
       - application/json
@@ -950,9 +920,7 @@ paths:
             - $ref: '#/definitions/api.Response'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/response.BeforeReturnOrderLineResponse'
-                  type: array
+                  $ref: '#/definitions/response.DraftLineResponse'
               type: object
         "400":
           description: Bad Request
@@ -965,13 +933,18 @@ paths:
       summary: Add CodeR
       tags:
       - Draft & Confirm
-  /draft-confirm/code-r/{sku}:
+  /draft-confirm/code-r/{orderNo}/{sku}:
     delete:
       consumes:
       - application/json
-      description: Delete a CodeR entry by SKU
+      description: Delete a CodeR entry by SKU and OrderNo
       operationId: delete-code-r
       parameters:
+      - description: Order number
+        in: path
+        name: orderNo
+        required: true
+        type: string
       - description: SKU
         in: path
         name: sku
@@ -1030,6 +1003,37 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get draft order by order number
+      tags:
+      - Draft & Confirm
+  /draft-confirm/list-code-r:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all codeR
+      operationId: list-code-r
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: CodeR retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.CodeRResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: List all CodeR
       tags:
       - Draft & Confirm
   /draft-confirm/list-confirms:
