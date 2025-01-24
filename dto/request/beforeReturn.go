@@ -21,7 +21,7 @@ type BeforeReturnOrder struct {
 	ConfirmBy      *string    `json:"confirmBy" db:"ConfirmBy"`
 	//ConfirmDate            *time.Time              `json:"confirmDate" db:"ConfirmDate"` // MSSQL GetDate()
 	CreateBy string `json:"createBy" db:"CreateBy"`
-	// CreateDate             *time.Time              `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
+	//CreateDate             *time.Time              `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 	UpdateBy *string `json:"updateBy" db:"UpdateBy"`
 	//UpdateDate             *time.Time              `json:"updateDate" db:"UpdateDate"` // MSSQL GetDate()
 	CancelID               *int                    `json:"cancelID" db:"CancelID"`
@@ -29,22 +29,23 @@ type BeforeReturnOrder struct {
 }
 
 type BeforeReturnOrderLine struct {
-	OrderNo    string  `json:"orderNo" db:"OrderNo"`
-	SKU        string  `json:"sku" db:"SKU"`
-	ItemName   string  `json:"itemName" db:"ItemName"`
-	QTY        int     `json:"qty" db:"QTY"`
-	ReturnQTY  int     `json:"returnQty" db:"ReturnQTY"`
-	Price      float64 `json:"price" db:"Price"`
-	CreateBy   string  `json:"createBy" db:"CreateBy"`
+	//RecID		  int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
+	OrderNo   string  `json:"orderNo" db:"OrderNo"`
+	SKU       string  `json:"sku" db:"SKU"`
+	ItemName  string  `json:"itemName" db:"ItemName"`
+	QTY       int     `json:"qty" db:"QTY"`
+	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
+	Price     float64 `json:"price" db:"Price"`
+	CreateBy  string  `json:"createBy" db:"CreateBy"`
+	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 	TrackingNo string  `json:"trackingNo" db:"TrackingNo"`
 	AlterSKU   *string `json:"alterSKU" db:"AlterSKU"`
 	UpdateBy   *string `json:"updateBy" db:"UpdateBy"`
 	//UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"` // MSSQL GetDate()
-	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 }
 
 type UpdateSaleReturnRequest struct {
-	SrNo string `json:"srNo" validate:"required" example:"SR-123456"`
+	SrNo string `json:"srNo" validate:"required" example:"SR-TEST-123456"`
 }
 
 type CancelSaleReturnRequest struct {

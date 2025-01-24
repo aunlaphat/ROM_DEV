@@ -12,25 +12,19 @@ import (
 
 // ReturnOrderRepository interface กำหนด method สำหรับการทำงานกับฐานข้อมูล
 type BeforeReturnRepository interface {
-	// Create
 	CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
 	CreateBeforeReturnOrderLine(ctx context.Context, orderNo string, lines []request.BeforeReturnOrderLine) error
 	CreateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
-	// Read
+
 	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
 	GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
 	ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error)
 	ListBeforeReturnOrderLinesByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 	GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error)
 
-	//Update
 	UpdateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error
 	UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error
 	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
-	// Update
-	//UpdateDynamicFields(ctx context.Context, orderNo string, fields map[string]interface{}) error
-
-	//Cancle
 
 	// ************************ Create Sale Return ************************ //
 	SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error)
@@ -39,7 +33,6 @@ type BeforeReturnRepository interface {
 	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
 	CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
 
-	// Draft & Confirm
 	// ************************ Draft & Confirm ************************ //
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
 	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
