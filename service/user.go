@@ -16,12 +16,9 @@ import (
 type UserService interface {
 	Login(req request.LoginWeb) (response.Login, error)
 	LoginLark(req request.LoginLark) (response.Login, error)
-	GetUser(ctx context.Context, req request.LoginWeb) (response.Login, error)
+	GetUser(ctx context.Context, req request.LoginLark) (response.Login, error)
 	GetUserFromLark(ctx context.Context, username, password string) (response.Login, error)
 	GetUserWithPermission(ctx context.Context, req request.LoginLark) (response.UserPermission, error)
-	/* 	AddUser(ctx context.Context, user request.User) error
-	   	EditUser(ctx context.Context, user request.User) error
-	   	DeleteUser(ctx context.Context, userID string) error */
 }
 
 func (srv service) Login(req request.LoginWeb) (response.Login, error) {
@@ -96,14 +93,14 @@ func (srv service) LoginLark(req request.LoginLark) (response.Login, error) {
 	return user, nil
 }
 
-func (srv service) GetUser(ctx context.Context, req request.LoginWeb) (response.Login, error) {
+func (srv service) GetUser(ctx context.Context, req request.LoginLark) (response.Login, error) {
 	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "GetUser", zap.String("username", req.UserName))
+	logFinish := srv.logger.LogAPICall(ctx, "GetUser", zap.String("userid", req.UserID))
 	defer logFinish("Completed", nil)
 
-	srv.logger.Debug("🚀 Starting GetUser", zap.String("username", req.UserName))
+	srv.logger.Debug("🚀 Starting GetUser", zap.String("userid", req.UserID))
 
-	user, err := srv.userRepo.GetUser(ctx, req.UserName, req.Password)
+	user, err := srv.userRepo.GetUserFromLark(ctx, req.UserID, req.UserName)
 	if err != nil {
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to get user", zap.Error(err))
@@ -111,7 +108,7 @@ func (srv service) GetUser(ctx context.Context, req request.LoginWeb) (response.
 	}
 
 	logFinish("Success", nil)
-	srv.logger.Debug("✅ Successfully retrieved user", zap.String("username", req.UserName))
+	srv.logger.Debug("✅ Successfully retrieved user", zap.String("userid", req.UserID))
 	return user, nil
 }
 
@@ -152,19 +149,3 @@ func (srv service) GetUserWithPermission(ctx context.Context, req request.LoginL
 	srv.logger.Debug("✅ Successfully retrieved user with permission", zap.String("username", req.UserID))
 	return user, nil
 }
-
-/* // AddUser adds a new user to the database
-func (srv service) AddUser(ctx context.Context, user request.User) error {
-	return srv.userRepo.AddUser(ctx, user)
-}
-
-// EditUser updates the role and warehouse of an existing user
-func (srv service) EditUser(ctx context.Context, user request.User) error {
-	return srv.userRepo.EditUser(ctx, user)
-}
-
-// DeleteUser removes a user from the database
-func (srv service) DeleteUser(ctx context.Context, userID string) error {
-	return srv.userRepo.DeleteUser(ctx, userID)
-}
-*/
