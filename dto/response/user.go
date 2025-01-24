@@ -13,6 +13,7 @@ type Login struct {
 type UserPermission struct {
 	UserID       string `json:"userID,omitempty" db:"UserID"`
 	UserName     string `json:"userName,omitempty" db:"UserName"`
+	Password     string `json:"password,omitempty" db:"Password"`
 	NickName     string `json:"nickName,omitempty" db:"NickName"`
 	FullNameTH   string `json:"fullNameTH,omitempty" db:"FullNameTH"`
 	DepartmentNo string `json:"departmentNo,omitempty" db:"DepartmentNo"`

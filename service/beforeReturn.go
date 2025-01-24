@@ -97,7 +97,7 @@ func (srv service) UpdateBeforeReturnOrderWithLines(ctx context.Context, req req
 
 // Method สำหรับดึงรายการ Before Return Orders ทั้งหมด
 func (srv service) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
-	srv.logger.Info("🔎 Starting to list all return orders")         // Logging ว่าเริ่มการดึงรายการ return orders ทั้งหมด
+	srv.logger.Info("🔎 Starting to list all return orders")  // Logging ว่าเริ่มการดึงรายการ return orders ทั้งหมด
 	orders, err := srv.beforeReturnRepo.ListBeforeReturnOrders(ctx) // เรียก repository เพื่อดึงรายการ return orders ทั้งหมด
 	if err != nil {
 		srv.logger.Error("❌ Failed to list return orders", zap.Error(err)) // Logging ว่าการดึงรายการ return orders ล้มเหลว
@@ -110,7 +110,7 @@ func (srv service) ListBeforeReturnOrders(ctx context.Context) ([]response.Befor
 // Method สำหรับดึง Before Return Order โดยใช้ OrderNo
 func (srv service) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("🔎 Starting to get return order by order number", zap.String("OrderNo", orderNo)) // Logging ว่าเริ่มการดึง return order โดยใช้ order number
-	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)                    // เรียก repository เพื่อดึง return order โดยใช้ order number
+	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)                           // เรียก repository เพื่อดึง return order โดยใช้ order number
 	if err != nil {
 		srv.logger.Error("❌ Failed to get return order by order number", zap.Error(err)) // Logging ว่าการดึง return order ล้มเหลว
 		return nil, err
@@ -120,8 +120,8 @@ func (srv service) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo st
 
 // Method สำหรับดึงรายการ Before Return Order Lines ทั้งหมด
 func (srv service) ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error) {
-	srv.logger.Info("🔎 Starting to list all return order lines")       // Logging ว่าเริ่มการดึงรายการ return order lines ทั้งหมด
-	lines, err := srv.beforeReturnRepo.ListBeforeReturnOrderLines(ctx) // เรียก repository เพื่อดึงรายการ return order lines ทั้งหมด
+	srv.logger.Info("🔎 Starting to list all return order lines") // Logging ว่าเริ่มการดึงรายการ return order lines ทั้งหมด
+	lines, err := srv.beforeReturnRepo.ListBeforeReturnOrderLines(ctx)  // เรียก repository เพื่อดึงรายการ return order lines ทั้งหมด
 	if err != nil {
 		srv.logger.Error("❌ Failed to list return order lines", zap.Error(err)) // Logging ว่าการดึงรายการ return order lines ล้มเหลว
 		return nil, err
@@ -133,7 +133,7 @@ func (srv service) ListBeforeReturnOrderLines(ctx context.Context) ([]response.B
 // Method สำหรับดึง Before Return Order Lines โดยใช้ OrderNo
 func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
 	srv.logger.Info("🔎 Starting to get return order lines by order number", zap.String("OrderNo", orderNo)) // Logging ว่าเริ่มการดึง return order lines โดยใช้ order number
-	lines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)                      // เรียก repository เพื่อดึง return order lines โดยใช้ order number
+	lines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)                             // เรียก repository เพื่อดึง return order lines โดยใช้ order number
 	if err != nil {
 		srv.logger.Error("❌ Failed to get return order lines by order number", zap.Error(err)) // Logging ว่าการดึง return order lines ล้มเหลว
 		return nil, err

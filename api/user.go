@@ -13,6 +13,9 @@ func (app *Application) UserRoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/user", func(r chi.Router) {
 		r.Post("/get-user", app.GetUser)
 		r.Post("/get-user-with-permission", app.GetUserWithPermission)
+		/* 		r.Post("/add-user", app.AddUser)
+		   		r.Put("/edit-user", app.EditUser)
+		   		r.Delete("/delete-user/{userID}", app.DeleteUser) */
 	})
 }
 
