@@ -22,106 +22,112 @@ type LoginJWT struct {
 	UserName string `json:"userName" db:"Username" example:"string"`
 }
 
-/********** Order ***************/
-
-//ข้อมูลสำหรับคำสั่งซื้อ
-//ข้อมูลลูกค้า แบรนด์/บริษัทในเครือที่สั่ง เชื่อมกับจน. รหัสสินค้าด้วย OrderNo ด้านล่าง
-type CreateOrderRequest struct {
-	OrderNo         string  `json:"orderNo" db:"OrderNo" example:"OD0001"`
-	BrandName       *string `json:"brandName" db:"BrandName" example:"BEWELL"`
-	CustName        *string `json:"custName" db:"CustName" example:"Fa"`
-	CustAddress     *string `json:"custAddress" db:"CustAddress" example:"7/20"`
-	CustDistrict    *string `json:"custDistrict" db:"CustDistrict" example:"Bang-Kruay"`
-	CustSubDistrict *string `json:"custSubDistrict" db:"CustSubDistrict" example:"Bang-Kruay"`
-	CustProvince    *string `json:"custProvince" db:"CustProvince" example:"Nonthaburi"`
-	CustPostCode    *string `json:"custPostCode" db:"CustPostCode" example:"11130"`
-	CustPhoneNum    *string `json:"custPhoneNum" db:"CustPhoneNum" example:"0912345678"`
-
-	OrderLines []OrderLineRequest `json:"orderLines"`
-}
-
-type UpdateOrderRequest struct {
-	OrderNo         string  `json:"-" db:"OrderNo"`
-	CustName        *string `json:"custName" db:"CustName" example:"Fa"`
-	CustAddress     *string `json:"custAddress" db:"CustAddress" example:"1/12"`
-	CustDistrict    *string `json:"custDistrict" db:"CustDistrict" example:"Bang-Plad"`
-	CustSubDistrict *string `json:"custSubDistrict" db:"CustSubDistrict" example:"Bang-Plad"`
-	CustProvince    *string `json:"custProvince" db:"CustProvince" example:"Bangkok"`
-	CustPostCode    *string `json:"custPostCode" db:"CustPostCode" example:"10600"`
-	CustPhoneNum    *string `json:"custPhoneNum" db:"CustPhoneNum" example:"0921234567"`
-}
-
-//ข้อมูลของสินค้าแต่ละชิ้นที่ลูกค้าสั่ง เชื่อมกันกับด้านบนด้วย OrderNo
-type OrderLineRequest struct {
-	OrderNo  string   `json:"-" db:"OrderNo" `
-	SKU      *string  `json:"sku" db:"SKU" example:"SKU12345"`
-	ItemName *string  `json:"itemName" db:"ItemName" example:"เก้าอี้"`
-	QTY      *int     `json:"qty" db:"QTY" example:"5"`
-	Price    *float64 `json:"price" db:"Price" example:"5900.00"`
-}
-
-/********** Return Order ***************/
+/********** Return Order (After) ***************/
 
 type CreateReturnOrder struct {
-	ReturnID        string          `json:"returnId" db:"ReturnID" example:"RID0001"`                    
-	OrderNo         string          `json:"orderNo" db:"OrderNo" example:"ORD0001"`                         
-	SaleOrder       string          `json:"saleOrder" db:"SaleOrder" example:"SO0001"`           
-	SaleReturn      string          `json:"saleReturn" db:"SaleReturn" example:"SR0001"`          
-	TrackingNo      string          `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`         
-	PlatfID         *int            `json:"platfId" db:"PlatfID" example:"1"`              
-	ChannelID       *int            `json:"channelId" db:"ChannelID" example:"2"`          
-	OptStatusID     *int            `json:"optStatusId" db:"OptStatusID" example:"1"`       
-	AxStatusID      *int            `json:"axStatusId" db:"AxStatusID" example:"1"`         
-	PlatfStatusID   *int            `json:"platfStatusId" db:"PlatfStatusID" example:"1"`    
-	Remark          *string         `json:"remark" db:"Remark" example:""`
-	CancelID        *int            `json:"cancelId" db:"CancelID" example:"1"`             
-	StatusCheckID   *int            `json:"statusCheckId" db:"StatusCheckID" example:"1"`    
-	CheckBy         *string         `json:"checkBy" db:"CheckBy" example:"dev03"`                
-	Description     *string         `json:"description" db:"Description" example:""`
+	OrderNo       string  `json:"orderNo" db:"OrderNo" example:"ORD0001"`
+	SoNo          string  `json:"soNo" db:"SoNo" example:"SO0001"`
+	SrNo          string  `json:"srNo" db:"SrNo" example:"SR0001"`
+	TrackingNo    string  `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	PlatfID       *int    `json:"platfId" db:"PlatfID" example:"1"`
+	ChannelID     *int    `json:"channelId" db:"ChannelID" example:"2"`
+	OptStatusID   *int    `json:"optStatusId" db:"OptStatusID" example:"1"`
+	AxStatusID    *int    `json:"axStatusId" db:"AxStatusID" example:"1"`
+	PlatfStatusID *int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
+	Remark        *string `json:"remark" db:"Remark" example:""`
+	CancelID      *int    `json:"cancelId" db:"CancelID" example:"1"`
+	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
+	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
+	Description   *string `json:"description" db:"Description" example:""`
 	// CreateBy      string     	`json:"createBy" db:"CreateBy"`		// 'USER'
 	// CreateDate   *time.Time      `json:"createDate" db:"CreateDate"` // MSSQL SYSDATETIME() function
 
-	ReturnOrderLine	[]ReturnOrderLine `json:"ReturnOrderLine"`
+	ReturnOrderLine []ReturnOrderLine `json:"ReturnOrderLine"`
 }
 
 type UpdateReturnOrder struct {
-	ReturnID        string          `json:"-" db:"ReturnID"`                    
-	OrderNo         string          `json:"-" db:"OrderNo"`                         
-	SaleOrder       string          `json:"-" db:"SaleOrder"`           
-	SaleReturn      *string         `json:"saleReturn" db:"SaleReturn" example:"SR0001"`          
-	TrackingNo      *string         `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`         
-	PlatfID         *int            `json:"platfId" db:"PlatfID" example:"1"`              
-	ChannelID       *int            `json:"channelId" db:"ChannelID" example:"2"`          
-	OptStatusID     *int            `json:"optStatusId" db:"OptStatusID" example:"1"`       
-	AxStatusID      *int            `json:"axStatusId" db:"AxStatusID" example:"1"`         
-	PlatfStatusID   *int            `json:"platfStatusId" db:"PlatfStatusID" example:"1"`    
-	Remark          *string         `json:"remark" db:"Remark" example:""`
-	CancelID        *int            `json:"cancelId" db:"CancelID" example:"1"`             
-	StatusCheckID   *int            `json:"statusCheckId" db:"StatusCheckID" example:"1"`    
-	CheckBy         *string         `json:"checkBy" db:"CheckBy" example:"dev03"`                
-	Description     *string         `json:"description" db:"Description" example:""`
+	OrderNo       string  `json:"-" db:"OrderNo"`
+	SoNo          string  `json:"-" db:"SoNo"`
+	SrNo          *string `json:"srNo" db:"SrNo" example:"SR0001"`
+	TrackingNo    *string `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	PlatfID       *int    `json:"platfId" db:"PlatfID" example:"1"`
+	ChannelID     *int    `json:"channelId" db:"ChannelID" example:"2"`
+	OptStatusID   *int    `json:"optStatusId" db:"OptStatusID" example:"1"`
+	AxStatusID    *int    `json:"axStatusId" db:"AxStatusID" example:"1"`
+	PlatfStatusID *int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
+	Remark        *string `json:"remark" db:"Remark" example:""`
+	CancelID      *int    `json:"cancelId" db:"CancelID" example:"1"`
+	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
+	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
+	Description   *string `json:"description" db:"Description" example:""`
 	// UpdateBy     *string    	    `json:"updateBy" db:"UpdateBy"`     // 'USER'
 	// UpdateDate   *time.Time      `json:"updateDate" db:"UpdateDate"` // MSSQL SYSDATETIME() function
 
 }
 
-type ReturnOrderLine struct {       
-	ReturnID        string          `json:"-" db:"ReturnID"`             
-	OrderNo         string          `json:"-" db:"OrderNo"`                                  
-	TrackingNo      string          `json:"-" db:"TrackingNo"`   
-    SKU             string          `json:"sku" db:"SKU" example:"SKU12345"`         
-    ReturnQTY       int             `json:"returnQTY" db:"ReturnQTY" example:"5"` 
-    CheckQTY        *int            `json:"checkQTY" db:"CheckQTY" example:"5"`
-    Price           float64         `json:"price" db:"Price" example:"199.99"`      
-	// AlterSKU        *string         `json:"-" db:"AlterSKU" `  
+type ReturnOrderLine struct {
+	OrderNo    string  `json:"-" db:"OrderNo"`
+	TrackingNo string  `json:"-" db:"TrackingNo"`
+	SKU        string  `json:"sku" db:"SKU" example:"SKU12345"`
+	QTY        *int    `json:"qty" db:"QTY" example:"5"`
+	ReturnQTY  int     `json:"returnQTY" db:"ReturnQTY" example:"5"`
+	Price      float64 `json:"price" db:"Price" example:"199.99"`
+	// AlterSKU        *string         `json:"-" db:"AlterSKU" `
 }
+
+/********** Trade Return (Offline) ***************/
+
+type ConfirmTradeReturnRequest struct {
+	Identifier  string                   `json:"-" `           // mean => OrderNo หรือ TrackingNo
+	ImportLines []TradeReturnLineRequest `json:"importLines" validate:"required,dive"` // รายการสินค้า
+}
+
+type TradeReturnLineRequest struct {
+	SKU       string  `json:"sku" db:"SKU" validate:"required"`
+	ItemName  string  `json:"itemName" db:"ItemName" validate:"required"`
+	QTY       int     `json:"qty" db:"QTY" validate:"required"`
+	ReturnQTY int     `json:"returnQty" db:"ReturnQTY" validate:"required"`
+	Price     float64 `json:"price" db:"Price" validate:"required"`
+	//TrackingNo string  `json:"trackingNo" db:"TrackingNo"`	// add form data BeforeReturnOrder
+	CreateBy   string  `json:"-" db:"CreateBy" `		    // from user login
+	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
+	FilePath    string `json:"filePath" db:"FilePath" validate:"required"`
+	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID" validate:"required"`
+}
+
+type Image struct {
+	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"` // ID ของประเภทของรูปภาพ
+	FilePath    string `json:"-" db:"FilePath"`     // เส้นทางของไฟล์รูปภาพ
+}
+
+type TradeReturnLine struct {
+	TradeReturnLine []TradeReturnLineRequest `json:"tradeReturnLine"`
+}
+
+/********** Import Order to Warehouse: Sale Return ***************/
 
 type Images struct {
-    ReturnID    string `json:"returnID" db:"ReturnID"`
-    SKU         string `json:"sku" db:"SKU"`
-    FilePath    string `json:"filePath" db:"FilePath"`
-    ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"`
-    CreateBy    string `json:"createBy" db:"CreateBy"`
-    OrderNo     string `json:"orderNo" db:"OrderNo"` 
+	// ReturnID    string `json:"returnID" db:"ReturnID"`
+	SKU         string `json:"sku" db:"SKU"`
+	FilePath    string `json:"filePath" db:"FilePath"`
+	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"`
+	CreateBy    string `json:"createBy" db:"CreateBy"`
+	OrderNo     string `json:"orderNo" db:"OrderNo"`
 }
 
+type ConfirmToReturnRequest struct {
+	OrderNo           string              `json:"-"`
+	UpdateToReturn    []UpdateToReturn    `json:"updateToReturn"`    // เลข sr สุ่มจาก ax
+	ImportLinesActual []ImportLinesActual `json:"importLinesActual"` // รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี
+}
+
+type UpdateToReturn struct {
+	SrNo string `json:"srNo" db:"SrNo"`
+}
+
+type ImportLinesActual struct {
+	SKU          string  `json:"sku" db:"SKU"`
+	ActualQTY    int     `json:"actualQty" db:"ActualQTY"`
+	Price        float64 `json:"price" db:"Price"`
+	StatusDelete bool    `json:"statusDelete" db:"StatusDelete"`
+}

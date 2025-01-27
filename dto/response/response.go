@@ -23,41 +23,12 @@ type UserInform struct {
 	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo" example:"G01"`
 }
 
-/********** Order ***************/
-
-type OrderResponse struct {
-	OrderNo         string     `json:"orderNo" db:"OrderNo" example:"OD0001"`
-	BrandName       *string    `json:"brandName" db:"BrandName" example:"BEWELL"`
-	CustName        *string    `json:"custName" db:"CustName" example:"Fa"`
-	CustAddress     *string    `json:"custAddress" db:"CustAddress" example:"7/20"`
-	CustDistrict    *string    `json:"custDistrict" db:"CustDistrict" example:"Bang-Kruay"`
-	CustSubDistrict *string    `json:"custSubDistrict" db:"CustSubDistrict" example:"Bang-Kruay"`
-	CustProvince    *string    `json:"custProvince" db:"CustProvince" example:"Nonthaburi"`
-	CustPostCode    *string    `json:"custPostCode" db:"CustPostCode" example:"11130"`
-	CustPhoneNum    *string    `json:"custPhoneNum" db:"CustPhoneNum" example:"0912345678"`
-	CreateDate      *time.Time `json:"createDate" db:"CreateDate" example:"2024-11-22 09:45:33.260"`
-	UserCreated     *string    `json:"userCreated" db:"UserCreated" example:"intern"`
-	UpdateDate      *time.Time `json:"updateDate" db:"UpdateDate" example:"2024-11-30 09:45:33.260"`
-	UserUpdated     *string    `json:"userUpdates" db:"UserUpdated" example:"intern"`
-
-	OrderLines []OrderLineResponse `json:"orderLines"`
-}
-
-type OrderLineResponse struct {
-	OrderNo  *string  `json:"orderNo" db:"OrderNo" example:"OD0001"`
-	SKU      *string  `json:"sku" db:"SKU" example:"SKU12345"`
-	ItemName *string  `json:"itemName" db:"ItemName" example:"เก้าอี้"`
-	QTY      *int     `json:"qty" db:"QTY" example:"5"`
-	Price    *float64 `json:"price" db:"Price" example:"5900.00"`
-}
-
 /********** Return Order ***************/
 
 type ReturnOrder struct {
-	ReturnID      string     `json:"returnId" db:"ReturnID"`
 	OrderNo       string     `json:"orderNo" db:"OrderNo"`
-	SaleOrder     string     `json:"saleOrder" db:"SaleOrder"`
-	SaleReturn    *string    `json:"saleReturn" db:"SaleReturn"`
+	SoNo          string     `json:"soNo" db:"SoNo"`
+	SrNo          *string    `json:"srNo" db:"SrNo"`
 	TrackingNo    *string    `json:"trackingNo" db:"TrackingNo"`
 	PlatfID       *int       `json:"platfId" db:"PlatfID"`
 	ChannelID     *int       `json:"channelId" db:"ChannelID"`
@@ -78,13 +49,11 @@ type ReturnOrder struct {
 }
 
 type ReturnOrderLine struct {
-	RecID      int        `json:"recId" db:"RecID"`
-	ReturnID   string     `json:"returnId" db:"ReturnID"`
 	OrderNo    string     `json:"orderNo" db:"OrderNo"`
 	TrackingNo string     `json:"trackingNo" db:"TrackingNo"`
 	SKU        string     `json:"sku" db:"SKU"`
 	ReturnQTY  int        `json:"returnQTY" db:"ReturnQTY"`
-	CheckQTY   *int       `json:"checkQTY" db:"CheckQTY"`
+	QTY        *int       `json:"qty" db:"QTY"`
 	Price      float64    `json:"price" db:"Price"`
 	CreateBy   string     `json:"createBy" db:"CreateBy"`
 	CreateDate time.Time  `json:"createDate" db:"CreateDate"`
@@ -102,11 +71,22 @@ type CancelStatus struct {
 	CancelBy     *string    `json:"cancelBy" db:"CancelBy"`
 }
 
-type ReturnOrderHead struct {
-	ReturnOrder ReturnOrder `json:"ReturnOrder"`
+/********** OrderHead + Line data Project ***************/
+
+type OrderDetail struct {
+	// json => OrderHeadDetail[ OrderLineDetail[ {},{},..] ]
+	OrderHeadDetail []OrderHeadDetail `json:"OrderHeadDetail"`
 }
 
-/********** OrderHead + Line data Project ***************/
+type OrderHeadDetail struct {
+	OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
+	SoNo        *string   `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
+	StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
+	SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
+	CreateDate  time.Time `db:"CreateDate" json:"-"`            // วันที่สร้างรายการ
+
+	OrderLineDetail []OrderLineDetail `json:"OrderLineDetail"`
+}
 
 type OrderLineDetail struct {
 	OrderNo     string    `db:"OrderNo" json:"-"`         // เลขที่ใบสั่งซื้อ
@@ -120,19 +100,21 @@ type OrderLineDetail struct {
 	CreateDate  time.Time `db:"CreateDate" json:"-"`      // วันที่สร้างรายการ
 }
 
-type OrderHeadDetail struct {
-	OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
-	SoNo        *string   `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
-	StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
-	SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
-	CreateDate  time.Time `db:"CreateDate" json:"-"`            // วันที่สร้างรายการ
+/********** Import Order to Warehouse: Sale Return ***************/
 
-	OrderLineDetail []OrderLineDetail `json:"OrderLineDetail"`
+type ImportOrderResponse struct {
+	OrderNo     string                  `json:"orderNo" db:"OrderNo"`
+	SoNo        string                  `json:"soNo" db:"SoNo"`
+	TrackingNo  string     `json:"trackingNo" db:"TrackingNo"`
+	CreateDate  *time.Time              `json:"createDate" db:"CreateDate"`
+	OrderLines  []ImportOrderLineResponse `json:"orderLines"`
 }
 
-type OrderDetail struct {
-	OrderHeadDetail []OrderHeadDetail `json:"OrderHeadDetail"`
-	//OrderLineDetail		[]OrderLineDetail		  `json:"OrderLineDetail"`
+type ImportOrderLineResponse struct {
+	SKU      string  `json:"sku" db:"SKU"`
+	ItemName string  `json:"itemName" db:"ItemName"`
+	QTY      int     `json:"qty" db:"QTY"`
+	Price    float64 `json:"price" db:"Price"`
 }
 
 type ImageResponse struct {

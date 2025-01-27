@@ -18,13 +18,13 @@ import (
 
 func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
 	apiRouter.Route("/reorder", func(r chi.Router) {
-		r.Get("/allget", app.AllGetReturnOrder)                             // GET /reorder/allget
-		r.Get("/getbyID/{returnID}", app.GetReturnOrderID)                  // GET /reorder/getbyID/{returnID}
-		r.Get("/allgetline", app.GetAllReturnOrderLines)                    // GET /reorder/allgetline
-		r.Get("/getlinebyID/{returnID}", app.GetReturnOrderLinesByReturnID) // GET /reorder/getlinebyID/{returnID}
-		r.Post("/create", app.CreateReturnOrder)                            // POST /reorder/create
-		r.Patch("/update/{returnID}", app.UpdateReturnOrder)                // PUT /reorder/update/{returnID}
-		r.Delete("/delete/{returnID}", app.DeleteReturnOrder)               // DELETE /reorder/delete/{returnID}
+		r.Get("/allget", app.AllGetReturnOrder)                            // GET /reorder/allget
+		r.Get("/getbyID/{orderNo}", app.GetReturnOrderID)                  // GET /reorder/getbyID/{orderNo}
+		r.Get("/allgetline", app.GetAllReturnOrderLines)                   // GET /reorder/allgetline
+		r.Get("/getlinebyID/{orderNo}", app.GetReturnOrderLinesByReturnID) // GET /reorder/getlinebyID/{orderNo}
+		r.Post("/create", app.CreateReturnOrder)                           // POST /reorder/create
+		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)                // PUT /reorder/update/{orderNo}
+		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)               // DELETE /reorder/delete/{orderNo}
 	})
 }
 
@@ -64,23 +64,23 @@ func (api *Application) AllGetReturnOrder(w http.ResponseWriter, r *http.Request
 // @Tags         ReturnOrder
 // @Accept       json
 // @Produce      json
-// @Param        returnID  path     string  true  "Return ID"
+// @Param        orderNo  path     string  true  "Return ID"
 // @Success      200 	  {object} Response{result=[]entity.ReturnOrder} "Get by ID"
 // @Failure      400      {object} Response "Bad Request"
 // @Failure      404      {object} Response "not found endpoint"
 // @Failure      500      {object} Response "Internal Server Error"
-// @Router       /reorder/getbyID/{returnID} [get]
+// @Router       /reorder/getbyID/{orderNo} [get]
 func (app *Application) GetReturnOrderID(w http.ResponseWriter, r *http.Request) {
-	// Step 1: ดึง ReturnID จาก URL Parameter
-	returnID := chi.URLParam(r, "returnID")
-	if returnID == "" {
-		// Step 2: ตรวจสอบว่า ReturnID ว่างหรือไม่
-		handleError(w, errors.ValidationError("ReturnID is required"))
+	// Step 1: ดึง OrderNo จาก URL Parameter
+	orderNo := chi.URLParam(r, "orderNo")
+	if orderNo == "" {
+		// Step 2: ตรวจสอบว่า OrderNo ว่างหรือไม่
+		handleError(w, errors.ValidationError("OrderNo is required"))
 		return
 	}
 
-	// Step 3: เรียก Service เพื่อดึงข้อมูล Return Order ที่ตรงกับ ReturnID
-	result, err := app.Service.ReturnOrder.GetReturnOrderByID(r.Context(), returnID)
+	// Step 3: เรียก Service เพื่อดึงข้อมูล Return Order ที่ตรงกับ OrderNo
+	result, err := app.Service.ReturnOrder.GetReturnOrderByID(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -122,20 +122,20 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 // @Tags         ReturnOrder
 // @Accept       json
 // @Produce      json
-// @Param        returnID  path     string  true  "Return ID"
+// @Param        orderNo  path     string  true  "Return ID"
 // @Success      200 	  {object} Response{result=[]entity.ReturnOrderLine} "Get by ID"
 // @Failure      400      {object} Response "Bad Request"
 // @Failure      404      {object} Response "not found endpoint"
 // @Failure      500      {object} Response "Internal Server Error"
-// @Router       /reorder/getlinebyID/{returnID} [get]
+// @Router       /reorder/getlinebyID/{orderNo} [get]
 func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *http.Request) {
-	returnID := chi.URLParam(r, "returnID")
-	if returnID == "" {
-		handleError(w, errors.ValidationError("ReturnID is required"))
+	orderNo := chi.URLParam(r, "orderNo")
+	if orderNo == "" {
+		handleError(w, errors.ValidationError("OrderNo is required"))
 		return
 	}
 
-	result, err := app.Service.ReturnOrder.GetReturnOrderLinesByReturnID(r.Context(), returnID)
+	result, err := app.Service.ReturnOrder.GetReturnOrderLinesByReturnID(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -165,9 +165,9 @@ func (api *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Step 3: ตรวจสอบฟิลด์ที่จำเป็น ReturnID และ OrderNo ว่าว่างหรือไม่
-	if req.ReturnID == "" || req.OrderNo == "" {
-		handleError(w, errors.BadRequestError("ReturnID or OrderNo are required"))
+	// Step 3: ตรวจสอบฟิลด์ที่จำเป็น OrderNo และ OrderNo ว่าว่างหรือไม่
+	if req.OrderNo == "" {
+		handleError(w, errors.BadRequestError("OrderNo are required"))
 		return
 	}
 
@@ -196,24 +196,24 @@ func (api *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 }
 
 // @Summary Update Order
-// @Description Update an existing return order using returnID in the path
+// @Description Update an existing return order using orderNo in the path
 // @ID Update-ReturnOrder
 // @Tags ReturnOrder
 // @Accept json
 // @Produce json
-// @Param returnID path string true "Return ID"
+// @Param orderNo path string true "Return ID"
 // @Param order body request.UpdateReturnOrder true "Updated Order Data"
 // @Success 200 {object} Response "ReturnOrder Updated Successfully"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 404 {object} Response "Order Not Found"
 // @Failure 500 {object} Response "Internal Server Error"
-// @Router /reorder/update/{returnID} [patch]
+// @Router /reorder/update/{orderNo} [patch]
 func (api *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request) {
-	// Step 1: ดึง ReturnID จาก URL Parameter
-	returnID := chi.URLParam(r, "returnID")
-	if returnID == "" {
-		// Step 2: ตรวจสอบว่า ReturnID ว่างหรือไม่
-		handleError(w, errors.ValidationError("ReturnID is required in the path"))
+	// Step 1: ดึง OrderNo จาก URL Parameter
+	orderNo := chi.URLParam(r, "orderNo")
+	if orderNo == "" {
+		// Step 2: ตรวจสอบว่า OrderNo ว่างหรือไม่
+		handleError(w, errors.ValidationError("OrderNo is required in the path"))
 		return
 	}
 
@@ -224,8 +224,8 @@ func (api *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Step 5: ระบุ ReturnID ที่ได้จาก URL ลงในโครงสร้างข้อมูล
-	req.ReturnID = returnID
+	// Step 5: ระบุ OrderNo ที่ได้จาก URL ลงในโครงสร้างข้อมูล
+	req.OrderNo = orderNo
 
 	// Step 6: เรียก Service เพื่ออัปเดตข้อมูล Return Order
 	err := api.Service.ReturnOrder.UpdateReturnOrder(r.Context(), req)
@@ -243,24 +243,24 @@ func (api *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Tags 		ReturnOrder
 // @Accept 		json
 // @Produce 	json
-// @Param 		returnID path string true "Return ID"
+// @Param 		orderNo path string true "Return ID"
 // @Success 	200 {object} Response{result=string} "ReturnOrder Deleted"
 // @Success 	204 {object} Response "No Content, Order Delete Successfully"
 // @Failure 	400 {object} Response "Bad Request"
 // @Failure 	404 {object} Response "Order Not Found"
 // @Failure 	500 {object} Response "Internal Server Error"
-// @Router 		/reorder/delete/{returnID} [delete]
+// @Router 		/reorder/delete/{orderNo} [delete]
 func (api *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request) {
-	// Step 1: ดึง ReturnID จาก URL Parameter
-	returnID := chi.URLParam(r, "returnID")
-	if returnID == "" {
-		// Step 2: ตรวจสอบว่า ReturnID ว่างหรือไม่
-		handleError(w, errors.ValidationError("ReturnID is required in the path"))
+	// Step 1: ดึง OrderNo จาก URL Parameter
+	orderNo := chi.URLParam(r, "orderNo")
+	if orderNo == "" {
+		// Step 2: ตรวจสอบว่า OrderNo ว่างหรือไม่
+		handleError(w, errors.ValidationError("OrderNo is required in the path"))
 		return
 	}
 
 	// Step 3: เรียก Service เพื่อทำการลบข้อมูล Return Order
-	err := api.Service.ReturnOrder.DeleteReturnOrder(r.Context(), returnID)
+	err := api.Service.ReturnOrder.DeleteReturnOrder(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return

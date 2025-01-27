@@ -40,22 +40,33 @@ func (app *Application) LoginTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decode JSON Payload
-	var loginReq req.Login
-	err := json.NewDecoder(r.Body).Decode(&loginReq)
-	if err != nil {
-		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
-		return
-	}
+// // @Summary User Login with UserID
+// // @Description Handles user login requests and generates a token for the authenticated user.
+// // @ID usertest-login
+// // @Tags LoginTest
+// // @Accept json
+// // @Produce json
+// // @Param login-request body request.Login true "User login credentials in JSON format"
+// // @Success 200 {object} Response{result=string} "JWT token"
+// // @Failure 400 {object} Response "Bad Request"
+// // @Failure 500 {object} Response "Internal Server Error"
+// // @Router /test/login [post]
+// func (app *Application) LoginTest(w http.ResponseWriter, r *http.Request) {
+// 	// ตรวจสอบ Header
+// 	if r.Header.Get("Content-Type") != "application/json" {
+// 		http.Error(w, "Invalid content type", http.StatusBadRequest)
+// 		return
+// 	}
 
-	fmt.Printf("Received Login Request: %+v\n", loginReq)
+// 	// Decode JSON Payload
+// 	var loginReq req.Login
+// 	err := json.NewDecoder(r.Body).Decode(&loginReq)
+// 	if err != nil {
+// 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+// 		return
+// 	}
 
-	// เรียก service เพื่อเข้าสู่ระบบ
-	user, err := app.Service.UserTest.LoginTest(loginReq)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
+// 	fmt.Printf("Received Login Request: %+v\n", loginReq)
 
 	// สร้าง JWT Token (ถ้าต้องการ)
 	token := app.GenerateTokenLogin(user)

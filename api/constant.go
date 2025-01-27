@@ -14,12 +14,11 @@ func (app *Application) Constants(apiRouter *chi.Mux) {
 		r.Get("/get-province", app.GetThaiProvince)
 		r.Get("/get-district", app.GetThaiDistrict)
 		r.Get("/get-sub-district", app.GetThaiSubDistrict)
-		// r.Get("/get-postcode", app.GetPostCode)
+		// r.Get("/get-postcode", app.GetPostCode) // รอพี่ไบรท์ดึงข้อมูล
 		r.Get("/get-warehouse", app.GetWarehouse)
 		r.Get("/get-productAll", app.GetProductAll)
 		r.Get("/get-productAlls", app.GetProductAlls)
-		
-		//r.Get("/get-customer", app.GetCustomer)
+		//r.Get("/get-customer", app.GetCustomer) // รอพี่ไบรท์ดึงข้อมูล
 	})
 }
 
