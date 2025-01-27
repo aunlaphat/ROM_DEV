@@ -177,7 +177,7 @@ func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeRetu
 	return createdOrder, nil
 }
 
-// create line for if want to add on line
+// add line create trade
 func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) error {
 
 	// ตรวจสอบ OrderNo ที่สร้างว่าซ้ำกับตัวที่มีหรือไม่
@@ -249,10 +249,30 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 		zap.String("Identifier", req.Identifier),
 		zap.String("UpdateBy", updateBy))
 
-	// ตรวจสอบความถูกต้องของข้อมูล
+	// ตรวจสอบค่าว่าง
 	if req.Identifier == "" || updateBy == "" {
 		return fmt.Errorf("identifier (OrderNo or TrackingNo) and updateBy are required")
 	}
+
+	// ตรวจสอบว่า orderNo or trackingNo มีอยู่ในฐานข้อมูล BeforeReturnOrder หรือไม่
+	exists, err := srv.beforeReturnRepo.CheckBefOrderOrTrackingExists(ctx, req.Identifier)
+	if err != nil {
+		return fmt.Errorf("failed to check orderNo or trackingNo existence: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("orderNo or trackingNo not found: %s", req.Identifier)
+	}
+
+	// ตรวจสอบว่ามี sku ที่ Identifier เดียวกันหรือไม่ หากมีสามารถเพิ่มได้ เพราะของหน้าคลังต้องตรงกับข้อมูลที่กรอกเข้าระบบ
+    for _, line := range req.ImportLines {
+        exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, req.Identifier, line.SKU)
+        if err != nil {
+            return fmt.Errorf("failed to check SKU existence: %w", err)
+        }
+        if !exists {
+            return fmt.Errorf("SKU %s does not exist in BeforeReturnOrderLine for Identifier %s", line.SKU, req.Identifier)
+        }
+    }
 
 	// 1. อัปเดตสถานะใน BeforeReturnOrder
 	if err := srv.beforeReturnRepo.UpdateBefToWaiting(ctx, req, updateBy); err != nil {
@@ -274,16 +294,6 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 	}
 
 	// 4. Insert ข้อมูลจาก importLines ลงใน ReturnOrderLine + Check ว่า SKU ตรงกับใน BeforeOD ก่อนถึงเพิ่มได้
-	for _, line := range req.ImportLines {
-		exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, line.SKU)
-		if err != nil {
-			return fmt.Errorf("failed to check SKU existence: %w", err)
-		}
-		if !exists {
-			return fmt.Errorf("SKU %s does not exist in BeforeReturnOrderLine for OrderNo %s", line.SKU, returnOrderData.OrderNo)
-		}
-	}
-
 	if err := srv.beforeReturnRepo.InsertReturnOrderLine(ctx, returnOrderData, req); err != nil {
 		return fmt.Errorf("failed to insert into ReturnOrderLine: %w", err)
 	}
@@ -306,20 +316,6 @@ func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToRetur
 		return fmt.Errorf("OrderNo and UpdateBy are required")
 	}
 
-	// ตรวจสอบ SKU
-	for _, line := range req.ImportLinesActual {
-		if line.SKU == "" {
-			return fmt.Errorf("SKU is required")
-		}
-		exists, err := srv.beforeReturnRepo.CheckReLineSKUExists(ctx, line.SKU)
-		if err != nil {
-			return fmt.Errorf("failed to check SKU existence: %w", err)
-		}
-		if !exists {
-			return fmt.Errorf("SKU %s does not exist in the database", line.SKU)
-		}
-	}
-
 	// ตรวจสอบว่า OrderNo ตรงกับฐานข้อมูลใน BeforeReturn หรือไม่
 	exists, err := srv.beforeReturnRepo.CheckBefOrderNoExists(ctx, req.OrderNo)
 	if err != nil {
@@ -328,6 +324,20 @@ func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToRetur
 	if !exists {
 		return fmt.Errorf("OrderNo does not exist in BeforeReturnOrder")
 	}
+
+    // ตรวจสอบ SKU
+    for _, line := range req.ImportLinesActual {
+        if line.SKU == "" {
+            return fmt.Errorf("SKU is required")
+        }
+        exists, err := srv.beforeReturnRepo.CheckReLineSKUExists(ctx, req.OrderNo, line.SKU)
+        if err != nil {
+            return fmt.Errorf("failed to check SKU existence: %w", err)
+        }
+        if !exists {
+            return fmt.Errorf("SKU %s does not exist in ReturnOrderLine for OrderNo %s", line.SKU, req.OrderNo)
+        }
+    }
 
 	// อัปเดต BeforeReturnOrder
 	if err := srv.beforeReturnRepo.UpdateStatusToSuccess(ctx, req.OrderNo, updateBy); err != nil {
@@ -435,7 +445,7 @@ func (srv service) UpdateBeforeReturnOrderWithLines(ctx context.Context, req req
 
 // Method สำหรับดึงรายการ Before Return Orders ทั้งหมด
 func (srv service) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
-	srv.logger.Info("🔎 Starting to list all return orders")  // Logging ว่าเริ่มการดึงรายการ return orders ทั้งหมด
+	srv.logger.Info("🔎 Starting to list all return orders")         // Logging ว่าเริ่มการดึงรายการ return orders ทั้งหมด
 	orders, err := srv.beforeReturnRepo.ListBeforeReturnOrders(ctx) // เรียก repository เพื่อดึงรายการ return orders ทั้งหมด
 	if err != nil {
 		srv.logger.Error("❌ Failed to list return orders", zap.Error(err)) // Logging ว่าการดึงรายการ return orders ล้มเหลว
@@ -448,7 +458,7 @@ func (srv service) ListBeforeReturnOrders(ctx context.Context) ([]response.Befor
 // Method สำหรับดึง Before Return Order โดยใช้ OrderNo
 func (srv service) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("🔎 Starting to get return order by order number", zap.String("OrderNo", orderNo)) // Logging ว่าเริ่มการดึง return order โดยใช้ order number
-	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)                           // เรียก repository เพื่อดึง return order โดยใช้ order number
+	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)                    // เรียก repository เพื่อดึง return order โดยใช้ order number
 	if err != nil {
 		srv.logger.Error("❌ Failed to get return order by order number", zap.Error(err)) // Logging ว่าการดึง return order ล้มเหลว
 		return nil, err
@@ -458,8 +468,8 @@ func (srv service) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo st
 
 // Method สำหรับดึงรายการ Before Return Order Lines ทั้งหมด
 func (srv service) ListBeforeReturnOrderLines(ctx context.Context) ([]response.BeforeReturnOrderLineResponse, error) {
-	srv.logger.Info("🔎 Starting to list all return order lines") // Logging ว่าเริ่มการดึงรายการ return order lines ทั้งหมด
-	lines, err := srv.beforeReturnRepo.ListBeforeReturnOrderLines(ctx)  // เรียก repository เพื่อดึงรายการ return order lines ทั้งหมด
+	srv.logger.Info("🔎 Starting to list all return order lines")       // Logging ว่าเริ่มการดึงรายการ return order lines ทั้งหมด
+	lines, err := srv.beforeReturnRepo.ListBeforeReturnOrderLines(ctx) // เรียก repository เพื่อดึงรายการ return order lines ทั้งหมด
 	if err != nil {
 		srv.logger.Error("❌ Failed to list return order lines", zap.Error(err)) // Logging ว่าการดึงรายการ return order lines ล้มเหลว
 		return nil, err
@@ -471,7 +481,7 @@ func (srv service) ListBeforeReturnOrderLines(ctx context.Context) ([]response.B
 // Method สำหรับดึง Before Return Order Lines โดยใช้ OrderNo
 func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderLineResponse, error) {
 	srv.logger.Info("🔎 Starting to get return order lines by order number", zap.String("OrderNo", orderNo)) // Logging ว่าเริ่มการดึง return order lines โดยใช้ order number
-	lines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)                             // เรียก repository เพื่อดึง return order lines โดยใช้ order number
+	lines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)                      // เรียก repository เพื่อดึง return order lines โดยใช้ order number
 	if err != nil {
 		srv.logger.Error("❌ Failed to get return order lines by order number", zap.Error(err)) // Logging ว่าการดึง return order lines ล้มเหลว
 		return nil, err

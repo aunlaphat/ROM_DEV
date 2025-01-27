@@ -84,7 +84,7 @@ definitions:
       platfStatusID:
         description: สถานะในแพลตฟอร์ม
         type: integer
-      remark:
+      reason:
         description: หมายเหตุ
         type: string
       returnID:
@@ -335,8 +335,7 @@ definitions:
       platfStatusId:
         example: 1
         type: integer
-      remark:
-        example: ""
+      reason:
         type: string
       soNo:
         example: SO0001
@@ -456,8 +455,7 @@ definitions:
       platfStatusId:
         example: 1
         type: integer
-      remark:
-        example: ""
+      reason:
         type: string
       srNo:
         example: SR0001
@@ -1834,7 +1832,7 @@ paths:
       summary: Upload images for import order
       tags:
       - Import Order
-  /reorder/allget:
+  /return-order/allget:
     get:
       consumes:
       - application/json
@@ -1868,8 +1866,8 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: Get Return Order
       tags:
-      - ReturnOrder
-  /reorder/allgetline:
+      - Return Order
+  /return-order/allgetline:
     get:
       consumes:
       - application/json
@@ -1903,8 +1901,8 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: Get Return Order Line
       tags:
-      - ReturnOrder
-  /reorder/create:
+      - Return Order
+  /return-order/create:
     post:
       consumes:
       - application/json
@@ -1941,15 +1939,15 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: Create Order
       tags:
-      - ReturnOrder
-  /reorder/delete/{orderNo}:
+      - Return Order
+  /return-order/delete/{orderNo}:
     delete:
       consumes:
       - application/json
       description: Delete an order
       operationId: delete-ReturnOrder
       parameters:
-      - description: Return ID
+      - description: Order No
         in: path
         name: orderNo
         required: true
@@ -1984,15 +1982,15 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: Delete Order
       tags:
-      - ReturnOrder
-  /reorder/getbyID/{orderNo}:
+      - Return Order
+  /return-order/getbyID/{orderNo}:
     get:
       consumes:
       - application/json
-      description: Get details of an order by its return id
+      description: Get details of an order by its order no
       operationId: GetByID-ReturnOrder
       parameters:
-      - description: Return ID
+      - description: Order No
         in: path
         name: orderNo
         required: true
@@ -2025,15 +2023,15 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: Get Return Order by ID
       tags:
-      - ReturnOrder
-  /reorder/getlinebyID/{orderNo}:
+      - Return Order
+  /return-order/getlinebyID/{orderNo}:
     get:
       consumes:
       - application/json
-      description: Get details of an order line by its return id
+      description: Get details of an order line by its order no
       operationId: GetLineByID-ReturnOrder
       parameters:
-      - description: Return ID
+      - description: Order No
         in: path
         name: orderNo
         required: true
@@ -2066,15 +2064,15 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: Get Return Order Line by ID
       tags:
-      - ReturnOrder
-  /reorder/update/{orderNo}:
+      - Return Order
+  /return-order/update/{orderNo}:
     patch:
       consumes:
       - application/json
       description: Update an existing return order using orderNo in the path
       operationId: Update-ReturnOrder
       parameters:
-      - description: Return ID
+      - description: Order No
         in: path
         name: orderNo
         required: true
@@ -2106,7 +2104,7 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: Update Order
       tags:
-      - ReturnOrder
+      - Return Order
   /sale-return/cancel/{orderNo}:
     post:
       consumes:

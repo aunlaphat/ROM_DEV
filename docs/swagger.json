@@ -1607,7 +1607,7 @@
                 }
             }
         },
-        "/reorder/allget": {
+        "/return-order/allget": {
             "get": {
                 "description": "Get all Return Order",
                 "consumes": [
@@ -1617,7 +1617,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Get Return Order",
                 "operationId": "Allget-ReturnOrder",
@@ -1664,7 +1664,7 @@
                 }
             }
         },
-        "/reorder/allgetline": {
+        "/return-order/allgetline": {
             "get": {
                 "description": "Get all Return Order Line",
                 "consumes": [
@@ -1674,7 +1674,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Get Return Order Line",
                 "operationId": "Allget-ReturnOrderLine",
@@ -1721,7 +1721,7 @@
                 }
             }
         },
-        "/reorder/create": {
+        "/return-order/create": {
             "post": {
                 "description": "Create a new order",
                 "consumes": [
@@ -1731,7 +1731,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Create Order",
                 "operationId": "Create-ReturnOrder",
@@ -1783,7 +1783,7 @@
                 }
             }
         },
-        "/reorder/delete/{orderNo}": {
+        "/return-order/delete/{orderNo}": {
             "delete": {
                 "description": "Delete an order",
                 "consumes": [
@@ -1793,14 +1793,14 @@
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Delete Order",
                 "operationId": "delete-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Return ID",
+                        "description": "Order No",
                         "name": "orderNo",
                         "in": "path",
                         "required": true
@@ -1852,9 +1852,9 @@
                 }
             }
         },
-        "/reorder/getbyID/{orderNo}": {
+        "/return-order/getbyID/{orderNo}": {
             "get": {
-                "description": "Get details of an order by its return id",
+                "description": "Get details of an order by its order no",
                 "consumes": [
                     "application/json"
                 ],
@@ -1862,14 +1862,14 @@
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Get Return Order by ID",
                 "operationId": "GetByID-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Return ID",
+                        "description": "Order No",
                         "name": "orderNo",
                         "in": "path",
                         "required": true
@@ -1918,9 +1918,9 @@
                 }
             }
         },
-        "/reorder/getlinebyID/{orderNo}": {
+        "/return-order/getlinebyID/{orderNo}": {
             "get": {
-                "description": "Get details of an order line by its return id",
+                "description": "Get details of an order line by its order no",
                 "consumes": [
                     "application/json"
                 ],
@@ -1928,14 +1928,14 @@
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Get Return Order Line by ID",
                 "operationId": "GetLineByID-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Return ID",
+                        "description": "Order No",
                         "name": "orderNo",
                         "in": "path",
                         "required": true
@@ -1984,7 +1984,7 @@
                 }
             }
         },
-        "/reorder/update/{orderNo}": {
+        "/return-order/update/{orderNo}": {
             "patch": {
                 "description": "Update an existing return order using orderNo in the path",
                 "consumes": [
@@ -1994,14 +1994,14 @@
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Update Order",
                 "operationId": "Update-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Return ID",
+                        "description": "Order No",
                         "name": "orderNo",
                         "in": "path",
                         "required": true
@@ -2868,7 +2868,7 @@
                     "description": "สถานะในแพลตฟอร์ม",
                     "type": "integer"
                 },
-                "remark": {
+                "reason": {
                     "description": "หมายเหตุ",
                     "type": "string"
                 },
@@ -3218,9 +3218,8 @@
                     "type": "integer",
                     "example": 1
                 },
-                "remark": {
-                    "type": "string",
-                    "example": ""
+                "reason": {
+                    "type": "string"
                 },
                 "soNo": {
                     "type": "string",
@@ -3387,9 +3386,8 @@
                     "type": "integer",
                     "example": 1
                 },
-                "remark": {
-                    "type": "string",
-                    "example": ""
+                "reason": {
+                    "type": "string"
                 },
                 "srNo": {
                     "type": "string",

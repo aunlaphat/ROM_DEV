@@ -62,17 +62,17 @@ type BeforeReturnRepository interface {
 	CheckBefOrderNoExists(ctx context.Context, orderNo string) (bool, error)
 	CreateTradeReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	CreateTradeReturnLine(ctx context.Context, orderNo string, lines []request.TradeReturnLineRequest) error
-	CheckBefLineSKUExists(ctx context.Context, sku string) (bool, error)
+	CheckBefLineSKUExists(ctx context.Context, identifier, sku string) (bool, error)
 	// ConfirmToReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
 
 	// ************************ ImportOrder: Search Sale Return ************************ //
 	GetTrackingNoByOrderNo(ctx context.Context, orderNo string) (string, error)
 
 	// ************************ Confirm Return ************************ //
-	CheckReLineSKUExists(ctx context.Context, sku string) (bool, error)
 	UpdateStatusToSuccess(ctx context.Context, orderNo, updateBy string) error
 	GetBeforeOrderDetails(ctx context.Context, orderNo string) (*response.ReturnOrderData, error)
 	UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ReturnOrderData) error
+	CheckReLineSKUExists(ctx context.Context, orderNo, sku string) (bool, error)
 
 	// ************************ Confirm Receipt ************************ //
 	InsertImages(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest, filePaths []string) error
@@ -80,6 +80,7 @@ type BeforeReturnRepository interface {
 	InsertReturnOrder(ctx context.Context, returnOrderData *response.ReturnOrderData) error
 	GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ReturnOrderData, error)
 	UpdateBefToWaiting(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
+	CheckBefOrderOrTrackingExists(ctx context.Context, identifier string) (bool, error)
 }
 
 // ตรวจสอบว่ามี OrderNo ใน BeforeReturnOrder หรือไม่
@@ -90,6 +91,20 @@ func (repo repositoryDB) CheckBefOrderNoExists(ctx context.Context, orderNo stri
 			   THEN 1 ELSE 0 
 		       END `
 	err := repo.db.QueryRowContext(ctx, query, sql.Named("OrderNo", orderNo)).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check order existence: %w", err)
+	}
+
+	return exists, nil
+}
+
+func (repo repositoryDB) CheckBefOrderOrTrackingExists(ctx context.Context, identifier string) (bool, error) {
+	var exists bool
+	query := ` SELECT CASE 
+               WHEN EXISTS (SELECT 1 FROM BeforeReturnOrder WHERE OrderNo = @Identifier OR TrackingNo = @Identifier) 
+               THEN 1 ELSE 0 
+               END `
+	err := repo.db.QueryRowContext(ctx, query, sql.Named("Identifier", identifier)).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check order existence: %w", err)
 	}
@@ -254,12 +269,12 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 		for _, line := range req.ImportLinesActual { // COALESCE => ฟิลด์ที่ไม่ได้ใช้จะดึงค่าเดิมมาแทน
 
 			queryUpdateReturnOrderLine := ` UPDATE ReturnOrderLine
-											SET SKU = COALESCE(NULLIF(:SKU, ''), SKU),
-												ActualQTY = COALESCE(NULLIF(:ActualQTY, 0), ActualQTY),
-												Price = COALESCE(NULLIF(:Price, 0), Price),
-												StatusDelete = COALESCE(NULLIF(:StatusDelete, 0), StatusDelete),
-												UpdateBy = COALESCE(:UpdateBy, UpdateBy),
-												UpdateDate = COALESCE(:UpdateDate, UpdateDate)
+											SET SKU = CASE WHEN :SKU IS NOT NULL THEN :SKU ELSE SKU END,
+												ActualQTY = CASE WHEN :ActualQTY IS NOT NULL THEN :ActualQTY ELSE ActualQTY END,
+												Price = CASE WHEN :Price IS NOT NULL THEN :Price ELSE Price END,
+												StatusDelete = CASE WHEN :StatusDelete IS NOT NULL THEN :StatusDelete ELSE StatusDelete END,
+												UpdateBy = CASE WHEN :UpdateBy IS NOT NULL THEN :UpdateBy ELSE UpdateBy END,
+												UpdateDate = CASE WHEN :UpdateDate IS NOT NULL THEN :UpdateDate ELSE UpdateDate END
 											WHERE OrderNo = :OrderNo AND SKU = :SKU `
 			stmt, err := tx.PrepareNamed(queryUpdateReturnOrderLine)
 			if err != nil {
@@ -268,13 +283,13 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 			defer stmt.Close()
 
 			_, err = stmt.Exec(map[string]interface{}{
-				"OrderNo":      req.OrderNo, // ใช้ orderNo ที่เลือก
-				"SKU":          line.SKU,    // กรอกเอง
-				"ActualQTY":    line.ActualQTY,
-				"Price":        line.Price,
-				"StatusDelete": line.StatusDelete,
-				"UpdateBy":     returnOrderData.UpdateBy,   // ใช้ค่าเดียวกับคนที่อัพเดท Status = 6 (BeforeOrder)
-				"UpdateDate":   returnOrderData.UpdateDate, // วันที่เดียวกับคนที่กดอัพเดท ณ Befod
+				"OrderNo":      req.OrderNo,
+				"SKU":          line.SKU,
+				"ActualQTY":    sql.NullInt32{Int32: int32(line.ActualQTY), Valid: line.ActualQTY != 0},
+				"Price":        sql.NullFloat64{Float64: line.Price, Valid: line.Price != 0},
+				"StatusDelete": sql.NullBool{Bool: line.StatusDelete, Valid: true},
+				"UpdateBy":     returnOrderData.UpdateBy,
+				"UpdateDate":   returnOrderData.UpdateDate,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
@@ -286,9 +301,9 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 	})
 }
 
-func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, sku string) (bool, error) {
+func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, identifier, sku string) (bool, error) {
 	query := ` SELECT 1 FROM BeforeReturnOrderLine 
-			   WHERE SKU = :SKU `
+               WHERE SKU = :SKU AND (OrderNo = :Identifier OR TrackingNo = :Identifier) `
 	stmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
 		return false, fmt.Errorf("failed to prepare statement: %w", err)
@@ -296,7 +311,7 @@ func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, sku string) 
 	defer stmt.Close()
 
 	var exists int
-	err = stmt.QueryRowx(map[string]interface{}{"SKU": sku}).Scan(&exists)
+	err = stmt.QueryRowx(map[string]interface{}{"SKU": sku, "Identifier": identifier}).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -306,9 +321,9 @@ func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, sku string) 
 	return true, nil
 }
 
-func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, sku string) (bool, error) {
+func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, orderNo, sku string) (bool, error) {
 	query := ` SELECT 1 FROM ReturnOrderLine 
-			   WHERE SKU = :SKU `
+               WHERE SKU = :SKU AND OrderNo = :OrderNo `
 	stmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
 		return false, fmt.Errorf("failed to prepare statement: %w", err)
@@ -316,7 +331,7 @@ func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, sku string) (
 	defer stmt.Close()
 
 	var exists int
-	err = stmt.QueryRowx(map[string]interface{}{"SKU": sku}).Scan(&exists)
+	err = stmt.QueryRowx(map[string]interface{}{"SKU": sku, "OrderNo": orderNo}).Scan(&exists)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}

@@ -3,6 +3,7 @@ package api
 import (
 	"boilerplate-backend-go/dto/request"
 	res "boilerplate-backend-go/dto/response"
+	"boilerplate-backend-go/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -77,7 +78,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	userID, err := getUserIDFromClaims(claims)
+	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
 		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
 		return
@@ -105,11 +106,13 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 	}
 
 	fmt.Printf("\n📋 ========== Created Trade Return Order ========== 📋\n")
-	printOrderDetails(result)
-	fmt.Printf("\n📋 ========== Trade Return Order Line Details ========== 📋\n")
-	for _, line := range result.BeforeReturnOrderLines {
-		printOrderLineDetails(&line)
+	utils.PrintOrderDetails(result)
+	for i, line := range result.BeforeReturnOrderLines {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintOrderLineDetails(&line)
 	}
+	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.BeforeReturnOrderLines))
+	fmt.Println("=====================================")
 
 	handleResponse(w, true, "Trade return order created successfully", result, http.StatusOK)
 }
@@ -229,7 +232,7 @@ func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Reques
 // 	}
 
 // 	// ดึง userID จาก claims
-// 	userID, err := getUserIDFromClaims(claims)
+// 	userID, err := utils.GetUserIDFromClaims(claims)
 // 	if err != nil {
 // 		handleError(w, err)
 // 		return
@@ -340,7 +343,7 @@ func (app *Application) ConfirmReceipt(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ดึง userID จาก claims
-	userID, err := getUserIDFromClaims(claims)
+	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -396,7 +399,7 @@ func (app *Application) ConfirmReturn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := getUserIDFromClaims(claims)
+	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
 		handleError(w, err)
 		return

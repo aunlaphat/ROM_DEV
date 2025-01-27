@@ -34,7 +34,7 @@ type CreateReturnOrder struct {
 	OptStatusID   *int    `json:"optStatusId" db:"OptStatusID" example:"1"`
 	AxStatusID    *int    `json:"axStatusId" db:"AxStatusID" example:"1"`
 	PlatfStatusID *int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
-	Remark        *string `json:"remark" db:"Remark" example:""`
+	Reason        *string  `json:"reason" db:"Reason"`
 	CancelID      *int    `json:"cancelId" db:"CancelID" example:"1"`
 	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
 	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
@@ -55,7 +55,7 @@ type UpdateReturnOrder struct {
 	OptStatusID   *int    `json:"optStatusId" db:"OptStatusID" example:"1"`
 	AxStatusID    *int    `json:"axStatusId" db:"AxStatusID" example:"1"`
 	PlatfStatusID *int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
-	Remark        *string `json:"remark" db:"Remark" example:""`
+	Reason        *string     `json:"reason" db:"Reason"`
 	CancelID      *int    `json:"cancelId" db:"CancelID" example:"1"`
 	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
 	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
@@ -78,7 +78,7 @@ type ReturnOrderLine struct {
 /********** Trade Return (Offline) ***************/
 
 type ConfirmTradeReturnRequest struct {
-	Identifier  string                   `json:"-" `           // mean => OrderNo หรือ TrackingNo
+	Identifier  string                   `json:"-" `                                   // mean => OrderNo หรือ TrackingNo
 	ImportLines []TradeReturnLineRequest `json:"importLines" validate:"required,dive"` // รายการสินค้า
 }
 
@@ -89,7 +89,7 @@ type TradeReturnLineRequest struct {
 	ReturnQTY int     `json:"returnQty" db:"ReturnQTY" validate:"required"`
 	Price     float64 `json:"price" db:"Price" validate:"required"`
 	//TrackingNo string  `json:"trackingNo" db:"TrackingNo"`	// add form data BeforeReturnOrder
-	CreateBy   string  `json:"-" db:"CreateBy" `		    // from user login
+	CreateBy string `json:"-" db:"CreateBy" ` // from user login
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 	FilePath    string `json:"filePath" db:"FilePath" validate:"required"`
 	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID" validate:"required"`
@@ -97,7 +97,7 @@ type TradeReturnLineRequest struct {
 
 type Image struct {
 	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"` // ID ของประเภทของรูปภาพ
-	FilePath    string `json:"-" db:"FilePath"`     // เส้นทางของไฟล์รูปภาพ
+	FilePath    string `json:"-" db:"FilePath"`              // เส้นทางของไฟล์รูปภาพ
 }
 
 type TradeReturnLine struct {

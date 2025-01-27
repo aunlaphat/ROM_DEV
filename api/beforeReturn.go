@@ -24,7 +24,7 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
-		r.Put("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
+		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
 		
 		r.Get("/get-order", app.GetAllOrderDetail)								// get Order of ROM_V_OrderDetail
 		r.Get("/get-orders", app.GetAllOrderDetails) 							// get Order of ROM_V_OrderDetail with paginate
@@ -39,7 +39,7 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 
 		r.Get("/search", app.SearchOrder)
 		r.Post("/create", app.CreateSaleReturn)
-		r.Put("/update/{orderNo}", app.UpdateSaleReturn)
+		r.Patch("/update/{orderNo}", app.UpdateSaleReturn)
 		r.Post("/confirm/{orderNo}", app.ConfirmSaleReturn)
 		r.Post("/cancel/{orderNo}", app.CancelSaleReturn)
 	})
@@ -56,7 +56,7 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Get("/list-code-r", app.ListCodeR)
 		r.Post("/code-r", app.AddCodeR)
 		r.Delete("/code-r/{orderNo}/{sku}", app.DeleteCodeR)
-		r.Put("/update-draft/{orderNo}", app.UpdateDraftOrder)
+		r.Patch("/update-draft/{orderNo}", app.UpdateDraftOrder)
 
 		// Confirm
 		r.Get("/list-confirms", app.ListConfirmOrders)

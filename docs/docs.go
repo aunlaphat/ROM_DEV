@@ -1614,7 +1614,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/allget": {
+        "/return-order/allget": {
             "get": {
                 "description": "Get all Return Order",
                 "consumes": [
@@ -1624,7 +1624,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Get Return Order",
                 "operationId": "Allget-ReturnOrder",
@@ -1671,7 +1671,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/allgetline": {
+        "/return-order/allgetline": {
             "get": {
                 "description": "Get all Return Order Line",
                 "consumes": [
@@ -1681,7 +1681,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Get Return Order Line",
                 "operationId": "Allget-ReturnOrderLine",
@@ -1728,7 +1728,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/create": {
+        "/return-order/create": {
             "post": {
                 "description": "Create a new order",
                 "consumes": [
@@ -1738,7 +1738,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Create Order",
                 "operationId": "Create-ReturnOrder",
@@ -1790,7 +1790,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/delete/{orderNo}": {
+        "/return-order/delete/{orderNo}": {
             "delete": {
                 "description": "Delete an order",
                 "consumes": [
@@ -1800,14 +1800,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Delete Order",
                 "operationId": "delete-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Return ID",
+                        "description": "Order No",
                         "name": "orderNo",
                         "in": "path",
                         "required": true
@@ -1859,9 +1859,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/getbyID/{orderNo}": {
+        "/return-order/getbyID/{orderNo}": {
             "get": {
-                "description": "Get details of an order by its return id",
+                "description": "Get details of an order by its order no",
                 "consumes": [
                     "application/json"
                 ],
@@ -1869,14 +1869,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Get Return Order by ID",
                 "operationId": "GetByID-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Return ID",
+                        "description": "Order No",
                         "name": "orderNo",
                         "in": "path",
                         "required": true
@@ -1925,9 +1925,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/getlinebyID/{orderNo}": {
+        "/return-order/getlinebyID/{orderNo}": {
             "get": {
-                "description": "Get details of an order line by its return id",
+                "description": "Get details of an order line by its order no",
                 "consumes": [
                     "application/json"
                 ],
@@ -1935,14 +1935,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Get Return Order Line by ID",
                 "operationId": "GetLineByID-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Return ID",
+                        "description": "Order No",
                         "name": "orderNo",
                         "in": "path",
                         "required": true
@@ -1991,7 +1991,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/reorder/update/{orderNo}": {
+        "/return-order/update/{orderNo}": {
             "patch": {
                 "description": "Update an existing return order using orderNo in the path",
                 "consumes": [
@@ -2001,14 +2001,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "ReturnOrder"
+                    "Return Order"
                 ],
                 "summary": "Update Order",
                 "operationId": "Update-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Return ID",
+                        "description": "Order No",
                         "name": "orderNo",
                         "in": "path",
                         "required": true
@@ -2875,7 +2875,7 @@ const docTemplate = `{
                     "description": "สถานะในแพลตฟอร์ม",
                     "type": "integer"
                 },
-                "remark": {
+                "reason": {
                     "description": "หมายเหตุ",
                     "type": "string"
                 },
@@ -3225,9 +3225,8 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "remark": {
-                    "type": "string",
-                    "example": ""
+                "reason": {
+                    "type": "string"
                 },
                 "soNo": {
                     "type": "string",
@@ -3394,9 +3393,8 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "remark": {
-                    "type": "string",
-                    "example": ""
+                "reason": {
+                    "type": "string"
                 },
                 "srNo": {
                     "type": "string",

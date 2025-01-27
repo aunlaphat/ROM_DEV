@@ -35,7 +35,7 @@ type ReturnOrder struct {
 	OptStatusID   *int       `json:"optStatusId" db:"OptStatusID"`
 	AxStatusID    *int       `json:"axStatusId" db:"AxStatusID"`
 	PlatfStatusID *int       `json:"platfStatusId" db:"PlatfStatusID"`
-	Remark        *string    `json:"remark" db:"Remark"`
+	Reason        *string    `json:"reason" db:"Reason"`
 	CreateBy      string     `json:"createBy" db:"CreateBy"`
 	CreateDate    time.Time  `json:"createDate" db:"CreateDate"`
 	UpdateBy      *string    `json:"updateBy" db:"UpdateBy"`
@@ -66,7 +66,7 @@ type CancelStatus struct {
 	CancelID     *int       `json:"platfId" db:"PlatfID"`
 	RefID        *string    `json:"refId" db:"RefID"` //fk of table beforeod and returnod with pk-RecID
 	CancelStatus bool       `db:"CancelStatus"`
-	Remark       *string    `json:"remark" db:"Remark"`
+	Remark       string     `json:"remark" db:"Remark"`
 	CancelDate   *time.Time `json:"cancelDate" db:"CancelDate"`
 	CancelBy     *string    `json:"cancelBy" db:"CancelBy"`
 }
@@ -103,11 +103,11 @@ type OrderLineDetail struct {
 /********** Import Order to Warehouse: Sale Return ***************/
 
 type ImportOrderResponse struct {
-	OrderNo     string                  `json:"orderNo" db:"OrderNo"`
-	SoNo        string                  `json:"soNo" db:"SoNo"`
-	TrackingNo  string     `json:"trackingNo" db:"TrackingNo"`
-	CreateDate  *time.Time              `json:"createDate" db:"CreateDate"`
-	OrderLines  []ImportOrderLineResponse `json:"orderLines"`
+	OrderNo    string                    `json:"orderNo" db:"OrderNo"`
+	SoNo       string                    `json:"soNo" db:"SoNo"`
+	TrackingNo string                    `json:"trackingNo" db:"TrackingNo"`
+	CreateDate *time.Time                `json:"createDate" db:"CreateDate"`
+	OrderLines []ImportOrderLineResponse `json:"orderLines"`
 }
 
 type ImportOrderLineResponse struct {

@@ -17,28 +17,28 @@ import (
 )
 
 func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
-	apiRouter.Route("/reorder", func(r chi.Router) {
-		r.Get("/allget", app.AllGetReturnOrder)                            // GET /reorder/allget
-		r.Get("/getbyID/{orderNo}", app.GetReturnOrderID)                  // GET /reorder/getbyID/{orderNo}
-		r.Get("/allgetline", app.GetAllReturnOrderLines)                   // GET /reorder/allgetline
-		r.Get("/getlinebyID/{orderNo}", app.GetReturnOrderLinesByReturnID) // GET /reorder/getlinebyID/{orderNo}
-		r.Post("/create", app.CreateReturnOrder)                           // POST /reorder/create
-		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)                // PUT /reorder/update/{orderNo}
-		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)               // DELETE /reorder/delete/{orderNo}
+	apiRouter.Route("/return-order", func(r chi.Router) {
+		r.Get("/allget", app.AllGetReturnOrder)                            // GET /return-order/allget
+		r.Get("/getbyID/{orderNo}", app.GetReturnOrderID)                  // GET /return-order/getbyID/{orderNo}
+		r.Get("/allgetline", app.GetAllReturnOrderLines)                   // GET /return-order/allgetline
+		r.Get("/getlinebyID/{orderNo}", app.GetReturnOrderLinesByReturnID) // GET /return-order/getlinebyID/{orderNo}
+		r.Post("/create", app.CreateReturnOrder)                           // POST /return-order/create
+		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)                // PATCH /return-order/update/{orderNo}
+		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)               // DELETE /return-order/delete/{orderNo}
 	})
 }
 
 // @Summary 	Get Return Order
 // @Description Get all Return Order
 // @ID 			Allget-ReturnOrder
-// @Tags 		ReturnOrder
+// @Tags 		Return Order
 // @Accept 		json
 // @Produce 	json
 // @Success 	200 {object} Response{result=[]entity.ReturnOrder} "Get All"
 // @Failure 	400 {object} Response "Bad Request"
 // @Failure 	404 {object} Response "not found endpoint"
 // @Failure 	500 {object} Response "Internal Server Error"
-// @Router 		/reorder/allget [get]
+// @Router 		/return-order/allget [get]
 func (api *Application) AllGetReturnOrder(w http.ResponseWriter, r *http.Request) {
 	// Step 1: เรียก Service เพื่อดึงข้อมูล Return Order ทั้งหมด
 	result, err := api.Service.ReturnOrder.AllGetReturnOrder(r.Context())
@@ -59,17 +59,17 @@ func (api *Application) AllGetReturnOrder(w http.ResponseWriter, r *http.Request
 }
 
 // @Summary      Get Return Order by ID
-// @Description  Get details of an order by its return id
+// @Description  Get details of an order by its order no
 // @ID           GetByID-ReturnOrder
-// @Tags         ReturnOrder
+// @Tags         Return Order
 // @Accept       json
 // @Produce      json
-// @Param        orderNo  path     string  true  "Return ID"
+// @Param        orderNo  path     string  true  "Order No"
 // @Success      200 	  {object} Response{result=[]entity.ReturnOrder} "Get by ID"
 // @Failure      400      {object} Response "Bad Request"
 // @Failure      404      {object} Response "not found endpoint"
 // @Failure      500      {object} Response "Internal Server Error"
-// @Router       /reorder/getbyID/{orderNo} [get]
+// @Router       /return-order/getbyID/{orderNo} [get]
 func (app *Application) GetReturnOrderID(w http.ResponseWriter, r *http.Request) {
 	// Step 1: ดึง OrderNo จาก URL Parameter
 	orderNo := chi.URLParam(r, "orderNo")
@@ -98,14 +98,14 @@ func (app *Application) GetReturnOrderID(w http.ResponseWriter, r *http.Request)
 // @Summary 	Get Return Order Line
 // @Description Get all Return Order Line
 // @ID 			Allget-ReturnOrderLine
-// @Tags 		ReturnOrder
+// @Tags 		Return Order
 // @Accept 		json
 // @Produce 	json
 // @Success 	200 {object} Response{result=[]entity.ReturnOrderLine} "Get Order Line All"
 // @Failure 	400 {object} Response "Bad Request"
 // @Failure 	404 {object} Response "not found endpoint"
 // @Failure 	500 {object} Response "Internal Server Error"
-// @Router 		/reorder/allgetline [get]
+// @Router 		/return-order/allgetline [get]
 func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Request) {
 	result, err := app.Service.ReturnOrder.GetAllReturnOrderLines(r.Context())
 	if err != nil {
@@ -117,17 +117,17 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 }
 
 // @Summary      Get Return Order Line by ID
-// @Description  Get details of an order line by its return id
+// @Description  Get details of an order line by its order no
 // @ID           GetLineByID-ReturnOrder
-// @Tags         ReturnOrder
+// @Tags         Return Order
 // @Accept       json
 // @Produce      json
-// @Param        orderNo  path     string  true  "Return ID"
+// @Param        orderNo  path     string  true  "Order No"
 // @Success      200 	  {object} Response{result=[]entity.ReturnOrderLine} "Get by ID"
 // @Failure      400      {object} Response "Bad Request"
 // @Failure      404      {object} Response "not found endpoint"
 // @Failure      500      {object} Response "Internal Server Error"
-// @Router       /reorder/getlinebyID/{orderNo} [get]
+// @Router       /return-order/getlinebyID/{orderNo} [get]
 func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
@@ -148,14 +148,14 @@ func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *
 // @Summary 	Create Order
 // @Description Create a new order
 // @ID 			Create-ReturnOrder
-// @Tags 		ReturnOrder
+// @Tags 		Return Order
 // @Accept 		json
 // @Produce 	json
 // @Param 		CreateReturnOrder body request.CreateReturnOrder true "ReturnOrder Data"
 // @Success 	201 {object} Response{result=[]request.CreateReturnOrder} "ReturnOrder Created"
 // @Failure 	400 {object} Response "Bad Request"
 // @Failure 	500 {object} Response "Internal Server Error"
-// @Router 		/reorder/create [post]
+// @Router 		/return-order/create [post]
 func (api *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request) {
 	// Step 1: Decode JSON Payload เป็นโครงสร้าง CreateReturnOrder
 	var req request.CreateReturnOrder
@@ -198,16 +198,16 @@ func (api *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Summary Update Order
 // @Description Update an existing return order using orderNo in the path
 // @ID Update-ReturnOrder
-// @Tags ReturnOrder
+// @Tags Return Order
 // @Accept json
 // @Produce json
-// @Param orderNo path string true "Return ID"
+// @Param orderNo path string true "Order No"
 // @Param order body request.UpdateReturnOrder true "Updated Order Data"
 // @Success 200 {object} Response "ReturnOrder Updated Successfully"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 404 {object} Response "Order Not Found"
 // @Failure 500 {object} Response "Internal Server Error"
-// @Router /reorder/update/{orderNo} [patch]
+// @Router /return-order/update/{orderNo} [patch]
 func (api *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request) {
 	// Step 1: ดึง OrderNo จาก URL Parameter
 	orderNo := chi.URLParam(r, "orderNo")
@@ -240,16 +240,16 @@ func (api *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Summary 	Delete Order
 // @Description Delete an order
 // @ID 			delete-ReturnOrder
-// @Tags 		ReturnOrder
+// @Tags 		Return Order
 // @Accept 		json
 // @Produce 	json
-// @Param 		orderNo path string true "Return ID"
+// @Param 		orderNo path string true "Order No"
 // @Success 	200 {object} Response{result=string} "ReturnOrder Deleted"
 // @Success 	204 {object} Response "No Content, Order Delete Successfully"
 // @Failure 	400 {object} Response "Bad Request"
 // @Failure 	404 {object} Response "Order Not Found"
 // @Failure 	500 {object} Response "Internal Server Error"
-// @Router 		/reorder/delete/{orderNo} [delete]
+// @Router 		/return-order/delete/{orderNo} [delete]
 func (api *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request) {
 	// Step 1: ดึง OrderNo จาก URL Parameter
 	orderNo := chi.URLParam(r, "orderNo")

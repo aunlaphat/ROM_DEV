@@ -78,7 +78,7 @@ type ReturnOrder struct {
 	OptStatusID   *int       `db:"OptStatusID"`   // สถานะการดำเนินการ
 	AxStatusID    *int       `db:"AxStatusID"`    // สถานะในระบบ AX
 	PlatfStatusID *int       `db:"PlatfStatusID"` // สถานะในแพลตฟอร์ม
-	Remark        *string    `db:"Remark"`        // หมายเหตุ
+	Reason        string     `db:"Reason"`     // หมายเหตุ
 	CreateBy      string     `db:"CreateBy"`      // ผู้สร้างรายการ
 	CreateDate    time.Time  `db:"CreateDate"`    // วันที่สร้างรายการ
 	UpdateBy      *string    `db:"UpdateBy"`      // ผู้แก้ไขล่าสุด
