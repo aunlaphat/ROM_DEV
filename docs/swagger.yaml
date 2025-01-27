@@ -807,6 +807,8 @@ definitions:
         type: string
       nickName:
         type: string
+      password:
+        type: string
       permission:
         type: string
       roleID:
@@ -2473,15 +2475,15 @@ paths:
     post:
       consumes:
       - application/json
-      description: Retrieve the details of a user by their username and password
+      description: Retrieve the details of a user by their userid and username
       operationId: get-user
       parameters:
       - description: User login credentials in JSON format
         in: body
-        name: LoginWeb
+        name: Login
         required: true
         schema:
-          $ref: '#/definitions/request.LoginWeb'
+          $ref: '#/definitions/request.LoginLark'
       produces:
       - application/json
       responses:
@@ -2506,7 +2508,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Get user by username and password
+      summary: Get user by userid and username
       tags:
       - User
   /user/get-user-with-permission:
@@ -2519,7 +2521,7 @@ paths:
       parameters:
       - description: User login credentials in JSON format
         in: body
-        name: login
+        name: Login
         required: true
         schema:
           $ref: '#/definitions/request.LoginLark'

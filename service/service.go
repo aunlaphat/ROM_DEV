@@ -50,14 +50,3 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		BeforeReturn: srv,
 	}
 }
-
-/* type Login struct {
-	UserID       string `json:"userID"`
-	RoleID       int    `json:"roleID"`
-	PermissionID string `json:"permissionID"`
-	DeptNo       string `json:"deptNo"`
-	NickName     string `json:"nickName"`
-	FullNameTH   string `json:"fullNameTH"`
-	FullNameEN   string `json:"fullNameEN"`
-	Platfrom     string `json:"platfrom"`
-} */

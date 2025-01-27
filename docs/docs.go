@@ -2626,7 +2626,7 @@ const docTemplate = `{
         },
         "/user/get-user": {
             "post": {
-                "description": "Retrieve the details of a user by their username and password",
+                "description": "Retrieve the details of a user by their userid and username",
                 "consumes": [
                     "application/json"
                 ],
@@ -2636,16 +2636,16 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
-                "summary": "Get user by username and password",
+                "summary": "Get user by userid and username",
                 "operationId": "get-user",
                 "parameters": [
                     {
                         "description": "User login credentials in JSON format",
-                        "name": "LoginWeb",
+                        "name": "Login",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.LoginWeb"
+                            "$ref": "#/definitions/request.LoginLark"
                         }
                     }
                 ],
@@ -2706,7 +2706,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "User login credentials in JSON format",
-                        "name": "login",
+                        "name": "Login",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -3919,6 +3919,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "nickName": {
+                    "type": "string"
+                },
+                "password": {
                     "type": "string"
                 },
                 "permission": {
