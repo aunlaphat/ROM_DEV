@@ -53,16 +53,24 @@ type BeforeReturnService interface {
 	// Method สำหรับอัพเดท Draft Order
 	UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error
 
-	// fa
+	
+	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อทั้งหมด
 	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
+	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อทั้งหมดพร้อมการแบ่งหน้า
 	GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error)
+	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อโดยใช้หมายเลข SO
 	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
+	// Method ลบรายการ BeforeReturnOrderLine โดยใช้ RecID
 	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
+	// Method สร้างคำสั่งซื้อคืนสินค้า
 	CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
+	// Method สร้างรายการคืนสินค้าสำหรับคำสั่งซื้อที่ระบุ
 	CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) error
-	// ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string, filePaths []string) error
+	// Method ยืนยันการรับสินค้าคืน
 	ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
+	// Method ยืนยันการคืนสินค้า
 	ConfirmReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
+	// Method ตรวจสอบความถูกต้องของข้อมูลก่อนสร้างคำสั่งซื้อคืนสินค้า
 	ValidateCreate(req request.BeforeReturnOrder) error
 }
 
@@ -264,15 +272,15 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 	}
 
 	// ตรวจสอบว่ามี sku ที่ Identifier เดียวกันหรือไม่ หากมีสามารถเพิ่มได้ เพราะของหน้าคลังต้องตรงกับข้อมูลที่กรอกเข้าระบบ
-    for _, line := range req.ImportLines {
-        exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, req.Identifier, line.SKU)
-        if err != nil {
-            return fmt.Errorf("failed to check SKU existence: %w", err)
-        }
-        if !exists {
-            return fmt.Errorf("SKU %s does not exist in BeforeReturnOrderLine for Identifier %s", line.SKU, req.Identifier)
-        }
-    }
+	for _, line := range req.ImportLines {
+		exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, req.Identifier, line.SKU)
+		if err != nil {
+			return fmt.Errorf("failed to check SKU existence: %w", err)
+		}
+		if !exists {
+			return fmt.Errorf("SKU %s does not exist in BeforeReturnOrderLine for Identifier %s", line.SKU, req.Identifier)
+		}
+	}
 
 	// 1. อัปเดตสถานะใน BeforeReturnOrder
 	if err := srv.beforeReturnRepo.UpdateBefToWaiting(ctx, req, updateBy); err != nil {
@@ -325,19 +333,19 @@ func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToRetur
 		return fmt.Errorf("OrderNo does not exist in BeforeReturnOrder")
 	}
 
-    // ตรวจสอบ SKU
-    for _, line := range req.ImportLinesActual {
-        if line.SKU == "" {
-            return fmt.Errorf("SKU is required")
-        }
-        exists, err := srv.beforeReturnRepo.CheckReLineSKUExists(ctx, req.OrderNo, line.SKU)
-        if err != nil {
-            return fmt.Errorf("failed to check SKU existence: %w", err)
-        }
-        if !exists {
-            return fmt.Errorf("SKU %s does not exist in ReturnOrderLine for OrderNo %s", line.SKU, req.OrderNo)
-        }
-    }
+	// ตรวจสอบ SKU
+	for _, line := range req.ImportLinesActual {
+		if line.SKU == "" {
+			return fmt.Errorf("SKU is required")
+		}
+		exists, err := srv.beforeReturnRepo.CheckReLineSKUExists(ctx, req.OrderNo, line.SKU)
+		if err != nil {
+			return fmt.Errorf("failed to check SKU existence: %w", err)
+		}
+		if !exists {
+			return fmt.Errorf("SKU %s does not exist in ReturnOrderLine for OrderNo %s", line.SKU, req.OrderNo)
+		}
+	}
 
 	// อัปเดต BeforeReturnOrder
 	if err := srv.beforeReturnRepo.UpdateStatusToSuccess(ctx, req.OrderNo, updateBy); err != nil {

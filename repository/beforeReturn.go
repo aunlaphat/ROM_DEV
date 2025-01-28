@@ -3,6 +3,7 @@ package repository
 import (
 	"boilerplate-backend-go/dto/request"
 	"boilerplate-backend-go/dto/response"
+	"boilerplate-backend-go/utils"
 	"context"
 	"database/sql"
 	"fmt"
@@ -129,7 +130,7 @@ func (repo repositoryDB) GetTrackingNoByOrderNo(ctx context.Context, orderNo str
 }
 
 func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo string, lines []request.TradeReturnLineRequest) error {
-	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
+	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// ตรวจสอบว่า OrderNo มีอยู่ใน BeforeReturnOrder หรือไม่
 		exists, err := repo.CheckBefOrderNoExists(ctx, orderNo)
 		if err != nil {
@@ -182,7 +183,7 @@ func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo stri
 
 // step 1: update status BeforeReturnOrder, เก็บค่าผู้ updateBy Date เพื่อนำไปใช้เข้าใน CreateBy Date => ReturnOrder,Line
 func (repo repositoryDB) UpdateStatusToSuccess(ctx context.Context, orderNo, updateBy string) error {
-	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
+	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		query := `
             UPDATE BeforeReturnOrder
             SET StatusReturnID = 6, -- success status
@@ -235,7 +236,7 @@ func (repo repositoryDB) GetBeforeOrderDetails(ctx context.Context, orderNo stri
 
 // step 3: update
 func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ReturnOrderData) error {
-	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
+	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// Step 2: อัปเดต ReturnOrder
 		for _, head := range req.UpdateToReturn {
 			queryUpdateReturnOrder := ` UPDATE ReturnOrder
@@ -346,7 +347,7 @@ func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, orderNo, sku 
 
 // 1. Update สถานะใน BeforeReturnOrder to "WAITING" (Page: Confirm Trade)
 func (repo repositoryDB) UpdateBefToWaiting(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
-	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
+	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		queryUpdate := `
         UPDATE BeforeReturnOrder
         SET StatusReturnID = 7, -- WAITING status
@@ -392,7 +393,7 @@ func (repo repositoryDB) GetBeforeReturnOrderData(ctx context.Context, req reque
 
 // 3. Insert ข้อมูลลงใน ReturnOrder
 func (repo repositoryDB) InsertReturnOrder(ctx context.Context, returnOrderData *response.ReturnOrderData) error {
-	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
+	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		queryInsertOrder := `
         INSERT INTO ReturnOrder (
             OrderNo, SoNo, SrNo, TrackingNo, ChannelID, CreateBy, CreateDate, StatusCheckID
@@ -408,7 +409,7 @@ func (repo repositoryDB) InsertReturnOrder(ctx context.Context, returnOrderData 
 
 // 4. Insert ข้อมูลจาก importLines ลงใน ReturnOrderLine
 func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest) error {
-	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
+	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		queryInsertLine := `
         INSERT INTO ReturnOrderLine (
             OrderNo, SKU, QTY, ReturnQTY, Price, TrackingNo, CreateBy, CreateDate
@@ -438,7 +439,7 @@ func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderD
 
 // InsertImages ฟังก์ชันที่ใช้เพิ่มข้อมูลภาพลงในฐานข้อมูล
 func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest, filePaths []string) error {
-	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
+	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		queryInsertImage := `
         INSERT INTO Images (
             OrderNo, ImageTypeID, SKU, FilePath, CreateBy, CreateDate
@@ -467,7 +468,7 @@ func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *resp
 /************************** Delete Line *************************/
 
 func (repo repositoryDB) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {
-	return handleTransaction(repo.db, func(tx *sqlx.Tx) error {
+	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// ลบ BeforeReturnOrderLine ตาม RecID
 		deleteQuery := `
 			DELETE FROM BeforeReturnOrderLine

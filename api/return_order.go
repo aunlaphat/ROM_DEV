@@ -10,102 +10,127 @@ import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
+	"boilerplate-backend-go/utils"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth"
+	"go.uber.org/zap"
 )
 
 func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
 	apiRouter.Route("/return-order", func(r chi.Router) {
-		r.Get("/allget", app.AllGetReturnOrder)                            // GET /return-order/allget
-		r.Get("/getbyID/{orderNo}", app.GetReturnOrderID)                  // GET /return-order/getbyID/{orderNo}
-		r.Get("/allgetline", app.GetAllReturnOrderLines)                   // GET /return-order/allgetline
-		r.Get("/getlinebyID/{orderNo}", app.GetReturnOrderLinesByReturnID) // GET /return-order/getlinebyID/{orderNo}
-		r.Post("/create", app.CreateReturnOrder)                           // POST /return-order/create
-		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)                // PATCH /return-order/update/{orderNo}
-		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)               // DELETE /return-order/delete/{orderNo}
+		r.Use(jwtauth.Verifier(app.TokenAuth))
+		r.Use(jwtauth.Authenticator)
+
+		r.Get("/get-all", app.GetAllReturnOrder)                         // GET /return-order/get-all
+		r.Get("/get-all/{orderNo}", app.GetReturnOrderByOrderNo)         // GET /return-order/getbyID/{orderNo}
+		r.Get("/get-lines", app.GetAllReturnOrderLines)                  // GET /return-order/allgetline
+		r.Get("/get-lines/{orderNo}", app.GetReturnOrderLinesByReturnID) // GET /return-order/getlinebyID/{orderNo}
+		r.Post("/create", app.CreateReturnOrder)                         // POST /return-order/create
+		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)              // PATCH /return-order/update/{orderNo}
+		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)             // DELETE /return-order/delete/{orderNo}
 	})
 }
 
 // @Summary 	Get Return Order
-// @Description Get all Return Order
-// @ID 			Allget-ReturnOrder
+// @Description Retrieve the details of Return Order
+// @ID 			GetAll-ReturnOrder
 // @Tags 		Return Order
 // @Accept 		json
 // @Produce 	json
-// @Success 	200 {object} Response{result=[]entity.ReturnOrder} "Get All"
+// @Success 	200 {object} Response{result=[]response.ReturnOrder} "Get All"
 // @Failure 	400 {object} Response "Bad Request"
-// @Failure 	404 {object} Response "not found endpoint"
+// @Failure 	404 {object} Response "Not Found Endpoint"
 // @Failure 	500 {object} Response "Internal Server Error"
-// @Router 		/return-order/allget [get]
-func (api *Application) AllGetReturnOrder(w http.ResponseWriter, r *http.Request) {
-	// Step 1: เรียก Service เพื่อดึงข้อมูล Return Order ทั้งหมด
-	result, err := api.Service.ReturnOrder.AllGetReturnOrder(r.Context())
+// @Router 		/return-order/get-all [get]
+func (api *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request) {
+
+	result, err := api.Service.ReturnOrder.GetAllReturnOrder(r.Context())
+	// เช็คเมื่อเกิดข้อผิดพลาดขึ้น
 	if err != nil {
-		// Step 2: หากพบข้อผิดพลาด ให้ส่งข้อผิดพลาดไปยัง Client
 		handleError(w, err)
 		return
 	}
-
-	// Step 2.1: หากไม่มีข้อมูล Return Orders ให้ส่ง [] กลับไปพร้อมข้อความ
+	// เช็คเมื่อไม่มีข้อมูลในคำสั่งซื้อ
 	if len(result) == 0 {
 		handleResponse(w, true, "No return orders found", []response.ReturnOrder{}, http.StatusOK)
 		return
 	}
 
-	// Step 3: หากสำเร็จ ให้ส่งข้อมูลกลับไปยัง Client
-	handleResponse(w, true, "Get Order successfully", result, http.StatusOK)
+	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
+	for i, order := range result {
+		fmt.Printf("\n📦 Order #%d 📦\n", i+1)
+		utils.PrintReturnOrderDetails(&order)
+		for j, line := range order.ReturnOrderLine {
+			fmt.Printf("\n📦 Order Line #%d 📦\n", j+1)
+			utils.PrintReturnOrderLineDetails(&line)
+		}
+		fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(order.ReturnOrderLine))
+		fmt.Println("=====================================")
+	}
+
+	// ส่งข้อมูลกลับไปยัง Client
+	handleResponse(w, true, "⭐ Get Return Order successfully ⭐", result, http.StatusOK)
 }
 
-// @Summary      Get Return Order by ID
-// @Description  Get details of an order by its order no
-// @ID           GetByID-ReturnOrder
+// @Summary      Get Return Order by OrderNo
+// @Description  Get details return order by order no
+// @ID           GetAllByOrderNo-ReturnOrder
 // @Tags         Return Order
 // @Accept       json
 // @Produce      json
 // @Param        orderNo  path     string  true  "Order No"
-// @Success      200 	  {object} Response{result=[]entity.ReturnOrder} "Get by ID"
+// @Success      200 	  {object} Response{result=[]response.ReturnOrder} "Get All by OrderNo"
 // @Failure      400      {object} Response "Bad Request"
-// @Failure      404      {object} Response "not found endpoint"
+// @Failure      404      {object} Response "Not Found Endpoint"
 // @Failure      500      {object} Response "Internal Server Error"
-// @Router       /return-order/getbyID/{orderNo} [get]
-func (app *Application) GetReturnOrderID(w http.ResponseWriter, r *http.Request) {
-	// Step 1: ดึง OrderNo จาก URL Parameter
+// @Router       /return-order/get-all/{orderNo} [get]
+func (app *Application) GetReturnOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
+	// เช็คค่าว่าง
 	if orderNo == "" {
-		// Step 2: ตรวจสอบว่า OrderNo ว่างหรือไม่
 		handleError(w, errors.ValidationError("OrderNo is required"))
 		return
 	}
 
-	// Step 3: เรียก Service เพื่อดึงข้อมูล Return Order ที่ตรงกับ OrderNo
-	result, err := app.Service.ReturnOrder.GetReturnOrderByID(r.Context(), orderNo)
+	result, err := app.Service.ReturnOrder.GetReturnOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
-
-	// Step 3.1: หากไม่มี ReturnOrderLines ในคำสั่งซื้อ ให้ส่งข้อความแจ้ง
+	// เช็คเมื่อไม่มีข้อมูลในคำสั่งซื้อ
 	if len(result.ReturnOrderLine) == 0 {
 		handleResponse(w, true, "No lines found for this return order", result, http.StatusOK)
 		return
 	}
 
-	handleResponse(w, true, "Get Order by ID successfully", result, http.StatusOK)
+	fmt.Printf("\n📋 ========== Return Order by OrderNo Details ========== 📋\n")
+	utils.PrintReturnOrderDetails(result)
+	for i, line := range result.ReturnOrderLine {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintReturnOrderLineDetails(&line)
+	}
+	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.ReturnOrderLine))
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "⭐ Get Return Order by OrderNo successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary 	Get Return Order Line
 // @Description Get all Return Order Line
-// @ID 			Allget-ReturnOrderLine
+// @ID 			GetAllLines-ReturnOrderLine
 // @Tags 		Return Order
 // @Accept 		json
 // @Produce 	json
-// @Success 	200 {object} Response{result=[]entity.ReturnOrderLine} "Get Order Line All"
+// @Success 	200 {object} Response{result=[]response.ReturnOrderLine} "Get Return Order Lines"
 // @Failure 	400 {object} Response "Bad Request"
-// @Failure 	404 {object} Response "not found endpoint"
+// @Failure 	404 {object} Response "Not Found Endpoint"
 // @Failure 	500 {object} Response "Internal Server Error"
-// @Router 		/return-order/allgetline [get]
+// @Router 		/return-order/get-lines [get]
 func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Request) {
 	result, err := app.Service.ReturnOrder.GetAllReturnOrderLines(r.Context())
 	if err != nil {
@@ -113,21 +138,28 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	handleResponse(w, true, "Get Order Line successfully", result, http.StatusOK)
+	fmt.Printf("\n📋 ========== Return Order Lines (%d) ========== 📋\n", len(result))
+	for i, line := range result {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintReturnOrderLineDetails(&line)
+	}
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "⭐ Get Return Order Lines successfully ⭐", result, http.StatusOK)
 }
 
-// @Summary      Get Return Order Line by ID
+// @Summary      Get Return Order Line by OrderNo
 // @Description  Get details of an order line by its order no
 // @ID           GetLineByID-ReturnOrder
 // @Tags         Return Order
 // @Accept       json
 // @Produce      json
 // @Param        orderNo  path     string  true  "Order No"
-// @Success      200 	  {object} Response{result=[]entity.ReturnOrderLine} "Get by ID"
+// @Success      200 	  {object} Response{result=[]response.ReturnOrderLine} "Get Lines by OrderNo"
 // @Failure      400      {object} Response "Bad Request"
-// @Failure      404      {object} Response "not found endpoint"
+// @Failure      404      {object} Response "Not Found Endpoint"
 // @Failure      500      {object} Response "Internal Server Error"
-// @Router       /return-order/getlinebyID/{orderNo} [get]
+// @Router       /return-order/get-lines/{orderNo} [get]
 func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
@@ -141,61 +173,91 @@ func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *
 		return
 	}
 
-	handleResponse(w, true, "Get Order Line by ID successfully", result, http.StatusOK)
+	fmt.Printf("\n📋 ========== Return Order Line of OrderNo: %s ========== 📋\n", orderNo)
+	for i, line := range result {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintReturnOrderLineDetails(&line)
+	}
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "⭐ Get Return Order Line by OrderNo successfully ⭐", result, http.StatusOK)
 
 }
 
-// @Summary 	Create Order
-// @Description Create a new order
+// @Summary 	Create Return Order
+// @Description Create a new return order
 // @ID 			Create-ReturnOrder
 // @Tags 		Return Order
 // @Accept 		json
 // @Produce 	json
-// @Param 		CreateReturnOrder body request.CreateReturnOrder true "ReturnOrder Data"
-// @Success 	201 {object} Response{result=[]request.CreateReturnOrder} "ReturnOrder Created"
+// @Param 		CreateReturnOrder body request.CreateReturnOrder true "Return Order"
+// @Success 	200 {object} Response{result=[]response.CreateReturnOrder} "Return Order Created"
+// @Success 	201 {object} Response{result=[]response.CreateReturnOrder} "Return Order Created"
 // @Failure 	400 {object} Response "Bad Request"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/create [post]
-func (api *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request) {
+func (app *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request) {
+	// 1. Authentication check
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := utils.GetUserIDFromClaims(claims)
+	if err != nil {
+		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
+		return
+	}
+
 	// Step 1: Decode JSON Payload เป็นโครงสร้าง CreateReturnOrder
 	var req request.CreateReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		// Step 2: หากพบข้อผิดพลาดในการ Decode ให้ส่งข้อผิดพลาดไปยัง Client
+		// พบข้อผิดพลาดในการ Decode ให้ส่งข้อผิดพลาดไปยัง Client
 		handleError(w, errors.BadRequestError("Invalid JSON format"))
 		return
 	}
-
-	// Step 3: ตรวจสอบฟิลด์ที่จำเป็น OrderNo และ OrderNo ว่าว่างหรือไม่
-	if req.OrderNo == "" {
-		handleError(w, errors.BadRequestError("OrderNo are required"))
-		return
-	}
-
-	// Step 4: ตรวจสอบค่าจำนวนสินค้าใน ReturnOrderLine
-	for _, line := range req.ReturnOrderLine {
-		if line.ReturnQTY <= 0 {
-			handleError(w, errors.BadRequestError("Invalid ReturnQTY in ReturnOrderLine"))
-			return
-		}
-	}
-
 	// ตรวจสอบว่า ReturnOrderLine มีข้อมูลอย่างน้อย 1 รายการ
 	if len(req.ReturnOrderLine) == 0 {
 		handleError(w, errors.ValidationError("ReturnOrderLine cannot be empty"))
 		return
 	}
 
-	// Step 5: เรียก Service เพื่อสร้างข้อมูล Return Order
-	err := api.Service.ReturnOrder.CreateReturnOrder(r.Context(), req)
+	// Set user information from claims
+	req.CreateBy = userID
+
+	result, err := app.Service.ReturnOrder.CreateReturnOrder(r.Context(), req)
 	if err != nil {
-		handleError(w, err)
+		app.Logger.Error("Failed to create return",
+			zap.Error(err),
+			zap.String("orderNo", req.OrderNo))
+
+		// Handle specific error cases
+		switch {
+		case strings.Contains(err.Error(), "validation failed"):
+			handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
+		case strings.Contains(err.Error(), "already exists"):
+			handleResponse(w, false, err.Error(), nil, http.StatusConflict)
+		default:
+			handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
+		}
 		return
 	}
 
-	handleResponse(w, true, "Return order created successfully", nil, http.StatusCreated)
+	fmt.Printf("\n📋 ========== Created Return Order ========== 📋\n")
+	utils.PrintCreateReturnOrder(result)
+	fmt.Printf("\n📋 ========== Return Order Line Details ========== 📋\n")
+	for i, line := range result.ReturnOrderLine {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintReturnOrderLineDetails(&line)
+	}
+	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.ReturnOrderLine))
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "⭐ Created successfully ⭐", result, http.StatusOK)
 }
 
-// @Summary Update Order
+// @Summary Update Return Order
 // @Description Update an existing return order using orderNo in the path
 // @ID Update-ReturnOrder
 // @Tags Return Order
@@ -203,38 +265,59 @@ func (api *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Produce json
 // @Param orderNo path string true "Order No"
 // @Param order body request.UpdateReturnOrder true "Updated Order Data"
-// @Success 200 {object} Response "ReturnOrder Updated Successfully"
+// @Success 200 {object} Response{result=[]response.UpdateReturnOrder} "Return Order Update"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 404 {object} Response "Order Not Found"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /return-order/update/{orderNo} [patch]
-func (api *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request) {
-	// Step 1: ดึง OrderNo จาก URL Parameter
+func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request) {
+
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
-		// Step 2: ตรวจสอบว่า OrderNo ว่างหรือไม่
 		handleError(w, errors.ValidationError("OrderNo is required in the path"))
 		return
 	}
 
-	// Step 3: Decode JSON Payload เป็นโครงสร้าง UpdateReturnOrder
+	// Decode JSON Payload เป็นโครงสร้าง UpdateReturnOrder
 	var req request.UpdateReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, errors.BadRequestError("Invalid JSON format"))
 		return
 	}
 
-	// Step 5: ระบุ OrderNo ที่ได้จาก URL ลงในโครงสร้างข้อมูล
+	// ระบุ OrderNo ที่ได้จาก URL ลงในโครงสร้างข้อมูล
 	req.OrderNo = orderNo
 
-	// Step 6: เรียก Service เพื่ออัปเดตข้อมูล Return Order
-	err := api.Service.ReturnOrder.UpdateReturnOrder(r.Context(), req)
+	// ดึง userID จาก JWT token
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		return
+	}
+
+	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponse(w, true, "Return order updated successfully", nil, http.StatusOK)
+	// Step 6: เรียก Service เพื่ออัปเดตข้อมูล Return Order
+	result, err := app.Service.ReturnOrder.UpdateReturnOrder(r.Context(), req, userID)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== Updated Order ========== 📋\n")
+	utils.PrintUpdateReturnOrder(result)
+	// for i, line := range result.ReturnOrderLine {
+	// 	fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+	// 	utils.PrintOrderLineDetails(&line)
+	// }
+	// fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.ReturnOrderLine))
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "⭐ Updated successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary 	Delete Order
@@ -266,5 +349,5 @@ func (api *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	handleResponse(w, true, "Return order deleted successfully", nil, http.StatusOK)
+	handleResponse(w, true, "⭐ Deleted successfully ⭐", nil, http.StatusOK)
 }

@@ -53,13 +53,54 @@ type ReturnOrderLine struct {
 	TrackingNo string     `json:"trackingNo" db:"TrackingNo"`
 	SKU        string     `json:"sku" db:"SKU"`
 	ReturnQTY  int        `json:"returnQTY" db:"ReturnQTY"`
-	QTY        *int       `json:"qty" db:"QTY"`
+	QTY        int       `json:"qty" db:"QTY"`
 	Price      float64    `json:"price" db:"Price"`
 	CreateBy   string     `json:"createBy" db:"CreateBy"`
 	CreateDate time.Time  `json:"createDate" db:"CreateDate"`
 	AlterSKU   *string    `json:"alterSKU" db:"AlterSKU"`
 	UpdateBy   *string    `json:"updateBy" db:"UpdateBy"`
 	UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"`
+}
+
+type CreateReturnOrder struct {
+	OrderNo       string  `json:"orderNo" db:"OrderNo" example:"ORD0001"`
+	SoNo          string  `json:"soNo" db:"SoNo" example:"SO0001"`
+	SrNo          string  `json:"srNo" db:"SrNo" example:"SR0001"`
+	TrackingNo    string  `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	PlatfID       int    `json:"platfId" db:"PlatfID" example:"1"`
+	ChannelID     int    `json:"channelId" db:"ChannelID" example:"2"`
+	OptStatusID   int    `json:"optStatusId" db:"OptStatusID" example:"1"`
+	AxStatusID    int    `json:"axStatusId" db:"AxStatusID" example:"1"`
+	PlatfStatusID int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
+	Reason        string  `json:"reason" db:"Reason"`
+	CancelID      int    `json:"cancelId" db:"CancelID" example:"1"`
+	StatusCheckID int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
+	CheckBy       string `json:"checkBy" db:"CheckBy" example:"dev03"`
+	Description   string `json:"description" db:"Description" example:""`
+	CreateBy      string     	`json:"createBy" db:"CreateBy"`		// 'USER'
+	CreateDate   time.Time      `json:"createDate" db:"CreateDate"` // MSSQL SYSDATETIME() function
+
+	ReturnOrderLine []ReturnOrderLine `json:"ReturnOrderLine"`
+}
+
+type UpdateReturnOrder struct {
+	OrderNo       string  `json:"-" db:"OrderNo"`
+	SoNo          string  `json:"-" db:"SoNo"`
+	SrNo          *string `json:"srNo" db:"SrNo" example:"SR0001"`
+	TrackingNo    *string `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	PlatfID       *int    `json:"platfId" db:"PlatfID" example:"1"`
+	ChannelID     *int    `json:"channelId" db:"ChannelID" example:"2"`
+	OptStatusID   *int    `json:"optStatusId" db:"OptStatusID" example:"1"`
+	AxStatusID    *int    `json:"axStatusId" db:"AxStatusID" example:"1"`
+	PlatfStatusID *int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
+	Reason        *string     `json:"reason" db:"Reason"`
+	CancelID      *int    `json:"cancelId" db:"CancelID" example:"1"`
+	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
+	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
+	Description   *string `json:"description" db:"Description" example:""`
+	UpdateBy     *string    	    `json:"updateBy" db:"UpdateBy"`     // 'USER'
+	UpdateDate   *time.Time      `json:"updateDate" db:"UpdateDate"` // MSSQL SYSDATETIME() function
+
 }
 
 type CancelStatus struct {

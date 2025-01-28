@@ -39,7 +39,7 @@ type CreateReturnOrder struct {
 	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
 	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
 	Description   *string `json:"description" db:"Description" example:""`
-	// CreateBy      string     	`json:"createBy" db:"CreateBy"`		// 'USER'
+	CreateBy      string     	`json:"createBy" db:"CreateBy"`		// 'USER'
 	// CreateDate   *time.Time      `json:"createDate" db:"CreateDate"` // MSSQL SYSDATETIME() function
 
 	ReturnOrderLine []ReturnOrderLine `json:"ReturnOrderLine"`
@@ -72,7 +72,7 @@ type ReturnOrderLine struct {
 	QTY        *int    `json:"qty" db:"QTY" example:"5"`
 	ReturnQTY  int     `json:"returnQTY" db:"ReturnQTY" example:"5"`
 	Price      float64 `json:"price" db:"Price" example:"199.99"`
-	// AlterSKU        *string         `json:"-" db:"AlterSKU" `
+	AlterSKU   *string         `json:"-" db:"AlterSKU" `
 }
 
 /********** Trade Return (Offline) ***************/

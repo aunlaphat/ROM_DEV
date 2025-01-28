@@ -26,11 +26,11 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
 		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
 		
+		// get real order
 		r.Get("/get-order", app.GetAllOrderDetail)								// get Order of ROM_V_OrderDetail
-		r.Get("/get-orders", app.GetAllOrderDetails) 							// get Order of ROM_V_OrderDetail with paginate
+		r.Get("/get-orders", app.GetAllOrderDetails)  							// get Order of ROM_V_OrderDetail with paginate
 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)					// search by SO of ROM_V_OrderDetail
 		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine)	// delete line by recID of BeforeReturnOrder
-		
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
@@ -144,7 +144,7 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Success 200 {object} api.Response
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
-// @Router /before-return-order/update/{orderNo} [put]
+// @Router /before-return-order/update/{orderNo} [patch]
 func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	var req request.BeforeReturnOrder
@@ -425,7 +425,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Failure 404 {object} api.Response "Not Found - Order not found"
 // @Failure 401 {object} api.Response "Unauthorized - Missing or invalid token"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /sale-return/update/{orderNo} [put]
+// @Router /sale-return/update/{orderNo} [patch]
 func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request) {
 	// 1. รับและตรวจสอบ orderNo
 	orderNo := chi.URLParam(r, "orderNo")
@@ -834,7 +834,7 @@ func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *
 // @Success 200 {object} api.Response{data=[]response.DraftHeadResponse} "Draft orders updated successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /draft-confirm/update-draft/{orderNo} [put]
+// @Router /draft-confirm/update-draft/{orderNo} [patch]
 func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {

@@ -79,3 +79,48 @@ func ValidateUpdateSaleReturn(orderNo string, srNo string, updateBy string) erro
 
 	return nil
 }
+
+// เพิ่มฟังก์ชัน validate สำหรับ CreateSaleReturn
+func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
+	// 1. ตรวจสอบข้อมูลพื้นฐาน
+	if req.OrderNo == "" {
+		return fmt.Errorf("order number is required")
+	}
+	if req.SoNo == "" {
+		return fmt.Errorf("SO number is required")
+	}
+
+	// 2. ตรวจสอบค่าที่ต้องมากกว่า 0
+	if *req.ChannelID <= 0 {
+		return fmt.Errorf("invalid channel ID")
+	}
+
+	// 4. ตรวจสอบ order lines
+	if len(req.ReturnOrderLine) == 0 {
+		return fmt.Errorf("at least one order line is required")
+	}
+
+	for i, line := range req.ReturnOrderLine {
+		if line.SKU == "" {
+			return fmt.Errorf("SKU is required for line %d", i+1)
+		}
+		if *line.QTY <= 0 {
+			return fmt.Errorf("quantity must be greater than 0 for line %d", i+1)
+		}
+		if line.ReturnQTY < 0 {
+			return fmt.Errorf("return quantity cannot be negative for line %d", i+1)
+		}
+		if line.ReturnQTY > *line.QTY {
+			return fmt.Errorf("return quantity cannot be greater than quantity for line %d", i+1)
+		}
+		if line.Price < 0 {
+			return fmt.Errorf("price cannot be negative for line %d", i+1)
+		}
+		// ตรวจสอบ AlterSKU ถ้ามี
+		// if line.AlterSKU != nil && *line.AlterSKU == "" {
+		// 	return fmt.Errorf("alter SKU cannot be empty if provided for line %d", i+1)
+		// }
+	}
+
+	return nil
+}

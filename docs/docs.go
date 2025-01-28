@@ -636,7 +636,7 @@ const docTemplate = `{
             }
         },
         "/before-return-order/update/{orderNo}": {
-            "put": {
+            "patch": {
                 "description": "Update an existing return order with the provided details",
                 "consumes": [
                     "application/json"
@@ -1428,7 +1428,7 @@ const docTemplate = `{
             }
         },
         "/draft-confirm/update-draft/{orderNo}": {
-            "put": {
+            "patch": {
                 "description": "Update draft orders and change status to Confirm and Booking",
                 "consumes": [
                     "application/json"
@@ -1614,123 +1614,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/return-order/allget": {
-            "get": {
-                "description": "Get all Return Order",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Return Order"
-                ],
-                "summary": "Get Return Order",
-                "operationId": "Allget-ReturnOrder",
-                "responses": {
-                    "200": {
-                        "description": "Get All",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/entity.ReturnOrder"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "not found endpoint",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/return-order/allgetline": {
-            "get": {
-                "description": "Get all Return Order Line",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Return Order"
-                ],
-                "summary": "Get Return Order Line",
-                "operationId": "Allget-ReturnOrderLine",
-                "responses": {
-                    "200": {
-                        "description": "Get Order Line All",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/entity.ReturnOrderLine"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "not found endpoint",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/return-order/create": {
             "post": {
-                "description": "Create a new order",
+                "description": "Create a new return order",
                 "consumes": [
                     "application/json"
                 ],
@@ -1740,11 +1626,11 @@ const docTemplate = `{
                 "tags": [
                     "Return Order"
                 ],
-                "summary": "Create Order",
+                "summary": "Create Return Order",
                 "operationId": "Create-ReturnOrder",
                 "parameters": [
                     {
-                        "description": "ReturnOrder Data",
+                        "description": "Return Order",
                         "name": "CreateReturnOrder",
                         "in": "body",
                         "required": true,
@@ -1754,8 +1640,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "ReturnOrder Created",
+                    "200": {
+                        "description": "Return Order Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -1767,7 +1653,28 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/request.CreateReturnOrder"
+                                                "$ref": "#/definitions/response.CreateReturnOrder"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "201": {
+                        "description": "Return Order Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.CreateReturnOrder"
                                             }
                                         }
                                     }
@@ -1859,9 +1766,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/return-order/getbyID/{orderNo}": {
+        "/return-order/get-all": {
             "get": {
-                "description": "Get details of an order by its order no",
+                "description": "Retrieve the details of Return Order",
                 "consumes": [
                     "application/json"
                 ],
@@ -1871,20 +1778,11 @@ const docTemplate = `{
                 "tags": [
                     "Return Order"
                 ],
-                "summary": "Get Return Order by ID",
-                "operationId": "GetByID-ReturnOrder",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Order No",
-                        "name": "orderNo",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "Get Return Order",
+                "operationId": "GetAll-ReturnOrder",
                 "responses": {
                     "200": {
-                        "description": "Get by ID",
+                        "description": "Get All",
                         "schema": {
                             "allOf": [
                                 {
@@ -1896,7 +1794,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/entity.ReturnOrder"
+                                                "$ref": "#/definitions/response.ReturnOrder"
                                             }
                                         }
                                     }
@@ -1911,7 +1809,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "not found endpoint",
+                        "description": "Not Found Endpoint",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -1925,9 +1823,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/return-order/getlinebyID/{orderNo}": {
+        "/return-order/get-all/{orderNo}": {
             "get": {
-                "description": "Get details of an order line by its order no",
+                "description": "Get details return order by order no",
                 "consumes": [
                     "application/json"
                 ],
@@ -1937,8 +1835,8 @@ const docTemplate = `{
                 "tags": [
                     "Return Order"
                 ],
-                "summary": "Get Return Order Line by ID",
-                "operationId": "GetLineByID-ReturnOrder",
+                "summary": "Get Return Order by OrderNo",
+                "operationId": "GetAllByOrderNo-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
@@ -1950,7 +1848,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Get by ID",
+                        "description": "Get All by OrderNo",
                         "schema": {
                             "allOf": [
                                 {
@@ -1962,7 +1860,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/entity.ReturnOrderLine"
+                                                "$ref": "#/definitions/response.ReturnOrder"
                                             }
                                         }
                                     }
@@ -1977,7 +1875,130 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "not found endpoint",
+                        "description": "Not Found Endpoint",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/return-order/get-lines": {
+            "get": {
+                "description": "Get all Return Order Line",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order"
+                ],
+                "summary": "Get Return Order Line",
+                "operationId": "GetAllLines-ReturnOrderLine",
+                "responses": {
+                    "200": {
+                        "description": "Get Return Order Lines",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ReturnOrderLine"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found Endpoint",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/return-order/get-lines/{orderNo}": {
+            "get": {
+                "description": "Get details of an order line by its order no",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order"
+                ],
+                "summary": "Get Return Order Line by OrderNo",
+                "operationId": "GetLineByID-ReturnOrder",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order No",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Get Lines by OrderNo",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ReturnOrderLine"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found Endpoint",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2003,7 +2024,7 @@ const docTemplate = `{
                 "tags": [
                     "Return Order"
                 ],
-                "summary": "Update Order",
+                "summary": "Update Return Order",
                 "operationId": "Update-ReturnOrder",
                 "parameters": [
                     {
@@ -2025,9 +2046,24 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "ReturnOrder Updated Successfully",
+                        "description": "Return Order Update",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.UpdateReturnOrder"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -2302,7 +2338,7 @@ const docTemplate = `{
             }
         },
         "/sale-return/update/{orderNo}": {
-            "put": {
+            "patch": {
                 "description": "Update the SR number for a sale return order based on the provided details",
                 "consumes": [
                     "application/json"
@@ -2828,144 +2864,6 @@ const docTemplate = `{
                 }
             }
         },
-        "entity.ReturnOrder": {
-            "type": "object",
-            "properties": {
-                "axStatusID": {
-                    "description": "สถานะในระบบ AX",
-                    "type": "integer"
-                },
-                "cancelID": {
-                    "description": "รหัสการยกเลิก",
-                    "type": "integer"
-                },
-                "channelID": {
-                    "description": "รหัสช่องทางการขาย (FK -\u003e Channel)",
-                    "type": "integer"
-                },
-                "checkBy": {
-                    "description": "ผู้ตรวจสอบ",
-                    "type": "string"
-                },
-                "createBy": {
-                    "description": "ผู้สร้างรายการ",
-                    "type": "string"
-                },
-                "createDate": {
-                    "description": "วันที่สร้างรายการ",
-                    "type": "string"
-                },
-                "description": {
-                    "description": "รายละเอียดเพิ่มเติม",
-                    "type": "string"
-                },
-                "optStatusID": {
-                    "description": "สถานะการดำเนินการ",
-                    "type": "integer"
-                },
-                "orderNo": {
-                    "description": "เลขที่ใบสั่งซื้อ",
-                    "type": "string"
-                },
-                "platfID": {
-                    "description": "รหัสแพลตฟอร์ม (FK -\u003e Platforms)",
-                    "type": "integer"
-                },
-                "platfStatusID": {
-                    "description": "สถานะในแพลตฟอร์ม",
-                    "type": "integer"
-                },
-                "reason": {
-                    "description": "หมายเหตุ",
-                    "type": "string"
-                },
-                "returnID": {
-                    "description": "เลขที่ใบคืนสินค้า (PK - Generate จากระบบ)",
-                    "type": "string"
-                },
-                "soNo": {
-                    "description": "เลขที่ใบกำกับภาษี",
-                    "type": "string"
-                },
-                "srNo": {
-                    "description": "เลขที่ใบลดหนี้",
-                    "type": "string"
-                },
-                "statusCheckID": {
-                    "description": "สถานะการตรวจสอบ (FK -\u003e StatusCheck)",
-                    "type": "integer"
-                },
-                "trackingNo": {
-                    "description": "เลขพัสดุ",
-                    "type": "string"
-                },
-                "updateBy": {
-                    "description": "ผู้แก้ไขล่าสุด",
-                    "type": "string"
-                },
-                "updateDate": {
-                    "description": "วันที่แก้ไขล่าสุด",
-                    "type": "string"
-                }
-            }
-        },
-        "entity.ReturnOrderLine": {
-            "type": "object",
-            "properties": {
-                "alterSKU": {
-                    "description": "รหัสสินค้าทดแทน",
-                    "type": "string"
-                },
-                "createBy": {
-                    "description": "ผู้สร้างรายการ",
-                    "type": "string"
-                },
-                "createDate": {
-                    "description": "วันที่สร้างรายการ",
-                    "type": "string"
-                },
-                "orderNo": {
-                    "description": "เลขที่ใบสั่งซื้อ",
-                    "type": "string"
-                },
-                "price": {
-                    "description": "ราคาต่อหน่วย",
-                    "type": "number"
-                },
-                "qty": {
-                    "description": "จำนวนที่ตรวจสอบแล้ว",
-                    "type": "integer"
-                },
-                "recID": {
-                    "description": "รหัสอ้างอิงอัตโนมัติ - (PK - Auto Increment)",
-                    "type": "integer"
-                },
-                "returnID": {
-                    "description": "เลขที่ใบคืนสินค้า (FK -\u003e ReturnOrder)",
-                    "type": "string"
-                },
-                "returnQTY": {
-                    "description": "จำนวนที่คืน",
-                    "type": "integer"
-                },
-                "sku": {
-                    "description": "รหัสสินค้า",
-                    "type": "string"
-                },
-                "trackingNo": {
-                    "description": "เลขพัสดุ",
-                    "type": "string"
-                },
-                "updateBy": {
-                    "description": "ผู้แก้ไขล่าสุด",
-                    "type": "string"
-                },
-                "updateDate": {
-                    "description": "วันที่แก้ไขล่าสุด",
-                    "type": "string"
-                }
-            }
-        },
         "entity.SubDistrict": {
             "type": "object",
             "properties": {
@@ -3013,7 +2911,7 @@ const docTemplate = `{
                     }
                 },
                 "cancelID": {
-                    "description": "UpdateDate             *time.Time              ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + ` // MSSQL GetDate()",
+                    "description": "UpdateDate   *time.Time ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + ` // MSSQL GetDate()",
                     "type": "integer"
                 },
                 "channelID": {
@@ -3023,7 +2921,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "createBy": {
-                    "description": "ConfirmDate            *time.Time              ` + "`" + `json:\"confirmDate\" db:\"ConfirmDate\"` + "`" + ` // MSSQL GetDate()",
+                    "description": "ConfirmDate  *time.Time ` + "`" + `json:\"confirmDate\" db:\"ConfirmDate\"` + "`" + ` // MSSQL GetDate()",
                     "type": "string"
                 },
                 "customerID": {
@@ -3036,7 +2934,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "orderNo": {
-                    "description": "RecID\t\t  int        ` + "`" + `json:\"recID\" db:\"RecID\"` + "`" + ` // (PK - Auto Increment)",
+                    "description": "RecID\t\t   int        ` + "`" + `json:\"recID\" db:\"RecID\"` + "`" + ` // (PK - Auto Increment)",
                     "type": "string"
                 },
                 "reason": {
@@ -3064,7 +2962,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updateBy": {
-                    "description": "CreateDate             *time.Time              ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
+                    "description": "CreateDate  *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
                     "type": "string"
                 },
                 "warehouseID": {
@@ -3204,6 +3102,10 @@ const docTemplate = `{
                 "checkBy": {
                     "type": "string",
                     "example": "dev03"
+                },
+                "createBy": {
+                    "description": "'USER'",
+                    "type": "string"
                 },
                 "description": {
                     "type": "string",
@@ -3631,6 +3533,80 @@ const docTemplate = `{
                 }
             }
         },
+        "response.CreateReturnOrder": {
+            "type": "object",
+            "properties": {
+                "ReturnOrderLine": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.ReturnOrderLine"
+                    }
+                },
+                "axStatusId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "cancelId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "channelId": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "checkBy": {
+                    "type": "string",
+                    "example": "dev03"
+                },
+                "createBy": {
+                    "description": "'USER'",
+                    "type": "string"
+                },
+                "createDate": {
+                    "description": "MSSQL SYSDATETIME() function",
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "example": ""
+                },
+                "optStatusId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "orderNo": {
+                    "type": "string",
+                    "example": "ORD0001"
+                },
+                "platfId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "platfStatusId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string",
+                    "example": "SO0001"
+                },
+                "srNo": {
+                    "type": "string",
+                    "example": "SR0001"
+                },
+                "statusCheckId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "trackingNo": {
+                    "type": "string",
+                    "example": "12345678TH"
+                }
+            }
+        },
         "response.DraftHeadResponse": {
             "type": "object",
             "properties": {
@@ -3847,6 +3823,109 @@ const docTemplate = `{
                 }
             }
         },
+        "response.ReturnOrder": {
+            "type": "object",
+            "properties": {
+                "ReturnOrderLine": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.ReturnOrderLine"
+                    }
+                },
+                "axStatusId": {
+                    "type": "integer"
+                },
+                "cancelId": {
+                    "type": "integer"
+                },
+                "channelId": {
+                    "type": "integer"
+                },
+                "checkBy": {
+                    "type": "string"
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "optStatusId": {
+                    "type": "integer"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "platfId": {
+                    "type": "integer"
+                },
+                "platfStatusId": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "srNo": {
+                    "type": "string"
+                },
+                "statusCheckId": {
+                    "type": "integer"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "type": "string"
+                },
+                "updateDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ReturnOrderLine": {
+            "type": "object",
+            "properties": {
+                "alterSKU": {
+                    "type": "string"
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQTY": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "type": "string"
+                },
+                "updateDate": {
+                    "type": "string"
+                }
+            }
+        },
         "response.SaleOrderLineResponse": {
             "type": "object",
             "properties": {
@@ -3892,6 +3971,66 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "statusMKP": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.UpdateReturnOrder": {
+            "type": "object",
+            "properties": {
+                "axStatusId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "cancelId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "channelId": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "checkBy": {
+                    "type": "string",
+                    "example": "dev03"
+                },
+                "description": {
+                    "type": "string",
+                    "example": ""
+                },
+                "optStatusId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "platfId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "platfStatusId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "srNo": {
+                    "type": "string",
+                    "example": "SR0001"
+                },
+                "statusCheckId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "trackingNo": {
+                    "type": "string",
+                    "example": "12345678TH"
+                },
+                "updateBy": {
+                    "description": "'USER'",
+                    "type": "string"
+                },
+                "updateDate": {
+                    "description": "MSSQL SYSDATETIME() function",
                     "type": "string"
                 }
             }

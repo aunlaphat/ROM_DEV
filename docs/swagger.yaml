@@ -49,108 +49,6 @@ definitions:
         description: ประเภทของสินค้า
         type: string
     type: object
-  entity.ReturnOrder:
-    properties:
-      axStatusID:
-        description: สถานะในระบบ AX
-        type: integer
-      cancelID:
-        description: รหัสการยกเลิก
-        type: integer
-      channelID:
-        description: รหัสช่องทางการขาย (FK -> Channel)
-        type: integer
-      checkBy:
-        description: ผู้ตรวจสอบ
-        type: string
-      createBy:
-        description: ผู้สร้างรายการ
-        type: string
-      createDate:
-        description: วันที่สร้างรายการ
-        type: string
-      description:
-        description: รายละเอียดเพิ่มเติม
-        type: string
-      optStatusID:
-        description: สถานะการดำเนินการ
-        type: integer
-      orderNo:
-        description: เลขที่ใบสั่งซื้อ
-        type: string
-      platfID:
-        description: รหัสแพลตฟอร์ม (FK -> Platforms)
-        type: integer
-      platfStatusID:
-        description: สถานะในแพลตฟอร์ม
-        type: integer
-      reason:
-        description: หมายเหตุ
-        type: string
-      returnID:
-        description: เลขที่ใบคืนสินค้า (PK - Generate จากระบบ)
-        type: string
-      soNo:
-        description: เลขที่ใบกำกับภาษี
-        type: string
-      srNo:
-        description: เลขที่ใบลดหนี้
-        type: string
-      statusCheckID:
-        description: สถานะการตรวจสอบ (FK -> StatusCheck)
-        type: integer
-      trackingNo:
-        description: เลขพัสดุ
-        type: string
-      updateBy:
-        description: ผู้แก้ไขล่าสุด
-        type: string
-      updateDate:
-        description: วันที่แก้ไขล่าสุด
-        type: string
-    type: object
-  entity.ReturnOrderLine:
-    properties:
-      alterSKU:
-        description: รหัสสินค้าทดแทน
-        type: string
-      createBy:
-        description: ผู้สร้างรายการ
-        type: string
-      createDate:
-        description: วันที่สร้างรายการ
-        type: string
-      orderNo:
-        description: เลขที่ใบสั่งซื้อ
-        type: string
-      price:
-        description: ราคาต่อหน่วย
-        type: number
-      qty:
-        description: จำนวนที่ตรวจสอบแล้ว
-        type: integer
-      recID:
-        description: รหัสอ้างอิงอัตโนมัติ - (PK - Auto Increment)
-        type: integer
-      returnID:
-        description: เลขที่ใบคืนสินค้า (FK -> ReturnOrder)
-        type: string
-      returnQTY:
-        description: จำนวนที่คืน
-        type: integer
-      sku:
-        description: รหัสสินค้า
-        type: string
-      trackingNo:
-        description: เลขพัสดุ
-        type: string
-      updateBy:
-        description: ผู้แก้ไขล่าสุด
-        type: string
-      updateDate:
-        description: วันที่แก้ไขล่าสุด
-        type: string
-    type: object
   entity.SubDistrict:
     properties:
       code:
@@ -183,16 +81,16 @@ definitions:
           $ref: '#/definitions/request.BeforeReturnOrderLine'
         type: array
       cancelID:
-        description: UpdateDate             *time.Time              `json:"updateDate"
-          db:"UpdateDate"` // MSSQL GetDate()
+        description: UpdateDate   *time.Time `json:"updateDate" db:"UpdateDate"` //
+          MSSQL GetDate()
         type: integer
       channelID:
         type: integer
       confirmBy:
         type: string
       createBy:
-        description: ConfirmDate            *time.Time              `json:"confirmDate"
-          db:"ConfirmDate"` // MSSQL GetDate()
+        description: ConfirmDate  *time.Time `json:"confirmDate" db:"ConfirmDate"`
+          // MSSQL GetDate()
         type: string
       customerID:
         type: string
@@ -201,8 +99,8 @@ definitions:
       mkpStatusID:
         type: integer
       orderNo:
-        description: "RecID\t\t  int        `json:\"recID\" db:\"RecID\"` // (PK -
-          Auto Increment)"
+        description: "RecID\t\t   int        `json:\"recID\" db:\"RecID\"` // (PK
+          - Auto Increment)"
         type: string
       reason:
         type: string
@@ -221,8 +119,8 @@ definitions:
       trackingNo:
         type: string
       updateBy:
-        description: CreateDate             *time.Time              `json:"createDate"
-          db:"CreateDate"` // MSSQL GetDate()
+        description: CreateDate  *time.Time `json:"createDate" db:"CreateDate"` //
+          MSSQL GetDate()
         type: string
       warehouseID:
         type: integer
@@ -319,6 +217,9 @@ definitions:
         type: integer
       checkBy:
         example: dev03
+        type: string
+      createBy:
+        description: '''USER'''
         type: string
       description:
         example: ""
@@ -612,6 +513,60 @@ definitions:
           $ref: '#/definitions/response.UpdateToReturn'
         type: array
     type: object
+  response.CreateReturnOrder:
+    properties:
+      ReturnOrderLine:
+        items:
+          $ref: '#/definitions/response.ReturnOrderLine'
+        type: array
+      axStatusId:
+        example: 1
+        type: integer
+      cancelId:
+        example: 1
+        type: integer
+      channelId:
+        example: 2
+        type: integer
+      checkBy:
+        example: dev03
+        type: string
+      createBy:
+        description: '''USER'''
+        type: string
+      createDate:
+        description: MSSQL SYSDATETIME() function
+        type: string
+      description:
+        example: ""
+        type: string
+      optStatusId:
+        example: 1
+        type: integer
+      orderNo:
+        example: ORD0001
+        type: string
+      platfId:
+        example: 1
+        type: integer
+      platfStatusId:
+        example: 1
+        type: integer
+      reason:
+        type: string
+      soNo:
+        example: SO0001
+        type: string
+      srNo:
+        example: SR0001
+        type: string
+      statusCheckId:
+        example: 1
+        type: integer
+      trackingNo:
+        example: 12345678TH
+        type: string
+    type: object
   response.DraftHeadResponse:
     properties:
       orderLines:
@@ -758,6 +713,74 @@ definitions:
         description: รหัสสินค้า
         type: string
     type: object
+  response.ReturnOrder:
+    properties:
+      ReturnOrderLine:
+        items:
+          $ref: '#/definitions/response.ReturnOrderLine'
+        type: array
+      axStatusId:
+        type: integer
+      cancelId:
+        type: integer
+      channelId:
+        type: integer
+      checkBy:
+        type: string
+      createBy:
+        type: string
+      createDate:
+        type: string
+      description:
+        type: string
+      optStatusId:
+        type: integer
+      orderNo:
+        type: string
+      platfId:
+        type: integer
+      platfStatusId:
+        type: integer
+      reason:
+        type: string
+      soNo:
+        type: string
+      srNo:
+        type: string
+      statusCheckId:
+        type: integer
+      trackingNo:
+        type: string
+      updateBy:
+        type: string
+      updateDate:
+        type: string
+    type: object
+  response.ReturnOrderLine:
+    properties:
+      alterSKU:
+        type: string
+      createBy:
+        type: string
+      createDate:
+        type: string
+      orderNo:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      returnQTY:
+        type: integer
+      sku:
+        type: string
+      trackingNo:
+        type: string
+      updateBy:
+        type: string
+      updateDate:
+        type: string
+    type: object
   response.SaleOrderLineResponse:
     properties:
       itemName:
@@ -788,6 +811,50 @@ definitions:
       soNo:
         type: string
       statusMKP:
+        type: string
+    type: object
+  response.UpdateReturnOrder:
+    properties:
+      axStatusId:
+        example: 1
+        type: integer
+      cancelId:
+        example: 1
+        type: integer
+      channelId:
+        example: 2
+        type: integer
+      checkBy:
+        example: dev03
+        type: string
+      description:
+        example: ""
+        type: string
+      optStatusId:
+        example: 1
+        type: integer
+      platfId:
+        example: 1
+        type: integer
+      platfStatusId:
+        example: 1
+        type: integer
+      reason:
+        type: string
+      srNo:
+        example: SR0001
+        type: string
+      statusCheckId:
+        example: 1
+        type: integer
+      trackingNo:
+        example: 12345678TH
+        type: string
+      updateBy:
+        description: '''USER'''
+        type: string
+      updateDate:
+        description: MSSQL SYSDATETIME() function
         type: string
     type: object
   response.UpdateToReturn:
@@ -1247,7 +1314,7 @@ paths:
       tags:
       - Before Return Order
   /before-return-order/update/{orderNo}:
-    put:
+    patch:
       consumes:
       - application/json
       description: Update an existing return order with the provided details
@@ -1713,7 +1780,7 @@ paths:
       tags:
       - Draft & Confirm
   /draft-confirm/update-draft/{orderNo}:
-    put:
+    patch:
       consumes:
       - application/json
       description: Update draft orders and change status to Confirm and Booking
@@ -1832,84 +1899,14 @@ paths:
       summary: Upload images for import order
       tags:
       - Import Order
-  /return-order/allget:
-    get:
-      consumes:
-      - application/json
-      description: Get all Return Order
-      operationId: Allget-ReturnOrder
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get All
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.ReturnOrder'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: not found endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Return Order
-      tags:
-      - Return Order
-  /return-order/allgetline:
-    get:
-      consumes:
-      - application/json
-      description: Get all Return Order Line
-      operationId: Allget-ReturnOrderLine
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get Order Line All
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.ReturnOrderLine'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: not found endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Return Order Line
-      tags:
-      - Return Order
   /return-order/create:
     post:
       consumes:
       - application/json
-      description: Create a new order
+      description: Create a new return order
       operationId: Create-ReturnOrder
       parameters:
-      - description: ReturnOrder Data
+      - description: Return Order
         in: body
         name: CreateReturnOrder
         required: true
@@ -1918,15 +1915,26 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: ReturnOrder Created
+        "200":
+          description: Return Order Created
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/request.CreateReturnOrder'
+                    $ref: '#/definitions/response.CreateReturnOrder'
+                  type: array
+              type: object
+        "201":
+          description: Return Order Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.CreateReturnOrder'
                   type: array
               type: object
         "400":
@@ -1937,7 +1945,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Create Order
+      summary: Create Return Order
       tags:
       - Return Order
   /return-order/delete/{orderNo}:
@@ -1983,12 +1991,47 @@ paths:
       summary: Delete Order
       tags:
       - Return Order
-  /return-order/getbyID/{orderNo}:
+  /return-order/get-all:
     get:
       consumes:
       - application/json
-      description: Get details of an order by its order no
-      operationId: GetByID-ReturnOrder
+      description: Retrieve the details of Return Order
+      operationId: GetAll-ReturnOrder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get All
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found Endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Order
+      tags:
+      - Return Order
+  /return-order/get-all/{orderNo}:
+    get:
+      consumes:
+      - application/json
+      description: Get details return order by order no
+      operationId: GetAllByOrderNo-ReturnOrder
       parameters:
       - description: Order No
         in: path
@@ -1999,14 +2042,14 @@ paths:
       - application/json
       responses:
         "200":
-          description: Get by ID
+          description: Get All by OrderNo
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/entity.ReturnOrder'
+                    $ref: '#/definitions/response.ReturnOrder'
                   type: array
               type: object
         "400":
@@ -2014,17 +2057,52 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
         "404":
-          description: not found endpoint
+          description: Not Found Endpoint
           schema:
             $ref: '#/definitions/api.Response'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Get Return Order by ID
+      summary: Get Return Order by OrderNo
       tags:
       - Return Order
-  /return-order/getlinebyID/{orderNo}:
+  /return-order/get-lines:
+    get:
+      consumes:
+      - application/json
+      description: Get all Return Order Line
+      operationId: GetAllLines-ReturnOrderLine
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get Return Order Lines
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ReturnOrderLine'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found Endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Order Line
+      tags:
+      - Return Order
+  /return-order/get-lines/{orderNo}:
     get:
       consumes:
       - application/json
@@ -2040,14 +2118,14 @@ paths:
       - application/json
       responses:
         "200":
-          description: Get by ID
+          description: Get Lines by OrderNo
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/entity.ReturnOrderLine'
+                    $ref: '#/definitions/response.ReturnOrderLine'
                   type: array
               type: object
         "400":
@@ -2055,14 +2133,14 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
         "404":
-          description: not found endpoint
+          description: Not Found Endpoint
           schema:
             $ref: '#/definitions/api.Response'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Get Return Order Line by ID
+      summary: Get Return Order Line by OrderNo
       tags:
       - Return Order
   /return-order/update/{orderNo}:
@@ -2087,9 +2165,16 @@ paths:
       - application/json
       responses:
         "200":
-          description: ReturnOrder Updated Successfully
+          description: Return Order Update
           schema:
-            $ref: '#/definitions/api.Response'
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.UpdateReturnOrder'
+                  type: array
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -2102,7 +2187,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Update Order
+      summary: Update Return Order
       tags:
       - Return Order
   /sale-return/cancel/{orderNo}:
@@ -2260,7 +2345,7 @@ paths:
       tags:
       - Sale Return
   /sale-return/update/{orderNo}:
-    put:
+    patch:
       consumes:
       - application/json
       description: Update the SR number for a sale return order based on the provided
