@@ -138,6 +138,8 @@ definitions:
       itemName:
         type: string
       orderNo:
+        description: "RecID\t\t  int        `json:\"recID\" db:\"RecID\"` // (PK -
+          Auto Increment)"
         type: string
       price:
         type: number
@@ -369,7 +371,7 @@ definitions:
   request.UpdateSaleReturnRequest:
     properties:
       srNo:
-        example: SR-123456
+        example: SR-TEST-123456
         type: string
     required:
     - srNo
