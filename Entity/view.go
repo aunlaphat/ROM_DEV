@@ -1,5 +1,7 @@
 package entity
 
+//for dropdown
+
 type District struct {
 	Code         int    `db:"Code" json:"code"`
 	ProvinceCode int    `db:"ProvinceCode" json:"provinceCode"`
@@ -19,4 +21,8 @@ type Province struct {
 	Code   int    `db:"Code" json:"code"`
 	NameTH string `db:"NameTH" json:"nameTH"`
 	NameEN string `db:"NameEN" json:"nameEN"`
+}
+
+type PostCode struct {
+
 }

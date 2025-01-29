@@ -2,6 +2,8 @@ package entity
 
 import "time"
 
+/**********Before Return Order ***************/
+
 // BeforeReturnOrder represents the structure of the BeforeReturnOrder table
 type BeforeReturnOrder struct {
 	RecID          int        `db:"RecID"`          // รหัสอ้างอิงอัตโนมัติ (PK - Auto Increment)
@@ -61,14 +63,16 @@ type CancelStatus struct {
 	CancelDate   time.Time `db:"CancelDate"`   // วันที่ยกเลิก
 }
 
+/********** Return Order ***************/
+
 // ReturnOrder คือตารางสำหรับเก็บข้อมูลการคืนสินค้าที่ผ่านการตรวจสอบแล้ว
 // เป็นขั้นตอนสุดท้ายของกระบวนการคืนสินค้า
 type ReturnOrder struct {
 	RecID         int        `db:"RecID"`         // รหัสอ้างอิงอัตโนมัติ (Auto Increment)
 	ReturnID      string     `db:"ReturnID"`      // เลขที่ใบคืนสินค้า (PK - Generate จากระบบ)
 	OrderNo       string     `db:"OrderNo"`       // เลขที่ใบสั่งซื้อ
-	SaleOrder     string     `db:"SaleOrder"`     // เลขที่ใบกำกับภาษี
-	SaleReturn    string     `db:"SaleReturn"`    // เลขที่ใบลดหนี้
+	SoNo          string     `db:"SoNo"`          // เลขที่ใบกำกับภาษี
+	SrNo          string     `db:"SrNo"`          // เลขที่ใบลดหนี้
 	TrackingNo    string     `db:"TrackingNo"`    // เลขพัสดุ
 	PlatfID       *int       `db:"PlatfID"`       // รหัสแพลตฟอร์ม (FK -> Platforms)
 	ChannelID     *int       `db:"ChannelID"`     // รหัสช่องทางการขาย (FK -> Channel)
@@ -106,7 +110,8 @@ type ReturnOrderLine struct {
 	AlterSKU   *string    `db:"AlterSKU"`   // รหัสสินค้าทดแทน (ถ้ามี)
 }
 
-// View
+/********** Constants for dropdown ***************/
+
 type ROM_V_ProductAll struct {
 	SKU       string  `db:"SKU" json:"sku"`             // รหัสสินค้า
 	NameAlias string  `db:"NAMEALIAS" json:"nameAlias"` // ชื่อย่อของสินค้า
@@ -144,6 +149,14 @@ type ROM_V_OrderLineDetail struct {
 	FullNameTH   string `json:"fullNameTH,omitempty" db:"FullNameTH"`   // ชื่อเต็มภาษาไทย
 	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo"` // รหัสแผนก
 } */
+
+// type ROM_V_OrderHeadDetail struct {
+// 	OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
+// 	SoNo        *string   `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
+// 	StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
+// 	SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
+// 	CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
+// }
 
 type ROM_V_UserPermission struct {
 	UserID       string `json:"userID,omitempty" db:"UserID"`           // รหัสผู้ใช้

@@ -3,6 +3,7 @@ package api
 import (
 	"boilerplate-backend-go/dto/request"
 	res "boilerplate-backend-go/dto/response"
+	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/utils"
 	"encoding/json"
 	"fmt"
@@ -19,11 +20,17 @@ import (
 func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 	apiRouter.Route("/before-return-order", func(r chi.Router) {
 		r.Get("/list-orders", app.ListBeforeReturnOrders)
-		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
-		r.Put("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
-		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
 		r.Get("/list-lines", app.ListBeforeReturnOrderLines)
+		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
+		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
+		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
+		
+		// get real order
+		r.Get("/get-order", app.GetAllOrderDetail)								// get Order of ROM_V_OrderDetail
+		r.Get("/get-orders", app.GetAllOrderDetails)  							// get Order of ROM_V_OrderDetail with paginate
+		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)					// search by SO of ROM_V_OrderDetail
+		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine)	// delete line by recID of BeforeReturnOrder
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
@@ -32,7 +39,7 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 
 		r.Get("/search", app.SearchOrder)
 		r.Post("/create", app.CreateSaleReturn)
-		r.Put("/update/{orderNo}", app.UpdateSaleReturn)
+		r.Patch("/update/{orderNo}", app.UpdateSaleReturn)
 		r.Post("/confirm/{orderNo}", app.ConfirmSaleReturn)
 		r.Post("/cancel/{orderNo}", app.CancelSaleReturn)
 	})
@@ -49,7 +56,7 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Get("/list-code-r", app.ListCodeR)
 		r.Post("/code-r", app.AddCodeR)
 		r.Delete("/code-r/{orderNo}/{sku}", app.DeleteCodeR)
-		r.Put("/update-draft/{orderNo}", app.UpdateDraftOrder)
+		r.Patch("/update-draft/{orderNo}", app.UpdateDraftOrder)
 
 		// Confirm
 		r.Get("/list-confirms", app.ListConfirmOrders)
@@ -137,7 +144,7 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Success 200 {object} api.Response
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
-// @Router /before-return-order/update/{orderNo} [put]
+// @Router /before-return-order/update/{orderNo} [patch]
 func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	var req request.BeforeReturnOrder
@@ -418,7 +425,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Failure 404 {object} api.Response "Not Found - Order not found"
 // @Failure 401 {object} api.Response "Unauthorized - Missing or invalid token"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /sale-return/update/{orderNo} [put]
+// @Router /sale-return/update/{orderNo} [patch]
 func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request) {
 	// 1. รับและตรวจสอบ orderNo
 	orderNo := chi.URLParam(r, "orderNo")
@@ -827,7 +834,7 @@ func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *
 // @Success 200 {object} api.Response{data=[]response.DraftHeadResponse} "Draft orders updated successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /draft-confirm/update-draft/{orderNo} [put]
+// @Router /draft-confirm/update-draft/{orderNo} [patch]
 func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
@@ -872,4 +879,105 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 	fmt.Println("=====================================")
 
 	handleResponse(w, true, "⭐ Draft orders updated successfully ⭐", result, http.StatusOK)
+}
+
+// @Summary 	Get Before Return Order
+// @Description Get all Before Return Order
+// @ID 			Allget-BefReturnOrder
+// @Tags 		Before Return Order
+// @Accept 		json
+// @Produce 	json
+// @Success 	200 {object} Response{result=[]response.OrderDetail} "Get All"
+// @Failure 	400 {object} Response "Bad Request"
+// @Failure 	404 {object} Response "not found endpoint"
+// @Failure 	500 {object} Response "Internal Server Error"
+// @Router 		/before-return-order/get-order [get]
+func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request) {
+	result, err := api.Service.BeforeReturn.GetAllOrderDetail(r.Context())
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
+}
+
+// @Summary 	Get Paginated Before Return Order
+// @Description Get all Before Return Order with pagination
+// @ID 			Get-BefReturnOrder-Paginated
+// @Tags 		Before Return Order
+// @Accept 		json
+// @Produce 	json
+// @Param       page  query int false "Page number" default(1)
+// @Param       limit query int false "Page size" default(10)
+// @Success 	200 {object} Response{result=[]response.OrderDetail} "Get Paginated Orders"
+// @Failure 	400 {object} Response "Bad Request"
+// @Failure 	404 {object} Response "Not Found"
+// @Failure 	500 {object} Response "Internal Server Error"
+// @Router 		/before-return-order/get-orders [get]
+func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Request) {
+	page, limit := parsePagination(r) // ฟังก์ชันช่วยดึง page และ limit จาก Query Parameters
+
+	result, err := api.Service.BeforeReturn.GetAllOrderDetails(r.Context(), page, limit)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
+}
+
+// @Summary      Get Before Return Order by SO
+// @Description  Get details of an order by its SO number
+// @ID           GetBySO-BefReturnOrder
+// @Tags         Before Return Order
+// @Accept       json
+// @Produce      json
+// @Param        soNo  path     string  true  "soNo"
+// @Success      200 	  {object} Response{result=[]response.OrderDetail} "Get by SO"
+// @Failure      400      {object} Response "Bad Request"
+// @Failure      404      {object} Response "not found endpoint"
+// @Failure      500      {object} Response "Internal Server Error"
+// @Router       /before-return-order/get-orderbySO/{soNo} [get]
+func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Request) {
+	soNo := chi.URLParam(r, "soNo")
+	if soNo == "" {
+		handleError(w, errors.ValidationError("soNo is required"))
+		return
+	}
+
+	result, err := app.Service.BeforeReturn.GetOrderDetailBySO(r.Context(), soNo)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "Orders retrieved by SO successfully", result, http.StatusOK)
+}
+
+// @Summary 	Delete Order line
+// @Description Delete an order line
+// @ID 			delete-BeforeReturnOrderLine
+// @Tags 		Before Return Order
+// @Accept 		json
+// @Produce 	json
+// @Param 		recID path string true "Rec ID"
+// @Success 	200 {object} Response{result=string} "Before ReturnOrderLine Deleted"
+// @Failure 	404 {object} Response "Order Not Found"
+// @Failure 	422 {object} Response "Validation Error"
+// @Failure 	500 {object} Response "Internal Server Error"
+// @Router 		/before-return-order/delete-befodline/{recID} [delete]
+func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *http.Request) {
+	recID := chi.URLParam(r, "recID")
+	if recID == "" {
+		handleError(w, errors.ValidationError("RecID is required in the path"))
+		return
+	}
+
+	if err := api.Service.BeforeReturn.DeleteBeforeReturnOrderLine(r.Context(), recID); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	handleResponse(w, true, "Order lines deleted successfully", nil, http.StatusOK)
 }

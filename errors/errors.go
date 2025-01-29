@@ -18,7 +18,7 @@ func (e AppError) Error() string {
 func NotFoundError(message string) error {
 	return AppError{
 		Code:    http.StatusNotFound,
-		Message: fmt.Sprintf("%v not found", message),
+		Message: fmt.Sprintf("%v : not found", message),
 	}
 }
 
@@ -39,6 +39,20 @@ func ValidationError(message string) error {
 func UnauthorizedError(message string) error {
 	return AppError{
 		Code:    http.StatusUnauthorized,
+		Message: message,
+	}
+}
+
+func BadRequestError(message string) error {
+	return AppError{
+		Code:    http.StatusBadRequest,
+		Message: message,
+	}
+}
+
+func InternalError(message string) error {
+	return AppError{
+		Code:    http.StatusInternalServerError,
 		Message: message,
 	}
 }

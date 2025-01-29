@@ -2,6 +2,7 @@ package service
 
 import (
 	entity "boilerplate-backend-go/Entity"
+	"context"
 	"database/sql"
 	"fmt"
 )
@@ -10,8 +11,10 @@ type Constants interface {
 	GetThaiProvince() ([]entity.Province, error)
 	GetThaiDistrict() ([]entity.District, error)
 	GetThaiSubDistrict() ([]entity.SubDistrict, error)
+	// GetPostCode() ([]entity.PostCode, error)
 	GetWarehouse() ([]entity.Warehouse, error)
 	GetProductAll() ([]entity.ROM_V_ProductAll, error)
+	GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, int, error)
 	//GetCustomer() ([]entity.ROM_V_Customer, error)
 
 }
@@ -64,6 +67,22 @@ func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 	return getSubDistrict, nil
 }
 
+// func (srv service) GetPostCode() ([]entity.PostCode, error) {
+// 	getPostCode, err := srv.constant.GetPostCode()
+// 	if err != nil {
+// 		switch err {
+// 		case sql.ErrNoRows:
+// 			srv.logger.Error(err)
+// 			return nil, fmt.Errorf("no post code data: %w", err)
+// 		default:
+// 			srv.logger.Error(err)
+// 			return nil, fmt.Errorf("get post code error: %w", err)
+// 		}
+// 	}
+
+// 	return getPostCode, nil
+// }
+
 
 func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
 	getWarehouse, err := srv.constant.GetWarehouse()
@@ -96,6 +115,15 @@ func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
 
 	return getProductAll, nil
 }
+
+func (srv service) GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, int, error) {
+    products, total, err := srv.constant.GetProductAllWithPagination(context.Background(), page, limit)
+    if err != nil {
+        return nil, 0, err
+    }
+    return products, total, nil
+}
+
 
 // func (srv service) GetCustomer() ([]entity.ROM_V_Customer, error) {
 // 	getCustomer, err := srv.constant.GetCustomer()
