@@ -1,28 +1,66 @@
-// ส่งข้อมูลเข้ามาด้านหลัง
 package request
 
-/*
-type Login struct {
-	UserID   string `json:"userID" db:"UserID" example:"DC65060"`
-	Password string `json:"password" db:"Password" example:"xxxxxxxx"`
+import "time"
+
+type BeforeReturnOrder struct {
+	//RecID		   int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
+	OrderNo        string     `json:"orderNo" db:"OrderNo"`
+	SoNo           string     `json:"soNo" db:"SoNo"`
+	SrNo           string     `json:"srNo" db:"SrNo"`
+	ChannelID      int        `json:"channelID" db:"ChannelID"`
+	Reason         string     `json:"reason" db:"Reason"`
+	CustomerID     string     `json:"customerID" db:"CustomerID"`
+	TrackingNo     string     `json:"trackingNo" db:"TrackingNo"`
+	Logistic       string     `json:"logistic" db:"Logistic"`
+	WarehouseID    int        `json:"warehouseID" db:"WarehouseID"`
+	SoStatusID     *int       `json:"soStatusID" db:"SoStatusID"`
+	MkpStatusID    *int       `json:"mkpStatusID" db:"MkpStatusID"`
+	ReturnDate     *time.Time `json:"returnDate" db:"ReturnDate"`
+	StatusReturnID *int       `json:"statusReturnID" db:"StatusReturnID"`
+	StatusConfID   *int       `json:"statusConfID" db:"StatusConfID"`
+	ConfirmBy      *string    `json:"confirmBy" db:"ConfirmBy"`
+	//ConfirmDate  *time.Time `json:"confirmDate" db:"ConfirmDate"`
+	CreateBy string `json:"createBy" db:"CreateBy"`
+	//CreateDate  *time.Time `json:"createDate" db:"CreateDate"`
+	UpdateBy *string `json:"updateBy" db:"UpdateBy"`
+	//UpdateDate   *time.Time `json:"updateDate" db:"UpdateDate"`
+	CancelID               *int                    `json:"cancelID" db:"CancelID"`
+	BeforeReturnOrderLines []BeforeReturnOrderLine `json:"beforeReturnOrderLines"`
 }
 
-type LoginWeb struct {
-	UserName string `json:"userName" db:"Username" example:"eknarin.ler"`
-	Password string `json:"password" db:"Password" example:"xxxxxxxx"`
+type BeforeReturnOrderLine struct {
+	//RecID		  int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
+	OrderNo   string  `json:"orderNo" db:"OrderNo"`
+	SKU       string  `json:"sku" db:"SKU"`
+	ItemName  string  `json:"itemName" db:"ItemName"`
+	QTY       int     `json:"qty" db:"QTY"`
+	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
+	Price     float64 `json:"price" db:"Price"`
+	CreateBy  string  `json:"createBy" db:"CreateBy"`
+	//CreateDate *time.Time `json:"createDate" db:"CreateDate"`
+	UpdateBy *string `json:"updateBy" db:"UpdateBy"`
+	//UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"`
+	TrackingNo *string `json:"trackingNo" db:"TrackingNo"`
+	AlterSKU   *string `json:"alterSKU" db:"AlterSKU"`
 }
 
-type LoginLark struct {
-	UserID   string `json:"userID" db:"userID" example:"DC65060"`
-	UserName string `json:"userName" db:"userName" example:"eknarin.ler"`
+type CancelSaleReturnRequest struct {
+	//OrderNo      string `json:"orderNo" db:"OrderNo"`
+	//CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
+	Remark string `json:"remark" db:"Remark"`
 }
 
-type LoginJWT struct {
-	UserID   string `json:"userID" db:"UserID" example:"DC53002"`
-	UserName string `json:"userName" db:"Username" example:"string"`
-}
+// Draft & Confirm MKP
 
-/********** Return Order (After) ***************/
+type CodeR struct {
+	OrderNo   string  `json:"orderNo" db:"OrderNo"`
+	SKU       string  `json:"sku" db:"SKU"`
+	ItemName  string  `json:"itemName" db:"ItemName"`
+	QTY       int     `json:"qty" db:"QTY"`
+	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
+	Price     float64 `json:"price" db:"Price"`
+	CreateBy  string  `json:"createBy" db:"CreateBy"`
+}
 
 type CreateReturnOrder struct {
 	OrderNo       string  `json:"orderNo" db:"OrderNo" example:"ORD0001"`
@@ -60,7 +98,7 @@ type UpdateReturnOrder struct {
 	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
 	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
 	Description   *string `json:"description" db:"Description" example:""`
-	UpdateBy      *string  `json:"-" db:"UpdateBy"` 
+	UpdateBy      *string `json:"-" db:"UpdateBy"`
 	// UpdateDate   *time.Time      `json:"updateDate" db:"UpdateDate"` // MSSQL SYSDATETIME() function
 
 }
@@ -101,13 +139,13 @@ type ConfirmTradeReturnRequest struct {
 }
 
 type TradeReturnLineRequest struct {
-	SKU       string   `json:"sku" db:"SKU" validate:"required"`
-	ItemName  string   `json:"itemName" db:"ItemName" validate:"required"`
-	QTY       int      `json:"qty" db:"QTY" validate:"required"`
-	ReturnQTY int      `json:"returnQty" db:"ReturnQTY" validate:"required"`
-	Price     float64  `json:"price" db:"Price" validate:"required"`
+	SKU       string  `json:"sku" db:"SKU" validate:"required"`
+	ItemName  string  `json:"itemName" db:"ItemName" validate:"required"`
+	QTY       int     `json:"qty" db:"QTY" validate:"required"`
+	ReturnQTY int     `json:"returnQty" db:"ReturnQTY" validate:"required"`
+	Price     float64 `json:"price" db:"Price" validate:"required"`
 	//TrackingNo string  `json:"trackingNo" db:"TrackingNo"`	// add form data BeforeReturnOrder
-	CreateBy string    `json:"-" db:"CreateBy" ` // from user login
+	CreateBy string `json:"-" db:"CreateBy" ` // from user login
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 	FilePath    string `json:"filePath" db:"FilePath" validate:"required"`
 	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID" validate:"required"`
