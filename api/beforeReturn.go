@@ -419,7 +419,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Accept json
 // @Produce json
 // @Param orderNo path string true "Order number"
-// @Param request body request.UpdateSaleReturnRequest true "SR number details"
+// @Param request body request.UpdateSaleReturn true "SR number details"
 // @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "SR number updated successfully"
 // @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
 // @Failure 404 {object} api.Response "Not Found - Order not found"
@@ -435,7 +435,7 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 2. รับและตรวจสอบ request body
-	var req request.UpdateSaleReturnRequest
+	var req request.UpdateSaleReturn
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, fmt.Errorf("invalid request format: %v", err))
 		return
@@ -547,7 +547,7 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 // @Accept json
 // @Produce json
 // @Param orderNo path string true "Order number"
-// @Param request body request.CancelSaleReturnRequest true "Cancel Sale Return"
+// @Param request body request.CancelSaleReturn true "Cancel Sale Return"
 // @Success 200 {object} api.Response{data=response.CancelSaleReturnResponse} "Sale return order canceled successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
@@ -582,7 +582,7 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 5. รับและตรวจสอบข้อมูล request
-	var req request.CancelSaleReturnRequest
+	var req request.CancelSaleReturn
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
@@ -720,13 +720,13 @@ func (app *Application) ListCodeR(w http.ResponseWriter, r *http.Request) {
 // @Tags Draft & Confirm
 // @Accept json
 // @Produce json
-// @Param body body request.CodeRRequest true "CodeR details"
+// @Param body body request.CodeR true "CodeR details"
 // @Success 201 {object} api.Response{data=response.DraftLineResponse} "CodeR added successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /draft-confirm/code-r [post]
 func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
-	var req request.CodeRRequest
+	var req request.CodeR
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		app.Logger.Error("🚨 Failed to decode request 🚨", zap.Error(err))
 		handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)

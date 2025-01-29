@@ -47,7 +47,7 @@ type BeforeReturnService interface {
 	// Method สำหรับดึง CodeR ทั้งหมด
 	ListCodeR(ctx context.Context) ([]response.CodeRResponse, error)
 	// Method สำหรับเพิ่ม CodeR
-	AddCodeR(ctx context.Context, req request.CodeRRequest) (*response.DraftLineResponse, error)
+	AddCodeR(ctx context.Context, req request.CodeR) (*response.DraftLineResponse, error)
 	// Method สำหรับลบ CodeR
 	DeleteCodeR(ctx context.Context, orderNo string, sku string) error
 	// Method สำหรับอัพเดท Draft Order
@@ -855,7 +855,7 @@ func (srv service) ListCodeR(ctx context.Context) ([]response.CodeRResponse, err
 }
 
 // Method สำหรับเพิ่ม CodeR
-func (srv service) AddCodeR(ctx context.Context, req request.CodeRRequest) (*response.DraftLineResponse, error) {
+func (srv service) AddCodeR(ctx context.Context, req request.CodeR) (*response.DraftLineResponse, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "AddCodeR")
 	defer logFinish("Completed", nil)

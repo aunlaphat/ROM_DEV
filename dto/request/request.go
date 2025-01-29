@@ -44,7 +44,11 @@ type BeforeReturnOrderLine struct {
 	AlterSKU   *string `json:"alterSKU" db:"AlterSKU"`
 }
 
-type CancelSaleReturnRequest struct {
+type UpdateSaleReturn struct {
+	SrNo string `json:"srNo" validate:"required" example:"SR-TEST-123456"`
+}
+
+type CancelSaleReturn  struct {
 	//OrderNo      string `json:"orderNo" db:"OrderNo"`
 	//CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
 	Remark string `json:"remark" db:"Remark"`

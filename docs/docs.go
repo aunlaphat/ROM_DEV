@@ -1112,7 +1112,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.CodeRRequest"
+                            "$ref": "#/definitions/request.CodeR"
                         }
                     }
                 ],
@@ -1562,7 +1562,8 @@ const docTemplate = `{
                 "tags": [
                     "Import Order"
                 ],
-                "summary": "import order",
+                "summary": "Import order",
+                "operationId": "Import-Order",
                 "parameters": [
                     {
                         "type": "string",
@@ -1596,7 +1597,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.ImageResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -2118,7 +2131,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.CancelSaleReturnRequest"
+                            "$ref": "#/definitions/request.CancelSaleReturn"
                         }
                     }
                 ],
@@ -2368,7 +2381,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.UpdateSaleReturnRequest"
+                            "$ref": "#/definitions/request.UpdateSaleReturn"
                         }
                     }
                 ],
@@ -2938,7 +2951,7 @@ const docTemplate = `{
                     }
                 },
                 "cancelID": {
-                    "description": "UpdateDate   *time.Time ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + ` // MSSQL GetDate()",
+                    "description": "UpdateDate   *time.Time ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + `",
                     "type": "integer"
                 },
                 "channelID": {
@@ -2948,7 +2961,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "createBy": {
-                    "description": "ConfirmDate  *time.Time ` + "`" + `json:\"confirmDate\" db:\"ConfirmDate\"` + "`" + ` // MSSQL GetDate()",
+                    "description": "ConfirmDate  *time.Time ` + "`" + `json:\"confirmDate\" db:\"ConfirmDate\"` + "`" + `",
                     "type": "string"
                 },
                 "customerID": {
@@ -2989,7 +3002,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updateBy": {
-                    "description": "CreateDate  *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
+                    "description": "CreateDate  *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + `",
                     "type": "string"
                 },
                 "warehouseID": {
@@ -3001,10 +3014,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "alterSKU": {
-                    "type": "string"
-                },
-                "confirmBy": {
-                    "description": "CreateDate *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
                     "type": "string"
                 },
                 "createBy": {
@@ -3030,14 +3039,16 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "trackingNo": {
+                    "description": "UpdateDate *time.Time ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + `",
                     "type": "string"
                 },
                 "updateBy": {
+                    "description": "CreateDate *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + `",
                     "type": "string"
                 }
             }
         },
-        "request.CancelSaleReturnRequest": {
+        "request.CancelSaleReturn": {
             "type": "object",
             "properties": {
                 "remark": {
@@ -3046,7 +3057,7 @@ const docTemplate = `{
                 }
             }
         },
-        "request.CodeRRequest": {
+        "request.CodeR": {
             "type": "object",
             "properties": {
                 "createBy": {
@@ -3337,7 +3348,7 @@ const docTemplate = `{
                 }
             }
         },
-        "request.UpdateSaleReturnRequest": {
+        "request.UpdateSaleReturn": {
             "type": "object",
             "required": [
                 "srNo"
@@ -3661,6 +3672,17 @@ const docTemplate = `{
                 },
                 "sku": {
                     "type": "string"
+                }
+            }
+        },
+        "response.ImageResponse": {
+            "type": "object",
+            "properties": {
+                "filePath": {
+                    "type": "string"
+                },
+                "imageID": {
+                    "type": "integer"
                 }
             }
         },

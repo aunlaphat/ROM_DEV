@@ -40,7 +40,7 @@ type BeforeReturnRepository interface {
 	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
 	GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, []response.DraftLineResponse, error)
 	ListCodeR(ctx context.Context) ([]response.CodeRResponse, error)
-	AddCodeR(ctx context.Context, codeR request.CodeRRequest) (*response.DraftLineResponse, error)
+	AddCodeR(ctx context.Context, codeR request.CodeR) (*response.DraftLineResponse, error)
 	DeleteCodeR(ctx context.Context, orderNo string, sku string) error
 	UpdateOrderStatus(ctx context.Context, orderNo string, statusConfID int, statusReturnID int, userID string) error
 
@@ -670,11 +670,6 @@ func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderN
         )
     `
 	for _, line := range lines {
-		trackingNo := line.TrackingNo
-		if trackingNo == "" {
-			trackingNo = "N/A"
-		}
-
 		params := map[string]interface{}{
 			"OrderNo":    orderNo,
 			"SKU":        line.SKU,
@@ -683,7 +678,6 @@ func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderN
 			"ReturnQTY":  line.ReturnQTY,
 			"Price":      line.Price,
 			"CreateBy":   line.CreateBy,
-			"TrackingNo": trackingNo,
 		}
 		_, err := repo.db.NamedExecContext(ctx, query, params)
 		if err != nil {
@@ -1661,33 +1655,33 @@ func (repo repositoryDB) ListCodeR(ctx context.Context) ([]response.CodeRRespons
 		WHERE SKU LIKE 'R%'
 	`
 
-	var codeR []response.CodeRResponse
-	err := repo.db.SelectContext(ctx, &codeR, query)
+	var CodeR []response.CodeRResponse
+	err := repo.db.SelectContext(ctx, &CodeR, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CodeR: %w", err)
 	}
 
-	return codeR, nil
+	return CodeR, nil
 }
 
-func (repo repositoryDB) AddCodeR(ctx context.Context, codeR request.CodeRRequest) (*response.DraftLineResponse, error) {
-	codeR.ReturnQTY = codeR.QTY
+func (repo repositoryDB) AddCodeR(ctx context.Context, CodeR request.CodeR) (*response.DraftLineResponse, error) {
+	CodeR.ReturnQTY = CodeR.QTY
 
 	query := `
         INSERT INTO BeforeReturnOrderLine (OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate)
         VALUES (:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE())
     `
 
-	_, err := repo.db.NamedExecContext(ctx, query, codeR)
+	_, err := repo.db.NamedExecContext(ctx, query, CodeR)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert CodeR: %w", err)
 	}
 
 	result := &response.DraftLineResponse{
-		SKU:      codeR.SKU,
-		ItemName: codeR.ItemName,
-		QTY:      codeR.QTY,
-		Price:    codeR.Price,
+		SKU:      CodeR.SKU,
+		ItemName: CodeR.ItemName,
+		QTY:      CodeR.QTY,
+		Price:    CodeR.Price,
 	}
 
 	return result, nil

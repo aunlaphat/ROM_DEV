@@ -81,8 +81,7 @@ definitions:
           $ref: '#/definitions/request.BeforeReturnOrderLine'
         type: array
       cancelID:
-        description: UpdateDate   *time.Time `json:"updateDate" db:"UpdateDate"` //
-          MSSQL GetDate()
+        description: UpdateDate   *time.Time `json:"updateDate" db:"UpdateDate"`
         type: integer
       channelID:
         type: integer
@@ -90,7 +89,6 @@ definitions:
         type: string
       createBy:
         description: ConfirmDate  *time.Time `json:"confirmDate" db:"ConfirmDate"`
-          // MSSQL GetDate()
         type: string
       customerID:
         type: string
@@ -119,8 +117,7 @@ definitions:
       trackingNo:
         type: string
       updateBy:
-        description: CreateDate  *time.Time `json:"createDate" db:"CreateDate"` //
-          MSSQL GetDate()
+        description: CreateDate  *time.Time `json:"createDate" db:"CreateDate"`
         type: string
       warehouseID:
         type: integer
@@ -128,10 +125,6 @@ definitions:
   request.BeforeReturnOrderLine:
     properties:
       alterSKU:
-        type: string
-      confirmBy:
-        description: CreateDate *time.Time `json:"createDate" db:"CreateDate"` //
-          MSSQL GetDate()
         type: string
       createBy:
         type: string
@@ -150,11 +143,13 @@ definitions:
       sku:
         type: string
       trackingNo:
+        description: UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"`
         type: string
       updateBy:
+        description: CreateDate *time.Time `json:"createDate" db:"CreateDate"`
         type: string
     type: object
-  request.CancelSaleReturnRequest:
+  request.CancelSaleReturn:
     properties:
       remark:
         description: |-
@@ -162,7 +157,7 @@ definitions:
           CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
         type: string
     type: object
-  request.CodeRRequest:
+  request.CodeR:
     properties:
       createBy:
         type: string
@@ -368,7 +363,7 @@ definitions:
         example: 12345678TH
         type: string
     type: object
-  request.UpdateSaleReturnRequest:
+  request.UpdateSaleReturn:
     properties:
       srNo:
         example: SR-TEST-123456
@@ -586,6 +581,13 @@ definitions:
         type: integer
       sku:
         type: string
+    type: object
+  response.ImageResponse:
+    properties:
+      filePath:
+        type: string
+      imageID:
+        type: integer
     type: object
   response.ImportOrderLineResponse:
     properties:
@@ -1564,7 +1566,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/request.CodeRRequest'
+          $ref: '#/definitions/request.CodeR'
       produces:
       - application/json
       responses:
@@ -1843,6 +1845,7 @@ paths:
       consumes:
       - multipart/form-data
       description: Upload multiple images and data for a specific SoNo
+      operationId: Import-Order
       parameters:
       - description: Sale Order Number
         in: formData
@@ -1869,7 +1872,12 @@ paths:
         "200":
           description: Successful
           schema:
-            $ref: '#/definitions/api.Response'
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  $ref: '#/definitions/response.ImageResponse'
+              type: object
         "400":
           description: Invalid input
           schema:
@@ -1878,7 +1886,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: import order
+      summary: Import order
       tags:
       - Import Order
   /return-order/create:
@@ -2191,7 +2199,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.CancelSaleReturnRequest'
+          $ref: '#/definitions/request.CancelSaleReturn'
       produces:
       - application/json
       responses:
@@ -2346,7 +2354,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.UpdateSaleReturnRequest'
+          $ref: '#/definitions/request.UpdateSaleReturn'
       produces:
       - application/json
       responses:
