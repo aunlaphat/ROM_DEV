@@ -13,7 +13,6 @@ type service struct {
 	logger           logs.Logger //Logger of service
 	constant         repository.Constants
 	//befRORepo        repository.BefRORepository
-	returnOrderRepo  repository.ReturnOrderRepository
 	importOrderRepo  repository.ImportOrderRepository
 	beforeReturnRepo repository.BeforeReturnRepository
 	returnOrderRepo  repository.ReturnOrderRepository
@@ -37,7 +36,6 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		logger:           logger,
 		constant:         repo,
 		//befRORepo:        repo,
-		returnOrderRepo:  repo,
 		importOrderRepo:  repo,
 		beforeReturnRepo: repo,
 		returnOrderRepo:  repo,
