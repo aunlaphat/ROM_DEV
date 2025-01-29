@@ -979,5 +979,5 @@ func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *ht
 		return
 	}
 
-	handleResponse(w, true, "Order lines deleted successfully", nil, http.StatusOK)
+	handleResponse(w, true, "⭐ Order lines deleted successfully ⭐", nil, http.StatusOK)
 }

@@ -15,7 +15,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth"
-	
 )
 
 func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
@@ -28,7 +27,7 @@ func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
 
 		r.Get("/search", app.SearchOrderORTracking)
 		r.Post("/upload", app.UploadImages)
-		
+
 	})
 }
 
@@ -46,7 +45,7 @@ func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /import-order/search [get]
 func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Request) {
-	
+
 	search := r.URL.Query().Get("search")
 	if search == "" {
 		handleResponse(w, false, "Search input is required (OrderNo or TrackingNo)", nil, http.StatusBadRequest)
@@ -62,7 +61,6 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// เรียกใช้ service layer
 	result, err := app.Service.ImportOrder.SearchOrderORTracking(r.Context(), search)
 	if err != nil {
 		handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
@@ -78,10 +76,10 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 	handleResponse(w, true, "⭐ Found Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
-// UploadImages handles image upload requests
 // UploadImagesHandler godoc
-// @Summary import order
+// @Summary Import order
 // @Description Upload multiple images and data for a specific SoNo
+// @ID Import-Order
 // @Tags Import Order
 // @Accept multipart/form-data
 // @Produce json
@@ -89,9 +87,9 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 // @Param imageTypeID formData int true "Type of the image (1, 2, or 3)"
 // @Param sku formData string false "SKU (Optional)"
 // @Param files formData file true "Files to upload"
-// @Success 200 {object} Response "Successful"
-// @Failure 400 {object} Response "Invalid input"
-// @Failure 500 {object} Response "Internal Server Error"
+// @Success 200 {object} api.Response{result=response.ImageResponse} "Successful"
+// @Failure 400 {object} api.Response "Invalid input"
+// @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /import-order/upload [post]
 func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
@@ -162,7 +160,7 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 			SKU:         skus,
 			CreateBy:    "user",
 		}
-		
+
 		imageID, err := app.Service.ImportOrder.SaveImageMetadata(r.Context(), image)
 		if err != nil {
 			handleError(w, errors.InternalError("Failed to save image metadata"))

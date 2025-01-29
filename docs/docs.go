@@ -3014,6 +3014,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "orderNo": {
+                    "description": "RecID\t\t  int        ` + "`" + `json:\"recID\" db:\"RecID\"` + "`" + ` // (PK - Auto Increment)",
                     "type": "string"
                 },
                 "price": {
@@ -3344,7 +3345,7 @@ const docTemplate = `{
             "properties": {
                 "srNo": {
                     "type": "string",
-                    "example": "SR-123456"
+                    "example": "SR-TEST-123456"
                 }
             }
         },
