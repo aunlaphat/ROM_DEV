@@ -177,12 +177,22 @@ func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error 
 		return errors.ValidationError("OrderNo is required")
 	}
 
-	// Step 2: เรียก repository เพื่อลบ ReturnOrder
-	err := srv.returnOrderRepo.DeleteReturnOrder(ctx, orderNo)
-	if err != nil {
-		srv.logger.Error("Error deleting ReturnOrder", zap.Error(err))
-		return errors.UnexpectedError()
-	}
+    // Step 1: ตรวจสอบการมีอยู่ของ OrderNo
+    exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, orderNo)
+    if err != nil {
+        srv.logger.Error("Error checking OrderNo existence", zap.Error(err))
+        return errors.UnexpectedError()
+    }
+    if !exists {
+        return errors.NotFoundError("OrderNo not found")
+    }
+
+    // Step 2: เรียก repository เพื่อลบ ReturnOrder
+    err = srv.returnOrderRepo.DeleteReturnOrder(ctx, orderNo)
+    if err != nil {
+        srv.logger.Error("Error deleting ReturnOrder", zap.Error(err))
+        return errors.UnexpectedError()
+    }
 
 	logFinish("Success", nil)
 	return nil

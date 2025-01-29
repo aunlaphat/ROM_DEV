@@ -217,9 +217,6 @@ definitions:
       channelId:
         example: 2
         type: integer
-      checkBy:
-        example: dev03
-        type: string
       description:
         example: ""
         type: string
@@ -519,9 +516,6 @@ definitions:
       channelId:
         example: 2
         type: integer
-      checkBy:
-        example: dev03
-        type: string
       createBy:
         type: string
       createDate:
@@ -560,7 +554,6 @@ definitions:
   response.DeleteReturnOrder:
     properties:
       orderNo:
-        description: เลขที่ใบสั่งซื้อ
         type: string
     type: object
   response.DraftHeadResponse:
@@ -586,6 +579,13 @@ definitions:
         type: integer
       sku:
         type: string
+    type: object
+  response.ImageResponse:
+    properties:
+      filePath:
+        type: string
+      imageID:
+        type: integer
     type: object
   response.ImportOrderLineResponse:
     properties:
@@ -714,6 +714,8 @@ definitions:
         type: integer
       checkBy:
         type: string
+      checkDate:
+        type: string
       createBy:
         type: string
       createDate:
@@ -745,6 +747,8 @@ definitions:
     type: object
   response.ReturnOrderLine:
     properties:
+      actualQTY:
+        type: integer
       alterSKU:
         type: string
       createBy:
@@ -814,6 +818,8 @@ definitions:
       checkBy:
         example: dev03
         type: string
+      checkDate:
+        type: string
       description:
         example: ""
         type: string
@@ -838,7 +844,6 @@ definitions:
         example: 12345678TH
         type: string
       updateBy:
-        description: '''USER'''
         type: string
       updateDate:
         description: MSSQL SYSDATETIME() function
@@ -1843,6 +1848,7 @@ paths:
       consumes:
       - multipart/form-data
       description: Upload multiple images and data for a specific SoNo
+      operationId: Import-Order
       parameters:
       - description: Sale Order Number
         in: formData
@@ -1869,7 +1875,12 @@ paths:
         "200":
           description: Successful
           schema:
-            $ref: '#/definitions/api.Response'
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  $ref: '#/definitions/response.ImageResponse'
+              type: object
         "400":
           description: Invalid input
           schema:
@@ -1878,7 +1889,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: import order
+      summary: Import order
       tags:
       - Import Order
   /return-order/create:

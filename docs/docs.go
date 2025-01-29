@@ -1562,7 +1562,8 @@ const docTemplate = `{
                 "tags": [
                     "Import Order"
                 ],
-                "summary": "import order",
+                "summary": "Import order",
+                "operationId": "Import-Order",
                 "parameters": [
                     {
                         "type": "string",
@@ -1596,7 +1597,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.ImageResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -3127,10 +3140,6 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 2
                 },
-                "checkBy": {
-                    "type": "string",
-                    "example": "dev03"
-                },
                 "description": {
                     "type": "string",
                     "example": ""
@@ -3566,10 +3575,6 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 2
                 },
-                "checkBy": {
-                    "type": "string",
-                    "example": "dev03"
-                },
                 "createBy": {
                     "type": "string"
                 },
@@ -3622,7 +3627,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "orderNo": {
-                    "description": "เลขที่ใบสั่งซื้อ",
                     "type": "string"
                 }
             }
@@ -3661,6 +3665,17 @@ const docTemplate = `{
                 },
                 "sku": {
                     "type": "string"
+                }
+            }
+        },
+        "response.ImageResponse": {
+            "type": "object",
+            "properties": {
+                "filePath": {
+                    "type": "string"
+                },
+                "imageID": {
+                    "type": "integer"
                 }
             }
         },
@@ -3850,6 +3865,9 @@ const docTemplate = `{
                 "checkBy": {
                     "type": "string"
                 },
+                "checkDate": {
+                    "type": "string"
+                },
                 "createBy": {
                     "type": "string"
                 },
@@ -3897,6 +3915,9 @@ const docTemplate = `{
         "response.ReturnOrderLine": {
             "type": "object",
             "properties": {
+                "actualQTY": {
+                    "type": "integer"
+                },
                 "alterSKU": {
                     "type": "string"
                 },
@@ -4000,6 +4021,9 @@ const docTemplate = `{
                     "type": "string",
                     "example": "dev03"
                 },
+                "checkDate": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string",
                     "example": ""
@@ -4032,7 +4056,6 @@ const docTemplate = `{
                     "example": "12345678TH"
                 },
                 "updateBy": {
-                    "description": "'USER'",
                     "type": "string"
                 },
                 "updateDate": {
