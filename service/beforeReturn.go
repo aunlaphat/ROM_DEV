@@ -53,7 +53,6 @@ type BeforeReturnService interface {
 	// Method สำหรับอัพเดท Draft Order
 	UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error
 
-	
 	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อทั้งหมด
 	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
 	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อทั้งหมดพร้อมการแบ่งหน้า
@@ -64,11 +63,11 @@ type BeforeReturnService interface {
 	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
 	// Method สร้างคำสั่งซื้อคืนสินค้า
 	CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
-	// Method สร้างรายการคืนสินค้าสำหรับคำสั่งซื้อที่ระบุ
+	// Method สร้างรายการคืนสินค้า
 	CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) error
-	// Method ยืนยันการรับสินค้าคืน
+	// Method ยืนยันการรับสินค้าคืนจากหน้าคลัง
 	ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
-	// Method ยืนยันการคืนสินค้า
+	// Method ยืนยันการคืนสินค้าโดยสมบูรณ์
 	ConfirmReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
 	// Method ตรวจสอบความถูกต้องของข้อมูลก่อนสร้างคำสั่งซื้อคืนสินค้า
 	ValidateCreate(req request.BeforeReturnOrder) error

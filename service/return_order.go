@@ -19,7 +19,7 @@ type ReturnOrderService interface {
 	GetAllReturnOrderLines(ctx context.Context) ([]response.ReturnOrderLine, error)
 	GetReturnOrderLinesByReturnID(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error)
 	CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) (*response.CreateReturnOrder, error)
-	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) (*response.UpdateReturnOrder, error) 
+	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) (*response.UpdateReturnOrder, error)
 	DeleteReturnOrder(ctx context.Context, orderNo string) error
 }
 
@@ -149,7 +149,7 @@ func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateRetu
 	}
 
 	// Step 2: เรียก repository เพื่ออัปเดต ReturnOrder
-	err = srv.returnOrderRepo.UpdateReturnOrder(ctx, req)
+	err = srv.returnOrderRepo.UpdateReturnOrder(ctx, req, updateBy)
 	if err != nil {
 		srv.logger.Error("Error updating ReturnOrder", zap.Error(err))
 		return nil, errors.UnexpectedError()
@@ -166,6 +166,11 @@ func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateRetu
 }
 
 func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error {
+	// เริ่มต้น Logging ของ API Call
+	logFinish := srv.logger.LogAPICall(ctx, "DeleteReturnOrder", zap.String("OrderNo", orderNo))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting delete return order process 🔎")
+
 	if orderNo == "" {
 		return errors.ValidationError("OrderNo is required")
 	}
@@ -177,5 +182,6 @@ func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error 
 		return errors.UnexpectedError()
 	}
 
+	logFinish("Success", nil)
 	return nil
 }

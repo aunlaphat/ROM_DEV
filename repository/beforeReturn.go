@@ -51,12 +51,12 @@ type BeforeReturnRepository interface {
 	DeleteCodeR(ctx context.Context, orderNo string, sku string) error
 	UpdateOrderStatus(ctx context.Context, orderNo string, statusConfID int, statusReturnID int, userID string) error
 
-	//SO
+	// Get Real Order
 	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
 	GetAllOrderDetails(ctx context.Context, offset, limit int) ([]response.OrderDetail, error)
 	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
 
-	// Delete
+	// Delete Line
 	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
 
 	// ************************ Trade Return ************************ //

@@ -8,14 +8,15 @@ import (
 )
 
 type Constants interface {
-	GetThaiProvince() ([]entity.Province, error)
-	GetThaiDistrict() ([]entity.District, error)
-	GetThaiSubDistrict() ([]entity.SubDistrict, error)
-	// GetPostCode() ([]entity.PostCode, error)
-	GetProductAll() ([]entity.ROM_V_ProductAll, error)
-	GetProductAllWithPagination(ctx context.Context, page, limit int) ([]entity.ROM_V_ProductAll, int, error)
-	GetWarehouse() ([]entity.Warehouse, error)
-	// GetCustomer() ([]entity.SubDistrict, error)
+	GetThaiProvince() ([]entity.Province, error) // จังหวัด
+	GetThaiDistrict() ([]entity.District, error) // เขต
+	GetThaiSubDistrict() ([]entity.SubDistrict, error) // ตำบล
+	// GetPostCode() ([]entity.PostCode, error) // เลขไปรษณีย์
+	GetProductAll() ([]entity.ROM_V_ProductAll, error) 	// รายการสินค้าทั้งหมด
+	GetProductAllWithPagination(ctx context.Context, page, limit int) ([]entity.ROM_V_ProductAll, int, error) // รายการสินค้าแบบแบ่งรายการ
+	GetWarehouse() ([]entity.Warehouse, error) // คลังสินค้า
+	// GetCustomer() ([]entity.ROM_V_Customer, error) // ข้อมูลลูกค้า
+	// GetTax() ([]entity.ROM_V_Tax, error) // ข้อมูลภาษีลูกค้า
 
 }
 

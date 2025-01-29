@@ -19,7 +19,7 @@ type ReturnOrderRepository interface {
 	GetAllReturnOrderLines(ctx context.Context) ([]response.ReturnOrderLine, error)
 	GetReturnOrderLinesByReturnID(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error)
 	CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) error
-	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder) error
+	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) error
 	DeleteReturnOrder(ctx context.Context, orderNo string) error
 	CheckOrderNoExist(ctx context.Context, orderNo string) (bool, error)
 
@@ -282,7 +282,7 @@ func (repo repositoryDB) GetUpdateReturnOrder(ctx context.Context, orderNo strin
 }
 
 // อัปเดต ReturnOrder และ ReturnOrderLine
-func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder) error {
+func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// Step 1: ดึงค่าปัจจุบันจากฐานข้อมูล
 		var current response.ReturnOrder
@@ -312,6 +312,7 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 		updateFields := []string{}
 		params := map[string]interface{}{
 			"OrderNo": req.OrderNo,
+			"UpdateBy":  updateBy, // เพิ่ม updateBy ที่รับมาจาก API
 		}
 
 		if req.SrNo != nil && (current.SrNo == nil || *req.SrNo != *current.SrNo) {
@@ -369,7 +370,7 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 		}
 
 		// Step 3: เพิ่ม UpdateBy และ UpdateDate ใน SQL Query
-		updateFields = append(updateFields, "UpdateBy = 'USER'", "UpdateDate = SYSDATETIME()")
+		updateFields = append(updateFields, "UpdateBy = :UpdateBy", "UpdateDate = SYSDATETIME()")
 		updateQuery := fmt.Sprintf(`
             UPDATE ReturnOrder
             SET %s
@@ -395,7 +396,7 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
                 UPDATE ReturnOrderLine
                 SET 
                     TrackingNo = :TrackingNo, 
-                    UpdateBy = 'USER', 
+                    UpdateBy = :UpdateBy, 
                     UpdateDate = SYSDATETIME()
                 WHERE OrderNo = :OrderNo
             `
