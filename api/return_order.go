@@ -314,7 +314,7 @@ func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 	// 	fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 	// 	utils.PrintOrderLineDetails(&line)
 	// }
-	// fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.ReturnOrderLine))
+	// fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.ReturnOrderLine))
 	fmt.Println("=====================================")
 
 	handleResponse(w, true, "⭐ Updated successfully ⭐", result, http.StatusOK)

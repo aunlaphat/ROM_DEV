@@ -22,7 +22,7 @@ func (app *Application) BefRORoute(apiRouter *chi.Mux) {
 
 		// Trade Retrun
 		r.Post("/create-trade", app.CreateTradeReturn)
-		r.Post("/add-line/{orderNo}", app.AddTradeReturnLine)
+		r.Post("/add-line/{orderNo}", app.CreateTradeReturnLine)
 		r.Post("/confirm/{orderNo}", app.ConfirmTradeReturn)
 		r.Post("/cancel/{orderNo}", app.CancelTradeReturn)
 
@@ -70,7 +70,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 // @Failure 404 {object} api.Response "Not Found - Order not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /before-return-order/add-line/{orderNo} [post]
-func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Request) {
+func (app *Application) CreateTradeReturnLine(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
 		handleError(w, fmt.Errorf("OrderNo is required"))

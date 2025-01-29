@@ -1521,7 +1521,7 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "data": {
+                                        "result": {
                                             "$ref": "#/definitions/response.ImportOrderResponse"
                                         }
                                     }
@@ -1552,7 +1552,7 @@ const docTemplate = `{
         },
         "/import-order/upload": {
             "post": {
-                "description": "Upload multiple images for a specific SoNo",
+                "description": "Upload multiple images and data for a specific SoNo",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1562,7 +1562,7 @@ const docTemplate = `{
                 "tags": [
                     "Import Order"
                 ],
-                "summary": "Upload images for import order",
+                "summary": "import order",
                 "parameters": [
                     {
                         "type": "string",
@@ -1594,7 +1594,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful upload",
+                        "description": "Successful",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2454,7 +2454,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Trade return line created successfully",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderLineResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -2490,7 +2502,7 @@ const docTemplate = `{
                 "tags": [
                     "Trade Return"
                 ],
-                "summary": "Confirm a trade return order",
+                "summary": "Confirm Receipt from Ware House",
                 "operationId": "confirm-trade-return",
                 "parameters": [
                     {
@@ -2521,7 +2533,7 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "data": {
+                                        "result": {
                                             "$ref": "#/definitions/response.ConfirmReceipt"
                                         }
                                     }
@@ -2556,7 +2568,7 @@ const docTemplate = `{
                 "tags": [
                     "Trade Return"
                 ],
-                "summary": "Confirm a trade return order",
+                "summary": "Confirm Return Order to Success",
                 "operationId": "confirm-to-return",
                 "parameters": [
                     {
@@ -2587,7 +2599,7 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "data": {
+                                        "result": {
                                             "$ref": "#/definitions/response.ConfirmToReturnOrder"
                                         }
                                     }
@@ -2639,7 +2651,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Trade return created successfully",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -3106,10 +3130,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "dev03"
                 },
-                "createBy": {
-                    "description": "'USER'",
-                    "type": "string"
-                },
                 "description": {
                     "type": "string",
                     "example": ""
@@ -3299,7 +3319,8 @@ const docTemplate = `{
                     "example": 1
                 },
                 "reason": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "CHANGE PRODUCTS"
                 },
                 "srNo": {
                     "type": "string",
@@ -3475,6 +3496,12 @@ const docTemplate = `{
                 "identifier": {
                     "type": "string"
                 },
+                "statusCheckID": {
+                    "type": "string"
+                },
+                "statusReturnID": {
+                    "type": "string"
+                },
                 "updateBy": {
                     "type": "string"
                 },
@@ -3500,13 +3527,13 @@ const docTemplate = `{
         "response.ConfirmToReturnOrder": {
             "type": "object",
             "properties": {
-                "confirmToReturnRequest": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.ConfirmToReturnRequest"
-                    }
-                },
                 "orderNo": {
+                    "type": "string"
+                },
+                "statusCheckID": {
+                    "type": "string"
+                },
+                "statusReturnID": {
                     "type": "string"
                 },
                 "updateBy": {
@@ -3514,25 +3541,6 @@ const docTemplate = `{
                 },
                 "updateDate": {
                     "type": "string"
-                }
-            }
-        },
-        "response.ConfirmToReturnRequest": {
-            "type": "object",
-            "properties": {
-                "importLinesActual": {
-                    "description": "รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.ImportLinesActual"
-                    }
-                },
-                "updateToReturn": {
-                    "description": "เลข sr สุ่มจาก ax",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.UpdateToReturn"
-                    }
                 }
             }
         },
@@ -3562,7 +3570,6 @@ const docTemplate = `{
                     "example": "dev03"
                 },
                 "createBy": {
-                    "description": "'USER'",
                     "type": "string"
                 },
                 "createDate": {
@@ -3650,20 +3657,6 @@ const docTemplate = `{
                 },
                 "qty": {
                     "type": "integer"
-                },
-                "sku": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.ImportLinesActual": {
-            "type": "object",
-            "properties": {
-                "actualQty": {
-                    "type": "integer"
-                },
-                "price": {
-                    "type": "number"
                 },
                 "sku": {
                     "type": "string"
@@ -4043,14 +4036,6 @@ const docTemplate = `{
                 },
                 "updateDate": {
                     "description": "MSSQL SYSDATETIME() function",
-                    "type": "string"
-                }
-            }
-        },
-        "response.UpdateToReturn": {
-            "type": "object",
-            "properties": {
-                "srNo": {
                     "type": "string"
                 }
             }

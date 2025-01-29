@@ -1514,7 +1514,7 @@
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "data": {
+                                        "result": {
                                             "$ref": "#/definitions/response.ImportOrderResponse"
                                         }
                                     }
@@ -1545,7 +1545,7 @@
         },
         "/import-order/upload": {
             "post": {
-                "description": "Upload multiple images for a specific SoNo",
+                "description": "Upload multiple images and data for a specific SoNo",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1555,7 +1555,7 @@
                 "tags": [
                     "Import Order"
                 ],
-                "summary": "Upload images for import order",
+                "summary": "import order",
                 "parameters": [
                     {
                         "type": "string",
@@ -1587,7 +1587,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful upload",
+                        "description": "Successful",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2447,7 +2447,19 @@
                     "201": {
                         "description": "Trade return line created successfully",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderLineResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -2483,7 +2495,7 @@
                 "tags": [
                     "Trade Return"
                 ],
-                "summary": "Confirm a trade return order",
+                "summary": "Confirm Receipt from Ware House",
                 "operationId": "confirm-trade-return",
                 "parameters": [
                     {
@@ -2514,7 +2526,7 @@
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "data": {
+                                        "result": {
                                             "$ref": "#/definitions/response.ConfirmReceipt"
                                         }
                                     }
@@ -2549,7 +2561,7 @@
                 "tags": [
                     "Trade Return"
                 ],
-                "summary": "Confirm a trade return order",
+                "summary": "Confirm Return Order to Success",
                 "operationId": "confirm-to-return",
                 "parameters": [
                     {
@@ -2580,7 +2592,7 @@
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "data": {
+                                        "result": {
                                             "$ref": "#/definitions/response.ConfirmToReturnOrder"
                                         }
                                     }
@@ -2632,7 +2644,19 @@
                     "201": {
                         "description": "Trade return created successfully",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -3099,10 +3123,6 @@
                     "type": "string",
                     "example": "dev03"
                 },
-                "createBy": {
-                    "description": "'USER'",
-                    "type": "string"
-                },
                 "description": {
                     "type": "string",
                     "example": ""
@@ -3292,7 +3312,8 @@
                     "example": 1
                 },
                 "reason": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "CHANGE PRODUCTS"
                 },
                 "srNo": {
                     "type": "string",
@@ -3468,6 +3489,12 @@
                 "identifier": {
                     "type": "string"
                 },
+                "statusCheckID": {
+                    "type": "string"
+                },
+                "statusReturnID": {
+                    "type": "string"
+                },
                 "updateBy": {
                     "type": "string"
                 },
@@ -3493,13 +3520,13 @@
         "response.ConfirmToReturnOrder": {
             "type": "object",
             "properties": {
-                "confirmToReturnRequest": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.ConfirmToReturnRequest"
-                    }
-                },
                 "orderNo": {
+                    "type": "string"
+                },
+                "statusCheckID": {
+                    "type": "string"
+                },
+                "statusReturnID": {
                     "type": "string"
                 },
                 "updateBy": {
@@ -3507,25 +3534,6 @@
                 },
                 "updateDate": {
                     "type": "string"
-                }
-            }
-        },
-        "response.ConfirmToReturnRequest": {
-            "type": "object",
-            "properties": {
-                "importLinesActual": {
-                    "description": "รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.ImportLinesActual"
-                    }
-                },
-                "updateToReturn": {
-                    "description": "เลข sr สุ่มจาก ax",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.UpdateToReturn"
-                    }
                 }
             }
         },
@@ -3555,7 +3563,6 @@
                     "example": "dev03"
                 },
                 "createBy": {
-                    "description": "'USER'",
                     "type": "string"
                 },
                 "createDate": {
@@ -3643,20 +3650,6 @@
                 },
                 "qty": {
                     "type": "integer"
-                },
-                "sku": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.ImportLinesActual": {
-            "type": "object",
-            "properties": {
-                "actualQty": {
-                    "type": "integer"
-                },
-                "price": {
-                    "type": "number"
                 },
                 "sku": {
                     "type": "string"
@@ -4036,14 +4029,6 @@
                 },
                 "updateDate": {
                     "description": "MSSQL SYSDATETIME() function",
-                    "type": "string"
-                }
-            }
-        },
-        "response.UpdateToReturn": {
-            "type": "object",
-            "properties": {
-                "srNo": {
                     "type": "string"
                 }
             }

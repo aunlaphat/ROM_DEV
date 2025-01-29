@@ -64,7 +64,7 @@ type BeforeReturnService interface {
 	// Method สร้างคำสั่งซื้อคืนสินค้า
 	CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	// Method สร้างรายการคืนสินค้า
-	CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) error
+	CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) ([]response.BeforeReturnOrderLineResponse, error)
 	// Method ยืนยันการรับสินค้าคืนจากหน้าคลัง
 	ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
 	// Method ยืนยันการคืนสินค้าโดยสมบูรณ์
@@ -185,24 +185,33 @@ func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeRetu
 }
 
 // add line create trade
-func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) error {
+func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) ([]response.BeforeReturnOrderLineResponse, error) {
 
 	// ตรวจสอบ OrderNo ที่สร้างว่าซ้ำกับตัวที่มีหรือไม่
 	exists, err := srv.beforeReturnRepo.CheckBefOrderNoExists(ctx, orderNo)
 	if err != nil {
-		return fmt.Errorf("failed to check order existence: %w", err)
+		return nil, fmt.Errorf("failed to check order existence: %w", err)
 	}
 	if !exists {
-		return fmt.Errorf("order not found: %s", orderNo)
+		return nil, fmt.Errorf("order not found: %s", orderNo)
 	}
 
 	// สร้างข้อมูลใน BeforeReturnOrderLine
 	err = srv.beforeReturnRepo.CreateTradeReturnLine(ctx, orderNo, lines.TradeReturnLine)
 	if err != nil {
-		return fmt.Errorf("failed to create trade return line: %w", err)
+		return nil, fmt.Errorf("❌ Failed to create trade return line: %w", err)
 	}
 
-	return nil
+	// สร้าง trade return order
+	createdOrderLines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to create trade return order", zap.Error(err))
+		return nil, err
+	}
+
+	srv.logger.Info("✅ Successfully created order lines",
+		zap.String("OrderNo", orderNo))
+	return createdOrderLines, nil
 }
 
 // func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string, filePaths []string) error {

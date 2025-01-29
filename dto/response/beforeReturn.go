@@ -133,45 +133,14 @@ type CodeRResponse struct {
 	NameAlias string `json:"nameAlias" db:"NameAlias"`
 }
 
-// fa
-
-// type ConfirmReturnResponse struct {
-// 	OrderNo     string    `json:"orderNo" db:"OrderNo"`
-// 	ConfirmBy   string    `json:"confirmBy" db:"ConfirmBy"`
-// 	ConfirmDate time.Time `json:"confirmDate" db:"ConfirmDate"`
-// }
-
-// type CancelReturnResponse struct {
-// 	RefID        string    `json:"refId" db:"RefID"`
-// 	CancelStatus bool      `json:"cancelStatus" db:"CancelStatus"`
-// 	Remark       string    `json:"remark" db:"Remark"`
-// 	CancelBy     string    `json:"cancelBy" db:"CancelBy"`
-// 	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
-// }
-
 /********** Trade Return (Offline) ***************/
 
-type ConfirmToReturnRequest struct {
-	OrderNo           string              `json:"-"`
-	UpdateToReturn    []UpdateToReturn    `json:"updateToReturn"`    // เลข sr สุ่มจาก ax
-	ImportLinesActual []ImportLinesActual `json:"importLinesActual"` // รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี
-}
-
-type UpdateToReturn struct {
-	SrNo string `json:"srNo" db:"SrNo"`
-}
-
-type ImportLinesActual struct {
-	SKU       string  `json:"sku" db:"SKU"`
-	ActualQTY int     `json:"actualQty" db:"ActualQTY"`
-	Price     float64 `json:"price" db:"Price"`
-}
-
 type ConfirmToReturnOrder struct {
-	OrderNo                string                   `json:"orderNo" db:"OrderNo"`
-	ConfirmToReturnRequest []ConfirmToReturnRequest `json:"confirmToReturnRequest"`
-	UpdateBy               string                   `json:"updateBy" db:"UpdateBy"`
-	UpdateDate             time.Time                `json:"updateDate" db:"UpdateDate"`
+	OrderNo        string    `json:"orderNo" db:"OrderNo"`
+	StatusReturnID string    `db:"StatusReturnID"`
+	StatusCheckID  string    `db:"StatusCheckID"`
+	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
 }
 
 type ConfirmTradeReturnOrder struct {
@@ -181,9 +150,11 @@ type ConfirmTradeReturnOrder struct {
 }
 
 type ConfirmReceipt struct {
-	Identifier string    `json:"identifier"`
-	UpdateBy   string    `json:"updateBy" db:"UpdateBy"`
-	UpdateDate time.Time `json:"updateDate" db:"UpdateDate"`
+	Identifier     string    `json:"identifier"`
+	StatusReturnID string    `db:"StatusReturnID"`
+	StatusCheckID  string    `db:"StatusCheckID"`
+	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
 	// Images     []ImageResponse `json:"images"`
 }
 
@@ -193,15 +164,7 @@ type ConfirmReturnResponse struct {
 	ConfirmDate time.Time `json:"confirmDate" db:"ConfirmDate"`
 }
 
-type CancelReturnResponse struct {
-	RefID        string    `json:"refId" db:"RefID"`
-	CancelStatus bool      `json:"cancelStatus" db:"CancelStatus"`
-	Remark       string    `json:"remark" db:"Remark"`
-	CancelBy     string    `json:"cancelBy" db:"CancelBy"`
-	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
-}
-
-type ReturnOrderData struct {
+type ConfirmReturnOrderDetails struct {
 	OrderNo       string `db:"OrderNo"`
 	SoNo          string `db:"SoNo"`
 	SrNo          string `db:"SrNo"`

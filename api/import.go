@@ -40,7 +40,7 @@ func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
 // @Accept json
 // @Produce json
 // @Param search query string true "OrderNo or TrackingNo"
-// @Success 200 {object} api.Response{data=response.ImportOrderResponse} "Order retrieved successfully"
+// @Success 200 {object} api.Response{result=response.ImportOrderResponse} "Order retrieved successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 404 {object} api.Response "OrderNo or TrackingNo not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
@@ -68,7 +68,6 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 		handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
 		return
 	}
-
 	// หากไม่พบข้อมูล
 	if len(result) == 0 {
 		handleResponse(w, false, "No orders found for the given input", nil, http.StatusNotFound)
@@ -76,13 +75,13 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 	}
 
 	// ส่งข้อมูลกลับ
-	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Found Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // UploadImages handles image upload requests
 // UploadImagesHandler godoc
-// @Summary Upload images for import order
-// @Description Upload multiple images for a specific SoNo
+// @Summary import order
+// @Description Upload multiple images and data for a specific SoNo
 // @Tags Import Order
 // @Accept multipart/form-data
 // @Produce json
@@ -90,7 +89,7 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 // @Param imageTypeID formData int true "Type of the image (1, 2, or 3)"
 // @Param sku formData string false "SKU (Optional)"
 // @Param files formData file true "Files to upload"
-// @Success 200 {object} Response "Successful upload"
+// @Success 200 {object} Response "Successful"
 // @Failure 400 {object} Response "Invalid input"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /import-order/upload [post]
@@ -126,7 +125,7 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var uploadedImages []res.ImageResponse
+	var result []res.ImageResponse
 	for _, file := range files {
 		src, err := file.Open()
 		if err != nil {
@@ -170,11 +169,11 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		uploadedImages = append(uploadedImages, res.ImageResponse{
+		result = append(result, res.ImageResponse{
 			ImageID:  imageID,
 			FilePath: filePath,
 		})
 	}
 
-	handleResponse(w, true, "Upload successful", uploadedImages, http.StatusOK)
+	handleResponse(w, true, "⭐ Data Insert successful ⭐", result, http.StatusOK)
 }

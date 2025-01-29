@@ -218,9 +218,6 @@ definitions:
       checkBy:
         example: dev03
         type: string
-      createBy:
-        description: '''USER'''
-        type: string
       description:
         example: ""
         type: string
@@ -357,6 +354,7 @@ definitions:
         example: 1
         type: integer
       reason:
+        example: CHANGE PRODUCTS
         type: string
       srNo:
         example: SR0001
@@ -473,6 +471,10 @@ definitions:
     properties:
       identifier:
         type: string
+      statusCheckID:
+        type: string
+      statusReturnID:
+        type: string
       updateBy:
         type: string
       updateDate:
@@ -489,29 +491,16 @@ definitions:
     type: object
   response.ConfirmToReturnOrder:
     properties:
-      confirmToReturnRequest:
-        items:
-          $ref: '#/definitions/response.ConfirmToReturnRequest'
-        type: array
       orderNo:
+        type: string
+      statusCheckID:
+        type: string
+      statusReturnID:
         type: string
       updateBy:
         type: string
       updateDate:
         type: string
-    type: object
-  response.ConfirmToReturnRequest:
-    properties:
-      importLinesActual:
-        description: รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี
-        items:
-          $ref: '#/definitions/response.ImportLinesActual'
-        type: array
-      updateToReturn:
-        description: เลข sr สุ่มจาก ax
-        items:
-          $ref: '#/definitions/response.UpdateToReturn'
-        type: array
     type: object
   response.CreateReturnOrder:
     properties:
@@ -532,7 +521,6 @@ definitions:
         example: dev03
         type: string
       createBy:
-        description: '''USER'''
         type: string
       createDate:
         description: MSSQL SYSDATETIME() function
@@ -594,15 +582,6 @@ definitions:
         type: number
       qty:
         type: integer
-      sku:
-        type: string
-    type: object
-  response.ImportLinesActual:
-    properties:
-      actualQty:
-        type: integer
-      price:
-        type: number
       sku:
         type: string
     type: object
@@ -861,11 +840,6 @@ definitions:
         type: string
       updateDate:
         description: MSSQL SYSDATETIME() function
-        type: string
-    type: object
-  response.UpdateToReturn:
-    properties:
-      srNo:
         type: string
     type: object
   response.UserPermission:
@@ -1844,7 +1818,7 @@ paths:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
-                data:
+                result:
                   $ref: '#/definitions/response.ImportOrderResponse'
               type: object
         "400":
@@ -1866,7 +1840,7 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Upload multiple images for a specific SoNo
+      description: Upload multiple images and data for a specific SoNo
       parameters:
       - description: Sale Order Number
         in: formData
@@ -1891,7 +1865,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Successful upload
+          description: Successful
           schema:
             $ref: '#/definitions/api.Response'
         "400":
@@ -1902,7 +1876,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Upload images for import order
+      summary: import order
       tags:
       - Import Order
   /return-order/create:
@@ -2427,7 +2401,12 @@ paths:
         "201":
           description: Trade return line created successfully
           schema:
-            $ref: '#/definitions/api.Response'
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  $ref: '#/definitions/response.BeforeReturnOrderLineResponse'
+              type: object
         "400":
           description: Bad Request - Invalid input or missing required fields
           schema:
@@ -2471,7 +2450,7 @@ paths:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
-                data:
+                result:
                   $ref: '#/definitions/response.ConfirmReceipt'
               type: object
         "400":
@@ -2482,7 +2461,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Confirm a trade return order
+      summary: Confirm Receipt from Ware House
       tags:
       - Trade Return
   /trade-return/confirm-return/{orderNo}:
@@ -2513,7 +2492,7 @@ paths:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
-                data:
+                result:
                   $ref: '#/definitions/response.ConfirmToReturnOrder'
               type: object
         "400":
@@ -2524,7 +2503,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Confirm a trade return order
+      summary: Confirm Return Order to Success
       tags:
       - Trade Return
   /trade-return/create-trade:
@@ -2546,7 +2525,12 @@ paths:
         "201":
           description: Trade return created successfully
           schema:
-            $ref: '#/definitions/api.Response'
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  $ref: '#/definitions/response.BeforeReturnOrderResponse'
+              type: object
         "400":
           description: Bad Request - Invalid input or missing required fields
           schema:

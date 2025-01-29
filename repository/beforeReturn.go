@@ -71,15 +71,15 @@ type BeforeReturnRepository interface {
 
 	// ************************ Confirm Return ************************ //
 	UpdateStatusToSuccess(ctx context.Context, orderNo, updateBy string) error
-	GetBeforeOrderDetails(ctx context.Context, orderNo string) (*response.ReturnOrderData, error)
-	UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ReturnOrderData) error
+	GetBeforeOrderDetails(ctx context.Context, orderNo string) (*response.ConfirmReturnOrderDetails, error)
+	UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ConfirmReturnOrderDetails) error
 	CheckReLineSKUExists(ctx context.Context, orderNo, sku string) (bool, error)
 
 	// ************************ Confirm Receipt ************************ //
-	InsertImages(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest, filePaths []string) error
-	InsertReturnOrderLine(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest) error
-	InsertReturnOrder(ctx context.Context, returnOrderData *response.ReturnOrderData) error
-	GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ReturnOrderData, error)
+	InsertImages(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest, filePaths []string) error
+	InsertReturnOrderLine(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest) error
+	InsertReturnOrder(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails) error
+	GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ConfirmReturnOrderDetails, error)
 	UpdateBefToWaiting(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
 	CheckBefOrderOrTrackingExists(ctx context.Context, identifier string) (bool, error)
 }
@@ -212,7 +212,7 @@ func (repo repositoryDB) UpdateStatusToSuccess(ctx context.Context, orderNo, upd
 }
 
 // step 2: Fetch ค่า Befod ออกมา เก็บค่าผู้ updateBy Date เพื่อนำไปใช้เข้าใน CreateBy Date => ReturnOrder,Line
-func (repo repositoryDB) GetBeforeOrderDetails(ctx context.Context, orderNo string) (*response.ReturnOrderData, error) {
+func (repo repositoryDB) GetBeforeOrderDetails(ctx context.Context, orderNo string) (*response.ConfirmReturnOrderDetails, error) {
 	query := ` SELECT UpdateBy, UpdateDate
         	   FROM BeforeReturnOrder
                WHERE OrderNo = :OrderNo `
@@ -223,7 +223,7 @@ func (repo repositoryDB) GetBeforeOrderDetails(ctx context.Context, orderNo stri
 	}
 	defer stmt.Close()
 
-	var returnOrderData response.ReturnOrderData
+	var returnOrderData response.ConfirmReturnOrderDetails
 	err = stmt.QueryRowx(map[string]interface{}{"OrderNo": orderNo}).StructScan(&returnOrderData)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -235,7 +235,7 @@ func (repo repositoryDB) GetBeforeOrderDetails(ctx context.Context, orderNo stri
 }
 
 // step 3: update
-func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ReturnOrderData) error {
+func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ConfirmReturnOrderDetails) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// Step 2: อัปเดต ReturnOrder
 		for _, head := range req.UpdateToReturn {
@@ -365,14 +365,14 @@ func (repo repositoryDB) UpdateBefToWaiting(ctx context.Context, req request.Con
 }
 
 // 2. ดึงข้อมูลจาก BeforeReturnOrder fetch ออกมาเพื่อเอาเข้า ReturnOrder
-func (repo repositoryDB) GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ReturnOrderData, error) {
+func (repo repositoryDB) GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ConfirmReturnOrderDetails, error) {
 	querySelectOrder := `
         SELECT OrderNo, SoNo, SrNo, TrackingNo, ChannelID, 
 			   UpdateBy AS CreateBy, UpdateDate AS CreateDate
         FROM BeforeReturnOrder
         WHERE OrderNo = :Identifier OR TrackingNo = :Identifier
     `
-	var returnOrderData response.ReturnOrderData
+	var returnOrderData response.ConfirmReturnOrderDetails
 
 	rows, err := repo.db.NamedQueryContext(ctx, querySelectOrder, map[string]interface{}{
 		"Identifier": req.Identifier,
@@ -392,7 +392,7 @@ func (repo repositoryDB) GetBeforeReturnOrderData(ctx context.Context, req reque
 }
 
 // 3. Insert ข้อมูลลงใน ReturnOrder
-func (repo repositoryDB) InsertReturnOrder(ctx context.Context, returnOrderData *response.ReturnOrderData) error {
+func (repo repositoryDB) InsertReturnOrder(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		queryInsertOrder := `
         INSERT INTO ReturnOrder (
@@ -408,7 +408,7 @@ func (repo repositoryDB) InsertReturnOrder(ctx context.Context, returnOrderData 
 }
 
 // 4. Insert ข้อมูลจาก importLines ลงใน ReturnOrderLine
-func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest) error {
+func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		queryInsertLine := `
         INSERT INTO ReturnOrderLine (
@@ -438,7 +438,7 @@ func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderD
 }
 
 // InsertImages ฟังก์ชันที่ใช้เพิ่มข้อมูลภาพลงในฐานข้อมูล
-func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *response.ReturnOrderData, req request.ConfirmTradeReturnRequest, filePaths []string) error {
+func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest, filePaths []string) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		queryInsertImage := `
         INSERT INTO Images (

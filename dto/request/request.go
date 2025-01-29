@@ -34,12 +34,12 @@ type CreateReturnOrder struct {
 	OptStatusID   *int    `json:"optStatusId" db:"OptStatusID" example:"1"`
 	AxStatusID    *int    `json:"axStatusId" db:"AxStatusID" example:"1"`
 	PlatfStatusID *int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
-	Reason        *string  `json:"reason" db:"Reason"`
+	Reason        *string `json:"reason" db:"Reason"`
 	CancelID      *int    `json:"cancelId" db:"CancelID" example:"1"`
 	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
 	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
 	Description   *string `json:"description" db:"Description" example:""`
-	CreateBy      string     	`json:"createBy" db:"CreateBy"`		// 'USER'
+	CreateBy      string  `json:"-" db:"CreateBy"`
 	// CreateDate   *time.Time      `json:"createDate" db:"CreateDate"` // MSSQL SYSDATETIME() function
 
 	ReturnOrderLine []ReturnOrderLine `json:"ReturnOrderLine"`
@@ -55,12 +55,12 @@ type UpdateReturnOrder struct {
 	OptStatusID   *int    `json:"optStatusId" db:"OptStatusID" example:"1"`
 	AxStatusID    *int    `json:"axStatusId" db:"AxStatusID" example:"1"`
 	PlatfStatusID *int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
-	Reason        *string     `json:"reason" db:"Reason"`
+	Reason        *string `json:"reason" db:"Reason" example:"CHANGE PRODUCTS"`
 	CancelID      *int    `json:"cancelId" db:"CancelID" example:"1"`
 	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
 	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
 	Description   *string `json:"description" db:"Description" example:""`
-	// UpdateBy     *string    	    `json:"updateBy" db:"UpdateBy"`     // 'USER'
+	UpdateBy      *string  `json:"-" db:"UpdateBy"` 
 	// UpdateDate   *time.Time      `json:"updateDate" db:"UpdateDate"` // MSSQL SYSDATETIME() function
 
 }
@@ -72,7 +72,7 @@ type ReturnOrderLine struct {
 	QTY        *int    `json:"qty" db:"QTY" example:"5"`
 	ReturnQTY  int     `json:"returnQTY" db:"ReturnQTY" example:"5"`
 	Price      float64 `json:"price" db:"Price" example:"199.99"`
-	AlterSKU   *string         `json:"-" db:"AlterSKU" `
+	AlterSKU   *string `json:"-" db:"AlterSKU" `
 }
 
 /********** Trade Return (Offline) ***************/
@@ -83,13 +83,13 @@ type ConfirmTradeReturnRequest struct {
 }
 
 type TradeReturnLineRequest struct {
-	SKU       string  `json:"sku" db:"SKU" validate:"required"`
-	ItemName  string  `json:"itemName" db:"ItemName" validate:"required"`
-	QTY       int     `json:"qty" db:"QTY" validate:"required"`
-	ReturnQTY int     `json:"returnQty" db:"ReturnQTY" validate:"required"`
-	Price     float64 `json:"price" db:"Price" validate:"required"`
+	SKU       string   `json:"sku" db:"SKU" validate:"required"`
+	ItemName  string   `json:"itemName" db:"ItemName" validate:"required"`
+	QTY       int      `json:"qty" db:"QTY" validate:"required"`
+	ReturnQTY int      `json:"returnQty" db:"ReturnQTY" validate:"required"`
+	Price     float64  `json:"price" db:"Price" validate:"required"`
 	//TrackingNo string  `json:"trackingNo" db:"TrackingNo"`	// add form data BeforeReturnOrder
-	CreateBy string `json:"-" db:"CreateBy" ` // from user login
+	CreateBy string    `json:"-" db:"CreateBy" ` // from user login
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 	FilePath    string `json:"filePath" db:"FilePath" validate:"required"`
 	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID" validate:"required"`

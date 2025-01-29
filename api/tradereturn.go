@@ -26,7 +26,7 @@ func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 
 		/******** Trade Retrun ********/
 		r.Post("/create-trade", app.CreateTradeReturn)
-		r.Post("/add-line/{orderNo}", app.AddTradeReturnLine)
+		r.Post("/add-line/{orderNo}", app.CreateTradeReturnLine)
 		r.Post("/confirm-receipt/{identifier}", app.ConfirmReceipt)
 		r.Patch("/confirm-return/{orderNo}", app.ConfirmReturn)
 	})
@@ -40,7 +40,7 @@ func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 // @Accept json
 // @Produce json
 // @Param body body request.BeforeReturnOrder true "Trade Return Detail"
-// @Success 201 {object} api.Response "Trade return created successfully"
+// @Success 201 {object} api.Response{result=response.BeforeReturnOrderResponse} "Trade return created successfully"
 // @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
 // @Failure 404 {object} api.Response "Not Found - Order not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
@@ -55,7 +55,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// ตรวจสอบว่ามี OrderNo 
+	// ตรวจสอบว่ามี OrderNo
 	if req.OrderNo == "" {
 		handleResponse(w, false, "OrderNo is required", nil, http.StatusBadRequest)
 		return
@@ -90,7 +90,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 	// Call service
 	result, err := app.Service.BeforeReturn.CreateTradeReturn(r.Context(), req)
 	if err != nil {
-		app.Logger.Error("Failed to create sale return",
+		app.Logger.Error("Failed to create trade return",
 			zap.Error(err),
 			zap.String("orderNo", req.OrderNo))
 
@@ -106,15 +106,16 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 	}
 
 	fmt.Printf("\n📋 ========== Created Trade Return Order ========== 📋\n")
+	fmt.Printf("\n📋 ========== StatusReturn => 3 (booking) ========== 📋\n\n")
 	utils.PrintOrderDetails(result)
 	for i, line := range result.BeforeReturnOrderLines {
 		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
-	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.BeforeReturnOrderLines))
+	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.BeforeReturnOrderLines))
 	fmt.Println("=====================================")
 
-	handleResponse(w, true, "Trade return order created successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Created trade return order successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary Add a new trade return line to an existing order
@@ -125,12 +126,12 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 // @Produce json
 // @Param orderNo path string true "Order number"
 // @Param body body request.TradeReturnLine true "Trade Return Line Details"
-// @Success 201 {object} api.Response "Trade return line created successfully"
+// @Success 201 {object} api.Response{result=response.BeforeReturnOrderLineResponse} "Trade return line created successfully"
 // @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
 // @Failure 404 {object} api.Response "Not Found - Order not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /trade-return/add-line/{orderNo} [post]
-func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Request) {
+func (app *Application) CreateTradeReturnLine(w http.ResponseWriter, r *http.Request) {
 
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
@@ -139,7 +140,7 @@ func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req request.TradeReturnLine
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, fmt.Errorf("invalid request format: %v", err))
 		return
@@ -164,13 +165,150 @@ func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Reques
 	}
 
 	// เรียก service layer เพื่อสร้างข้อมูล
-	err = app.Service.BeforeReturn.CreateTradeReturnLine(r.Context(), orderNo, req)
+	result, err := app.Service.BeforeReturn.CreateTradeReturnLine(r.Context(), orderNo, req)
+	if err != nil {
+		app.Logger.Error("Failed to create trade return",
+			zap.Error(err),
+			zap.String("orderNo", orderNo))
+
+		switch {
+		case strings.Contains(err.Error(), "validation failed"):
+			handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
+		case strings.Contains(err.Error(), "already exists"):
+			handleResponse(w, false, err.Error(), nil, http.StatusConflict)
+		default:
+			handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
+		}
+		return
+	}
+
+	fmt.Printf("\n📋 ========== Created Trade Return Line Order ========== 📋\n")
+	for i, line := range result {
+		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		utils.PrintOrderLineDetails(&line)
+	}
+	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result))
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "⭐ Trade return line created successfully ⭐", result, http.StatusCreated)
+}
+
+// ConfirmTradeReturn godoc
+// @Summary Confirm Receipt from Ware House
+// @Description Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.
+// @ID confirm-trade-return
+// @Tags Trade Return
+// @Accept json
+// @Produce json
+// @Param identifier path string true "OrderNo or TrackingNo"
+// @Param request body request.ConfirmTradeReturnRequest true "Trade return request details"
+// @Success 200 {object} api.Response{result=response.ConfirmReceipt} "Trade return order confirmed successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /trade-return/confirm-receipt/{identifier} [post]
+func (app *Application) ConfirmReceipt(w http.ResponseWriter, r *http.Request) {
+	// รับค่า identifier จาก URL parameter
+	identifier := chi.URLParam(r, "identifier")
+	if identifier == "" {
+		handleError(w, fmt.Errorf("identifier (OrderNo or TrackingNo) is required"))
+		return
+	}
+
+	// แปลงข้อมูล JSON
+	var req request.ConfirmTradeReturnRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, fmt.Errorf("invalid request body: %w", err))
+		return
+	}
+
+	// กำหนดค่า identifier
+	req.Identifier = identifier
+
+	// รับข้อมูล claims จาก JWT token
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		return
+	}
+
+	// ดึง userID จาก claims
+	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponse(w, true, "Trade return line created successfully", nil, http.StatusCreated)
+	// เรียก service layer เพื่อดำเนินการ confirm
+	err = app.Service.BeforeReturn.ConfirmReceipt(r.Context(), req, userID)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	response := res.ConfirmReceipt{
+		Identifier:     req.Identifier,
+		StatusReturnID: "7 (WAITING)",
+		StatusCheckID:  "1 (WAITING)",
+		UpdateBy:       userID,
+		UpdateDate:     time.Now(),
+	}
+
+	handleResponse(w, true, "⭐ Confirmed from Ware House successfully ⭐", response, http.StatusOK)
+}
+
+// ConfirmToReturn godoc
+// @Summary Confirm Return Order to Success
+// @Description Confirm a trade return order based on the provided order number (OrderNo) and input lines for ReturnOrderLine.
+// @ID confirm-to-return
+// @Tags Trade Return
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "OrderNo"
+// @Param request body request.ConfirmToReturnRequest true "Updated trade return request details"
+// @Success 200 {object} api.Response{result=response.ConfirmToReturnOrder} "Trade return order confirmed successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /trade-return/confirm-return/{orderNo} [patch]
+func (app *Application) ConfirmReturn(w http.ResponseWriter, r *http.Request) {
+	orderNo := chi.URLParam(r, "orderNo")
+	if orderNo == "" {
+		handleError(w, fmt.Errorf("OrderNo is required"))
+		return
+	}
+
+	var req request.ConfirmToReturnRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, fmt.Errorf("invalid request body: %w", err))
+		return
+	}
+
+	req.OrderNo = orderNo
+
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		return
+	}
+
+	userID, err := utils.GetUserIDFromClaims(claims)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if err := app.Service.BeforeReturn.ConfirmReturn(r.Context(), req, userID); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	response := res.ConfirmToReturnOrder{
+		OrderNo:        req.OrderNo,
+		StatusReturnID: "6 (success)",
+		StatusCheckID:  "2 (CONFIRM)",
+		UpdateBy:       userID,
+		UpdateDate:     time.Now(),
+	}
+	handleResponse(w, true, "⭐ Confirmed to Return Order successfully ⭐", response, http.StatusOK)
 }
 
 // // @Summary Confirm the return order and upload image
@@ -303,117 +441,3 @@ func (app *Application) AddTradeReturnLine(w http.ResponseWriter, r *http.Reques
 
 // 	return filePath, nil
 // }
-
-// ConfirmTradeReturn godoc
-// @Summary Confirm a trade return order
-// @Description Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.
-// @ID confirm-trade-return
-// @Tags Trade Return
-// @Accept json
-// @Produce json
-// @Param identifier path string true "OrderNo or TrackingNo"
-// @Param request body request.ConfirmTradeReturnRequest true "Trade return request details"
-// @Success 200 {object} api.Response{data=response.ConfirmReceipt} "Trade return order confirmed successfully"
-// @Failure 400 {object} api.Response "Bad Request"
-// @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /trade-return/confirm-receipt/{identifier} [post]
-func (app *Application) ConfirmReceipt(w http.ResponseWriter, r *http.Request) {
-	// รับค่า identifier จาก URL parameter
-	identifier := chi.URLParam(r, "identifier")
-	if identifier == "" {
-		handleError(w, fmt.Errorf("identifier (OrderNo or TrackingNo) is required"))
-		return
-	}
-
-	// แปลงข้อมูล JSON
-	var req request.ConfirmTradeReturnRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleError(w, fmt.Errorf("invalid request body: %w", err))
-		return
-	}
-
-	// กำหนดค่า identifier
-	req.Identifier = identifier
-
-	// รับข้อมูล claims จาก JWT token
-	_, claims, err := jwtauth.FromContext(r.Context())
-	if err != nil || claims == nil {
-		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
-		return
-	}
-
-	// ดึง userID จาก claims
-	userID, err := utils.GetUserIDFromClaims(claims)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	// เรียก service layer เพื่อดำเนินการ confirm
-	err = app.Service.BeforeReturn.ConfirmReceipt(r.Context(), req, userID)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	response := res.ConfirmReceipt{
-		Identifier: req.Identifier,
-		UpdateBy:   userID,
-		UpdateDate: time.Now(),
-	}
-
-	handleResponse(w, true, "Trade return order confirmed successfully", response, http.StatusOK)
-}
-
-// ConfirmToReturn godoc
-// @Summary Confirm a trade return order
-// @Description Confirm a trade return order based on the provided order number (OrderNo) and input lines for ReturnOrderLine.
-// @ID confirm-to-return
-// @Tags Trade Return
-// @Accept json
-// @Produce json
-// @Param orderNo path string true "OrderNo"
-// @Param request body request.ConfirmToReturnRequest true "Updated trade return request details"
-// @Success 200 {object} api.Response{data=response.ConfirmToReturnOrder} "Trade return order confirmed successfully"
-// @Failure 400 {object} api.Response "Bad Request"
-// @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /trade-return/confirm-return/{orderNo} [patch]
-func (app *Application) ConfirmReturn(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
-	if orderNo == "" {
-		handleError(w, fmt.Errorf("OrderNo is required"))
-		return
-	}
-
-	var req request.ConfirmToReturnRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleError(w, fmt.Errorf("invalid request body: %w", err))
-		return
-	}
-
-	req.OrderNo = orderNo
-
-	_, claims, err := jwtauth.FromContext(r.Context())
-	if err != nil || claims == nil {
-		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
-		return
-	}
-
-	userID, err := utils.GetUserIDFromClaims(claims)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	if err := app.Service.BeforeReturn.ConfirmReturn(r.Context(), req, userID); err != nil {
-		handleError(w, err)
-		return
-	}
-
-	response := res.ConfirmToReturnOrder{
-		OrderNo:    req.OrderNo,
-		UpdateBy:   userID,
-		UpdateDate: time.Now(),
-	}
-	handleResponse(w, true, "return order confirmed successfully", response, http.StatusOK)
-}
