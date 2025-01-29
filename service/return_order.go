@@ -169,7 +169,9 @@ func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error 
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "DeleteReturnOrder", zap.String("OrderNo", orderNo))
 	defer logFinish("Completed", nil)
-	srv.logger.Info("🔎 Starting delete return order process 🔎")
+
+	// Logging ว่าเริ่มการทำงาน
+	srv.logger.Info("🔎 Starting delete return order process 🔎", zap.String("OrderNo", orderNo),)
 
 	if orderNo == "" {
 		return errors.ValidationError("OrderNo is required")

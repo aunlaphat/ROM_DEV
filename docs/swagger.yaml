@@ -567,6 +567,12 @@ definitions:
         example: 12345678TH
         type: string
     type: object
+  response.DeleteReturnOrder:
+    properties:
+      orderNo:
+        description: เลขที่ใบสั่งซื้อ
+        type: string
+    type: object
   response.DraftHeadResponse:
     properties:
       orderLines:
@@ -1970,7 +1976,9 @@ paths:
             - $ref: '#/definitions/api.Response'
             - properties:
                 result:
-                  type: string
+                  items:
+                    $ref: '#/definitions/response.DeleteReturnOrder'
+                  type: array
               type: object
         "204":
           description: No Content, Order Delete Successfully

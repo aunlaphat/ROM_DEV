@@ -1732,7 +1732,10 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "type": "string"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.DeleteReturnOrder"
+                                            }
                                         }
                                     }
                                 }
@@ -3604,6 +3607,15 @@ const docTemplate = `{
                 "trackingNo": {
                     "type": "string",
                     "example": "12345678TH"
+                }
+            }
+        },
+        "response.DeleteReturnOrder": {
+            "type": "object",
+            "properties": {
+                "orderNo": {
+                    "description": "เลขที่ใบสั่งซื้อ",
+                    "type": "string"
                 }
             }
         },

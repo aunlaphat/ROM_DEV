@@ -161,3 +161,7 @@ type ImageResponse struct {
 	ImageID  int    `json:"imageID"`
 	FilePath string `json:"filePath"`
 }
+
+type DeleteReturnOrder struct {
+	OrderNo     string    `db:"OrderNo"`         // เลขที่ใบสั่งซื้อ
+}

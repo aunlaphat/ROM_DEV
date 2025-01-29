@@ -327,7 +327,7 @@ func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Accept 		json
 // @Produce 	json
 // @Param 		orderNo path string true "Order No"
-// @Success 	200 {object} Response{result=string} "ReturnOrder Deleted"
+// @Success 	200 {object} Response{result=[]response.DeleteReturnOrder} "ReturnOrder Deleted"
 // @Success 	204 {object} Response "No Content, Order Delete Successfully"
 // @Failure 	400 {object} Response "Bad Request"
 // @Failure 	404 {object} Response "Order Not Found"
@@ -349,5 +349,9 @@ func (api *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	handleResponse(w, true, "⭐ Deleted successfully ⭐", nil, http.StatusOK)
+	response := response.DeleteReturnOrder{
+		OrderNo:    orderNo,
+	}
+
+	handleResponse(w, true, "⭐ Deleted successfully ⭐", response, http.StatusOK)
 }
