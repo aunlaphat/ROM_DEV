@@ -16,7 +16,6 @@ type service struct {
 	returnOrderRepo  repository.ReturnOrderRepository
 	importOrderRepo  repository.ImportOrderRepository
 	beforeReturnRepo repository.BeforeReturnRepository
-	returnOrderRepo  repository.ReturnOrderRepository
 }
 type AllOfService struct {
 	User         UserService
@@ -40,7 +39,6 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		returnOrderRepo:  repo,
 		importOrderRepo:  repo,
 		beforeReturnRepo: repo,
-		returnOrderRepo:  repo,
 	}
 	return AllOfService{
 		User:         srv,
