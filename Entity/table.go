@@ -68,6 +68,7 @@ type CancelStatus struct {
 // ReturnOrder คือตารางสำหรับเก็บข้อมูลการคืนสินค้าที่ผ่านการตรวจสอบแล้ว
 // เป็นขั้นตอนสุดท้ายของกระบวนการคืนสินค้า
 type ReturnOrder struct {
+	RecID         int        `db:"RecID"`         // รหัสอ้างอิงอัตโนมัติ (Auto Increment)
 	ReturnID      string     `db:"ReturnID"`      // เลขที่ใบคืนสินค้า (PK - Generate จากระบบ)
 	OrderNo       string     `db:"OrderNo"`       // เลขที่ใบสั่งซื้อ
 	SoNo          string     `db:"SoNo"`          // เลขที่ใบกำกับภาษี
@@ -78,14 +79,15 @@ type ReturnOrder struct {
 	OptStatusID   *int       `db:"OptStatusID"`   // สถานะการดำเนินการ
 	AxStatusID    *int       `db:"AxStatusID"`    // สถานะในระบบ AX
 	PlatfStatusID *int       `db:"PlatfStatusID"` // สถานะในแพลตฟอร์ม
-	Reason        string     `db:"Reason"`     // หมายเหตุ
+	Reason        *string    `db:"Reason"`        // เหตุผลในการคืนสินค้า
 	CreateBy      string     `db:"CreateBy"`      // ผู้สร้างรายการ
 	CreateDate    time.Time  `db:"CreateDate"`    // วันที่สร้างรายการ
 	UpdateBy      *string    `db:"UpdateBy"`      // ผู้แก้ไขล่าสุด
 	UpdateDate    *time.Time `db:"UpdateDate"`    // วันที่แก้ไขล่าสุด
-	CancelID      *int       `db:"CancelID"`      // รหัสการยกเลิก
 	StatusCheckID *int       `db:"StatusCheckID"` // สถานะการตรวจสอบ (FK -> StatusCheck)
 	CheckBy       *string    `db:"CheckBy"`       // ผู้ตรวจสอบ
+	CheckDate     *time.Time `db:"CheckDate"`     // วันที่ตรวจสอบ
+	CancelID      *int       `db:"CancelID"`      // รหัสการยกเลิก
 	Description   *string    `db:"Description"`   // รายละเอียดเพิ่มเติม
 }
 
@@ -94,16 +96,18 @@ type ReturnOrderLine struct {
 	RecID      int        `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ - (PK - Auto Increment)
 	ReturnID   string     `db:"ReturnID"`   // เลขที่ใบคืนสินค้า (FK -> ReturnOrder)
 	OrderNo    string     `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ
-	TrackingNo string     `db:"TrackingNo"` // เลขพัสดุ
 	SKU        string     `db:"SKU"`        // รหัสสินค้า
+	ItemName   string     `db:"ItemName"`   // ชื่อสินค้า
+	QTY        int        `db:"QTY"`        // จำนวนสินค้าที่ซื้อ
 	ReturnQTY  int        `db:"ReturnQTY"`  // จำนวนที่คืน
-	QTY        *int       `db:"QTY"`        // จำนวนที่ตรวจสอบแล้ว
+	ActualQTY  int        `db:"ActualQTY"`  // จำนวนที่ตรวจสอบแล้ว
 	Price      float64    `db:"Price"`      // ราคาต่อหน่วย
 	CreateBy   string     `db:"CreateBy"`   // ผู้สร้างรายการ
 	CreateDate time.Time  `db:"CreateDate"` // วันที่สร้างรายการ
-	AlterSKU   *string    `db:"AlterSKU"`   // รหัสสินค้าทดแทน
 	UpdateBy   *string    `db:"UpdateBy"`   // ผู้แก้ไขล่าสุด
 	UpdateDate *time.Time `db:"UpdateDate"` // วันที่แก้ไขล่าสุด
+	TrackingNo string     `db:"TrackingNo"` // เลขพัสดุ
+	AlterSKU   *string    `db:"AlterSKU"`   // รหัสสินค้าทดแทน (ถ้ามี)
 }
 
 /********** Constants for dropdown ***************/

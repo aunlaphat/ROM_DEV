@@ -50,6 +50,7 @@ type CreateBeforeReturnOrder struct {
 }
 
 type BeforeReturnOrderLine struct {
+	//RecID		  int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
 	OrderNo   string  `json:"orderNo" db:"OrderNo"`
 	SKU       string  `json:"sku" db:"SKU"`
 	ItemName  string  `json:"itemName" db:"ItemName"`
@@ -68,7 +69,7 @@ type BeforeReturnOrderLine struct {
 /********** MKP (Online) ***************/
 
 type UpdateSaleReturnRequest struct {
-	SrNo string `json:"srNo" validate:"required" example:"SR-123456"`
+	SrNo string `json:"srNo" validate:"required" example:"SR-TEST-123456"`
 }
 
 type CancelSaleReturnRequest struct {
