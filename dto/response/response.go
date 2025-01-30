@@ -76,8 +76,8 @@ type CreateReturnOrder struct {
 }
 
 type UpdateReturnOrder struct {
-	OrderNo       string    `json:"-" db:"OrderNo"`
-	SoNo          string    `json:"-" db:"SoNo"`
+	OrderNo       string     `json:"-" db:"OrderNo"`
+	SoNo          string     `json:"-" db:"SoNo"`
 	SrNo          *string    `json:"srNo" db:"SrNo" example:"SR0001"`
 	TrackingNo    *string    `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
 	PlatfID       *int       `json:"platfId" db:"PlatfID" example:"1"`
@@ -139,6 +139,8 @@ type ImportOrderResponse struct {
 }
 
 type ImportOrderLineResponse struct {
+	OrderNo    string `json:"orderNo" db:"OrderNo"`
+	TrackingNo string `json:"trackingNo" db:"TrackingNo"`
 	SKU      string  `json:"sku" db:"SKU"`
 	ItemName string  `json:"itemName" db:"ItemName"`
 	QTY      int     `json:"qty" db:"QTY"`

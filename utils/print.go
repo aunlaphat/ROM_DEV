@@ -154,7 +154,21 @@ func PrintUpdateReturnOrder(order *res.UpdateReturnOrder) {
 	fmt.Printf("❌ CancelID: %s\n", convertInt(order.CancelID)) 
 }
 
-// ฟังก์ชันสำหรับแปลงค่าว่าง
+func PrintImportOrderDetails(order *res.ImportOrderResponse) {
+	fmt.Printf("🧾 OrderNo: %s\n", order.OrderNo)
+	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
+	fmt.Printf("📦 TrackingNo: %s\n", order.TrackingNo) 
+	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate.Format("2006-01-02 15:04:05"))
+}
+
+func PrintImportOrderLineDetails(line *res.ImportOrderLineResponse) {
+	fmt.Printf("🔖 SKU: %s\n", line.SKU)
+	fmt.Printf("🏷️  ItemName: %s\n", line.ItemName)
+	fmt.Printf("📱 QTY: %d\n", line.QTY)
+	fmt.Printf("💲 Price: %.2f ฿\n", line.Price)
+}
+
+// ฟังก์ชันสำหรับแปลงค่า null
 func convertString(s *string) string {
 	if s != nil {
 		return *s

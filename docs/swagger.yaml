@@ -211,9 +211,6 @@ definitions:
       axStatusId:
         example: 1
         type: integer
-      cancelId:
-        example: 1
-        type: integer
       channelId:
         example: 2
         type: integer
@@ -510,9 +507,6 @@ definitions:
       axStatusId:
         example: 1
         type: integer
-      cancelId:
-        example: 1
-        type: integer
       channelId:
         example: 2
         type: integer
@@ -591,11 +585,15 @@ definitions:
     properties:
       itemName:
         type: string
+      orderNo:
+        type: string
       price:
         type: number
       qty:
         type: integer
       sku:
+        type: string
+      trackingNo:
         type: string
     type: object
   response.ImportOrderResponse:
@@ -1803,6 +1801,55 @@ paths:
       summary: Update draft orders
       tags:
       - Draft & Confirm
+  /import-order/create-confirm-wh:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload multiple images and data for a specific SoNo
+      operationId: Import-Order
+      parameters:
+      - description: Sale Order Number
+        in: formData
+        name: soNo
+        required: true
+        type: string
+      - description: Type of the image (1, 2, or 3)
+        in: formData
+        name: imageTypeID
+        required: true
+        type: integer
+      - description: SKU (Optional)
+        in: formData
+        name: skus
+        type: string
+      - description: Files to upload
+        in: formData
+        name: files
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  $ref: '#/definitions/response.ImageResponse'
+              type: object
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Import order
+      tags:
+      - Import Order
   /import-order/search:
     get:
       consumes:
@@ -1841,55 +1888,6 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Search order by OrderNo or TrackingNo
-      tags:
-      - Import Order
-  /import-order/upload:
-    post:
-      consumes:
-      - multipart/form-data
-      description: Upload multiple images and data for a specific SoNo
-      operationId: Import-Order
-      parameters:
-      - description: Sale Order Number
-        in: formData
-        name: soNo
-        required: true
-        type: string
-      - description: Type of the image (1, 2, or 3)
-        in: formData
-        name: imageTypeID
-        required: true
-        type: integer
-      - description: SKU (Optional)
-        in: formData
-        name: sku
-        type: string
-      - description: Files to upload
-        in: formData
-        name: files
-        required: true
-        type: file
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  $ref: '#/definitions/response.ImageResponse'
-              type: object
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Import order
       tags:
       - Import Order
   /return-order/create:
