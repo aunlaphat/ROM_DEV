@@ -77,9 +77,7 @@ type CreateReturnOrder struct {
 	AxStatusID    *int    `json:"axStatusId" db:"AxStatusID" example:"1"`
 	PlatfStatusID *int    `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
 	Reason        *string `json:"reason" db:"Reason"`
-	CancelID      *int    `json:"cancelId" db:"CancelID" example:"1"`
 	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
-	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
 	Description   *string `json:"description" db:"Description" example:""`
 	CreateBy      string  `json:"-" db:"CreateBy"`
 	// CreateDate   *time.Time      `json:"createDate" db:"CreateDate"` // MSSQL SYSDATETIME() function

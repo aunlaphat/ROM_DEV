@@ -3,6 +3,7 @@ package utils
 import (
 	res "boilerplate-backend-go/dto/response"
 	"fmt"
+	"time"
 )
 
 func PrintOrderDetails(order *res.BeforeReturnOrderResponse) {
@@ -26,80 +27,6 @@ func PrintOrderDetails(order *res.BeforeReturnOrderResponse) {
 	fmt.Printf("👤 UpdateBy: %v\n", order.UpdateBy)
 	fmt.Printf("📅 UpdateDate: %v\n", order.UpdateDate)
 	fmt.Printf("❌ CancelID: %v\n", order.CancelID)
-}
-
-func PrintReturnOrderDetails(order *res.ReturnOrder) {
-	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
-	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
-	fmt.Printf("🔄 SrNo: %v\n", order.SrNo)
-	fmt.Printf("📡 ChannelID: %d\n", order.ChannelID)
-	fmt.Printf("🎐 Reason: %v\n", order.Reason)
-	// fmt.Printf("👤 CustomerID: %s\n", order.CustomerID)
-	fmt.Printf("📦 TrackingNo: %v\n", order.TrackingNo)
-	// fmt.Printf("🚚 Logistic: %s\n", order.Logistic)
-	// fmt.Printf("🏢 WarehouseID: %d\n", order.WarehouseID)
-	// fmt.Printf("📄 SoStatusID: %v\n", order.SoStatusID)
-	// fmt.Printf("📊 MkpStatusID: %v\n", order.MkpStatusID)
-	// fmt.Printf("📅 ReturnDate: %v\n", order.ReturnDate)
-	// fmt.Printf("🪃 StatusReturnID: %d\n", order.StatusReturnID)
-	// fmt.Printf("✅ StatusConfID: %d\n", order.StatusConfID)
-	// fmt.Printf("👤 ConfirmBy: %v\n", order.ConfirmBy)
-	fmt.Printf("👤 CreateBy: %s\n", order.CreateBy)
-	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate)
-	fmt.Printf("👤 UpdateBy: %v\n", order.UpdateBy)
-	fmt.Printf("📅 UpdateDate: %v\n", order.UpdateDate)
-	// fmt.Printf("❌ CancelID: %v\n", order.CancelID)
-}
-
-func PrintCreateReturnOrder(order *res.CreateReturnOrder) {
-    fmt.Printf("OrderNo: %s\n", order.OrderNo)
-    fmt.Printf("SoNo: %s\n", order.SoNo)
-    fmt.Printf("SrNo: %s\n", order.SrNo)
-    fmt.Printf("TrackingNo: %s\n", order.TrackingNo)
-    fmt.Printf("PlatfID: %v\n", order.PlatfID)
-    fmt.Printf("ChannelID: %v\n", order.ChannelID)
-    fmt.Printf("OptStatusID: %v\n", order.OptStatusID)
-    fmt.Printf("AxStatusID: %v\n", order.AxStatusID)
-    fmt.Printf("PlatfStatusID: %v\n", order.PlatfStatusID)
-    fmt.Printf("Reason: %v\n", order.Reason)
-    fmt.Printf("CancelID: %v\n", order.CancelID)
-    fmt.Printf("StatusCheckID: %v\n", order.StatusCheckID)
-    fmt.Printf("CheckBy: %v\n", order.CheckBy)
-    fmt.Printf("Description: %v\n", order.Description)
-    fmt.Printf("CreateBy: %s\n", order.CreateBy)
-    fmt.Printf("CreateDate: %s\n", order.CreateDate)
-}
-
-func PrintUpdateReturnOrder(order *res.UpdateReturnOrder) {
-    fmt.Printf("OrderNo: %s\n", order.OrderNo)
-    fmt.Printf("SoNo: %s\n", order.SoNo)
-    fmt.Printf("SrNo: %s\n", order.SrNo)
-    fmt.Printf("TrackingNo: %s\n", order.TrackingNo)
-    fmt.Printf("PlatfID: %d\n", order.PlatfID)
-    fmt.Printf("ChannelID: %d\n", order.ChannelID)
-    fmt.Printf("OptStatusID: %d\n", order.OptStatusID)
-    fmt.Printf("AxStatusID: %d\n", order.AxStatusID)
-    fmt.Printf("PlatfStatusID: %d\n", order.PlatfStatusID)
-    fmt.Printf("Reason: %s\n", order.Reason)
-    fmt.Printf("CancelID: %d\n", order.CancelID)
-    fmt.Printf("StatusCheckID: %d\n", order.StatusCheckID)
-    fmt.Printf("CheckBy: %s\n", order.CheckBy)
-    fmt.Printf("Description: %s\n", order.Description)
-    fmt.Printf("UpdateBy: %s\n", order.UpdateBy)
-    fmt.Printf("UpdateDate: %s\n", order.UpdateDate.Format("2006-01-02 15:04:05"))
-}
-
-
-func PrintReturnOrderLineDetails(line *res.ReturnOrderLine) {
-    fmt.Printf("OrderNo: %s\n", line.OrderNo)
-    fmt.Printf("TrackingNo: %s\n", line.TrackingNo)
-    fmt.Printf("SKU: %s\n", line.SKU)
-    fmt.Printf("ReturnQTY: %d\n", line.ReturnQTY)
-    fmt.Printf("QTY: %d\n", line.QTY)
-    fmt.Printf("Price: %.2f\n", line.Price)
-    // fmt.Printf("AlterSKU: %s\n", line.AlterSKU)
-    fmt.Printf("CreateBy: %s\n", line.CreateBy)
-    fmt.Printf("CreateDate: %s\n", line.CreateDate)
 }
 
 func PrintOrderLineDetails(line *res.BeforeReturnOrderLineResponse) {
@@ -156,4 +83,109 @@ func PrintDraftOrderLineDetails(draft *res.DraftLineResponse) {
 	fmt.Printf("🏷️  ItemName: %s\n", draft.ItemName)
 	fmt.Printf("📱 QTY: %d\n", draft.QTY)
 	fmt.Printf("💲 Price: %.2f\n", draft.Price)
+}
+
+// ************************ Return Order ************************ //
+
+func PrintReturnOrderDetails(order *res.ReturnOrder) {
+	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
+	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
+	fmt.Printf("🔄 SrNo: %s\n", convertString(order.SrNo)) 
+	fmt.Printf("📦 TrackingNo: %s\n", convertString(order.TrackingNo)) 
+	fmt.Printf("🌍 PlatfID: %s\n", convertInt(order.PlatfID)) 
+	fmt.Printf("📲 ChannelID: %s\n", convertInt(order.ChannelID)) 
+	fmt.Printf("🔄 OptStatusID: %s\n", convertInt(order.OptStatusID)) 
+	fmt.Printf("📊 AxStatusID: %s\n", convertInt(order.AxStatusID)) 
+	fmt.Printf("🛍️  PlatfStatusID: %s\n", convertInt(order.PlatfStatusID)) 
+	fmt.Printf("🗨️  Reason: %s\n", convertString(order.Reason)) 
+	fmt.Printf("✔️  StatusCheckID: %s\n", convertInt(order.StatusCheckID)) 
+	fmt.Printf("🕵️ CheckBy: %s\n", convertString(order.CheckBy)) 
+	fmt.Printf("📅 CheckDate: %s\n", convertDate(order.CheckDate)) 
+	fmt.Printf("🕵️  UpdateBy: %s\n", convertString(order.UpdateBy)) 
+	fmt.Printf("📅 UpdateDate: %s\n", convertDate(order.UpdateDate)) 
+	fmt.Printf("🕵️  CreateBy: %s\n", order.CreateBy)
+	fmt.Printf("📅 CreateDate: %s\n", order.CreateDate.Format("2006-01-02 15:04:05"))
+	fmt.Printf("❌ CancelID: %s\n", convertInt(order.CancelID)) 
+}
+
+func PrintReturnOrderLineDetails(line *res.ReturnOrderLine) {
+	fmt.Printf("🔖 SKU: %s\n", line.SKU)
+	// fmt.Printf("🏷️  ItemName: %s\n", line.ItemName)
+	fmt.Printf("📱 QTY: %d\n", line.QTY)
+	fmt.Printf("📲 ReturnQTY: %d\n", line.ReturnQTY)
+	fmt.Printf("📲 ActualQTY: %d\n", line.ActualQTY)
+	fmt.Printf("💲 Price: %.2f ฿\n", line.Price)
+	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
+	fmt.Printf("📅 CreateDate: %s\n", line.CreateDate.Format("2006-01-02 15:04:05"))
+}
+
+func PrintCreateReturnOrder(order *res.CreateReturnOrder) {
+	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
+	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
+	fmt.Printf("🔄 SrNo: %s\n", order.SrNo)
+	fmt.Printf("📦 TrackingNo: %s\n", order.TrackingNo)
+	fmt.Printf("🌍 PlatfID: %d\n", order.PlatfID) 
+	fmt.Printf("📲 ChannelID: %d\n", order.ChannelID) 
+	fmt.Printf("🔄 OptStatusID: %d\n", order.OptStatusID) 
+	fmt.Printf("📊 AxStatusID: %d\n", order.AxStatusID) 
+	fmt.Printf("🛍️  PlatfStatusID: %d\n", order.PlatfStatusID) 
+	fmt.Printf("🗨️  Reason: %s\n", order.Reason)
+	fmt.Printf("✔️  StatusCheckID: %d\n", order.StatusCheckID) 
+	fmt.Printf("🕵️  CreateBy: %s\n", order.CreateBy)
+	fmt.Printf("📅 CreateDate: %s\n", order.CreateDate.Format("2006-01-02 15:04:05"))
+}
+
+func PrintUpdateReturnOrder(order *res.UpdateReturnOrder) {
+	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
+	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
+	fmt.Printf("🔄 SrNo: %s\n", convertString(order.SrNo)) 
+	fmt.Printf("📦 TrackingNo: %s\n", convertString(order.TrackingNo)) 
+	fmt.Printf("🌍 PlatfID: %s\n", convertInt(order.PlatfID)) 
+	fmt.Printf("📲 ChannelID: %s\n", convertInt(order.ChannelID)) 
+	fmt.Printf("🔄 OptStatusID: %s\n", convertInt(order.OptStatusID)) 
+	fmt.Printf("📊 AxStatusID: %s\n", convertInt(order.AxStatusID)) 
+	fmt.Printf("🛍️  PlatfStatusID: %s\n", convertInt(order.PlatfStatusID)) 
+	fmt.Printf("🗨️  Reason: %s\n", convertString(order.Reason)) 
+	fmt.Printf("✔️  StatusCheckID: %s\n", convertInt(order.StatusCheckID)) 
+	fmt.Printf("🕵️  CheckBy: %s\n", convertString(order.CheckBy)) 
+	fmt.Printf("📅 CheckDate: %s\n", convertDate(order.CheckDate)) 
+	fmt.Printf("🕵️  UpdateBy: %s\n", convertString(order.UpdateBy)) 
+	fmt.Printf("📅 UpdateDate: %s\n", convertDate(order.UpdateDate)) 
+	fmt.Printf("❌ CancelID: %s\n", convertInt(order.CancelID)) 
+}
+
+func PrintImportOrderDetails(order *res.ImportOrderResponse) {
+	fmt.Printf("🧾 OrderNo: %s\n", order.OrderNo)
+	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
+	fmt.Printf("📦 TrackingNo: %s\n", order.TrackingNo) 
+	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate.Format("2006-01-02 15:04:05"))
+}
+
+func PrintImportOrderLineDetails(line *res.ImportOrderLineResponse) {
+	fmt.Printf("🔖 SKU: %s\n", line.SKU)
+	fmt.Printf("🏷️  ItemName: %s\n", line.ItemName)
+	fmt.Printf("📱 QTY: %d\n", line.QTY)
+	fmt.Printf("💲 Price: %.2f ฿\n", line.Price)
+}
+
+// ฟังก์ชันสำหรับแปลงค่า null
+func convertString(s *string) string {
+	if s != nil {
+		return *s
+	}
+	return ""
+}
+
+func convertInt(i *int) string {
+	if i != nil {
+		return fmt.Sprintf("%d", *i)
+	}
+	return ""
+}
+
+func convertDate(t *time.Time) string {
+	if t != nil {
+		return t.Format("2006-01-02 15:04:05")
+	}
+	return ""
 }

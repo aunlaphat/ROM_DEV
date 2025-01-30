@@ -1487,6 +1487,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/import-order/create-confirm-wh": {
+            "post": {
+                "description": "Upload multiple images and data for a specific SoNo",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Import order",
+                "operationId": "Import-Order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sale Order Number",
+                        "name": "soNo",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Type of the image (1, 2, or 3)",
+                        "name": "imageTypeID",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU (Optional)",
+                        "name": "skus",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Files to upload",
+                        "name": "files",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.ImageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/import-order/search": {
             "get": {
                 "description": "Retrieve the details of an order by its OrderNo or TrackingNo using a single input",
@@ -1537,83 +1614,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "OrderNo or TrackingNo not found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/import-order/upload": {
-            "post": {
-                "description": "Upload multiple images and data for a specific SoNo",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Import Order"
-                ],
-                "summary": "Import order",
-                "operationId": "Import-Order",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Sale Order Number",
-                        "name": "soNo",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Type of the image (1, 2, or 3)",
-                        "name": "imageTypeID",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "SKU (Optional)",
-                        "name": "sku",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "file",
-                        "description": "Files to upload",
-                        "name": "files",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "$ref": "#/definitions/response.ImageResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -3130,17 +3130,9 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "cancelId": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "channelId": {
                     "type": "integer",
                     "example": 2
-                },
-                "checkBy": {
-                    "type": "string",
-                    "example": "dev03"
                 },
                 "description": {
                     "type": "string",
@@ -3569,17 +3561,9 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
-                "cancelId": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "channelId": {
                     "type": "integer",
                     "example": 2
-                },
-                "checkBy": {
-                    "type": "string",
-                    "example": "dev03"
                 },
                 "createBy": {
                     "type": "string"
@@ -3633,7 +3617,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "orderNo": {
-                    "description": "เลขที่ใบสั่งซื้อ",
                     "type": "string"
                 }
             }
@@ -3692,6 +3675,9 @@ const docTemplate = `{
                 "itemName": {
                     "type": "string"
                 },
+                "orderNo": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number"
                 },
@@ -3699,6 +3685,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "sku": {
+                    "type": "string"
+                },
+                "trackingNo": {
                     "type": "string"
                 }
             }
@@ -3872,6 +3861,9 @@ const docTemplate = `{
                 "checkBy": {
                     "type": "string"
                 },
+                "checkDate": {
+                    "type": "string"
+                },
                 "createBy": {
                     "type": "string"
                 },
@@ -3919,6 +3911,9 @@ const docTemplate = `{
         "response.ReturnOrderLine": {
             "type": "object",
             "properties": {
+                "actualQTY": {
+                    "type": "integer"
+                },
                 "alterSKU": {
                     "type": "string"
                 },
@@ -4022,6 +4017,9 @@ const docTemplate = `{
                     "type": "string",
                     "example": "dev03"
                 },
+                "checkDate": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string",
                     "example": ""
@@ -4054,7 +4052,6 @@ const docTemplate = `{
                     "example": "12345678TH"
                 },
                 "updateBy": {
-                    "description": "'USER'",
                     "type": "string"
                 },
                 "updateDate": {

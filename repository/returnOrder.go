@@ -160,12 +160,12 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 		insertReturnOrderQuery := `
             INSERT INTO ReturnOrder (
                 OrderNo, SoNo, SrNo, TrackingNo, PlatfID, ChannelID, 
-                OptStatusID, AxStatusID, PlatfStatusID, Reason, CancelID, StatusCheckID, 
-                CheckBy, Description, CreateBy, CreateDate
+                OptStatusID, AxStatusID, PlatfStatusID, Reason, StatusCheckID, 
+                Description, CreateBy, CreateDate
             ) VALUES (
                 :OrderNo, :SoNo, :SrNo, :TrackingNo, :PlatfID, :ChannelID, 
-                :OptStatusID, :AxStatusID, :PlatfStatusID, :Reason, :CancelID, :StatusCheckID, 
-                :CheckBy, :Description, :CreateBy, SYSDATETIME()
+                :OptStatusID, :AxStatusID, :PlatfStatusID, :Reason, :StatusCheckID, 
+                :Description, :CreateBy, SYSDATETIME()
             )
         `
 		// Step 2.1: ตรวจสอบว่ามีค่าสำหรับการใส่ใน Query
@@ -180,9 +180,7 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 			"AxStatusID":    req.AxStatusID,
 			"PlatfStatusID": req.PlatfStatusID,
 			"Reason":        req.Reason,
-			"CancelID":      req.CancelID,
 			"StatusCheckID": req.StatusCheckID,
-			"CheckBy":       req.CheckBy,
 			"Description":   req.Description,
 			"CreateBy":      req.CreateBy,
 		}
@@ -208,10 +206,9 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 				"OrderNo":    line.OrderNo,
 				"TrackingNo": line.TrackingNo,
 				"SKU":        line.SKU,
-				"ReturnQTY":  line.ReturnQTY,
 				"QTY":        line.QTY,
+				"ReturnQTY":  line.ReturnQTY,
 				"Price":      line.Price,
-				//"AlterSKU":   line.AlterSKU,
 				"CreateBy":   req.CreateBy,
 			}
 			if _, err := tx.NamedExecContext(ctx, insertReturnOrderLineQuery, params); err != nil {
@@ -232,7 +229,7 @@ func (repo repositoryDB) GetCreateReturnOrder(ctx context.Context, orderNo strin
 		SELECT 
 			OrderNo, SoNo, SrNo, TrackingNo, PlatfID, ChannelID, 
 			OptStatusID, AxStatusID, PlatfStatusID, Reason, CreateBy, CreateDate, 
-			CancelID, StatusCheckID, CheckBy, Description
+			StatusCheckID, Description
 		FROM ReturnOrder
 		WHERE OrderNo = @orderNo
 	`

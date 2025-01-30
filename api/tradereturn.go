@@ -190,7 +190,7 @@ func (app *Application) CreateTradeReturnLine(w http.ResponseWriter, r *http.Req
 	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result))
 	fmt.Println("=====================================")
 
-	handleResponse(w, true, "⭐ Trade return line created successfully ⭐", result, http.StatusCreated)
+	handleResponse(w, true, "⭐ Created trade return line successfully ⭐", result, http.StatusCreated)
 }
 
 // ConfirmTradeReturn godoc
