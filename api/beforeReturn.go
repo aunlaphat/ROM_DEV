@@ -25,23 +25,28 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
 		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
-		
+
 		// get real order
-		r.Get("/get-order", app.GetAllOrderDetail)								// get Order of ROM_V_OrderDetail
-		r.Get("/get-orders", app.GetAllOrderDetails)  							// get Order of ROM_V_OrderDetail with paginate
-		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)					// search by SO of ROM_V_OrderDetail
-		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine)	// delete line by recID of BeforeReturnOrder
+		r.Get("/get-order", app.GetAllOrderDetail)                             // get Order of ROM_V_OrderDetail
+		r.Get("/get-orders", app.GetAllOrderDetails)                           // get Order of ROM_V_OrderDetail with paginate
+		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)                 // search by SO of ROM_V_OrderDetail
+		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine) // delete line by recID of BeforeReturnOrder
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
-		r.Use(jwtauth.Verifier(app.TokenAuth))
-		r.Use(jwtauth.Authenticator)
-
+		// ✅ ไม่ต้องใช้ JWT สำหรับการค้นหา
 		r.Get("/search", app.SearchOrder)
-		r.Post("/create", app.CreateSaleReturn)
-		r.Patch("/update/{orderNo}", app.UpdateSaleReturn)
-		r.Post("/confirm/{orderNo}", app.ConfirmSaleReturn)
-		r.Post("/cancel/{orderNo}", app.CancelSaleReturn)
+
+		// ✅ ใช้ Middleware JWT สำหรับทุกเส้นทางที่แก้ไขข้อมูล
+		r.Group(func(r chi.Router) {
+			r.Use(jwtauth.Verifier(app.TokenAuth))
+			r.Use(jwtauth.Authenticator)
+
+			r.Post("/create", app.CreateSaleReturn)
+			r.Patch("/update", app.UpdateSaleReturn)
+			r.Patch("/confirm/{orderNo}", app.ConfirmSaleReturn)
+			r.Patch("/cancel/{orderNo}", app.CancelSaleReturn)
+		})
 	})
 
 	apiRouter.Route("/draft-confirm", func(r chi.Router) {
@@ -348,9 +353,12 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 // @Tags Sale Return
 // @Accept json
 // @Produce json
+// // @Security BearerAuth
 // @Param saleReturn body request.BeforeReturnOrder true "Sale Return Order"
 // @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "Sale return order created successfully"
-// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 400 {object} api.Response "Bad Request - Invalid request data"
+// @Failure 401 {object} api.Response "Unauthorized - Missing or invalid token"
+// @Failure 409 {object} api.Response "Conflict - Order already exists"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/create [post]
 func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request) {
@@ -376,6 +384,9 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 
 	// Set user information from claims
 	req.CreateBy = userID
+	for i := range req.BeforeReturnOrderLines {
+		req.BeforeReturnOrderLines[i].CreateBy = userID
+	}
 
 	// 4. Call service
 	result, err := app.Service.BeforeReturn.CreateSaleReturn(r.Context(), req)
@@ -418,74 +429,63 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// @Param orderNo path string true "Order number"
 // @Param request body request.UpdateSaleReturn true "SR number details"
-// @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "SR number updated successfully"
+// @Success 200 {object} api.Response{data=response.UpdateSaleReturnResponse} "SR number updated successfully"
 // @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
 // @Failure 404 {object} api.Response "Not Found - Order not found"
 // @Failure 401 {object} api.Response "Unauthorized - Missing or invalid token"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /sale-return/update/{orderNo} [patch]
+// @Router /sale-return/update [patch]
 func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request) {
-	// 1. รับและตรวจสอบ orderNo
-	orderNo := chi.URLParam(r, "orderNo")
-	if orderNo == "" {
-		http.Error(w, "OrderNo is required", http.StatusBadRequest)
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// 2. รับและตรวจสอบ request body
-	var req request.UpdateSaleReturn
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleError(w, fmt.Errorf("invalid request format: %v", err))
-		return
-	}
-
-	// อัพเดทการตรวจสอบข้อมูล
-	if req.SrNo == "" {
-		http.Error(w, "SrNo is required", http.StatusBadRequest)
-		return
-	}
-
-	// 3. ตรวจสอบว่า order มีอยู่จริง
-	existingOrder, err := app.Service.BeforeReturn.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
+	// 2. รับ JWT Claims และดึง userID
+	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		handleError(w, err)
+		http.Error(w, "❌ Unauthorized: missing or invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	// 3. Decode Request Body
+	var req request.UpdateSaleReturn
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "❌ Invalid request format", http.StatusBadRequest)
+		return
+	}
+
+	req.UpdateBy = userID
+
+	// 4. ตรวจสอบข้อมูลที่จำเป็น
+	if req.SrNo == "" {
+		http.Error(w, "⚠️ SrNo is required ⚠️", http.StatusBadRequest)
+		return
+	}
+
+	// 5. ตรวจสอบว่า Order มีอยู่จริง
+	existingOrder, err := app.Service.BeforeReturn.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("❌ Database error: %v", err), http.StatusInternalServerError)
 		return
 	}
 	if existingOrder == nil {
-		handleResponse(w, false, "⚠️ Order not found ⚠️", nil, http.StatusNotFound)
+		http.Error(w, "⚠️ Order not found ⚠️", http.StatusNotFound)
 		return
 	}
 
-	// ดึง userID จาก JWT token
-	_, claims, err := jwtauth.FromContext(r.Context())
-	if err != nil || claims == nil {
-		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
-		return
-	}
-
-	userID, err := utils.GetUserIDFromClaims(claims)
+	// 6. อัพเดท Sale Return
+	result, err := app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), req)
 	if err != nil {
-		handleError(w, err)
+		http.Error(w, fmt.Sprintf("❌ Failed to update SR number: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// เรียกใช้ service พร้อมส่ง userID
-	err = app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), orderNo, req.SrNo, userID)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	response := res.UpdateSaleReturnResponse{
-		OrderNo:    orderNo,
-		SrNo:       req.SrNo,
-		UpdateBy:   userID,
-		UpdateDate: time.Now(),
-	}
-
-	handleResponse(w, true, "⭐ SR number updated successfully ⭐", response, http.StatusOK)
+	// 7. ส่ง Response กลับ
+	handleResponse(w, true, "⭐ SR number updated successfully ⭐", result, http.StatusOK)
 }
 
 // ConfirmSaleReturn godoc
@@ -499,7 +499,7 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} api.Response{data=response.ConfirmSaleReturnResponse} "Sale return order confirmed successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /sale-return/confirm/{orderNo} [post]
+// @Router /sale-return/confirm/{orderNo} [patch]
 func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request) {
 	// 1. รับค่า orderNo จาก URL parameter
 	orderNo := chi.URLParam(r, "orderNo")
@@ -515,7 +515,7 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// 3. ดึงค่า userID และ roleID จาก claims
+	// 3. ดึงค่า userID จาก claims
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
 		handleError(w, err)
@@ -551,7 +551,7 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} api.Response{data=response.CancelSaleReturnResponse} "Sale return order canceled successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /sale-return/cancel/{orderNo} [post]
+// @Router /sale-return/cancel/{orderNo} [patch]
 func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request) {
 	// 1. Validation ข้อมูล
 	orderNo := chi.URLParam(r, "orderNo") // รับค่า orderNo จาก URL

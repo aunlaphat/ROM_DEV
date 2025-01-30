@@ -2104,7 +2104,7 @@ const docTemplate = `{
             }
         },
         "/sale-return/cancel/{orderNo}": {
-            "post": {
+            "patch": {
                 "description": "Cancel a sale return order based on the provided details",
                 "consumes": [
                     "application/json"
@@ -2170,7 +2170,7 @@ const docTemplate = `{
             }
         },
         "/sale-return/confirm/{orderNo}": {
-            "post": {
+            "patch": {
                 "description": "Confirm a sale return order based on the provided details",
                 "consumes": [
                     "application/json"
@@ -2271,7 +2271,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Bad Request - Invalid request data",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - Order already exists",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2353,7 +2365,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/sale-return/update/{orderNo}": {
+        "/sale-return/update": {
             "patch": {
                 "description": "Update the SR number for a sale return order based on the provided details",
                 "consumes": [
@@ -2368,13 +2380,6 @@ const docTemplate = `{
                 "summary": "Update the SR number for a sale return order",
                 "operationId": "update-sale-return",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Order number",
-                        "name": "orderNo",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "description": "SR number details",
                         "name": "request",
@@ -2397,7 +2402,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
+                                            "$ref": "#/definitions/response.UpdateSaleReturnResponse"
                                         }
                                     }
                                 }
@@ -3350,13 +3355,18 @@ const docTemplate = `{
         },
         "request.UpdateSaleReturn": {
             "type": "object",
-            "required": [
-                "srNo"
-            ],
             "properties": {
+                "orderNo": {
+                    "type": "string",
+                    "example": "SOA-TEST-123456"
+                },
                 "srNo": {
                     "type": "string",
                     "example": "SR-TEST-123456"
+                },
+                "updateBy": {
+                    "type": "string",
+                    "example": "dev03"
                 }
             }
         },
@@ -4059,6 +4069,23 @@ const docTemplate = `{
                 },
                 "updateDate": {
                     "description": "MSSQL SYSDATETIME() function",
+                    "type": "string"
+                }
+            }
+        },
+        "response.UpdateSaleReturnResponse": {
+            "type": "object",
+            "properties": {
+                "orderNo": {
+                    "type": "string"
+                },
+                "srNo": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "type": "string"
+                },
+                "updateDate": {
                     "type": "string"
                 }
             }

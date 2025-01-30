@@ -365,11 +365,15 @@ definitions:
     type: object
   request.UpdateSaleReturn:
     properties:
+      orderNo:
+        example: SOA-TEST-123456
+        type: string
       srNo:
         example: SR-TEST-123456
         type: string
-    required:
-    - srNo
+      updateBy:
+        example: dev03
+        type: string
     type: object
   request.UpdateToReturn:
     properties:
@@ -844,6 +848,17 @@ definitions:
         type: string
       updateDate:
         description: MSSQL SYSDATETIME() function
+        type: string
+    type: object
+  response.UpdateSaleReturnResponse:
+    properties:
+      orderNo:
+        type: string
+      srNo:
+        type: string
+      updateBy:
+        type: string
+      updateDate:
         type: string
     type: object
   response.UserPermission:
@@ -2183,7 +2198,7 @@ paths:
       tags:
       - Return Order
   /sale-return/cancel/{orderNo}:
-    post:
+    patch:
       consumes:
       - application/json
       description: Cancel a sale return order based on the provided details
@@ -2224,7 +2239,7 @@ paths:
       tags:
       - Sale Return
   /sale-return/confirm/{orderNo}:
-    post:
+    patch:
       consumes:
       - application/json
       description: Confirm a sale return order based on the provided details
@@ -2284,7 +2299,15 @@ paths:
                   $ref: '#/definitions/response.BeforeReturnOrderResponse'
               type: object
         "400":
-          description: Bad Request
+          description: Bad Request - Invalid request data
+          schema:
+            $ref: '#/definitions/api.Response'
+        "401":
+          description: Unauthorized - Missing or invalid token
+          schema:
+            $ref: '#/definitions/api.Response'
+        "409":
+          description: Conflict - Order already exists
           schema:
             $ref: '#/definitions/api.Response'
         "500":
@@ -2336,7 +2359,7 @@ paths:
       summary: Search order by SO number or Order number
       tags:
       - Sale Return
-  /sale-return/update/{orderNo}:
+  /sale-return/update:
     patch:
       consumes:
       - application/json
@@ -2344,11 +2367,6 @@ paths:
         details
       operationId: update-sale-return
       parameters:
-      - description: Order number
-        in: path
-        name: orderNo
-        required: true
-        type: string
       - description: SR number details
         in: body
         name: request
@@ -2365,7 +2383,7 @@ paths:
             - $ref: '#/definitions/api.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/response.BeforeReturnOrderResponse'
+                  $ref: '#/definitions/response.UpdateSaleReturnResponse'
               type: object
         "400":
           description: Bad Request - Invalid input or missing required fields

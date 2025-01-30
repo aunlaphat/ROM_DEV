@@ -45,13 +45,15 @@ type BeforeReturnOrderLine struct {
 }
 
 type UpdateSaleReturn struct {
-	SrNo string `json:"srNo" validate:"required" example:"SR-TEST-123456"`
+	OrderNo  string `json:"orderNo" db:"OrderNo" example:"SOA-TEST-123456"`
+	SrNo     string `json:"srNo" db:"SrNo" example:"SR-TEST-123456"`
+	UpdateBy string `json:"updateBy" db:"UpdateBy" example:"dev03"`
 }
 
-type CancelSaleReturn  struct {
-	//OrderNo      string `json:"orderNo" db:"OrderNo"`
+type CancelSaleReturn struct {
+	OrderNo      string `json:"orderNo" db:"OrderNo" example:"SOA-TEST-123456"`
 	//CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
-	Remark string `json:"remark" db:"Remark"`
+	Remark string `json:"remark" db:"Remark" example:"cancel order"`
 }
 
 // Draft & Confirm MKP
