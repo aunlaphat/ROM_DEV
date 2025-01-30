@@ -25,12 +25,154 @@ func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 		r.Use(jwtauth.Authenticator)
 
 		/******** Trade Retrun ********/
+		r.Get("/get-waiting", app.GetStatusWaitingDetail) // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =1
+		r.Get("/get-confirm", app.GetStatusConfirmDetail) // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =2
+		r.Get("/search-waiting", app.SearchStatusWaitingDetail) // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =1 ตามช่วงวันที่สร้าง(CreateDate)ที่เลือก วันที่เริ่มต้น-สิ้นสุด แสดงข้อมูลจำนวนตามวันที่นั้น
+		r.Get("/search-confirm", app.SearchStatusConfirmDetail)  // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =2 ตามช่วงวันที่สร้าง(CreateDate)ที่เลือก วันที่เริ่มต้น-สิ้นสุด แสดงข้อมูลจำนวนตามวันที่นั้น
 		r.Post("/create-trade", app.CreateTradeReturn)
 		r.Post("/add-line/{orderNo}", app.CreateTradeReturnLine)
 		r.Post("/confirm-receipt/{identifier}", app.ConfirmReceipt)
 		r.Patch("/confirm-return/{orderNo}", app.ConfirmReturn)
 	})
 
+}
+
+// @Summary Get Return Orders with StatusCheckID = 1
+// @Description Retrieve Return Orders with StatusCheckID = 1 (Waiting)
+// @ID Get-Waiting-ReturnOrder
+// @Tags Trade Return
+// @Accept json
+// @Produce json
+// @Success 200 {object} Response{result=[]response.ReturnOrder} "Success"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 500 {object} Response "Internal Server Error"
+// @Router /trade-return/get-waiting [get]
+func (api *Application) GetStatusWaitingDetail(w http.ResponseWriter, r *http.Request) {
+	result, err := api.Service.ReturnOrder.GetReturnOrdersByStatus(r.Context(), 1) // StatusCheckID = 1
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if len(result) == 0 {
+		handleResponse(w, true, "No return orders found with StatusCheckID = 1", []res.ReturnOrder{}, http.StatusOK)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
+	for i, order := range result {
+		fmt.Printf("\n======== Order #%d ========\n", i+1)
+		utils.PrintReturnOrderDetails(&order)
+	}
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 1 retrieved successfully ⭐", result, http.StatusOK)
+}
+
+// @Summary Get Return Orders with StatusCheckID = 2
+// @Description Retrieve Return Orders with StatusCheckID = 2 (Confirmed)
+// @ID Get-Confirm-ReturnOrder
+// @Tags Trade Return
+// @Accept json
+// @Produce json
+// @Success 200 {object} Response{result=[]response.ReturnOrder} "Success"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 500 {object} Response "Internal Server Error"
+// @Router /trade-return/get-confirm [get]
+func (api *Application) GetStatusConfirmDetail(w http.ResponseWriter, r *http.Request) {
+	result, err := api.Service.ReturnOrder.GetReturnOrdersByStatus(r.Context(), 2) // StatusCheckID = 2
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if len(result) == 0 {
+		handleResponse(w, true, "No return orders found with StatusCheckID = 2", []res.ReturnOrder{}, http.StatusOK)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
+	for i, order := range result {
+		fmt.Printf("\n======== Order #%d ========\n", i+1)
+		utils.PrintReturnOrderDetails(&order)
+	}
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 2 retrieved successfully ⭐", result, http.StatusOK)
+}
+
+// @Summary Search Return Orders with StatusCheckID = 1 by Date Range
+// @Description Retrieve Return Orders with StatusCheckID = 1 (Waiting) within a specific date range
+// @ID Search-Waiting-ReturnOrder
+// @Tags Trade Return
+// @Accept json
+// @Produce json
+// @Param startDate query string true "Start Date (YYYY-MM-DD)"
+// @Param endDate query string true "End Date (YYYY-MM-DD)"
+// @Success 200 {object} Response{result=[]response.ReturnOrder} "Success"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 500 {object} Response "Internal Server Error"
+// @Router /trade-return/search-waiting [get]
+func (api *Application) SearchStatusWaitingDetail(w http.ResponseWriter, r *http.Request) {
+	startDate := r.URL.Query().Get("startDate")
+	endDate := r.URL.Query().Get("endDate")
+
+	result, err := api.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(r.Context(), 1, startDate, endDate) // StatusCheckID = 1
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if len(result) == 0 {
+		handleResponse(w, true, "No return orders found with StatusCheckID = 1 within the specified date range", []res.ReturnOrder{}, http.StatusOK)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
+	for i, order := range result {
+		fmt.Printf("\n======== Order #%d ========\n", i+1)
+		utils.PrintReturnOrderDetails(&order)
+	}
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 1 retrieved successfully ⭐", result, http.StatusOK)
+}
+
+// @Summary Search Return Orders with StatusCheckID = 2 by Date Range
+// @Description Retrieve Return Orders with StatusCheckID = 2 (Confirmed) within a specific date range
+// @ID Search-Confirm-ReturnOrder
+// @Tags Trade Return
+// @Accept json
+// @Produce json
+// @Param startDate query string true "Start Date (YYYY-MM-DD)"
+// @Param endDate query string true "End Date (YYYY-MM-DD)"
+// @Success 200 {object} Response{result=[]response.ReturnOrder} "Success"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 500 {object} Response "Internal Server Error"
+// @Router /trade-return/search-confirm [get]
+func (api *Application) SearchStatusConfirmDetail(w http.ResponseWriter, r *http.Request) {
+	startDate := r.URL.Query().Get("startDate")
+	endDate := r.URL.Query().Get("endDate")
+
+	result, err := api.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(r.Context(), 2, startDate, endDate) // StatusCheckID = 2
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if len(result) == 0 {
+		handleResponse(w, true, "No return orders found with StatusCheckID = 2 within the specified date range", []res.ReturnOrder{}, http.StatusOK)
+		return
+	}
+
+	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
+	for i, order := range result {
+		fmt.Printf("\n======== Order #%d ========\n", i+1)
+		utils.PrintReturnOrderDetails(&order)
+	}
+	fmt.Println("=====================================")
+
+	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 2 retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary Create a new trade return order

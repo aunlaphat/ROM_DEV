@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -25,6 +26,9 @@ type ReturnOrderRepository interface {
 
 	GetCreateReturnOrder(ctx context.Context, orderNo string) (*response.CreateReturnOrder, error)
 	GetUpdateReturnOrder(ctx context.Context, orderNo string) (*response.UpdateReturnOrder, error)
+	GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.ReturnOrder, error)
+	GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.ReturnOrder, error)
+
 }
 
 func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
@@ -152,6 +156,87 @@ func (repo repositoryDB) GetReturnOrderLinesByReturnID(ctx context.Context, orde
 
 	return lines, nil
 }
+
+func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.ReturnOrder, error) {
+	var orders []response.ReturnOrder
+    query := `
+        SELECT 
+            OrderNo, SoNo, SrNo, TrackingNo, PlatfID, ChannelID, 
+            OptStatusID, AxStatusID, PlatfStatusID, Reason, CreateBy, CreateDate, 
+            UpdateBy, UpdateDate, CancelID, StatusCheckID, CheckBy, Description
+        FROM ReturnOrder
+        WHERE StatusCheckID = :statusCheckID
+        ORDER BY CreateDate ASC
+    `
+    namedParams := map[string]interface{}{
+        "statusCheckID": statusCheckID,
+    }
+    query, args, err := sqlx.Named(query, namedParams)
+    if err != nil {
+        return nil, fmt.Errorf("failed to bind named parameters: %w", err)
+    }
+    query = repo.db.Rebind(query)
+
+    err = repo.db.SelectContext(ctx, &orders, query, args...)
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch return orders: %w", err)
+    }
+    return orders, nil
+}
+
+
+func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.ReturnOrder, error) {
+    var orders []response.ReturnOrder
+
+    // แปลง startDate และ endDate ให้เป็น time.Time
+    start, err := time.Parse("2006-01-02", startDate)
+    if err != nil {
+        return nil, fmt.Errorf("failed to parse startDate: %w", err)
+    }
+
+    end, err := time.Parse("2006-01-02", endDate)
+    if err != nil {
+        return nil, fmt.Errorf("failed to parse endDate: %w", err)
+    }
+
+    // ใช้เวลา 23:59:59 ของ endDate
+    end = end.Add(24 * time.Hour) // เพิ่ม 24 ชั่วโมง
+
+    query := `
+        SELECT 
+            OrderNo, SoNo, SrNo, TrackingNo, PlatfID, ChannelID, 
+            OptStatusID, AxStatusID, PlatfStatusID, Reason, CreateBy, CreateDate, 
+            UpdateBy, UpdateDate, CancelID, StatusCheckID, CheckBy, Description
+        FROM ReturnOrder
+        WHERE StatusCheckID = :StatusCheckID 
+        AND CreateDate >= :StartDate
+        AND CreateDate < :EndDate
+        ORDER BY CreateDate ASC
+    `
+    
+    params := map[string]interface{}{
+        "StatusCheckID": statusCheckID,
+        "StartDate":     start.Format("2006-01-02"), // ส่งแค่วันที่
+        "EndDate":       end.Format("2006-01-02"),   // ส่งแค่วันที่ที่ปรับแล้ว
+    }
+
+    query, args, err := sqlx.Named(query, params)
+    if err != nil {
+        return nil, fmt.Errorf("failed to bind named parameters: %w", err)
+    }
+    query = repo.db.Rebind(query)
+
+    err = repo.db.SelectContext(ctx, &orders, query, args...)
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch return orders: %w", err)
+    }
+
+    // Log the number of orders fetched for debugging
+    log.Printf("Fetched %d return orders", len(orders))
+
+    return orders, nil
+}
+
 
 func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) error {
 	// Step 1: เริ่มต้น Transaction

@@ -99,7 +99,7 @@ func PrintReturnOrderDetails(order *res.ReturnOrder) {
 	fmt.Printf("🛍️  PlatfStatusID: %s\n", convertInt(order.PlatfStatusID)) 
 	fmt.Printf("🗨️  Reason: %s\n", convertString(order.Reason)) 
 	fmt.Printf("✔️  StatusCheckID: %s\n", convertInt(order.StatusCheckID)) 
-	fmt.Printf("🕵️ CheckBy: %s\n", convertString(order.CheckBy)) 
+	fmt.Printf("🕵️  CheckBy: %s\n", convertString(order.CheckBy)) 
 	fmt.Printf("📅 CheckDate: %s\n", convertDate(order.CheckDate)) 
 	fmt.Printf("🕵️  UpdateBy: %s\n", convertString(order.UpdateBy)) 
 	fmt.Printf("📅 UpdateDate: %s\n", convertDate(order.UpdateDate)) 

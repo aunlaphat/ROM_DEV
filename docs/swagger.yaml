@@ -2552,6 +2552,154 @@ paths:
       summary: Create a new trade return order
       tags:
       - Trade Return
+  /trade-return/get-confirm:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve Return Orders with StatusCheckID = 2 (Confirmed)
+      operationId: Get-Confirm-ReturnOrder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Orders with StatusCheckID = 2
+      tags:
+      - Trade Return
+  /trade-return/get-waiting:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve Return Orders with StatusCheckID = 1 (Waiting)
+      operationId: Get-Waiting-ReturnOrder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Orders with StatusCheckID = 1
+      tags:
+      - Trade Return
+  /trade-return/search-confirm:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve Return Orders with StatusCheckID = 2 (Confirmed) within
+        a specific date range
+      operationId: Search-Confirm-ReturnOrder
+      parameters:
+      - description: Start Date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: End Date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search Return Orders with StatusCheckID = 2 by Date Range
+      tags:
+      - Trade Return
+  /trade-return/search-waiting:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve Return Orders with StatusCheckID = 1 (Waiting) within
+        a specific date range
+      operationId: Search-Waiting-ReturnOrder
+      parameters:
+      - description: Start Date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: End Date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search Return Orders with StatusCheckID = 1 by Date Range
+      tags:
+      - Trade Return
   /user/get-user:
     post:
       consumes:
