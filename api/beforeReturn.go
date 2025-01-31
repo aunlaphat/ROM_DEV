@@ -479,14 +479,14 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 6. อัพเดท Sale Return
-	result, err := app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), req)
+	err = app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), req)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("❌ Failed to update SR number: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	// 7. ส่ง Response กลับ
-	handleResponse(w, true, "⭐ SR number updated successfully ⭐", result, http.StatusOK)
+	handleResponse(w, true, "⭐ SR number updated successfully ⭐", nil, http.StatusOK)
 }
 
 // ConfirmSaleReturn godoc
@@ -552,7 +552,7 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} api.Response{data=response.CancelSaleReturnResponse} "Sale return order canceled successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /sale-return/cancel/{orderNo} [patch]
+// @Router /sale-return/cancel/{orderNo} [post]
 func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request) {
 	// 1. Validation ข้อมูล
 	orderNo := chi.URLParam(r, "orderNo") // รับค่า orderNo จาก URL

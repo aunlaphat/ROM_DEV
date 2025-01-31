@@ -2104,7 +2104,7 @@ const docTemplate = `{
             }
         },
         "/sale-return/cancel/{orderNo}": {
-            "patch": {
+            "post": {
                 "description": "Cancel a sale return order based on the provided details",
                 "consumes": [
                     "application/json"
@@ -3057,7 +3057,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "remark": {
-                    "description": "OrderNo      string ` + "`" + `json:\"orderNo\" db:\"OrderNo\" example:\"SOA-TEST-123456\"` + "`" + `\nCancelStatus bool   ` + "`" + `json:\"cancelStatus\" db:\"CancelStatus\"` + "`" + `",
+                    "description": "OrderNo      string ` + "`" + `json:\"orderNo\" db:\"OrderNo\" example:\"ORD-TEST-123456\"` + "`" + `\nCancelStatus bool   ` + "`" + `json:\"cancelStatus\" db:\"CancelStatus\"` + "`" + `",
                     "type": "string",
                     "example": "cancel order"
                 }

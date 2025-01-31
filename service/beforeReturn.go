@@ -34,7 +34,7 @@ type BeforeReturnService interface {
 	// Method สำหรับสร้าง Sale Return
 	CreateSaleReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	// Method สำหรับอัพเดท Sale Return
-	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn) (*response.UpdateSaleReturnResponse, error)
+	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn) error
 	// Method สำหรับยืนยัน Sale Return
 	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
 	// Method สำหรับยกเลิก Sale Return
@@ -165,60 +165,51 @@ func (srv service) CreateSaleReturn(ctx context.Context, req request.BeforeRetur
 }
 
 // Method สำหรับอัพเดท Sale Return
-func (srv service) UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn) (*response.UpdateSaleReturnResponse, error) {
+func (srv service) UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn) error {
 	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "UpdateSaleReturn", zap.String("OrderNo", req.OrderNo),
-		zap.String("SrNo", req.SrNo))
+	logFinish := srv.logger.LogAPICall(ctx, "UpdateSaleReturn", zap.String("OrderNo", req.OrderNo), zap.String("SrNo", req.SrNo))
 	defer logFinish("Completed", nil)
 
 	// Logging ว่าเริ่มการทำงาน
-	srv.logger.Info("🔎 Starting sale return update process 🔎",
-		zap.String("OrderNo", req.OrderNo),
-		zap.String("SrNo", req.SrNo))
+	srv.logger.Info("🔎 Starting sale return update process 🔎", zap.String("OrderNo", req.OrderNo), zap.String("SrNo", req.SrNo))
 
 	// ตรวจสอบค่าที่รับเข้ามา (Validation)
-	if err := utils.ValidateUpdateSaleReturn(req); err != nil {
+	if req.OrderNo == "" || req.SrNo == "" {
+		err := fmt.Errorf("OrderNo and SrNo are required")
 		logFinish("Failed", err)
-		srv.logger.Error("❌ Invalid request", zap.Error(err))
-		return nil, errors.Wrap(err, "invalid request")
+		srv.logger.Error("❌ Validation failed", zap.Error(err))
+		return err
 	}
 
 	// ดึงข้อมูล Order ปัจจุบันจาก Database
 	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
 	if err != nil {
 		logFinish("Failed", err)
-		srv.logger.Error("❌ Failed to get order", zap.Error(err))
-		return nil, errors.Wrap(err, "failed to get order")
+		srv.logger.Error("❌ Failed to fetch order", zap.Error(err))
+		return errors.Wrap(err, "failed to fetch order")
 	}
 	if order == nil {
-		logFinish("Not Found", nil)
-		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", req.OrderNo))
-		return nil, errors.Wrap(fmt.Errorf("order not found: %s", req.OrderNo), "order not found")
-	}
-
-	// ตรวจสอบสถานะก่อนอัพเดท
-	if err := utils.ValidateOrderStatus(order, 1, 3); err != nil {
+		err := fmt.Errorf("⚠️ Order not found: %s", req.OrderNo)
 		logFinish("Failed", err)
-		srv.logger.Error("❌ Order status is invalid", zap.Error(err))
-		return nil, errors.Wrap(err, "order status is invalid")
+		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", req.OrderNo))
+		return err
 	}
 
 	// อัพเดท SR number
-	updateSR, err := srv.beforeReturnRepo.UpdateSaleReturn(ctx, req)
+	err = srv.beforeReturnRepo.UpdateSaleReturn(ctx, req)
 	if err != nil {
 		logFinish("Failed", err)
-		srv.logger.Error("❌ Failed to update sale return", zap.Error(err))
-		return nil, errors.Wrap(err, "failed to update sale return")
+		srv.logger.Error("❌ Failed to update SR number", zap.Error(err))
+		return errors.Wrap(err, "failed to update SR number")
 	}
 
 	// Logging สำเร็จ
 	logFinish("Success", nil)
 	srv.logger.Info("✅ Sale return updated successfully", zap.String("OrderNo", req.OrderNo))
 
-	return updateSR, nil
+	return nil
 }
 
-// Method สำหรับยืนยัน Sale Return
 func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "ConfirmSaleReturn", zap.String("OrderNo", orderNo), zap.String("ConfirmBy", confirmBy))
@@ -532,7 +523,7 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 		exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, req.Identifier, line.SKU)
 		if err != nil {
 			return fmt.Errorf("failed to check SKU existence: %w", err)
-			}
+		}
 		if !exists {
 			return fmt.Errorf("SKU %s does not exist in BeforeReturnOrderLine for Identifier %s", line.SKU, req.Identifier)
 		}
