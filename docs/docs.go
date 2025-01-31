@@ -3057,8 +3057,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "remark": {
-                    "description": "OrderNo      string ` + "`" + `json:\"orderNo\" db:\"OrderNo\"` + "`" + `\nCancelStatus bool   ` + "`" + `json:\"cancelStatus\" db:\"CancelStatus\"` + "`" + `",
-                    "type": "string"
+                    "description": "OrderNo      string ` + "`" + `json:\"orderNo\" db:\"OrderNo\" example:\"SOA-TEST-123456\"` + "`" + `\nCancelStatus bool   ` + "`" + `json:\"cancelStatus\" db:\"CancelStatus\"` + "`" + `",
+                    "type": "string",
+                    "example": "cancel order"
                 }
             }
         },

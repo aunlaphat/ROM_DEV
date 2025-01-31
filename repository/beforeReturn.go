@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -296,63 +297,69 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 	})
 }
 
-// Create Return Order MKP //
+// Create Return Order MKP
 func (repo repositoryDB) SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error) {
-	// ตรวจสอบว่ามีค่าที่ต้องค้นหาหรือไม่
+	// ตรวจสอบว่า soNo และ orderNo ไม่ว่างทั้งคู่ ถ้าว่างทั้งคู่จะคืนค่าข้อผิดพลาด
 	if soNo == "" && orderNo == "" {
 		return nil, fmt.Errorf("🚩 Either SoNo or OrderNo must be provided 🚩")
 	}
 
-	// Query ดึง OrderHead
+	// คำสั่ง SQL สำหรับดึงข้อมูล OrderHead
 	queryHead := `
-		SELECT SoNo, OrderNo, StatusMKP, SalesStatus, CreateDate
-		FROM ROM_V_OrderHeadDetail
-		WHERE (COALESCE(:SoNo, '') = '' OR SoNo = :SoNo) 
-		AND (COALESCE(:OrderNo, '') = '' OR OrderNo = :OrderNo)
-	`
+        SELECT SoNo, OrderNo, StatusMKP, SalesStatus, CreateDate
+        FROM ROM_V_OrderHeadDetail
+        WHERE (:SoNo IS NULL OR SoNo = :SoNo) 
+        AND (:OrderNo IS NULL OR OrderNo = :OrderNo)
+    `
 
-	// Query ดึง OrderLine
+	// คำสั่ง SQL สำหรับดึงข้อมูล OrderLine
 	queryLines := `
-		SELECT SKU, ItemName, QTY, Price
-		FROM ROM_V_OrderLineDetail
-		WHERE (COALESCE(:SoNo, '') = '' OR SoNo = :SoNo) 
-		AND (COALESCE(:OrderNo, '') = '' OR OrderNo = :OrderNo)
-		ORDER BY SKU
-	`
+        SELECT SKU, ItemName, QTY, Price
+        FROM ROM_V_OrderLineDetail
+        WHERE (:SoNo IS NULL OR SoNo = :SoNo) 
+        AND (:OrderNo IS NULL OR OrderNo = :OrderNo)
+        ORDER BY SKU
+    `
 
+	// กำหนดพารามิเตอร์สำหรับคำสั่ง SQL โดยใช้ sql.NullString เพื่อจัดการกับค่า null
 	params := map[string]interface{}{
-		"SoNo":    soNo,
-		"OrderNo": orderNo,
+		"SoNo":    sql.NullString{String: soNo, Valid: soNo != ""},
+		"OrderNo": sql.NullString{String: orderNo, Valid: orderNo != ""},
 	}
 
-	// ดึงข้อมูล OrderHead
+	// ดึงข้อมูล OrderHead จากฐานข้อมูล
 	var orderHead response.SaleOrderResponse
-	queryHead, args, err := sqlx.Named(queryHead, params)
+	// ใช้ PrepareNamed ของ sqlx เพื่อเตรียมคำสั่ง SQL สำหรับ OrderHead
+	stmtHead, err := repo.db.PrepareNamed(queryHead)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare head query: %w", err)
 	}
-	queryHead = repo.db.Rebind(queryHead)
-	if err := repo.db.GetContext(ctx, &orderHead, queryHead, args...); err != nil {
+	// ใช้ GetContext ของ sqlx เพื่อดึงข้อมูล OrderHead จากฐานข้อมูล
+	err = stmtHead.GetContext(ctx, &orderHead, params)
+	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // ถ้าไม่พบข้อมูล คืนค่า nil แทน error
+			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to fetch order head: %w", err)
 	}
 
-	// ดึงข้อมูล OrderLine
-	orderLines := []response.SaleOrderLineResponse{} // กำหนดค่าเริ่มต้นให้ Slice
-	queryLines, args, err = sqlx.Named(queryLines, params)
+	// ดึงข้อมูล OrderLine จากฐานข้อมูล
+	var orderLines []response.SaleOrderLineResponse
+	// ใช้ PrepareNamed ของ sqlx เพื่อเตรียมคำสั่ง SQL สำหรับ OrderLine
+	stmtLines, err := repo.db.PrepareNamed(queryLines)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare lines query: %w", err)
 	}
-	queryLines = repo.db.Rebind(queryLines)
-	if err := repo.db.SelectContext(ctx, &orderLines, queryLines, args...); err != nil {
+	// ใช้ SelectContext ของ sqlx เพื่อดึงข้อมูล OrderLine จากฐานข้อมูล
+	err = stmtLines.SelectContext(ctx, &orderLines, params)
+	if err != nil {
 		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
 	}
 
-	// รวมข้อมูล OrderLines เข้ากับ OrderHead
+	// รวมข้อมูล OrderHead และ OrderLines
 	orderHead.OrderLines = orderLines
 
+	// คืนค่าข้อมูล OrderHead ที่รวมกับ OrderLines
 	return &orderHead, nil
 }
 
@@ -395,9 +402,9 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 	// 3. Insert BeforeReturnOrderLine (Lines)
 	queryLine := `
         INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo
+            OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate
         ) VALUES (
-            :OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), COALESCE(:TrackingNo, '')
+            :OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE()
         )
     `
 	if _, err = tx.NamedExecContext(ctx, queryLine, order.BeforeReturnOrderLines); err != nil {
@@ -465,7 +472,13 @@ func (repo repositoryDB) UpdateSaleReturn(ctx context.Context, req request.Updat
 		return nil, fmt.Errorf("no rows updated for order: %s", req.OrderNo)
 	}
 
-	return &response.UpdateSaleReturnResponse{}, nil
+	// Return the updated response
+	return &response.UpdateSaleReturnResponse{
+		OrderNo:    req.OrderNo,
+		SrNo:       req.SrNo,
+		UpdateBy:   req.UpdateBy,
+		UpdateDate: time.Now(),
+	}, nil
 }
 
 func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error {

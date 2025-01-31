@@ -153,8 +153,9 @@ definitions:
     properties:
       remark:
         description: |-
-          OrderNo      string `json:"orderNo" db:"OrderNo"`
+          OrderNo      string `json:"orderNo" db:"OrderNo" example:"SOA-TEST-123456"`
           CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
+        example: cancel order
         type: string
     type: object
   request.CodeR:

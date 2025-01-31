@@ -437,6 +437,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/update [patch]
 func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request) {
+	// 1. ดึง JWT Claims จาก Context
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
 		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)

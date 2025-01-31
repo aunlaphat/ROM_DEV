@@ -51,7 +51,7 @@ type UpdateSaleReturn struct {
 }
 
 type CancelSaleReturn struct {
-	OrderNo      string `json:"orderNo" db:"OrderNo" example:"SOA-TEST-123456"`
+	//OrderNo      string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
 	//CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
 	Remark string `json:"remark" db:"Remark" example:"cancel order"`
 }
