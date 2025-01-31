@@ -14,12 +14,13 @@ type Constants interface {
 	// GetPostCode() ([]entity.PostCode, error)
 	GetWarehouse() ([]entity.Warehouse, error)
 	GetProductAll() ([]entity.ROM_V_ProductAll, error)
-	GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, int, error)
+	GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, error)
 	//GetCustomer() ([]entity.ROM_V_Customer, error)
 
 }
 
 func (srv service) GetThaiProvince() ([]entity.Province, error) {
+
 	getProvince, err := srv.constant.GetThaiProvince()
 	if err != nil {
 		switch err {
@@ -36,6 +37,7 @@ func (srv service) GetThaiProvince() ([]entity.Province, error) {
 }
 
 func (srv service) GetThaiDistrict() ([]entity.District, error) {
+	
 	getDistrict, err := srv.constant.GetThaiDistrict()
 	if err != nil {
 		switch err {
@@ -52,6 +54,7 @@ func (srv service) GetThaiDistrict() ([]entity.District, error) {
 }
 
 func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
+	
 	getSubDistrict, err := srv.constant.GetThaiSubDistrict()
 	if err != nil {
 		switch err {
@@ -68,6 +71,7 @@ func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 }
 
 // func (srv service) GetPostCode() ([]entity.PostCode, error) {
+
 // 	getPostCode, err := srv.constant.GetPostCode()
 // 	if err != nil {
 // 		switch err {
@@ -85,6 +89,7 @@ func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 
 
 func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
+	
 	getWarehouse, err := srv.constant.GetWarehouse()
 	if err != nil {
 		switch err {
@@ -101,6 +106,7 @@ func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
 }
 
 func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
+	
 	getProductAll, err := srv.constant.GetProductAll()
 	if err != nil {
 		switch err {
@@ -116,12 +122,16 @@ func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
 	return getProductAll, nil
 }
 
-func (srv service) GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, int, error) {
-    products, total, err := srv.constant.GetProductAllWithPagination(context.Background(), page, limit)
+func (srv service) GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, error) {
+	
+	offset := (page - 1) * limit
+
+    products, err := srv.constant.GetProductAllWithPagination(context.Background(), offset, limit)
     if err != nil {
-        return nil, 0, err
+        return nil, err
     }
-    return products, total, nil
+
+    return products, nil
 }
 
 

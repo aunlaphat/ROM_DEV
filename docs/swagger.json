@@ -1480,6 +1480,83 @@
                 }
             }
         },
+        "/import-order/create-confirm-wh": {
+            "post": {
+                "description": "Upload multiple images and data for a specific SoNo",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Import order",
+                "operationId": "Import-Order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sale Order Number",
+                        "name": "soNo",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Type of the image (1, 2, or 3)",
+                        "name": "imageTypeID",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU (Optional)",
+                        "name": "skus",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Files to upload",
+                        "name": "files",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.ImageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/import-order/search": {
             "get": {
                 "description": "Retrieve the details of an order by its OrderNo or TrackingNo using a single input",
@@ -1530,83 +1607,6 @@
                     },
                     "404": {
                         "description": "OrderNo or TrackingNo not found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/import-order/upload": {
-            "post": {
-                "description": "Upload multiple images and data for a specific SoNo",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Import Order"
-                ],
-                "summary": "Import order",
-                "operationId": "Import-Order",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Sale Order Number",
-                        "name": "soNo",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Type of the image (1, 2, or 3)",
-                        "name": "imageTypeID",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "SKU (Optional)",
-                        "name": "sku",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "file",
-                        "description": "Files to upload",
-                        "name": "files",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "$ref": "#/definitions/response.ImageResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2698,6 +2698,242 @@
                 }
             }
         },
+        "/trade-return/get-confirm": {
+            "get": {
+                "description": "Retrieve Return Orders with StatusCheckID = 2 (Confirmed)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Get Return Orders with StatusCheckID = 2",
+                "operationId": "Get-Confirm-ReturnOrder",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ReturnOrder"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/trade-return/get-waiting": {
+            "get": {
+                "description": "Retrieve Return Orders with StatusCheckID = 1 (Waiting)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Get Return Orders with StatusCheckID = 1",
+                "operationId": "Get-Waiting-ReturnOrder",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ReturnOrder"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/trade-return/search-confirm": {
+            "get": {
+                "description": "Retrieve Return Orders with StatusCheckID = 2 (Confirmed) within a specific date range",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Search Return Orders with StatusCheckID = 2 by Date Range",
+                "operationId": "Search-Confirm-ReturnOrder",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start Date (YYYY-MM-DD)",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End Date (YYYY-MM-DD)",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ReturnOrder"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/trade-return/search-waiting": {
+            "get": {
+                "description": "Retrieve Return Orders with StatusCheckID = 1 (Waiting) within a specific date range",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Search Return Orders with StatusCheckID = 1 by Date Range",
+                "operationId": "Search-Waiting-ReturnOrder",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start Date (YYYY-MM-DD)",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End Date (YYYY-MM-DD)",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ReturnOrder"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/user/get-user": {
             "post": {
                 "description": "Retrieve the details of a user by their userid and username",
@@ -3103,9 +3339,6 @@
         },
         "request.ConfirmTradeReturnRequest": {
             "type": "object",
-            "required": [
-                "importLines"
-            ],
             "properties": {
                 "importLines": {
                     "description": "รายการสินค้า",
@@ -3129,17 +3362,9 @@
                     "type": "integer",
                     "example": 1
                 },
-                "cancelId": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "channelId": {
                     "type": "integer",
                     "example": 2
-                },
-                "checkBy": {
-                    "type": "string",
-                    "example": "dev03"
                 },
                 "description": {
                     "type": "string",
@@ -3226,6 +3451,26 @@
                 }
             }
         },
+        "request.OrderLines": {
+            "type": "object",
+            "properties": {
+                "itemName": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
         "request.ReturnOrderLine": {
             "type": "object",
             "properties": {
@@ -3253,28 +3498,20 @@
                 "tradeReturnLine": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/request.TradeReturnLineRequest"
+                        "$ref": "#/definitions/request.OrderLines"
                     }
                 }
             }
         },
         "request.TradeReturnLineRequest": {
             "type": "object",
-            "required": [
-                "filePath",
-                "imageTypeID",
-                "itemName",
-                "price",
-                "qty",
-                "returnQty",
-                "sku"
-            ],
             "properties": {
                 "filePath": {
                     "description": "CreateDate *time.Time `json:\"createDate\" db:\"CreateDate\"` // MSSQL GetDate()",
                     "type": "string"
                 },
                 "imageTypeID": {
+                    "description": "เข้า Images",
                     "type": "integer"
                 },
                 "itemName": {
@@ -3573,23 +3810,14 @@
                     "type": "integer",
                     "example": 1
                 },
-                "cancelId": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "channelId": {
                     "type": "integer",
                     "example": 2
-                },
-                "checkBy": {
-                    "type": "string",
-                    "example": "dev03"
                 },
                 "createBy": {
                     "type": "string"
                 },
                 "createDate": {
-                    "description": "MSSQL SYSDATETIME() function",
                     "type": "string"
                 },
                 "description": {
@@ -3637,7 +3865,6 @@
             "type": "object",
             "properties": {
                 "orderNo": {
-                    "description": "เลขที่ใบสั่งซื้อ",
                     "type": "string"
                 }
             }
@@ -3696,6 +3923,9 @@
                 "itemName": {
                     "type": "string"
                 },
+                "orderNo": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number"
                 },
@@ -3703,6 +3933,9 @@
                     "type": "integer"
                 },
                 "sku": {
+                    "type": "string"
+                },
+                "trackingNo": {
                     "type": "string"
                 }
             }
@@ -3876,6 +4109,9 @@
                 "checkBy": {
                     "type": "string"
                 },
+                "checkDate": {
+                    "type": "string"
+                },
                 "createBy": {
                     "type": "string"
                 },
@@ -3923,6 +4159,9 @@
         "response.ReturnOrderLine": {
             "type": "object",
             "properties": {
+                "actualQTY": {
+                    "type": "integer"
+                },
                 "alterSKU": {
                     "type": "string"
                 },
@@ -4026,6 +4265,9 @@
                     "type": "string",
                     "example": "dev03"
                 },
+                "checkDate": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string",
                     "example": ""
@@ -4058,11 +4300,9 @@
                     "example": "12345678TH"
                 },
                 "updateBy": {
-                    "description": "'USER'",
                     "type": "string"
                 },
                 "updateDate": {
-                    "description": "MSSQL SYSDATETIME() function",
                     "type": "string"
                 }
             }

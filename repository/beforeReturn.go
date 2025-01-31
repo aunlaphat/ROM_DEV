@@ -56,7 +56,7 @@ type BeforeReturnRepository interface {
 	// ************************ Trade Return ************************ //
 	CheckBefOrderNoExists(ctx context.Context, orderNo string) (bool, error)
 	CreateTradeReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
-	CreateTradeReturnLine(ctx context.Context, orderNo string, lines []request.TradeReturnLineRequest) error
+	CreateTradeReturnLine(ctx context.Context, orderNo string, lines []request.OrderLines) error
 	CheckBefLineSKUExists(ctx context.Context, identifier, sku string) (bool, error)
 	// ConfirmToReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
 
@@ -70,7 +70,7 @@ type BeforeReturnRepository interface {
 	CheckReLineSKUExists(ctx context.Context, orderNo, sku string) (bool, error)
 
 	// ************************ Confirm Receipt ************************ //
-	InsertImages(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest, filePaths []string) error
+	InsertImages(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest) error
 	InsertReturnOrderLine(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest) error
 	InsertReturnOrder(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails) error
 	GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ConfirmReturnOrderDetails, error)
@@ -123,7 +123,7 @@ func (repo repositoryDB) GetTrackingNoByOrderNo(ctx context.Context, orderNo str
 	return trackingNo, nil
 }
 
-func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo string, lines []request.TradeReturnLineRequest) error {
+func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo string, lines []request.OrderLines) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// ตรวจสอบว่า OrderNo มีอยู่ใน BeforeReturnOrder หรือไม่
 		exists, err := repo.CheckBefOrderNoExists(ctx, orderNo)
@@ -264,12 +264,14 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 		for _, line := range req.ImportLinesActual { // COALESCE => ฟิลด์ที่ไม่ได้ใช้จะดึงค่าเดิมมาแทน
 
 			queryUpdateReturnOrderLine := ` UPDATE ReturnOrderLine
-											SET SKU = CASE WHEN :SKU IS NOT NULL THEN :SKU ELSE SKU END,
-												ActualQTY = CASE WHEN :ActualQTY IS NOT NULL THEN :ActualQTY ELSE ActualQTY END,
-												Price = CASE WHEN :Price IS NOT NULL THEN :Price ELSE Price END,
-												StatusDelete = CASE WHEN :StatusDelete IS NOT NULL THEN :StatusDelete ELSE StatusDelete END,
-												UpdateBy = CASE WHEN :UpdateBy IS NOT NULL THEN :UpdateBy ELSE UpdateBy END,
-												UpdateDate = CASE WHEN :UpdateDate IS NOT NULL THEN :UpdateDate ELSE UpdateDate END
+											SET SKU = COALESCE(:SKU, SKU),
+												ActualQTY = COALESCE(:ActualQTY, ActualQTY),
+												Price = COALESCE(:Price, Price),
+												StatusDelete = COALESCE(:StatusDelete, StatusDelete),
+												UpdateBy = COALESCE(:UpdateBy, UpdateBy),
+												UpdateDate = COALESCE(:UpdateDate, UpdateDate),
+												DeleteBy = COALESCE(:DeleteBy, DeleteBy),
+												DeleteDate = COALESCE(:DeleteDate, DeleteDate)
 											WHERE OrderNo = :OrderNo AND SKU = :SKU `
 			stmt, err := tx.PrepareNamed(queryUpdateReturnOrderLine)
 			if err != nil {
@@ -277,14 +279,23 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 			}
 			defer stmt.Close()
 
+			deleteBy := sql.NullString{}
+			deleteDate := sql.NullString{}
+			if line.StatusDelete {
+				deleteBy = sql.NullString{String: returnOrderData.UpdateBy, Valid: true}
+				deleteDate = sql.NullString{String: returnOrderData.UpdateDate, Valid: true}
+			}
+
 			_, err = stmt.Exec(map[string]interface{}{
 				"OrderNo":      req.OrderNo,
 				"SKU":          line.SKU,
-				"ActualQTY":    sql.NullInt32{Int32: int32(line.ActualQTY), Valid: line.ActualQTY != 0},
-				"Price":        sql.NullFloat64{Float64: line.Price, Valid: line.Price != 0},
-				"StatusDelete": sql.NullBool{Bool: line.StatusDelete, Valid: true},
+				"ActualQTY":    sql.NullInt32{Int32: int32(line.ActualQTY), Valid: line.ActualQTY != 0}, // เมื่อส่งค่า ว่าง/0 มาให้ใช้ค่าเดิม
+				"Price":        sql.NullFloat64{Float64: line.Price, Valid: line.Price != 0}, // เมื่อส่งค่า ว่าง/0 มาให้ใช้ค่าเดิม
+				"StatusDelete": sql.NullBool{Bool: line.StatusDelete, Valid: line.StatusDelete}, // เมื่อส่งค่าว่างมาให้ใช้ค่าเดิม
 				"UpdateBy":     returnOrderData.UpdateBy,
 				"UpdateDate":   returnOrderData.UpdateDate,
+				"DeleteBy":     deleteBy,
+				"DeleteDate":   deleteDate,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
@@ -860,7 +871,7 @@ func (repo repositoryDB) UpdateBefToWaiting(ctx context.Context, req request.Con
 // 2. ดึงข้อมูลจาก BeforeReturnOrder fetch ออกมาเพื่อเอาเข้า ReturnOrder
 func (repo repositoryDB) GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ConfirmReturnOrderDetails, error) {
 	querySelectOrder := `
-        SELECT OrderNo, SoNo, SrNo, TrackingNo, ChannelID, 
+        SELECT OrderNo, SoNo, SrNo, TrackingNo, ChannelID, Reason,
 			   UpdateBy AS CreateBy, UpdateDate AS CreateDate
         FROM BeforeReturnOrder
         WHERE OrderNo = :Identifier OR TrackingNo = :Identifier
@@ -889,9 +900,9 @@ func (repo repositoryDB) InsertReturnOrder(ctx context.Context, returnOrderData 
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		queryInsertOrder := `
         INSERT INTO ReturnOrder (
-            OrderNo, SoNo, SrNo, TrackingNo, ChannelID, CreateBy, CreateDate, StatusCheckID
+            OrderNo, SoNo, SrNo, ChannelID, Reason, TrackingNo, CreateBy, CreateDate, StatusCheckID
         ) VALUES (
-            :OrderNo, :SoNo, :SrNo, :TrackingNo, :ChannelID, :CreateBy, :CreateDate, :StatusCheckID
+            :OrderNo, :SoNo, :SrNo, :ChannelID, :Reason, :TrackingNo, :CreateBy, :CreateDate, :StatusCheckID
         )
     `
 		_, err := tx.NamedExecContext(ctx, queryInsertOrder, returnOrderData)
@@ -931,7 +942,7 @@ func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderD
 }
 
 // InsertImages ฟังก์ชันที่ใช้เพิ่มข้อมูลภาพลงในฐานข้อมูล
-func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest, filePaths []string) error {
+func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		queryInsertImage := `
         INSERT INTO Images (
@@ -943,9 +954,9 @@ func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *resp
 		for _, line := range req.ImportLines {
 			imageParams := map[string]interface{}{
 				"OrderNo":     returnOrderData.OrderNo,
-				"ImageTypeID": line.ImageTypeID, // ใส่รหัสประเภทของภาพที่ต้องการ
+				"ImageTypeID": line.ImageTypeID,
 				"SKU":         line.SKU,
-				"FilePath":    filePaths, // เพิ่มไฟล์ที่อัพโหลด
+				"FilePath":    line.FilePath,
 				"CreateBy":    returnOrderData.CreateBy,
 				"CreateDate":  returnOrderData.CreateDate,
 			}

@@ -21,6 +21,9 @@ type ReturnOrderService interface {
 	CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) (*response.CreateReturnOrder, error)
 	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) (*response.UpdateReturnOrder, error)
 	DeleteReturnOrder(ctx context.Context, orderNo string) error
+
+	GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error)
+	GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error)
 }
 
 func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
@@ -82,6 +85,48 @@ func (srv service) GetReturnOrderLinesByReturnID(ctx context.Context, orderNo st
 	}
 
 	return lines, nil
+}
+
+func (srv service) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error) {
+	srv.logger.Info("🏁 Fetching Return Orders with StatusCheckID", zap.Int("StatusCheckID", statusCheckID))
+
+	orders, err := srv.returnOrderRepo.GetReturnOrdersByStatus(ctx, statusCheckID)
+	if err != nil {
+		srv.logger.Error("❌ Failed to fetch Return Orders",
+			zap.Int("StatusCheckID", statusCheckID),
+			zap.Error(err),
+		)
+		return nil, errors.InternalError("Failed to fetch Return Orders")
+	}
+
+	srv.logger.Info("✅ Successfully fetched Return Orders",
+		zap.Int("StatusCheckID", statusCheckID),
+		zap.Int("Count", len(orders)),
+	)
+	return orders, nil
+}
+
+func (srv service) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error) {
+	srv.logger.Info("🏁 Fetching Return Orders with StatusCheckID and Date Range",
+		zap.Int("StatusCheckID", statusCheckID),
+		zap.String("StartDate", startDate),
+		zap.String("EndDate", endDate),
+	)
+
+	orders, err := srv.returnOrderRepo.GetReturnOrdersByStatusAndDateRange(ctx, statusCheckID, startDate, endDate)
+	if err != nil {
+		srv.logger.Error("❌ Failed to fetch Return Orders",
+			zap.Int("StatusCheckID", statusCheckID),
+			zap.Error(err),
+		)
+		return nil, errors.InternalError("Failed to fetch Return Orders")
+	}
+
+	srv.logger.Info("✅ Successfully fetched Return Orders",
+		zap.Int("StatusCheckID", statusCheckID),
+		zap.Int("Count", len(orders)),
+	)
+	return orders, nil
 }
 
 func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) (*response.CreateReturnOrder, error) {
@@ -177,12 +222,22 @@ func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error 
 		return errors.ValidationError("OrderNo is required")
 	}
 
-	// Step 2: เรียก repository เพื่อลบ ReturnOrder
-	err := srv.returnOrderRepo.DeleteReturnOrder(ctx, orderNo)
-	if err != nil {
-		srv.logger.Error("Error deleting ReturnOrder", zap.Error(err))
-		return errors.UnexpectedError()
-	}
+    // Step 1: ตรวจสอบการมีอยู่ของ OrderNo
+    exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, orderNo)
+    if err != nil {
+        srv.logger.Error("Error checking OrderNo existence", zap.Error(err))
+        return errors.UnexpectedError()
+    }
+    if !exists {
+        return errors.NotFoundError("OrderNo not found")
+    }
+
+    // Step 2: เรียก repository เพื่อลบ ReturnOrder
+    err = srv.returnOrderRepo.DeleteReturnOrder(ctx, orderNo)
+    if err != nil {
+        srv.logger.Error("Error deleting ReturnOrder", zap.Error(err))
+        return errors.UnexpectedError()
+    }
 
 	logFinish("Success", nil)
 	return nil

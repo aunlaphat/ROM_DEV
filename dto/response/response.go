@@ -35,6 +35,7 @@ type ReturnOrder struct {
 	CancelID      *int       `json:"cancelId" db:"CancelID"`
 	StatusCheckID *int       `json:"statusCheckId" db:"StatusCheckID"`
 	CheckBy       *string    `json:"checkBy" db:"CheckBy"`
+	CheckDate     *time.Time `json:"checkDate" db:"CheckDate"`
 	Description   *string    `json:"description" db:"Description"`
 
 	ReturnOrderLine []ReturnOrderLine `json:"ReturnOrderLine"`
@@ -45,6 +46,7 @@ type ReturnOrderLine struct {
 	TrackingNo string     `json:"trackingNo" db:"TrackingNo"`
 	SKU        string     `json:"sku" db:"SKU"`
 	ReturnQTY  int        `json:"returnQTY" db:"ReturnQTY"`
+	ActualQTY  int        `json:"actualQTY" db:"ActualQTY"`
 	QTY        int        `json:"qty" db:"QTY"`
 	Price      float64    `json:"price" db:"Price"`
 	CreateBy   string     `json:"createBy" db:"CreateBy"`
@@ -65,34 +67,49 @@ type CreateReturnOrder struct {
 	AxStatusID    int       `json:"axStatusId" db:"AxStatusID" example:"1"`
 	PlatfStatusID int       `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
 	Reason        string    `json:"reason" db:"Reason"`
-	CancelID      int       `json:"cancelId" db:"CancelID" example:"1"`
 	StatusCheckID int       `json:"statusCheckId" db:"StatusCheckID" example:"1"`
-	CheckBy       string    `json:"checkBy" db:"CheckBy" example:"dev03"`
 	Description   string    `json:"description" db:"Description" example:""`
 	CreateBy      string    `json:"createBy" db:"CreateBy"`
-	CreateDate    time.Time `json:"createDate" db:"CreateDate"` // MSSQL SYSDATETIME() function
+	CreateDate    time.Time `json:"createDate" db:"CreateDate"`
 
 	ReturnOrderLine []ReturnOrderLine `json:"ReturnOrderLine"`
 }
 
 type UpdateReturnOrder struct {
-	OrderNo       string    `json:"-" db:"OrderNo"`
-	SoNo          string    `json:"-" db:"SoNo"`
-	SrNo          string    `json:"srNo" db:"SrNo" example:"SR0001"`
-	TrackingNo    string    `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
-	PlatfID       int       `json:"platfId" db:"PlatfID" example:"1"`
-	ChannelID     int       `json:"channelId" db:"ChannelID" example:"2"`
-	OptStatusID   int       `json:"optStatusId" db:"OptStatusID" example:"1"`
-	AxStatusID    int       `json:"axStatusId" db:"AxStatusID" example:"1"`
-	PlatfStatusID int       `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
-	Reason        string    `json:"reason" db:"Reason"`
-	CancelID      int       `json:"cancelId" db:"CancelID" example:"1"`
-	StatusCheckID int       `json:"statusCheckId" db:"StatusCheckID" example:"1"`
-	CheckBy       string    `json:"checkBy" db:"CheckBy" example:"dev03"`
-	Description   string    `json:"description" db:"Description" example:""`
-	UpdateBy      string    `json:"updateBy" db:"UpdateBy"`     // 'USER'
-	UpdateDate    time.Time `json:"updateDate" db:"UpdateDate"` // MSSQL SYSDATETIME() function
+	OrderNo       string     `json:"-" db:"OrderNo"`
+	SoNo          string     `json:"-" db:"SoNo"`
+	SrNo          *string    `json:"srNo" db:"SrNo" example:"SR0001"`
+	TrackingNo    *string    `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	PlatfID       *int       `json:"platfId" db:"PlatfID" example:"1"`
+	ChannelID     *int       `json:"channelId" db:"ChannelID" example:"2"`
+	OptStatusID   *int       `json:"optStatusId" db:"OptStatusID" example:"1"`
+	AxStatusID    *int       `json:"axStatusId" db:"AxStatusID" example:"1"`
+	PlatfStatusID *int       `json:"platfStatusId" db:"PlatfStatusID" example:"1"`
+	Reason        *string    `json:"reason" db:"Reason"`
+	CancelID      *int       `json:"cancelId" db:"CancelID" example:"1"`
+	StatusCheckID *int       `json:"statusCheckId" db:"StatusCheckID" example:"1"`
+	CheckBy       *string    `json:"checkBy" db:"CheckBy" example:"dev03"`
+	CheckDate     *time.Time `json:"checkDate" db:"CheckDate"`
+	Description   *string    `json:"description" db:"Description" example:""`
+	UpdateBy      *string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate    *time.Time `json:"updateDate" db:"UpdateDate"`
 }
+
+type DeleteReturnOrder struct {
+	OrderNo string `db:"OrderNo"`
+}
+
+type DraftTradeDetail struct {
+	OrderNo       string    `json:"orderNo" db:"OrderNo" example:"ORD0001"`
+	SoNo          string    `json:"soNo" db:"SoNo" example:"SO0001"`
+	SrNo          *string    `json:"srNo" db:"SrNo" example:"SR0001"`
+	TrackingNo    *string    `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	ChannelID     *int       `json:"channelId" db:"ChannelID" example:"2"`
+	Reason        *string    `json:"reason" db:"Reason"`
+	StatusCheckID int       `json:"statusCheckId" db:"StatusCheckID" example:"1"`
+	CreateBy      string    `json:"createBy" db:"CreateBy"`
+	CreateDate    time.Time `json:"createDate" db:"CreateDate"`
+} 
 
 /********** OrderHead + Line data Project ***************/
 
@@ -134,10 +151,12 @@ type ImportOrderResponse struct {
 }
 
 type ImportOrderLineResponse struct {
-	SKU      string  `json:"sku" db:"SKU"`
-	ItemName string  `json:"itemName" db:"ItemName"`
-	QTY      int     `json:"qty" db:"QTY"`
-	Price    float64 `json:"price" db:"Price"`
+	OrderNo    string  `json:"orderNo" db:"OrderNo"`
+	TrackingNo string  `json:"trackingNo" db:"TrackingNo"`
+	SKU        string  `json:"sku" db:"SKU"`
+	ItemName   string  `json:"itemName" db:"ItemName"`
+	QTY        int     `json:"qty" db:"QTY"`
+	Price      float64 `json:"price" db:"Price"`
 }
 
 type ImageResponse struct {
@@ -145,9 +164,67 @@ type ImageResponse struct {
 	FilePath string `json:"filePath"`
 }
 
-type DeleteReturnOrder struct {
-	OrderNo string `db:"OrderNo"` // เลขที่ใบสั่งซื้อ
+/********** Trade Return (Offline) ***************/
+
+type ConfirmToReturnOrder struct {
+	OrderNo        string    `json:"orderNo" db:"OrderNo"`
+	StatusReturnID string    `db:"StatusReturnID"`
+	StatusCheckID  string    `db:"StatusCheckID"`
+	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
 }
+
+type ConfirmTradeReturnOrder struct {
+	OrderNo    string    `json:"orderNo" db:"OrderNo"`
+	UpdateBy   string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate time.Time `json:"updateDate" db:"UpdateDate"`
+}
+
+type ConfirmReceipt struct {
+	Identifier     string    `json:"identifier"`
+	StatusReturnID string    `db:"StatusReturnID"`
+	StatusCheckID  string    `db:"StatusCheckID"`
+	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
+	// Images     []ImageResponse `json:"images"`
+}
+
+type ConfirmReturnResponse struct {
+	OrderNo     string    `json:"orderNo" db:"OrderNo"`
+	ConfirmBy   string    `json:"confirmBy" db:"ConfirmBy"`
+	ConfirmDate time.Time `json:"confirmDate" db:"ConfirmDate"`
+}
+
+type ConfirmReturnOrderDetails struct {
+	OrderNo       string `db:"OrderNo"`
+	SoNo          string `db:"SoNo"`
+	SrNo          string `db:"SrNo"`
+	ChannelID     int    `db:"ChannelID"`
+	Reason        string `db:"Reason"`
+	TrackingNo    string `db:"TrackingNo"`
+	CreateBy      string `db:"CreateBy"`
+	CreateDate    string `db:"CreateDate"`
+	UpdateBy      string `db:"UpdateBy"`
+	UpdateDate    string `db:"UpdateDate"`
+	StatusCheckID int    `db:"StatusCheckID"`
+	DeleteBy      string `db:"DeleteBy"`
+	DeleteDate    string `db:"DeleteDate"`
+	// ActualQTY     int    `db:"ActualQTY"`
+	// Price         float64 `db:"Price"`
+	// StatusDelete  bool `db:"StatusDelete"`
+}
+
+// type TradeReturnLine struct {
+// 	TradeReturnLine []OrderLines `json:"tradeReturnLine"`
+// }
+
+// type OrderLines struct {
+// 	SKU       string  `json:"sku" db:"SKU"`
+// 	ItemName  string  `json:"itemName" db:"ItemName"`
+// 	QTY       int     `json:"qty" db:"QTY"`
+// 	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
+// 	Price     float64 `json:"price" db:"Price"`
+// }
 
 type BeforeReturnOrderResponse struct {
 	OrderNo                string                          `json:"orderNo" db:"OrderNo"`
@@ -276,51 +353,4 @@ type DraftLineResponse struct {
 type CodeRResponse struct {
 	SKU       string `json:"sku" db:"SKU"`
 	NameAlias string `json:"nameAlias" db:"NameAlias"`
-}
-
-/********** Trade Return (Offline) ***************/
-
-type ConfirmToReturnOrder struct {
-	OrderNo        string    `json:"orderNo" db:"OrderNo"`
-	StatusReturnID string    `db:"StatusReturnID"`
-	StatusCheckID  string    `db:"StatusCheckID"`
-	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
-	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
-}
-
-type ConfirmTradeReturnOrder struct {
-	OrderNo    string    `json:"orderNo" db:"OrderNo"`
-	UpdateBy   string    `json:"updateBy" db:"UpdateBy"`
-	UpdateDate time.Time `json:"updateDate" db:"UpdateDate"`
-}
-
-type ConfirmReceipt struct {
-	Identifier     string    `json:"identifier"`
-	StatusReturnID string    `db:"StatusReturnID"`
-	StatusCheckID  string    `db:"StatusCheckID"`
-	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
-	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
-	// Images     []ImageResponse `json:"images"`
-}
-
-type ConfirmReturnResponse struct {
-	OrderNo     string    `json:"orderNo" db:"OrderNo"`
-	ConfirmBy   string    `json:"confirmBy" db:"ConfirmBy"`
-	ConfirmDate time.Time `json:"confirmDate" db:"ConfirmDate"`
-}
-
-type ConfirmReturnOrderDetails struct {
-	OrderNo       string `db:"OrderNo"`
-	SoNo          string `db:"SoNo"`
-	SrNo          string `db:"SrNo"`
-	TrackingNo    string `db:"TrackingNo"`
-	ChannelID     int    `db:"ChannelID"`
-	CreateBy      string `db:"CreateBy"`
-	CreateDate    string `db:"CreateDate"`
-	UpdateBy      string `db:"UpdateBy"`
-	UpdateDate    string `db:"UpdateDate"`
-	StatusCheckID int    `db:"StatusCheckID"`
-	// ActualQTY     int    `db:"ActualQTY"`
-	// Price         float64 `db:"Price"`
-	// StatusDelete  bool `db:"StatusDelete"`
 }

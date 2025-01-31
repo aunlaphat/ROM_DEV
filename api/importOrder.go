@@ -1,17 +1,13 @@
 package api
 
 import (
-	"boilerplate-backend-go/dto/request"
-	res "boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
+	"boilerplate-backend-go/utils"
+	"fmt"
 
-	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth"
@@ -26,12 +22,12 @@ func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
 		r.Use(jwtauth.Authenticator)
 
 		r.Get("/search", app.SearchOrderORTracking)
-		r.Post("/upload", app.UploadImages)
+		r.Post("/create-confirm-wh", app.ConfirmFromWH)
 
 	})
 }
 
-// SearchSaleOrder godoc
+// SearchOrderORTracking godoc
 // @Summary Search order by OrderNo or TrackingNo
 // @Description Retrieve the details of an order by its OrderNo or TrackingNo using a single input
 // @ID search-orderNo-or-trackingNo-single
@@ -57,7 +53,7 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 	// ตรวจสอบ JWT Token (Authorization)
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -72,11 +68,32 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// Correctly populate soNo and orderNo in orderLines
+	for i := range result {
+		for j := range result[i].OrderLines {
+			result[i].OrderLines[j].TrackingNo = result[i].TrackingNo
+			result[i].OrderLines[j].OrderNo = result[i].OrderNo
+		}
+	}
+
+	// Debug logging (always print for now, can be controlled by log level later)
+	fmt.Printf("\n📋 ========== Order Details ========== 📋\n")
+	for _, order := range result {
+		utils.PrintImportOrderDetails(&order)
+		fmt.Printf("\n📋 ========== Order Line Details ========== 📋\n")
+		for i, line := range order.OrderLines {
+			fmt.Printf("\n======== Order Line #%d ========\n", i+1)
+			utils.PrintImportOrderLineDetails(&line)
+		}
+		fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(order.OrderLines))
+		fmt.Println("=====================================")
+	}
+
 	// ส่งข้อมูลกลับ
 	handleResponse(w, true, "⭐ Found Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
-// UploadImagesHandler godoc
+// ConfirmFromWH godoc
 // @Summary Import order
 // @Description Upload multiple images and data for a specific SoNo
 // @ID Import-Order
@@ -85,13 +102,13 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 // @Produce json
 // @Param soNo formData string true "Sale Order Number"
 // @Param imageTypeID formData int true "Type of the image (1, 2, or 3)"
-// @Param sku formData string false "SKU (Optional)"
+// @Param skus formData string false "SKU (Optional)"
 // @Param files formData file true "Files to upload"
 // @Success 200 {object} api.Response{result=response.ImageResponse} "Successful"
 // @Failure 400 {object} api.Response "Invalid input"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /import-order/upload [post]
-func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
+// @Router /import-order/create-confirm-wh [post]
+func (app *Application) ConfirmFromWH(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		handleError(w, errors.ValidationError("Unable to parse form data"))
 		return
@@ -116,61 +133,10 @@ func (app *Application) UploadImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get ReturnID and OrderNo from SoNo
-	orderNo, err := app.Service.ImportOrder.GetReturnDetailsFromSaleOrder(r.Context(), soNo)
+	result, err := app.Service.ImportOrder.ConfirmFromWH(r.Context(), soNo, imageTypeID, skus, files)
 	if err != nil {
 		handleError(w, err)
 		return
-	}
-
-	var result []res.ImageResponse
-	for _, file := range files {
-		src, err := file.Open()
-		if err != nil {
-			handleError(w, errors.InternalError("Unable to read file"))
-			return
-		}
-		defer src.Close()
-
-		filename := time.Now().Format("20060102_150405") + "_" + filepath.Base(file.Filename)
-		filePath := filepath.Join("uploads", filename)
-		if _, err := os.Stat("uploads"); os.IsNotExist(err) {
-			if err := os.Mkdir("uploads", os.ModePerm); err != nil {
-				handleError(w, errors.InternalError("Failed to create uploads directory"))
-				return
-			}
-		}
-
-		dst, err := os.Create(filePath)
-		if err != nil {
-			handleError(w, errors.InternalError("Failed to create file"))
-			return
-		}
-		defer dst.Close()
-
-		if _, err := io.Copy(dst, src); err != nil {
-			handleError(w, errors.InternalError("Failed to save file data"))
-			return
-		}
-
-		image := request.Images{
-			OrderNo:     orderNo,
-			FilePath:    filePath,
-			ImageTypeID: imageTypeID,
-			SKU:         skus,
-			CreateBy:    "user",
-		}
-
-		imageID, err := app.Service.ImportOrder.SaveImageMetadata(r.Context(), image)
-		if err != nil {
-			handleError(w, errors.InternalError("Failed to save image metadata"))
-			return
-		}
-
-		result = append(result, res.ImageResponse{
-			ImageID:  imageID,
-			FilePath: filePath,
-		})
 	}
 
 	handleResponse(w, true, "⭐ Data Insert successful ⭐", result, http.StatusOK)

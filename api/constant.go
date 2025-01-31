@@ -3,8 +3,8 @@ package api
 //for dropdown
 
 import (
+	"boilerplate-backend-go/utils"
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -39,7 +39,7 @@ func (app *Application) GetThaiProvince(w http.ResponseWriter, r *http.Request) 
 		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, "successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Get Thai Province successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary Get Thai District
@@ -59,7 +59,7 @@ func (app *Application) GetThaiDistrict(w http.ResponseWriter, r *http.Request) 
 		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, "successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ successfully ⭐", result, http.StatusOK)
 
 }
 
@@ -80,7 +80,7 @@ func (app *Application) GetThaiSubDistrict(w http.ResponseWriter, r *http.Reques
 		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, "successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ successfully ⭐", result, http.StatusOK)
 
 }
 
@@ -101,7 +101,7 @@ func (app *Application) GetThaiSubDistrict(w http.ResponseWriter, r *http.Reques
 // 		HandleError(w, err)
 // 		return
 // 	}
-// 		handleResponse(w, true, "successfully", result, http.StatusOK)
+// 		handleResponse(w, true, "⭐ successfully ⭐", result, http.StatusOK)
 
 // }
 
@@ -122,7 +122,7 @@ func (app *Application) GetWarehouse(w http.ResponseWriter, r *http.Request) {
 		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, "successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ successfully ⭐", result, http.StatusOK)
 
 }
 
@@ -143,7 +143,7 @@ func (app *Application) GetProductAll(w http.ResponseWriter, r *http.Request) {
 		handleError(w, err)
 		return
 	}
-	handleResponse(w, true, "successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ successfully ⭐", result, http.StatusOK)
 
 }
 
@@ -160,31 +160,16 @@ func (app *Application) GetProductAll(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /constants/get-productAlls [get]
 func (app *Application) GetProductAlls(w http.ResponseWriter, r *http.Request) {
-    pageStr := r.URL.Query().Get("page")
-    limitStr := r.URL.Query().Get("limit")
 
-    page, err := strconv.Atoi(pageStr)
-    if err != nil || page < 1 {
-        page = 1 // Default page
-    }
+	page, limit := utils.ParsePagination(r)
 
-    limit, err := strconv.Atoi(limitStr)
-    if err != nil || limit < 1 {
-        limit = 10 // Default limit
-    }
+	result, err := app.Service.Constant.GetProductAllWithPagination(page, limit)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
 
-    products, total, err := app.Service.Constant.GetProductAllWithPagination(page, limit)
-    if err != nil {
-        handleError(w, err)
-        return
-    }
-
-    handleResponse(w, true, "successfully", map[string]interface{}{
-        "products": products,
-        "total":    total,
-        "page":     page,
-        "limit":    limit,
-    }, http.StatusOK)
+	handleResponse(w, true, "⭐ successfully ⭐", result, http.StatusOK)
 }
 
 // // @Summary Get Customer
@@ -204,6 +189,6 @@ func (app *Application) GetProductAlls(w http.ResponseWriter, r *http.Request) {
 // 		HandleError(w, err)
 // 		return
 // 	}
-// 		handleResponse(w, true, "successfully", result, http.StatusOK)
+// 		handleResponse(w, true, "⭐ successfully ⭐", result, http.StatusOK)
 
 // }

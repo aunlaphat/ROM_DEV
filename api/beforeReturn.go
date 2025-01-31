@@ -301,7 +301,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
 		app.Logger.Error("Authorization failed", zap.Error(err))
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -365,7 +365,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	// 1. Authentication check
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -737,7 +737,7 @@ func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
 	// Extract userID from claims
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -846,7 +846,7 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 	// Extract userID from claims
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -894,13 +894,14 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/before-return-order/get-order [get]
 func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request) {
+
 	result, err := api.Service.BeforeReturn.GetAllOrderDetail(r.Context())
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary 	Get Paginated Before Return Order
@@ -917,7 +918,8 @@ func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/before-return-order/get-orders [get]
 func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Request) {
-	page, limit := parsePagination(r) // ฟังก์ชันช่วยดึง page และ limit จาก Query Parameters
+
+	page, limit := utils.ParsePagination(r)
 
 	result, err := api.Service.BeforeReturn.GetAllOrderDetails(r.Context(), page, limit)
 	if err != nil {
@@ -925,7 +927,7 @@ func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	handleResponse(w, true, "Orders retrieved successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary      Get Before Return Order by SO
@@ -953,7 +955,7 @@ func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	handleResponse(w, true, "Orders retrieved by SO successfully", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Orders retrieved by SO successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary 	Delete Order line

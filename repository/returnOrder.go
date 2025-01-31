@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -25,6 +26,8 @@ type ReturnOrderRepository interface {
 
 	GetCreateReturnOrder(ctx context.Context, orderNo string) (*response.CreateReturnOrder, error)
 	GetUpdateReturnOrder(ctx context.Context, orderNo string) (*response.UpdateReturnOrder, error)
+	GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error)
+	GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error)
 }
 
 func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
@@ -153,6 +156,81 @@ func (repo repositoryDB) GetReturnOrderLinesByReturnID(ctx context.Context, orde
 	return lines, nil
 }
 
+func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error) {
+	var orders []response.DraftTradeDetail
+	query := `
+        SELECT 
+            OrderNo, SoNo, SrNo, TrackingNo, ChannelID, Reason, StatusCheckID, CreateBy, CreateDate
+        FROM ReturnOrder
+        WHERE StatusCheckID = :statusCheckID
+        ORDER BY CreateDate ASC
+    `
+	namedParams := map[string]interface{}{
+		"statusCheckID": statusCheckID,
+	}
+	query, args, err := sqlx.Named(query, namedParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to bind named parameters: %w", err)
+	}
+	query = repo.db.Rebind(query)
+
+	err = repo.db.SelectContext(ctx, &orders, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch return orders: %w", err)
+	}
+	return orders, nil
+}
+
+func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error) {
+	var orders []response.DraftTradeDetail
+
+	// แปลง startDate และ endDate ให้เป็น time.Time
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse startDate: %w", err)
+	}
+
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse endDate: %w", err)
+	}
+
+	// ใช้เวลา 23:59:59 ของ endDate
+	end = end.Add(24 * time.Hour) // เพิ่ม 24 ชั่วโมง
+
+	query := `
+        SELECT 
+            OrderNo, SoNo, SrNo, TrackingNo, ChannelID, Reason, StatusCheckID, CreateBy, CreateDate
+        FROM ReturnOrder
+        WHERE StatusCheckID = :StatusCheckID 
+        AND CreateDate >= :StartDate
+        AND CreateDate < :EndDate
+        ORDER BY CreateDate ASC
+    `
+
+	params := map[string]interface{}{
+		"StatusCheckID": statusCheckID,
+		"StartDate":     start.Format("2006-01-02"), // ส่งแค่วันที่
+		"EndDate":       end.Format("2006-01-02"),   // ส่งแค่วันที่ที่ปรับแล้ว
+	}
+
+	query, args, err := sqlx.Named(query, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to bind named parameters: %w", err)
+	}
+	query = repo.db.Rebind(query)
+
+	err = repo.db.SelectContext(ctx, &orders, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch return orders: %w", err)
+	}
+
+	// Log the number of orders fetched for debugging
+	log.Printf("Fetched %d return orders", len(orders))
+
+	return orders, nil
+}
+
 func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) error {
 	// Step 1: เริ่มต้น Transaction
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -160,12 +238,12 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 		insertReturnOrderQuery := `
             INSERT INTO ReturnOrder (
                 OrderNo, SoNo, SrNo, TrackingNo, PlatfID, ChannelID, 
-                OptStatusID, AxStatusID, PlatfStatusID, Reason, CancelID, StatusCheckID, 
-                CheckBy, Description, CreateBy, CreateDate
+                OptStatusID, AxStatusID, PlatfStatusID, Reason, StatusCheckID, 
+                Description, CreateBy, CreateDate
             ) VALUES (
                 :OrderNo, :SoNo, :SrNo, :TrackingNo, :PlatfID, :ChannelID, 
-                :OptStatusID, :AxStatusID, :PlatfStatusID, :Reason, :CancelID, :StatusCheckID, 
-                :CheckBy, :Description, :CreateBy, SYSDATETIME()
+                :OptStatusID, :AxStatusID, :PlatfStatusID, :Reason, :StatusCheckID, 
+                :Description, :CreateBy, GETDATE()
             )
         `
 		// Step 2.1: ตรวจสอบว่ามีค่าสำหรับการใส่ใน Query
@@ -180,9 +258,7 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 			"AxStatusID":    req.AxStatusID,
 			"PlatfStatusID": req.PlatfStatusID,
 			"Reason":        req.Reason,
-			"CancelID":      req.CancelID,
 			"StatusCheckID": req.StatusCheckID,
-			"CheckBy":       req.CheckBy,
 			"Description":   req.Description,
 			"CreateBy":      req.CreateBy,
 		}
@@ -196,7 +272,7 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
             INSERT INTO ReturnOrderLine (
                 OrderNo, TrackingNo, SKU, ReturnQTY, QTY, Price, CreateBy, CreateDate
             ) VALUES (
-                :OrderNo, :TrackingNo, :SKU, :ReturnQTY, :QTY, :Price, :CreateBy, SYSDATETIME()
+                :OrderNo, :TrackingNo, :SKU, :ReturnQTY, :QTY, :Price, :CreateBy, GETDATE()
             )
         `
 		// Step 3.1: Loop ผ่าน `ReturnOrderLine` และใส่ข้อมูลลงใน Query
@@ -208,10 +284,9 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 				"OrderNo":    line.OrderNo,
 				"TrackingNo": line.TrackingNo,
 				"SKU":        line.SKU,
-				"ReturnQTY":  line.ReturnQTY,
 				"QTY":        line.QTY,
+				"ReturnQTY":  line.ReturnQTY,
 				"Price":      line.Price,
-				//"AlterSKU":   line.AlterSKU,
 				"CreateBy":   req.CreateBy,
 			}
 			if _, err := tx.NamedExecContext(ctx, insertReturnOrderLineQuery, params); err != nil {
@@ -232,7 +307,7 @@ func (repo repositoryDB) GetCreateReturnOrder(ctx context.Context, orderNo strin
 		SELECT 
 			OrderNo, SoNo, SrNo, TrackingNo, PlatfID, ChannelID, 
 			OptStatusID, AxStatusID, PlatfStatusID, Reason, CreateBy, CreateDate, 
-			CancelID, StatusCheckID, CheckBy, Description
+			StatusCheckID, Description
 		FROM ReturnOrder
 		WHERE OrderNo = @orderNo
 	`
@@ -277,7 +352,6 @@ func (repo repositoryDB) GetUpdateReturnOrder(ctx context.Context, orderNo strin
 		return nil, fmt.Errorf("unexpected database error: %w", err)
 	}
 
-
 	return &order, nil
 }
 
@@ -311,8 +385,8 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 		// Step 2: ตรวจสอบค่าที่เปลี่ยนแปลงและสร้าง SQL Update เฉพาะส่วนที่เปลี่ยนแปลง
 		updateFields := []string{}
 		params := map[string]interface{}{
-			"OrderNo": req.OrderNo,
-			"UpdateBy":  updateBy, // เพิ่ม updateBy ที่รับมาจาก API
+			"OrderNo":  req.OrderNo,
+			"UpdateBy": updateBy, // เพิ่ม updateBy ที่รับมาจาก API
 		}
 
 		if req.SrNo != nil && (current.SrNo == nil || *req.SrNo != *current.SrNo) {
@@ -370,7 +444,7 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 		}
 
 		// Step 3: เพิ่ม UpdateBy และ UpdateDate ใน SQL Query
-		updateFields = append(updateFields, "UpdateBy = :UpdateBy", "UpdateDate = SYSDATETIME()")
+		updateFields = append(updateFields, "UpdateBy = :UpdateBy", "UpdateDate = GETDATE()")
 		updateQuery := fmt.Sprintf(`
             UPDATE ReturnOrder
             SET %s
@@ -397,7 +471,7 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
                 SET 
                     TrackingNo = :TrackingNo, 
                     UpdateBy = :UpdateBy, 
-                    UpdateDate = SYSDATETIME()
+                    UpdateDate = GETDATE()
                 WHERE OrderNo = :OrderNo
             `
 			namedLineQuery, lineArgs, err := sqlx.Named(updateLineQuery, params)
@@ -484,7 +558,7 @@ func (repo repositoryDB) CheckOrderNoExist(ctx context.Context, orderNo string) 
 //         }
 
 //         // Step 3: เพิ่ม UpdateBy และ UpdateDate ใน SQL Query
-//         updateFields = append(updateFields, "UpdateBy = 'USER'", "UpdateDate = SYSDATETIME()")
+//         updateFields = append(updateFields, "UpdateBy = 'USER'", "UpdateDate = GETDATE()")
 //         updateQuery := fmt.Sprintf(`
 //             UPDATE ReturnOrder
 //             SET %s
@@ -569,7 +643,7 @@ func (repo repositoryDB) CheckOrderNoExist(ctx context.Context, orderNo string) 
 //         SET
 //             TrackingNo = :TrackingNo,
 //             UpdateBy = 'USER',
-//             UpdateDate = SYSDATETIME()
+//             UpdateDate = GETDATE()
 //         WHERE OrderNo = :OrderNo
 //     `
 //     params["TrackingNo"] = trackingNo

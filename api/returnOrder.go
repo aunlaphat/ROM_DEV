@@ -63,10 +63,10 @@ func (api *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request
 
 	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
-		fmt.Printf("\n📦 Order #%d 📦\n", i+1)
+		fmt.Printf("\n======== Order #%d ========\n", i+1)
 		utils.PrintReturnOrderDetails(&order)
 		for j, line := range order.ReturnOrderLine {
-			fmt.Printf("\n📦 Order Line #%d 📦\n", j+1)
+			fmt.Printf("\n======== Order Line #%d ========\n", j+1)
 			utils.PrintReturnOrderLineDetails(&line)
 		}
 		fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(order.ReturnOrderLine))
@@ -108,10 +108,10 @@ func (app *Application) GetReturnOrderByOrderNo(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Return Order by OrderNo Details ========== 📋\n")
+	fmt.Printf("\n📋 ========== Return Order by OrderNo Details ========== 📋\n\n")
 	utils.PrintReturnOrderDetails(result)
 	for i, line := range result.ReturnOrderLine {
-		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
 		utils.PrintReturnOrderLineDetails(&line)
 	}
 	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.ReturnOrderLine))
@@ -140,7 +140,7 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 
 	fmt.Printf("\n📋 ========== Return Order Lines (%d) ========== 📋\n", len(result))
 	for i, line := range result {
-		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
 		utils.PrintReturnOrderLineDetails(&line)
 	}
 	fmt.Println("=====================================")
@@ -175,7 +175,7 @@ func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *
 
 	fmt.Printf("\n📋 ========== Return Order Line of OrderNo: %s ========== 📋\n", orderNo)
 	for i, line := range result {
-		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
 		utils.PrintReturnOrderLineDetails(&line)
 	}
 	fmt.Println("=====================================")
@@ -200,7 +200,7 @@ func (app *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 	// 1. Authentication check
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -244,11 +244,11 @@ func (app *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Created Return Order ========== 📋\n")
+	fmt.Printf("\n📋 ========== Created Return Order ========== 📋\n\n")
 	utils.PrintCreateReturnOrder(result)
 	fmt.Printf("\n📋 ========== Return Order Line Details ========== 📋\n")
 	for i, line := range result.ReturnOrderLine {
-		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
 		utils.PrintReturnOrderLineDetails(&line)
 	}
 	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.ReturnOrderLine))
@@ -310,11 +310,6 @@ func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 
 	fmt.Printf("\n📋 ========== Updated Order ========== 📋\n")
 	utils.PrintUpdateReturnOrder(result)
-	// for i, line := range result.ReturnOrderLine {
-	// 	fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
-	// 	utils.PrintOrderLineDetails(&line)
-	// }
-	// fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.ReturnOrderLine))
 	fmt.Println("=====================================")
 
 	handleResponse(w, true, "⭐ Updated successfully ⭐", result, http.StatusOK)
@@ -350,7 +345,7 @@ func (api *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request
 	}
 
 	response := response.DeleteReturnOrder{
-		OrderNo:    orderNo,
+		OrderNo: orderNo,
 	}
 
 	handleResponse(w, true, "⭐ Deleted successfully ⭐", response, http.StatusOK)

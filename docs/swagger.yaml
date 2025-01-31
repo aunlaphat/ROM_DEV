@@ -195,8 +195,6 @@ definitions:
         items:
           $ref: '#/definitions/request.TradeReturnLineRequest'
         type: array
-    required:
-    - importLines
     type: object
   request.CreateReturnOrder:
     properties:
@@ -207,15 +205,9 @@ definitions:
       axStatusId:
         example: 1
         type: integer
-      cancelId:
-        example: 1
-        type: integer
       channelId:
         example: 2
         type: integer
-      checkBy:
-        example: dev03
-        type: string
       description:
         example: ""
         type: string
@@ -276,6 +268,19 @@ definitions:
         example: eknarin.ler
         type: string
     type: object
+  request.OrderLines:
+    properties:
+      itemName:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      returnQty:
+        type: integer
+      sku:
+        type: string
+    type: object
   request.ReturnOrderLine:
     properties:
       price:
@@ -295,7 +300,7 @@ definitions:
     properties:
       tradeReturnLine:
         items:
-          $ref: '#/definitions/request.TradeReturnLineRequest'
+          $ref: '#/definitions/request.OrderLines'
         type: array
     type: object
   request.TradeReturnLineRequest:
@@ -305,6 +310,7 @@ definitions:
           MSSQL GetDate()
         type: string
       imageTypeID:
+        description: เข้า Images
         type: integer
       itemName:
         type: string
@@ -316,14 +322,6 @@ definitions:
         type: integer
       sku:
         type: string
-    required:
-    - filePath
-    - imageTypeID
-    - itemName
-    - price
-    - qty
-    - returnQty
-    - sku
     type: object
   request.UpdateReturnOrder:
     properties:
@@ -513,19 +511,12 @@ definitions:
       axStatusId:
         example: 1
         type: integer
-      cancelId:
-        example: 1
-        type: integer
       channelId:
         example: 2
         type: integer
-      checkBy:
-        example: dev03
-        type: string
       createBy:
         type: string
       createDate:
-        description: MSSQL SYSDATETIME() function
         type: string
       description:
         example: ""
@@ -560,7 +551,6 @@ definitions:
   response.DeleteReturnOrder:
     properties:
       orderNo:
-        description: เลขที่ใบสั่งซื้อ
         type: string
     type: object
   response.DraftHeadResponse:
@@ -598,11 +588,15 @@ definitions:
     properties:
       itemName:
         type: string
+      orderNo:
+        type: string
       price:
         type: number
       qty:
         type: integer
       sku:
+        type: string
+      trackingNo:
         type: string
     type: object
   response.ImportOrderResponse:
@@ -721,6 +715,8 @@ definitions:
         type: integer
       checkBy:
         type: string
+      checkDate:
+        type: string
       createBy:
         type: string
       createDate:
@@ -752,6 +748,8 @@ definitions:
     type: object
   response.ReturnOrderLine:
     properties:
+      actualQTY:
+        type: integer
       alterSKU:
         type: string
       createBy:
@@ -821,6 +819,8 @@ definitions:
       checkBy:
         example: dev03
         type: string
+      checkDate:
+        type: string
       description:
         example: ""
         type: string
@@ -845,10 +845,8 @@ definitions:
         example: 12345678TH
         type: string
       updateBy:
-        description: '''USER'''
         type: string
       updateDate:
-        description: MSSQL SYSDATETIME() function
         type: string
     type: object
   response.UpdateSaleReturnResponse:
@@ -1816,6 +1814,55 @@ paths:
       summary: Update draft orders
       tags:
       - Draft & Confirm
+  /import-order/create-confirm-wh:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload multiple images and data for a specific SoNo
+      operationId: Import-Order
+      parameters:
+      - description: Sale Order Number
+        in: formData
+        name: soNo
+        required: true
+        type: string
+      - description: Type of the image (1, 2, or 3)
+        in: formData
+        name: imageTypeID
+        required: true
+        type: integer
+      - description: SKU (Optional)
+        in: formData
+        name: skus
+        type: string
+      - description: Files to upload
+        in: formData
+        name: files
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  $ref: '#/definitions/response.ImageResponse'
+              type: object
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Import order
+      tags:
+      - Import Order
   /import-order/search:
     get:
       consumes:
@@ -1854,55 +1901,6 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Search order by OrderNo or TrackingNo
-      tags:
-      - Import Order
-  /import-order/upload:
-    post:
-      consumes:
-      - multipart/form-data
-      description: Upload multiple images and data for a specific SoNo
-      operationId: Import-Order
-      parameters:
-      - description: Sale Order Number
-        in: formData
-        name: soNo
-        required: true
-        type: string
-      - description: Type of the image (1, 2, or 3)
-        in: formData
-        name: imageTypeID
-        required: true
-        type: integer
-      - description: SKU (Optional)
-        in: formData
-        name: sku
-        type: string
-      - description: Files to upload
-        in: formData
-        name: files
-        required: true
-        type: file
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  $ref: '#/definitions/response.ImageResponse'
-              type: object
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Import order
       tags:
       - Import Order
   /return-order/create:
@@ -2573,6 +2571,154 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Create a new trade return order
+      tags:
+      - Trade Return
+  /trade-return/get-confirm:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve Return Orders with StatusCheckID = 2 (Confirmed)
+      operationId: Get-Confirm-ReturnOrder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Orders with StatusCheckID = 2
+      tags:
+      - Trade Return
+  /trade-return/get-waiting:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve Return Orders with StatusCheckID = 1 (Waiting)
+      operationId: Get-Waiting-ReturnOrder
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Return Orders with StatusCheckID = 1
+      tags:
+      - Trade Return
+  /trade-return/search-confirm:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve Return Orders with StatusCheckID = 2 (Confirmed) within
+        a specific date range
+      operationId: Search-Confirm-ReturnOrder
+      parameters:
+      - description: Start Date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: End Date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search Return Orders with StatusCheckID = 2 by Date Range
+      tags:
+      - Trade Return
+  /trade-return/search-waiting:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve Return Orders with StatusCheckID = 1 (Waiting) within
+        a specific date range
+      operationId: Search-Waiting-ReturnOrder
+      parameters:
+      - description: Start Date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: End Date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ReturnOrder'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search Return Orders with StatusCheckID = 1 by Date Range
       tags:
       - Trade Return
   /user/get-user:
