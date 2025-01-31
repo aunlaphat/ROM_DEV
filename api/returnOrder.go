@@ -200,7 +200,7 @@ func (app *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 	// 1. Authentication check
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -345,7 +345,7 @@ func (api *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request
 	}
 
 	response := response.DeleteReturnOrder{
-		OrderNo:    orderNo,
+		OrderNo: orderNo,
 	}
 
 	handleResponse(w, true, "⭐ Deleted successfully ⭐", response, http.StatusOK)

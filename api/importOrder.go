@@ -53,7 +53,7 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 	// ตรวจสอบ JWT Token (Authorization)
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 

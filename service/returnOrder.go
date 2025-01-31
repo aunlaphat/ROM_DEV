@@ -22,8 +22,8 @@ type ReturnOrderService interface {
 	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) (*response.UpdateReturnOrder, error)
 	DeleteReturnOrder(ctx context.Context, orderNo string) error
 
-	GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.ReturnOrder, error)
-	GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.ReturnOrder, error)
+	GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error)
+	GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error)
 }
 
 func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
@@ -87,7 +87,7 @@ func (srv service) GetReturnOrderLinesByReturnID(ctx context.Context, orderNo st
 	return lines, nil
 }
 
-func (srv service) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.ReturnOrder, error) {
+func (srv service) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error) {
 	srv.logger.Info("🏁 Fetching Return Orders with StatusCheckID", zap.Int("StatusCheckID", statusCheckID))
 
 	orders, err := srv.returnOrderRepo.GetReturnOrdersByStatus(ctx, statusCheckID)
@@ -106,7 +106,7 @@ func (srv service) GetReturnOrdersByStatus(ctx context.Context, statusCheckID in
 	return orders, nil
 }
 
-func (srv service) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.ReturnOrder, error) {
+func (srv service) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error) {
 	srv.logger.Info("🏁 Fetching Return Orders with StatusCheckID and Date Range",
 		zap.Int("StatusCheckID", statusCheckID),
 		zap.String("StartDate", startDate),

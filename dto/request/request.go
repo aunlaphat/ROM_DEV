@@ -48,7 +48,7 @@ type UpdateSaleReturn struct {
 	SrNo string `json:"srNo" validate:"required" example:"SR-TEST-123456"`
 }
 
-type CancelSaleReturn  struct {
+type CancelSaleReturn struct {
 	//OrderNo      string `json:"orderNo" db:"OrderNo"`
 	//CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
 	Remark string `json:"remark" db:"Remark"`
@@ -80,7 +80,7 @@ type CreateReturnOrder struct {
 	StatusCheckID *int    `json:"statusCheckId" db:"StatusCheckID" example:"1"`
 	Description   *string `json:"description" db:"Description" example:""`
 	CreateBy      string  `json:"-" db:"CreateBy"`
-	// CreateDate   *time.Time      `json:"createDate" db:"CreateDate"` // MSSQL SYSDATETIME() function
+	// CreateDate   *time.Time      `json:"createDate" db:"CreateDate"` // MSSQL GETDATE() function
 
 	ReturnOrderLine []ReturnOrderLine `json:"ReturnOrderLine"`
 }
@@ -101,7 +101,7 @@ type UpdateReturnOrder struct {
 	CheckBy       *string `json:"checkBy" db:"CheckBy" example:"dev03"`
 	Description   *string `json:"description" db:"Description" example:""`
 	UpdateBy      *string `json:"-" db:"UpdateBy"`
-	// UpdateDate   *time.Time      `json:"updateDate" db:"UpdateDate"` // MSSQL SYSDATETIME() function
+	// UpdateDate   *time.Time      `json:"updateDate" db:"UpdateDate"` // MSSQL GETDATE() function
 
 }
 
@@ -136,21 +136,21 @@ type ReturnOrderLine struct {
 /********** Trade Return (Offline) ***************/
 
 type ConfirmTradeReturnRequest struct {
-	Identifier  string                   `json:"-" `                                   // mean => OrderNo หรือ TrackingNo
-	ImportLines []TradeReturnLineRequest `json:"importLines" validate:"required,dive"` // รายการสินค้า
+	Identifier  string                   `json:"-" `          // mean => OrderNo หรือ TrackingNo
+	ImportLines []TradeReturnLineRequest `json:"importLines"` // รายการสินค้า
 }
 
 type TradeReturnLineRequest struct {
-	SKU       string  `json:"sku" db:"SKU" validate:"required"`
-	ItemName  string  `json:"itemName" db:"ItemName" validate:"required"`
-	QTY       int     `json:"qty" db:"QTY" validate:"required"`
-	ReturnQTY int     `json:"returnQty" db:"ReturnQTY" validate:"required"`
-	Price     float64 `json:"price" db:"Price" validate:"required"`
+	SKU       string  `json:"sku" db:"SKU"`
+	ItemName  string  `json:"itemName" db:"ItemName"`
+	QTY       int     `json:"qty" db:"QTY"`
+	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
+	Price     float64 `json:"price" db:"Price"`
 	//TrackingNo string  `json:"trackingNo" db:"TrackingNo"`	// add form data BeforeReturnOrder
 	CreateBy string `json:"-" db:"CreateBy" ` // from user login
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
-	FilePath    string `json:"filePath" db:"FilePath" validate:"required"`
-	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID" validate:"required"`
+	FilePath    string `json:"filePath" db:"FilePath"` // เข้า Images
+	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"` // เข้า Images
 }
 
 type Image struct {
@@ -159,7 +159,18 @@ type Image struct {
 }
 
 type TradeReturnLine struct {
-	TradeReturnLine []TradeReturnLineRequest `json:"tradeReturnLine"`
+	TradeReturnLine []OrderLines `json:"tradeReturnLine"`
+}
+
+type OrderLines struct {
+	SKU       string  `json:"sku" db:"SKU"`
+	ItemName  string  `json:"itemName" db:"ItemName"`
+	QTY       int     `json:"qty" db:"QTY"`
+	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
+	Price     float64 `json:"price" db:"Price"`
+	//TrackingNo string  `json:"trackingNo" db:"TrackingNo"`	// add form data BeforeReturnOrder
+	CreateBy string `json:"-" db:"CreateBy"` // from user login
+	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
 }
 
 /********** Import Order to Warehouse: Sale Return ***************/

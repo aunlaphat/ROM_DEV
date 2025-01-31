@@ -194,8 +194,6 @@ definitions:
         items:
           $ref: '#/definitions/request.TradeReturnLineRequest'
         type: array
-    required:
-    - importLines
     type: object
   request.CreateReturnOrder:
     properties:
@@ -269,6 +267,19 @@ definitions:
         example: eknarin.ler
         type: string
     type: object
+  request.OrderLines:
+    properties:
+      itemName:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      returnQty:
+        type: integer
+      sku:
+        type: string
+    type: object
   request.ReturnOrderLine:
     properties:
       price:
@@ -288,7 +299,7 @@ definitions:
     properties:
       tradeReturnLine:
         items:
-          $ref: '#/definitions/request.TradeReturnLineRequest'
+          $ref: '#/definitions/request.OrderLines'
         type: array
     type: object
   request.TradeReturnLineRequest:
@@ -298,6 +309,7 @@ definitions:
           MSSQL GetDate()
         type: string
       imageTypeID:
+        description: เข้า Images
         type: integer
       itemName:
         type: string
@@ -309,14 +321,6 @@ definitions:
         type: integer
       sku:
         type: string
-    required:
-    - filePath
-    - imageTypeID
-    - itemName
-    - price
-    - qty
-    - returnQty
-    - sku
     type: object
   request.UpdateReturnOrder:
     properties:
@@ -508,7 +512,6 @@ definitions:
       createBy:
         type: string
       createDate:
-        description: MSSQL SYSDATETIME() function
         type: string
       description:
         example: ""
@@ -839,7 +842,6 @@ definitions:
       updateBy:
         type: string
       updateDate:
-        description: MSSQL SYSDATETIME() function
         type: string
     type: object
   response.UserPermission:

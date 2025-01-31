@@ -214,52 +214,6 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 	return createdOrderLines, nil
 }
 
-// func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string, filePaths []string) error {
-//     srv.logger.Info("🏁 Starting trade return confirmation process",
-//         zap.String("Identifier", req.Identifier),
-//         zap.String("UpdateBy", updateBy))
-
-//     // ตรวจสอบความถูกต้องของข้อมูล
-//     if req.Identifier == "" || updateBy == "" {
-//         return fmt.Errorf("identifier (OrderNo or TrackingNo) and updateBy are required")
-//     }
-
-//     // 1. อัปเดตสถานะใน BeforeReturnOrder
-//     if err := srv.befRORepo.UpdateBefToWaiting(ctx, req, updateBy); err != nil {
-//         return fmt.Errorf("failed to update BeforeReturnOrder: %w", err)
-//     }
-
-//     // 2. ดึงข้อมูลจาก BeforeReturnOrder
-//     returnOrderData, err := srv.befRORepo.GetBeforeReturnOrderData(ctx, req)
-//     if err != nil {
-//         return fmt.Errorf("failed to fetch BeforeReturnOrder: %w", err)
-//     }
-
-//     // กำหนดค่าเริ่มต้นให้กับ StatusCheckID ให้เป็นสถานะ waiting ทันทีเมื่อกด
-//     returnOrderData.StatusCheckID = 1
-
-//     // 3. Insert ข้อมูลลงใน ReturnOrder
-//     if err := srv.befRORepo.InsertReturnOrder(ctx, returnOrderData); err != nil {
-//         return fmt.Errorf("failed to insert into ReturnOrder: %w", err)
-//     }
-
-//     // 4. Insert ข้อมูลจาก importLines ลงใน ReturnOrderLine
-//     if err := srv.befRORepo.InsertReturnOrderLine(ctx, returnOrderData, req); err != nil {
-//         return fmt.Errorf("failed to insert into ReturnOrderLine: %w", err)
-//     }
-
-//     // 5. Insert ข้อมูลภาพลงใน Images (ไฟล์ภาพ)
-//     if err := srv.befRORepo.InsertImages(ctx, returnOrderData, req, filePaths); err != nil {
-//         return fmt.Errorf("failed to insert images: %w", err)
-//     }
-
-//     srv.logger.Info("✅ Successfully confirmed trade return",
-//         zap.String("Identifier", req.Identifier),
-//         zap.String("UpdateBy", updateBy))
-
-//     return nil
-// }
-
 func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
 	srv.logger.Info("🏁 Starting trade return confirmation process",
 		zap.String("Identifier", req.Identifier),
@@ -312,6 +266,11 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 	// 4. Insert ข้อมูลจาก importLines ลงใน ReturnOrderLine + Check ว่า SKU ตรงกับใน BeforeOD ก่อนถึงเพิ่มได้
 	if err := srv.beforeReturnRepo.InsertReturnOrderLine(ctx, returnOrderData, req); err != nil {
 		return fmt.Errorf("failed to insert into ReturnOrderLine: %w", err)
+	}
+
+	// 5. Insert ข้อมูลภาพลงใน Images (ไฟล์ภาพ)
+	if err := srv.beforeReturnRepo.InsertImages(ctx, returnOrderData, req); err != nil {
+		return fmt.Errorf("failed to insert images: %w", err)
 	}
 
 	srv.logger.Info("✅ Successfully confirmed trade return",

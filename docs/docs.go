@@ -3340,9 +3340,6 @@ const docTemplate = `{
         },
         "request.ConfirmTradeReturnRequest": {
             "type": "object",
-            "required": [
-                "importLines"
-            ],
             "properties": {
                 "importLines": {
                     "description": "รายการสินค้า",
@@ -3455,6 +3452,26 @@ const docTemplate = `{
                 }
             }
         },
+        "request.OrderLines": {
+            "type": "object",
+            "properties": {
+                "itemName": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
         "request.ReturnOrderLine": {
             "type": "object",
             "properties": {
@@ -3482,28 +3499,20 @@ const docTemplate = `{
                 "tradeReturnLine": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/request.TradeReturnLineRequest"
+                        "$ref": "#/definitions/request.OrderLines"
                     }
                 }
             }
         },
         "request.TradeReturnLineRequest": {
             "type": "object",
-            "required": [
-                "filePath",
-                "imageTypeID",
-                "itemName",
-                "price",
-                "qty",
-                "returnQty",
-                "sku"
-            ],
             "properties": {
                 "filePath": {
                     "description": "CreateDate *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
                     "type": "string"
                 },
                 "imageTypeID": {
+                    "description": "เข้า Images",
                     "type": "integer"
                 },
                 "itemName": {
@@ -3805,7 +3814,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "createDate": {
-                    "description": "MSSQL SYSDATETIME() function",
                     "type": "string"
                 },
                 "description": {
@@ -4291,7 +4299,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updateDate": {
-                    "description": "MSSQL SYSDATETIME() function",
                     "type": "string"
                 }
             }

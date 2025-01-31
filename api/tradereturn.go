@@ -25,10 +25,10 @@ func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 		r.Use(jwtauth.Authenticator)
 
 		/******** Trade Retrun ********/
-		r.Get("/get-waiting", app.GetStatusWaitingDetail) // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =1
-		r.Get("/get-confirm", app.GetStatusConfirmDetail) // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =2
+		r.Get("/get-waiting", app.GetStatusWaitingDetail)       // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =1
+		r.Get("/get-confirm", app.GetStatusConfirmDetail)       // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =2
 		r.Get("/search-waiting", app.SearchStatusWaitingDetail) // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =1 ตามช่วงวันที่สร้าง(CreateDate)ที่เลือก วันที่เริ่มต้น-สิ้นสุด แสดงข้อมูลจำนวนตามวันที่นั้น
-		r.Get("/search-confirm", app.SearchStatusConfirmDetail)  // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =2 ตามช่วงวันที่สร้าง(CreateDate)ที่เลือก วันที่เริ่มต้น-สิ้นสุด แสดงข้อมูลจำนวนตามวันที่นั้น
+		r.Get("/search-confirm", app.SearchStatusConfirmDetail) // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =2 ตามช่วงวันที่สร้าง(CreateDate)ที่เลือก วันที่เริ่มต้น-สิ้นสุด แสดงข้อมูลจำนวนตามวันที่นั้น
 		r.Post("/create-trade", app.CreateTradeReturn)
 		r.Post("/add-line/{orderNo}", app.CreateTradeReturnLine)
 		r.Post("/confirm-receipt/{identifier}", app.ConfirmReceipt)
@@ -43,7 +43,7 @@ func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 // @Tags Trade Return
 // @Accept json
 // @Produce json
-// @Success 200 {object} Response{result=[]response.ReturnOrder} "Success"
+// @Success 200 {object} Response{result=[]response.DraftTradeDetail} "Success"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /trade-return/get-waiting [get]
@@ -62,11 +62,11 @@ func (api *Application) GetStatusWaitingDetail(w http.ResponseWriter, r *http.Re
 	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
 		fmt.Printf("\n======== Order #%d ========\n", i+1)
-		utils.PrintReturnOrderDetails(&order)
+		utils.PrintDraftTradeOrder(&order)
 	}
-	fmt.Println("=====================================")
+	fmt.Println("===============================================")
 
-	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 1 retrieved successfully ⭐", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 1 (WAITING) retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary Get Return Orders with StatusCheckID = 2
@@ -75,7 +75,7 @@ func (api *Application) GetStatusWaitingDetail(w http.ResponseWriter, r *http.Re
 // @Tags Trade Return
 // @Accept json
 // @Produce json
-// @Success 200 {object} Response{result=[]response.ReturnOrder} "Success"
+// @Success 200 {object} Response{result=[]response.DraftTradeDetail} "Success"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /trade-return/get-confirm [get]
@@ -94,11 +94,11 @@ func (api *Application) GetStatusConfirmDetail(w http.ResponseWriter, r *http.Re
 	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
 		fmt.Printf("\n======== Order #%d ========\n", i+1)
-		utils.PrintReturnOrderDetails(&order)
+		utils.PrintDraftTradeOrder(&order)
 	}
 	fmt.Println("=====================================")
 
-	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 2 retrieved successfully ⭐", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 2 (CONFIRM) retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary Search Return Orders with StatusCheckID = 1 by Date Range
@@ -109,7 +109,7 @@ func (api *Application) GetStatusConfirmDetail(w http.ResponseWriter, r *http.Re
 // @Produce json
 // @Param startDate query string true "Start Date (YYYY-MM-DD)"
 // @Param endDate query string true "End Date (YYYY-MM-DD)"
-// @Success 200 {object} Response{result=[]response.ReturnOrder} "Success"
+// @Success 200 {object} Response{result=[]response.DraftTradeDetail} "Success"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /trade-return/search-waiting [get]
@@ -124,18 +124,18 @@ func (api *Application) SearchStatusWaitingDetail(w http.ResponseWriter, r *http
 	}
 
 	if len(result) == 0 {
-		handleResponse(w, true, "No return orders found with StatusCheckID = 1 within the specified date range", []res.ReturnOrder{}, http.StatusOK)
+		handleResponse(w, true, "⚠️ No return orders found within the specified date range", []res.ReturnOrder{}, http.StatusOK)
 		return
 	}
 
 	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
 		fmt.Printf("\n======== Order #%d ========\n", i+1)
-		utils.PrintReturnOrderDetails(&order)
+		utils.PrintDraftTradeOrder(&order)
 	}
 	fmt.Println("=====================================")
 
-	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 1 retrieved successfully ⭐", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Return Orders of StatusCheckID = 1 retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary Search Return Orders with StatusCheckID = 2 by Date Range
@@ -146,7 +146,7 @@ func (api *Application) SearchStatusWaitingDetail(w http.ResponseWriter, r *http
 // @Produce json
 // @Param startDate query string true "Start Date (YYYY-MM-DD)"
 // @Param endDate query string true "End Date (YYYY-MM-DD)"
-// @Success 200 {object} Response{result=[]response.ReturnOrder} "Success"
+// @Success 200 {object} Response{result=[]response.DraftTradeDetail} "Success"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /trade-return/search-confirm [get]
@@ -161,18 +161,18 @@ func (api *Application) SearchStatusConfirmDetail(w http.ResponseWriter, r *http
 	}
 
 	if len(result) == 0 {
-		handleResponse(w, true, "No return orders found with StatusCheckID = 2 within the specified date range", []res.ReturnOrder{}, http.StatusOK)
+		handleResponse(w, true, "⚠️ No return orders found within the specified date range", []res.ReturnOrder{}, http.StatusOK)
 		return
 	}
 
 	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
 		fmt.Printf("\n======== Order #%d ========\n", i+1)
-		utils.PrintReturnOrderDetails(&order)
+		utils.PrintDraftTradeOrder(&order)
 	}
 	fmt.Println("=====================================")
 
-	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 2 retrieved successfully ⭐", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Return Orders of StatusCheckID = 2 retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // @Summary Create a new trade return order
@@ -199,7 +199,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 
 	// ตรวจสอบว่ามี OrderNo
 	if req.OrderNo == "" {
-		handleResponse(w, false, "OrderNo is required", nil, http.StatusBadRequest)
+		handleResponse(w, false, "⚠️ OrderNo is required", nil, http.StatusBadRequest)
 		return
 	}
 
@@ -209,14 +209,14 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if existingOrder != nil { // แจ้งเตือนถ้ามี OrderNo อยู่แล้ว
-		handleResponse(w, false, "Order already exists", nil, http.StatusConflict)
+		handleResponse(w, false, "⚠️ Order already exists", nil, http.StatusConflict)
 		return
 	}
 
 	// Authentication check
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -232,14 +232,14 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 	// Call service
 	result, err := app.Service.BeforeReturn.CreateTradeReturn(r.Context(), req)
 	if err != nil {
-		app.Logger.Error("Failed to create trade return",
+		app.Logger.Error("⚠️ Failed to create trade return",
 			zap.Error(err),
 			zap.String("orderNo", req.OrderNo))
 
 		switch {
-		case strings.Contains(err.Error(), "validation failed"):
+		case strings.Contains(err.Error(), "Validation failed"):
 			handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
-		case strings.Contains(err.Error(), "already exists"):
+		case strings.Contains(err.Error(), "Already exists"):
 			handleResponse(w, false, err.Error(), nil, http.StatusConflict)
 		default:
 			handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
@@ -248,16 +248,16 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 	}
 
 	fmt.Printf("\n📋 ========== Created Trade Return Order ========== 📋\n")
-	fmt.Printf("\n📋 ========== StatusReturn => 3 (booking) ========== 📋\n\n")
+	fmt.Printf("\n📋 ========== StatusReturn => 3 (booking) ========= 📋\n\n")
 	utils.PrintOrderDetails(result)
 	for i, line := range result.BeforeReturnOrderLines {
-		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
 	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.BeforeReturnOrderLines))
-	fmt.Println("=====================================")
+	fmt.Println("===============================================")
 
-	handleResponse(w, true, "⭐ Created trade return order successfully ⭐", result, http.StatusOK)
+	handleResponse(w, true, "⭐ Created trade return order successfully => Status [booking ✔️]⭐", result, http.StatusOK)
 }
 
 // @Summary Add a new trade return line to an existing order
@@ -325,12 +325,13 @@ func (app *Application) CreateTradeReturnLine(w http.ResponseWriter, r *http.Req
 	}
 
 	fmt.Printf("\n📋 ========== Created Trade Return Line Order ========== 📋\n")
+	fmt.Printf("\n📋 ========== Trade Return Line Order: Latest ========== 📋\n\n")
 	for i, line := range result {
-		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
+		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
 	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result))
-	fmt.Println("=====================================")
+	fmt.Println("===============================================")
 
 	handleResponse(w, true, "⭐ Created trade return line successfully ⭐", result, http.StatusCreated)
 }
@@ -395,7 +396,7 @@ func (app *Application) ConfirmReceipt(w http.ResponseWriter, r *http.Request) {
 		UpdateDate:     time.Now(),
 	}
 
-	handleResponse(w, true, "⭐ Confirmed from Ware House successfully ⭐", response, http.StatusOK)
+	handleResponse(w, true, "⭐ Confirmed from Ware House successfully => Status [waiting ✔️] ⭐", response, http.StatusOK)
 }
 
 // ConfirmToReturn godoc
@@ -450,136 +451,5 @@ func (app *Application) ConfirmReturn(w http.ResponseWriter, r *http.Request) {
 		UpdateBy:       userID,
 		UpdateDate:     time.Now(),
 	}
-	handleResponse(w, true, "⭐ Confirmed to Return Order successfully ⭐", response, http.StatusOK)
+	handleResponse(w, true, "⭐ Confirmed to Return Order successfully => Status [success ✔️, confirm ✔️] ⭐", response, http.StatusOK)
 }
-
-// // @Summary Confirm the return order and upload image
-// // @Description This API confirms the return order and allows uploading an image.
-// // @Tags Trade Return
-// // @Accept multipart/form-data
-// // @Produce json
-// // @Param identifier path string true "OrderNo or TrackingNo"
-// // @Param request body request.ConfirmTradeReturnRequest true "Confirm Return Order Data"
-// // @Param image formData file true "Image File to Upload"
-// // @Success 200 {object} api.Response{data=response.ConfirmReceipt} "Trade return order confirmed successfully"
-// // @Failure 400 {object} api.Response "Bad Request"
-// // @Failure 500 {object} api.Response "Internal Server Error"
-// // @Router /trade-return/confirm-receipt/{identifier} [post]
-// func (app *Application) ConfirmReceipt(w http.ResponseWriter, r *http.Request) {
-// 	// รับค่า identifier จาก URL parameter
-// 	identifier := chi.URLParam(r, "identifier")
-// 	if identifier == "" {
-// 		handleError(w, fmt.Errorf("identifier (OrderNo or TrackingNo) is required"))
-// 		return
-// 	}
-
-// 	// parse multipart form (รับข้อมูล json + ไฟล์)
-// 	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
-// 	if err != nil {
-// 		handleError(w, fmt.Errorf("unable to parse multipart form: %w", err))
-// 		return
-// 	}
-
-// 	// รับข้อมูล JSON
-// 	var req request.ConfirmTradeReturnRequest
-// 	body, err := io.ReadAll(r.Body)
-// 	if err != nil {
-// 		handleError(w, fmt.Errorf("failed to read request body: %w", err))
-// 		return
-// 	}
-// 	fmt.Println("Request Body:", string(body)) // ดูข้อมูลที่รับมาจาก body
-
-// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-// 		handleError(w, fmt.Errorf("invalid request body: %w", err))
-// 		return
-// 	}
-
-// 	// รับไฟล์ภาพจากฟอร์ม
-// 	files := r.MultipartForm.File["images"] // key 'images' ใช้ในการส่งไฟล์
-// 	if len(files) == 0 {
-// 		handleError(w, fmt.Errorf("no images uploaded"))
-// 		return
-// 	}
-
-// 	// กำหนดค่า identifier
-// 	req.Identifier = identifier
-
-// 	// รับข้อมูล claims จาก JWT token
-// 	_, claims, err := jwtauth.FromContext(r.Context())
-// 	if err != nil || claims == nil {
-// 		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
-// 		return
-// 	}
-
-// 	// ดึง userID จาก claims
-// 	userID, err := utils.GetUserIDFromClaims(claims)
-// 	if err != nil {
-// 		handleError(w, err)
-// 		return
-// 	}
-
-// 	// อัปโหลดไฟล์และรับเส้นทาง
-// 	filePaths := []string{}
-// 	for _, file := range files {
-// 		filePath, err := uploadImageFile(file)
-// 		if err != nil {
-// 			handleError(w, err)
-// 			return
-// 		}
-// 		filePaths = append(filePaths, filePath)
-// 	}
-
-// 	// เรียก service layer เพื่อดำเนินการ confirm
-// 	err = app.Service.BefRO.ConfirmReceipt(r.Context(), req, userID, filePaths)
-// 	if err != nil {
-// 		handleError(w, err)
-// 		return
-// 	}
-
-// 	response := res.ConfirmReceipt{
-// 		Identifier: req.Identifier,
-// 		UpdateBy:   userID,
-// 		UpdateDate: time.Now(),
-// 	}
-
-// 	handleResponse(w, true, "Trade return order confirmed successfully", response, http.StatusOK)
-// }
-
-// func uploadImageFile(file *multipart.FileHeader) (string, error) {
-// 	// กำหนดที่อยู่โฟลเดอร์ที่จะเก็บไฟล์
-// 	uploadDir := "uploads/images/"
-
-// 	// สร้างโฟลเดอร์หากยังไม่มี
-// 	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-// 		return "", fmt.Errorf("failed to create upload directory: %w", err)
-// 	}
-
-// 	// สร้างชื่อไฟล์ใหม่ (เพิ่ม timestamp เพื่อหลีกเลี่ยงการซ้ำชื่อไฟล์)
-// 	timestamp := time.Now().UnixNano()
-// 	fileName := fmt.Sprintf("%d-%s", timestamp, file.Filename)
-
-// 	// สร้าง path ของไฟล์ที่จะเก็บ
-// 	filePath := filepath.Join(uploadDir, fileName)
-
-// 	// เปิดไฟล์ที่อัปโหลด
-// 	srcFile, err := file.Open()
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to open uploaded file: %w", err)
-// 	}
-// 	defer srcFile.Close()
-
-// 	// สร้างไฟล์เป้าหมายที่จะแนบไฟล์
-// 	destFile, err := os.Create(filePath)
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to create file: %w", err)
-// 	}
-// 	defer destFile.Close()
-
-// 	// คัดลอกข้อมูลจากไฟล์ต้นทางไปยังไฟล์เป้าหมาย
-// 	_, err = destFile.ReadFrom(srcFile)
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to copy file data: %w", err)
-// 	}
-
-// 	return filePath, nil
-// }

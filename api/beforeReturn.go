@@ -25,12 +25,12 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
 		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
 		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
-		
+
 		// get real order
-		r.Get("/get-order", app.GetAllOrderDetail)								// get Order of ROM_V_OrderDetail
-		r.Get("/get-orders", app.GetAllOrderDetails)  							// get Order of ROM_V_OrderDetail with paginate
-		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)					// search by SO of ROM_V_OrderDetail
-		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine)	// delete line by recID of BeforeReturnOrder
+		r.Get("/get-order", app.GetAllOrderDetail)                             // get Order of ROM_V_OrderDetail
+		r.Get("/get-orders", app.GetAllOrderDetails)                           // get Order of ROM_V_OrderDetail with paginate
+		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)                 // search by SO of ROM_V_OrderDetail
+		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine) // delete line by recID of BeforeReturnOrder
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
@@ -296,7 +296,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
 		app.Logger.Error("Authorization failed", zap.Error(err))
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -357,7 +357,7 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	// 1. Authentication check
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -736,7 +736,7 @@ func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
 	// Extract userID from claims
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -845,7 +845,7 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 	// Extract userID from claims
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -918,7 +918,7 @@ func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request
 // @Router 		/before-return-order/get-orders [get]
 func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Request) {
 
-	page, limit := utils.ParsePagination(r) 
+	page, limit := utils.ParsePagination(r)
 
 	result, err := api.Service.BeforeReturn.GetAllOrderDetails(r.Context(), page, limit)
 	if err != nil {

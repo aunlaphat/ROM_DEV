@@ -19,7 +19,7 @@ func PrintOrderDetails(order *res.BeforeReturnOrderResponse) {
 	fmt.Printf("📄 SoStatusID: %v\n", order.SoStatusID)
 	fmt.Printf("📊 MkpStatusID: %v\n", order.MkpStatusID)
 	fmt.Printf("📅 ReturnDate: %v\n", order.ReturnDate)
-	fmt.Printf("🪃 StatusReturnID: %d\n", order.StatusReturnID)
+	fmt.Printf("🪃  StatusReturnID: %d\n", order.StatusReturnID)
 	fmt.Printf("✅ StatusConfID: %d\n", order.StatusConfID)
 	fmt.Printf("👤 ConfirmBy: %v\n", order.ConfirmBy)
 	fmt.Printf("👤 CreateBy: %s\n", order.CreateBy)
@@ -166,6 +166,18 @@ func PrintImportOrderLineDetails(line *res.ImportOrderLineResponse) {
 	fmt.Printf("🏷️  ItemName: %s\n", line.ItemName)
 	fmt.Printf("📱 QTY: %d\n", line.QTY)
 	fmt.Printf("💲 Price: %.2f ฿\n", line.Price)
+}
+
+func PrintDraftTradeOrder (order *res.DraftTradeDetail) {
+	fmt.Printf("📦 OrderNo: %s\n", order.OrderNo)
+	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
+	fmt.Printf("🔄 SrNo: %s\n", convertString(order.SrNo)) 
+	fmt.Printf("📦 TrackingNo: %s\n", convertString(order.TrackingNo)) 
+	fmt.Printf("📲 ChannelID: %s\n", convertInt(order.ChannelID)) 
+	fmt.Printf("🗨️  Reason: %s\n", convertString(order.Reason)) 
+	fmt.Printf("✔️  StatusCheckID: %d\n", order.StatusCheckID) 
+	fmt.Printf("🕵️  CreateBy: %s\n", order.CreateBy)
+	fmt.Printf("📅 CreateDate: %s\n", order.CreateDate.Format("2006-01-02 15:04:05"))
 }
 
 // ฟังก์ชันสำหรับแปลงค่า null
