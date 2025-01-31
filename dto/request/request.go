@@ -45,7 +45,7 @@ type BeforeReturnOrderLine struct {
 }
 
 type UpdateSaleReturn struct {
-	OrderNo  string `json:"orderNo" db:"OrderNo" example:"SOA-TEST-123456"`
+	OrderNo  string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
 	SrNo     string `json:"srNo" db:"SrNo" example:"SR-TEST-123456"`
 	UpdateBy string `json:"updateBy" db:"UpdateBy" example:"dev03"`
 }
