@@ -440,14 +440,14 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 	// 1. ดึง JWT Claims จาก Context
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "Unauthorized access", nil, http.StatusUnauthorized)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	// 2. รับ JWT Claims และดึง userID
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		http.Error(w, "❌ Unauthorized: missing or invalid token", http.StatusUnauthorized)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -455,37 +455,25 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 	var req request.UpdateSaleReturn
 	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "❌ Invalid request format", http.StatusBadRequest)
+		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
-
+	
 	req.UpdateBy = userID
 
 	// 4. ตรวจสอบข้อมูลที่จำเป็น
 	if req.SrNo == "" {
-		http.Error(w, "⚠️ SrNo is required ⚠️", http.StatusBadRequest)
+		http.Error(w, "SrNo is required", http.StatusBadRequest)
 		return
 	}
 
-	// 5. ตรวจสอบว่า Order มีอยู่จริง
-	existingOrder, err := app.Service.BeforeReturn.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("❌ Database error: %v", err), http.StatusInternalServerError)
-		return
-	}
-	if existingOrder == nil {
-		http.Error(w, "⚠️ Order not found ⚠️", http.StatusNotFound)
+	// 5. อัพเดท Sale Return โดยใช้ Service
+	if err := app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), req); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// 6. อัพเดท Sale Return
-	err = app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), req)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("❌ Failed to update SR number: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// 7. ส่ง Response กลับ
+	// 6. ส่ง Response กลับ
 	handleResponse(w, true, "⭐ SR number updated successfully ⭐", nil, http.StatusOK)
 }
 
@@ -588,31 +576,29 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-
-	// 6. ตรวจสอบ Remark
 	if req.Remark == "" {
 		http.Error(w, "Remark is required", http.StatusBadRequest)
 		return
 	}
 
-	// 7. เรียกใช้ service
-	err = app.Service.BeforeReturn.CancelSaleReturn(r.Context(), orderNo, userID, req.Remark)
+	// 6. เรียกใช้ Service Layer
+	cancelDate, err := app.Service.BeforeReturn.CancelSaleReturn(r.Context(), orderNo, userID, req.Remark)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	// 8. สร้าง response
-	response := res.CancelSaleReturnResponse{
-		RefID:        orderNo,
-		CancelStatus: true,
-		CancelBy:     userID,
-		Remark:       req.Remark,
-		CancelDate:   time.Now(),
-	}
-
-	// 9. ส่ง response กลับ
-	handleResponse(w, true, "⭐ Sale return order canceled successfully ⭐", response, http.StatusOK)
+	// 7. ส่ง Response กลับ
+	handleResponse(w, true, "⭐ Sale return order canceled successfully ⭐", 
+		res.CancelSaleReturnResponse{
+			RefID:        orderNo,
+			CancelStatus: true,
+			CancelBy:     userID,
+			Remark:       req.Remark,
+			CancelDate:   cancelDate,
+		}, 
+		http.StatusOK,
+	)
 }
 
 // ListDraftOrders godoc

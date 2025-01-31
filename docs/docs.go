@@ -2733,7 +2733,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -2784,7 +2784,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -2851,7 +2851,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -2918,7 +2918,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -3596,7 +3596,7 @@ const docTemplate = `{
             "properties": {
                 "orderNo": {
                     "type": "string",
-                    "example": "SOA-TEST-123456"
+                    "example": "ORD-TEST-123456"
                 },
                 "srNo": {
                     "type": "string",
@@ -3910,6 +3910,44 @@ const docTemplate = `{
                 },
                 "sku": {
                     "type": "string"
+                }
+            }
+        },
+        "response.DraftTradeDetail": {
+            "type": "object",
+            "properties": {
+                "channelId": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string",
+                    "example": "ORD0001"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string",
+                    "example": "SO0001"
+                },
+                "srNo": {
+                    "type": "string",
+                    "example": "SR0001"
+                },
+                "statusCheckId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "trackingNo": {
+                    "type": "string",
+                    "example": "12345678TH"
                 }
             }
         },

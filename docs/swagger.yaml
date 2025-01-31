@@ -365,7 +365,7 @@ definitions:
   request.UpdateSaleReturn:
     properties:
       orderNo:
-        example: SOA-TEST-123456
+        example: ORD-TEST-123456
         type: string
       srNo:
         example: SR-TEST-123456
@@ -575,6 +575,33 @@ definitions:
       qty:
         type: integer
       sku:
+        type: string
+    type: object
+  response.DraftTradeDetail:
+    properties:
+      channelId:
+        example: 2
+        type: integer
+      createBy:
+        type: string
+      createDate:
+        type: string
+      orderNo:
+        example: ORD0001
+        type: string
+      reason:
+        type: string
+      soNo:
+        example: SO0001
+        type: string
+      srNo:
+        example: SR0001
+        type: string
+      statusCheckId:
+        example: 1
+        type: integer
+      trackingNo:
+        example: 12345678TH
         type: string
     type: object
   response.ImageResponse:
@@ -2590,7 +2617,7 @@ paths:
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/response.ReturnOrder'
+                    $ref: '#/definitions/response.DraftTradeDetail'
                   type: array
               type: object
         "400":
@@ -2621,7 +2648,7 @@ paths:
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/response.ReturnOrder'
+                    $ref: '#/definitions/response.DraftTradeDetail'
                   type: array
               type: object
         "400":
@@ -2664,7 +2691,7 @@ paths:
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/response.ReturnOrder'
+                    $ref: '#/definitions/response.DraftTradeDetail'
                   type: array
               type: object
         "400":
@@ -2707,7 +2734,7 @@ paths:
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/response.ReturnOrder'
+                    $ref: '#/definitions/response.DraftTradeDetail'
                   type: array
               type: object
         "400":

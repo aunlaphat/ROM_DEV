@@ -166,150 +166,138 @@ func (srv service) CreateSaleReturn(ctx context.Context, req request.BeforeRetur
 
 // Method สำหรับอัพเดท Sale Return
 func (srv service) UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn) error {
-	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "UpdateSaleReturn", zap.String("OrderNo", req.OrderNo), zap.String("SrNo", req.SrNo))
 	defer logFinish("Completed", nil)
 
-	// Logging ว่าเริ่มการทำงาน
-	srv.logger.Info("🔎 Starting sale return update process 🔎", zap.String("OrderNo", req.OrderNo), zap.String("SrNo", req.SrNo))
+	srv.logger.Info("🔎 Updating Sale Return Order", zap.String("OrderNo", req.OrderNo), zap.String("SrNo", req.SrNo))
 
-	// ตรวจสอบค่าที่รับเข้ามา (Validation)
+	// Validation
 	if req.OrderNo == "" || req.SrNo == "" {
-		err := fmt.Errorf("OrderNo and SrNo are required")
+		err := errors.New("OrderNo and SrNo are required")
+		srv.logger.Warn("⚠️ Validation failed", zap.String("OrderNo", req.OrderNo), zap.Error(err))
 		logFinish("Failed", err)
-		srv.logger.Error("❌ Validation failed", zap.Error(err))
 		return err
 	}
 
-	// ดึงข้อมูล Order ปัจจุบันจาก Database
+	// Fetch existing order
 	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
 	if err != nil {
+		srv.logger.Error("❌ Error fetching order", zap.String("OrderNo", req.OrderNo), zap.Error(err))
 		logFinish("Failed", err)
-		srv.logger.Error("❌ Failed to fetch order", zap.Error(err))
 		return errors.Wrap(err, "failed to fetch order")
 	}
 	if order == nil {
 		err := fmt.Errorf("⚠️ Order not found: %s", req.OrderNo)
-		logFinish("Failed", err)
 		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", req.OrderNo))
+		logFinish("Failed", err)
 		return err
 	}
 
-	// อัพเดท SR number
-	err = srv.beforeReturnRepo.UpdateSaleReturn(ctx, req)
-	if err != nil {
+	// Update Sale Return
+	if err := srv.beforeReturnRepo.UpdateSaleReturn(ctx, req); err != nil {
+		srv.logger.Error("❌ Failed to update SR number", zap.String("OrderNo", req.OrderNo), zap.Error(err))
 		logFinish("Failed", err)
-		srv.logger.Error("❌ Failed to update SR number", zap.Error(err))
 		return errors.Wrap(err, "failed to update SR number")
 	}
 
-	// Logging สำเร็จ
+	srv.logger.Info("✅ Sale Return Updated Successfully", zap.String("OrderNo", req.OrderNo))
 	logFinish("Success", nil)
-	srv.logger.Info("✅ Sale return updated successfully", zap.String("OrderNo", req.OrderNo))
-
 	return nil
 }
 
 func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error {
-	// เริ่มต้น Logging ของ API Call
+	// Logging จุดเริ่มต้น 🪄
 	logFinish := srv.logger.LogAPICall(ctx, "ConfirmSaleReturn", zap.String("OrderNo", orderNo), zap.String("ConfirmBy", confirmBy))
 	defer logFinish("Completed", nil)
 
-	// Logging ว่าเริ่มการทำงาน
-	srv.logger.Info("🔎 Starting sale return confirm process 🔎", zap.String("OrderNo", orderNo))
-
-	// ตรวจสอบสถานะปัจจุบันของ order
-	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
-	if err != nil {
-		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากเกิดข้อผิดพลาด
-		logFinish("Failed", fmt.Errorf("failed to get order: %v", err))
-		srv.logger.Error("❌ Failed to get order", zap.Error(err))
-		return err
-	}
-	if order == nil {
-		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากไม่พบ order
-		err = fmt.Errorf("order not found: %s", orderNo)
-		logFinish("Not Found", err)
-		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", orderNo))
-		return err
-	}
-
-	// ใช้ฟังก์ชัน ValidateOrderStatus เพื่อตรวจสอบสถานะของ order
-	if err := utils.ValidateOrderStatus(order, 1, 0); err != nil {
-		return err
-	}
-
-	// เรียกใช้ repository layer
-	err = srv.beforeReturnRepo.ConfirmSaleReturn(ctx, orderNo, confirmBy)
-	if err != nil {
-		// อัปเดต Log ว่าไม่สามารถยืนยัน order ได้ เนื่องจากเกิดข้อผิดพลาด
-		return fmt.Errorf("failed to confirm order: %w", err)
-	}
-
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
-	logFinish("Success", nil)
-	return nil
-}
-
-func (srv service) CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error {
-	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "CancelSaleReturn", zap.String("OrderNo", orderNo), zap.String("UpdateBy", updateBy), zap.String("Remark", remark))
-	defer logFinish("Completed", nil)
-
-	// Logging ว่าเริ่มการทำงาน
-	srv.logger.Info("🔎 Starting sale return cancel process 🔎", zap.String("OrderNo", orderNo))
-
-	// Input validation
-	if orderNo == "" || updateBy == "" || remark == "" {
-		// อัปเดต Log ว่าไม่สามารถยกเลิก order ได้ เนื่องจากข้อมูลไม่ครบ
-		err := fmt.Errorf("orderNo, updateBy and remark are required")
+	// ตรวจสอบ input
+	if orderNo == "" || confirmBy == "" {
+		err := fmt.Errorf("orderNo and confirmBy are required")
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Invalid input", zap.Error(err))
 		return err
 	}
 
-	// ตรวจสอบสถานะปัจจุบันของ order
+	// ตรวจสอบว่า order มีอยู่จริง
 	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
-		// อัปเดต Log ว่าไม่สามารถยกเลิก order ได้ เนื่องจากเกิดข้อผิดพลาด
 		logFinish("Failed", fmt.Errorf("failed to get order: %v", err))
 		srv.logger.Error("❌ Failed to get order", zap.Error(err))
 		return err
 	}
 	if order == nil {
-		// อัปเดต Log ว่าไม่สามารถยกเลิก order ได้ เนื่องจากไม่พบ order
-		err = fmt.Errorf("order not found: %s", orderNo)
+		err := fmt.Errorf("order not found: %s", orderNo)
 		logFinish("Not Found", err)
 		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", orderNo))
 		return err
 	}
 
-	// ตรวจสอบว่าถูกยกเลิกไปแล้วหรือไม่
-	if order.StatusConfID != nil && *order.StatusConfID == 3 {
-		// อัปเดต Log ว่าไม่สามารถยกเลิก order ได้ เนื่องจาก order ถูกยกเลิกไปแล้ว
-		err = fmt.Errorf("order %s is already canceled", orderNo)
+	// ตรวจสอบว่าออเดอร์ได้รับการยืนยันไปแล้วหรือไม่
+	if (order.StatusConfID != nil && *order.StatusConfID == 1) || (order.StatusReturnID != nil && *order.StatusReturnID == 1) {
+		err := fmt.Errorf("order %s is already confirmed", orderNo)
 		logFinish("Failed", err)
-		srv.logger.Warn("⚠️ Order is already canceled", zap.String("OrderNo", orderNo))
-		return err
-	}
-	if order.StatusReturnID != nil && *order.StatusReturnID == 2 {
-		// อัปเดต Log ว่าไม่สามารถยกเลิก order ได้ เนื่องจาก order ถูกยกเลิกไปแล้ว
-		err = fmt.Errorf("order %s is already canceled", orderNo)
-		logFinish("Failed", err)
-		srv.logger.Warn("⚠️ Order is already canceled", zap.String("OrderNo", orderNo))
+		srv.logger.Warn("⚠️ Order is already confirmed", zap.String("OrderNo", orderNo))
 		return err
 	}
 
-	// เรียกใช้ repository layer เพื่อยกเลิก order
-	if err = srv.beforeReturnRepo.CancelSaleReturn(ctx, orderNo, updateBy, remark); err != nil {
-		logFinish("Failed", fmt.Errorf("failed to cancel order: %v", err))
-		srv.logger.Error("❌ Failed to cancel order", zap.Error(err))
+	// ดำเนินการยืนยันการคืนสินค้า
+	if err = srv.beforeReturnRepo.ConfirmSaleReturn(ctx, orderNo, confirmBy); err != nil {
+		logFinish("Failed", fmt.Errorf("failed to confirm order: %v", err))
+		srv.logger.Error("❌ Failed to confirm order", zap.Error(err))
 		return err
 	}
 
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
+	// Log สำเร็จ 🪄
 	logFinish("Success", nil)
 	return nil
+}
+
+func (srv service) CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) (time.Time, error) {
+	// Logging จุดเริ่มต้น 🪄
+	logFinish := srv.logger.LogAPICall(ctx, "CancelSaleReturn", zap.String("OrderNo", orderNo), zap.String("UpdateBy", updateBy), zap.String("Remark", remark))
+	defer logFinish("Completed", nil)
+
+	// ตรวจสอบข้อมูลก่อนเริ่มกระบวนการ
+	if orderNo == "" || updateBy == "" || remark == "" {
+		err := fmt.Errorf("orderNo, updateBy and remark are required")
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Invalid input", zap.Error(err))
+		return time.Time{}, err
+	}
+
+	// ตรวจสอบว่ามีออเดอร์อยู่จริง
+	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
+	if err != nil {
+		logFinish("Failed", fmt.Errorf("failed to get order: %v", err))
+		srv.logger.Error("❌ Failed to get order", zap.Error(err))
+		return time.Time{}, err
+	}
+	if order == nil {
+		err := fmt.Errorf("order not found: %s", orderNo)
+		logFinish("Not Found", err)
+		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", orderNo))
+		return time.Time{}, err
+	}
+
+	// ตรวจสอบว่ายกเลิกไปแล้วหรือไม่
+	if (order.StatusConfID != nil && *order.StatusConfID == 3) || (order.StatusReturnID != nil && *order.StatusReturnID == 2) {
+		err := fmt.Errorf("order %s is already canceled", orderNo)
+		logFinish("Failed", err)
+		srv.logger.Warn("⚠️ Order is already canceled", zap.String("OrderNo", orderNo))
+		return time.Time{}, err
+	}
+
+	// ยกเลิกออเดอร์
+	cancelDate := time.Now()
+	if err = srv.beforeReturnRepo.CancelSaleReturn(ctx, orderNo, updateBy, remark, cancelDate); err != nil {
+		logFinish("Failed", fmt.Errorf("failed to cancel order: %v", err))
+		srv.logger.Error("❌ Failed to cancel order", zap.Error(err))
+		return time.Time{}, err
+	}
+
+	// Log สำเร็จ 🪄
+	logFinish("Success", nil)
+	return cancelDate, nil
 }
 
 func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {
