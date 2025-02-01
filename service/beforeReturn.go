@@ -36,7 +36,7 @@ type BeforeReturnService interface {
 	// Method สำหรับอัพเดท Sale Return
 	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn) error
 	// Method สำหรับยืนยัน Sale Return
-	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
+	ConfirmSaleReturn(ctx context.Context, orderNo string, roleID int, userID string) (*response.ConfirmSaleReturnResponse, error)
 	// Method สำหรับยกเลิก Sale Return
 	CancelSaleReturn(ctx context.Context, orderNo, updateBy, remark string) (*response.CancelSaleReturnResponse, error)
 
@@ -205,51 +205,107 @@ func (srv service) UpdateSaleReturn(ctx context.Context, req request.UpdateSaleR
 	return nil
 }
 
-func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error {
-	// Logging จุดเริ่มต้น 🪄
-	logFinish := srv.logger.LogAPICall(ctx, "ConfirmSaleReturn", zap.String("OrderNo", orderNo), zap.String("ConfirmBy", confirmBy))
-	defer logFinish("Completed", nil)
+func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, roleID int, userID string) (*response.ConfirmSaleReturnResponse, error) {
+	// 🪄 Start Logging
+	logFinish := srv.logger.LogAPICall(ctx, "ConfirmSaleReturn", zap.String("OrderNo", orderNo), zap.Int("RoleID", roleID))
+	defer func() { logFinish("Completed", nil) }()
 
-	// ตรวจสอบ input
-	if orderNo == "" || confirmBy == "" {
-		err := fmt.Errorf("orderNo and confirmBy are required")
-		logFinish("Failed", err)
-		srv.logger.Error("❌ Invalid input", zap.Error(err))
-		return err
-	}
-
-	// ตรวจสอบว่า order มีอยู่จริง
+	// ✅ 1. Retrieve Order Details
 	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
-		logFinish("Failed", fmt.Errorf("failed to get order: %v", err))
-		srv.logger.Error("❌ Failed to get order", zap.Error(err))
-		return err
+		err = errors.Wrap(err, "failed to get order")
+		srv.logger.Error("❌ Failed to get order", zap.String("OrderNo", orderNo), zap.Error(err))
+		logFinish("Failed", err)
+		return nil, err
 	}
 	if order == nil {
 		err := fmt.Errorf("order not found: %s", orderNo)
-		logFinish("Not Found", err)
 		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", orderNo))
-		return err
+		logFinish("Not Found", err)
+		return nil, err
 	}
 
-	// ตรวจสอบว่าออเดอร์ได้รับการยืนยันไปแล้วหรือไม่
-	if (order.StatusConfID != nil && *order.StatusConfID == 1) || (order.StatusReturnID != nil && *order.StatusReturnID == 1) {
-		err := fmt.Errorf("order %s is already confirmed", orderNo)
+	// ✅ 2. Ensure required fields are not nil
+	if order.IsCNCreated == nil || order.IsEdited == nil {
+		err := fmt.Errorf("missing required fields in BeforeReturnOrder (IsCNCreated or IsEdited is nil)")
+		srv.logger.Error("❌ Missing fields in BeforeReturnOrder", zap.String("OrderNo", orderNo), zap.Error(err))
 		logFinish("Failed", err)
-		srv.logger.Warn("⚠️ Order is already confirmed", zap.String("OrderNo", orderNo))
-		return err
+		return nil, err
 	}
 
-	// ดำเนินการยืนยันการคืนสินค้า
-	if err = srv.beforeReturnRepo.ConfirmSaleReturn(ctx, orderNo, confirmBy); err != nil {
-		logFinish("Failed", fmt.Errorf("failed to confirm order: %v", err))
-		srv.logger.Error("❌ Failed to confirm order", zap.Error(err))
-		return err
+	// ✅ 3. Validate RoleID and Determine Status Updates
+	var statusReturnID, statusConfID int
+
+	switch roleID {
+	case 2: // Accounting
+		if order.IsCNCreated != nil && !*order.IsCNCreated { // If CN is not created
+			statusReturnID = 1 // Pending
+			statusConfID = 1   // Draft
+		} else {
+			// CN already created, confirmation is allowed
+			if order.StatusReturnID != nil {
+				statusReturnID = *order.StatusReturnID
+			} else {
+				statusReturnID = 1 // Default fallback
+			}
+			if order.StatusConfID != nil {
+				statusConfID = *order.StatusConfID
+			} else {
+				statusConfID = 1 // Default fallback
+			}
+		}
+	case 3: // Warehouse
+		if order.IsEdited != nil && !*order.IsEdited { // No edits, direct confirmation
+			statusReturnID = 3 // Booking
+			statusConfID = 2   // Confirm
+		} else {
+			statusReturnID = 1 // Pending
+			statusConfID = 1   // Draft
+		}
+	default:
+		err := fmt.Errorf("unauthorized role: %d", roleID)
+		srv.logger.Warn("⚠️ Unauthorized Role", zap.Int("RoleID", roleID))
+		logFinish("Failed", err)
+		return nil, err
 	}
 
-	// Log สำเร็จ 🪄
+	// ✅ 4. Log Determined Status Before Updating
+	srv.logger.Info("📝 Determined Status",
+		zap.String("OrderNo", orderNo),
+		zap.Int("RoleID", roleID),
+		zap.Int("StatusReturnID", statusReturnID),
+		zap.Int("StatusConfID", statusConfID),
+		zap.String("ConfirmBy", userID),
+	)
+
+	// ✅ 5. Call Repository Layer to Update Status
+	err = srv.beforeReturnRepo.ConfirmSaleReturn(ctx, orderNo, statusReturnID, statusConfID, userID)
+	if err != nil {
+		err = errors.Wrap(err, "failed to update return order status")
+		srv.logger.Error("❌ Failed to update return order status", zap.String("OrderNo", orderNo), zap.Error(err))
+		logFinish("Failed", err)
+		return nil, err
+	}
+
+	// ✅ 6. Construct Response
+	response := &response.ConfirmSaleReturnResponse{
+		RefID:         orderNo,
+		ReturnStatus:  statusReturnID,
+		ConfirmStatus: statusConfID,
+		ConfirmBy:     userID,     // Confirmed by the authenticated user
+		ConfirmDate:   time.Now(), // Confirmed Date (Current Date)
+	}
+
+	// 🪄 Logging Success
+	srv.logger.Info("✅ Sale return order confirmed successfully",
+		zap.String("OrderNo", orderNo),
+		zap.Int("RoleID", roleID),
+		zap.String("ConfirmedBy", userID),
+		zap.Time("ConfirmedDate", response.ConfirmDate),
+	)
 	logFinish("Success", nil)
-	return nil
+
+	return response, nil
 }
 
 func (srv service) CancelSaleReturn(ctx context.Context, orderNo, updateBy, remark string) (*response.CancelSaleReturnResponse, error) {

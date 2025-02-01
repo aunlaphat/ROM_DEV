@@ -25,6 +25,8 @@ type BeforeReturnOrder struct {
 	UpdateBy *string `json:"updateBy" db:"UpdateBy"`
 	//UpdateDate   *time.Time `json:"updateDate" db:"UpdateDate"`
 	CancelID               *int                    `json:"cancelID" db:"CancelID"`
+	IsEdited               *bool                   `json:"isEdited" db:"IsEdited"`
+	IsCNCreated            *bool                   `json:"isCNCreated" db:"IsCNCreated"`
 	BeforeReturnOrderLines []BeforeReturnOrderLine `json:"beforeReturnOrderLines"`
 }
 
@@ -151,7 +153,7 @@ type TradeReturnLineRequest struct {
 	//TrackingNo string  `json:"trackingNo" db:"TrackingNo"`	// add form data BeforeReturnOrder
 	CreateBy string `json:"-" db:"CreateBy" ` // from user login
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
-	FilePath    string `json:"filePath" db:"FilePath"` // เข้า Images
+	FilePath    string `json:"filePath" db:"FilePath"`       // เข้า Images
 	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"` // เข้า Images
 }
 

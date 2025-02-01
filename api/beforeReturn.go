@@ -2,14 +2,12 @@ package api
 
 import (
 	"boilerplate-backend-go/dto/request"
-	res "boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth"
@@ -479,53 +477,53 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 
 // ConfirmSaleReturn godoc
 // @Summary Confirm a sale return order
-// @Description Confirm a sale return order based on the provided details
+// @Description Confirm a sale return order based on user role and data validation
 // @ID confirm-sale-return
 // @Tags Sale Return
 // @Accept json
 // @Produce json
 // @Param orderNo path string true "Order number"
 // @Success 200 {object} api.Response{data=response.ConfirmSaleReturnResponse} "Sale return order confirmed successfully"
-// @Failure 400 {object} api.Response "Bad Request"
-// @Failure 500 {object} api.Response "Internal Server Error"
+// @Failure 400 {object} api.Response "Bad Request: OrderNo is missing or invalid"
+// @Failure 401 {object} api.Response "Unauthorized: Invalid JWT or Claims"
+// @Failure 500 {object} api.Response "Internal Server Error: Something went wrong while processing"
 // @Router /sale-return/confirm/{orderNo} [patch]
 func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request) {
-	// 1. รับค่า orderNo จาก URL parameter
+	// ✅ 1. Extract Order Number
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
-		handleError(w, fmt.Errorf("order number is required"))
+		handleResponse(w, false, "❌ OrderNo is required", nil, http.StatusBadRequest)
 		return
 	}
 
-	// 2. ดึงค่า claims จาก JWT token
+	// ✅ 2. Authenticate User (JWT)
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
+		handleResponse(w, false, "❌ Unauthorized: Invalid JWT or Claims", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// 3. ดึงค่า userID จาก claims
+	// ✅ 3. Extract UserID and RoleID from Token Claims
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		handleError(w, err)
+		handleResponse(w, false, "❌ Invalid UserID in token claims", nil, http.StatusUnauthorized)
 		return
 	}
-
-	// 4. เรียกใช้ service layer เพื่อดำเนินการ confirm
-	err = app.Service.BeforeReturn.ConfirmSaleReturn(r.Context(), orderNo, userID)
+	roleID, err := utils.GetRoleIDFromClaims(claims)
 	if err != nil {
-		handleError(w, err)
+		handleResponse(w, false, "❌ Invalid RoleID in token claims", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// 5. สร้าง response และส่งกลับ
-	response := res.ConfirmSaleReturnResponse{
-		OrderNo:     orderNo,
-		ConfirmBy:   userID,
-		ConfirmDate: time.Now(),
+	// ✅ 4. Call Service Layer to Confirm Sale Return
+	result, err := app.Service.BeforeReturn.ConfirmSaleReturn(r.Context(), orderNo, roleID, userID)
+	if err != nil {
+		handleResponse(w, false, fmt.Sprintf("❌ %s", err.Error()), nil, http.StatusInternalServerError)
+		return
 	}
 
-	handleResponse(w, true, "⭐ Sale return order confirmed successfully ⭐", response, http.StatusOK)
+	// ✅ 5. Return JSON Response with Success
+	handleResponse(w, true, "⭐ Sale return order confirmed successfully ⭐", result, http.StatusOK)
 }
 
 // CancelSaleReturn godoc

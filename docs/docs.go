@@ -2171,7 +2171,7 @@ const docTemplate = `{
         },
         "/sale-return/confirm/{orderNo}": {
             "patch": {
-                "description": "Confirm a sale return order based on the provided details",
+                "description": "Confirm a sale return order based on user role and data validation",
                 "consumes": [
                     "application/json"
                 ],
@@ -2212,13 +2212,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Bad Request: OrderNo is missing or invalid",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: Invalid JWT or Claims",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal Server Error: Something went wrong while processing",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -3208,6 +3214,12 @@ const docTemplate = `{
                 "customerID": {
                     "type": "string"
                 },
+                "isCNCreated": {
+                    "type": "boolean"
+                },
+                "isEdited": {
+                    "type": "boolean"
+                },
                 "logistic": {
                     "type": "string"
                 },
@@ -3675,6 +3687,12 @@ const docTemplate = `{
                 "customerId": {
                     "type": "string"
                 },
+                "isCNCreated": {
+                    "type": "boolean"
+                },
+                "isEdited": {
+                    "type": "boolean"
+                },
                 "logistic": {
                     "type": "string"
                 },
@@ -3779,8 +3797,14 @@ const docTemplate = `{
                 "confirmDate": {
                     "type": "string"
                 },
-                "orderNo": {
+                "refId": {
                     "type": "string"
+                },
+                "statusConfID": {
+                    "type": "integer"
+                },
+                "statusReturnID": {
+                    "type": "integer"
                 }
             }
         },
