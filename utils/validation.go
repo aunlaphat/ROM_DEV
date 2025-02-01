@@ -9,6 +9,14 @@ import (
 	"boilerplate-backend-go/dto/response"
 )
 
+// IsStatusCanceled ตรวจสอบว่าสถานะเป็น "ยกเลิก" หรือ "ยืนยันแล้ว"
+func IsStatusCanceled(statusConfID, statusReturnID *int) bool {
+	if (statusConfID != nil && *statusConfID == 3) || (statusReturnID != nil && *statusReturnID == 2) {
+		return true
+	}
+	return false
+}
+
 // ตรวจสอบว่าค่า string ไม่เป็นค่าว่าง
 func validateRequiredString(field, value string) error {
 	if strings.TrimSpace(value) == "" {
@@ -124,10 +132,6 @@ func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
 		if line.Price < 0 {
 			return fmt.Errorf("price cannot be negative for line %d", i+1)
 		}
-		// ตรวจสอบ AlterSKU ถ้ามี
-		// if line.AlterSKU != nil && *line.AlterSKU == "" {
-		// 	return fmt.Errorf("alter SKU cannot be empty if provided for line %d", i+1)
-		// }
 	}
 
 	return nil

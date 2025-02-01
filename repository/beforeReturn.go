@@ -34,7 +34,7 @@ type BeforeReturnRepository interface {
 	CreateSaleReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn) error
 	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
-	CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
+	CancelSaleReturn(ctx context.Context, orderNo, updateBy, remark string) error
 
 	// Draft & Confirm MKP //
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
@@ -290,8 +290,8 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 				"OrderNo":      req.OrderNo,
 				"SKU":          line.SKU,
 				"ActualQTY":    sql.NullInt32{Int32: int32(line.ActualQTY), Valid: line.ActualQTY != 0}, // เมื่อส่งค่า ว่าง/0 มาให้ใช้ค่าเดิม
-				"Price":        sql.NullFloat64{Float64: line.Price, Valid: line.Price != 0}, // เมื่อส่งค่า ว่าง/0 มาให้ใช้ค่าเดิม
-				"StatusDelete": sql.NullBool{Bool: line.StatusDelete, Valid: line.StatusDelete}, // เมื่อส่งค่าว่างมาให้ใช้ค่าเดิม
+				"Price":        sql.NullFloat64{Float64: line.Price, Valid: line.Price != 0},            // เมื่อส่งค่า ว่าง/0 มาให้ใช้ค่าเดิม
+				"StatusDelete": sql.NullBool{Bool: line.StatusDelete, Valid: line.StatusDelete},         // เมื่อส่งค่าว่างมาให้ใช้ค่าเดิม
 				"UpdateBy":     returnOrderData.UpdateBy,
 				"UpdateDate":   returnOrderData.UpdateDate,
 				"DeleteBy":     deleteBy,
@@ -524,51 +524,25 @@ func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, orderNo string, 
 	return nil
 }
 
-func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error {
+func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo, updateBy, remark string) error {
+	// Start Transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer func() {
-		if p := recover(); p != nil {
-			_ = tx.Rollback()
-			panic(p)
-		} else if err != nil {
+		if err != nil {
 			_ = tx.Rollback()
 		}
 	}()
 
-	// 1. ตรวจสอบสถานะปัจจุบันของ order
-	var status struct {
-		StatusConfID   *int `db:"StatusConfID"`
-		StatusReturnID *int `db:"StatusReturnID"`
-	}
-
-	checkQuery := `
-        SELECT StatusConfID, StatusReturnID 
-        FROM BeforeReturnOrder 
-        WHERE OrderNo = :OrderNo
-    `
-	err = tx.GetContext(ctx, &status, checkQuery, map[string]interface{}{"OrderNo": orderNo})
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("order not found: %s", orderNo)
-		}
-		return fmt.Errorf("failed to check order status: %w", err)
-	}
-
-	// 2. สร้าง CancelStatus และรับค่า CancelID
+	// ✅ Insert Cancel Status
 	insertCancelStatus := `
-        INSERT INTO CancelStatus (
-            RefID, CancelStatus, Remark, CancelBy, CancelDate
-        ) 
-        OUTPUT INSERTED.CancelID
-        VALUES (
-            :OrderNo, 1, :Remark, :CancelBy, GETDATE()
-        )
+        INSERT INTO CancelStatus (RefID, CancelStatus, Remark, CancelBy, CancelDate) 
+        VALUES (:OrderNo, 1, :Remark, :CancelBy, GETDATE())
     `
-	var cancelID int
-	err = tx.GetContext(ctx, &cancelID, insertCancelStatus, map[string]interface{}{
+
+	_, err = tx.NamedExecContext(ctx, insertCancelStatus, map[string]interface{}{
 		"OrderNo":  orderNo,
 		"Remark":   remark,
 		"CancelBy": updateBy,
@@ -577,26 +551,25 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo string, u
 		return fmt.Errorf("failed to create cancel status: %w", err)
 	}
 
-	// 3. อัพเดทสถานะการยกเลิกใน BeforeReturnOrder
+	// ✅ Update Order Status
 	updateOrder := `
         UPDATE BeforeReturnOrder
         SET StatusReturnID = 2,
             StatusConfID = 3,
-            CancelID = :CancelID,
             UpdateBy = :UpdateBy,
             UpdateDate = GETDATE()
         WHERE OrderNo = :OrderNo
     `
-	result, err := tx.ExecContext(ctx, updateOrder, map[string]interface{}{
+
+	res, err := tx.NamedExecContext(ctx, updateOrder, map[string]interface{}{
 		"OrderNo":  orderNo,
-		"CancelID": cancelID,
 		"UpdateBy": updateBy,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to update order status: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	rowsAffected, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
@@ -604,7 +577,7 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo string, u
 		return fmt.Errorf("no rows updated for order: %s", orderNo)
 	}
 
-	// 4. Commit transaction
+	// ✅ Commit Transaction
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}

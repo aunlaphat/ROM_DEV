@@ -38,7 +38,7 @@ type BeforeReturnService interface {
 	// Method สำหรับยืนยัน Sale Return
 	ConfirmSaleReturn(ctx context.Context, orderNo string, confirmBy string) error
 	// Method สำหรับยกเลิก Sale Return
-	CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) error
+	CancelSaleReturn(ctx context.Context, orderNo, updateBy, remark string) (*response.CancelSaleReturnResponse, error)
 
 	// Method สำหรับดึงรายการ Draft Orders ทั้งหมด
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
@@ -252,52 +252,65 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 	return nil
 }
 
-func (srv service) CancelSaleReturn(ctx context.Context, orderNo string, updateBy string, remark string) (time.Time, error) {
-	// Logging จุดเริ่มต้น 🪄
-	logFinish := srv.logger.LogAPICall(ctx, "CancelSaleReturn", zap.String("OrderNo", orderNo), zap.String("UpdateBy", updateBy), zap.String("Remark", remark))
-	defer logFinish("Completed", nil)
+func (srv service) CancelSaleReturn(ctx context.Context, orderNo, updateBy, remark string) (*response.CancelSaleReturnResponse, error) {
+	// 🪄 Logging จุดเริ่มต้น
+	logFinish := srv.logger.LogAPICall(ctx, "CancelSaleReturn", zap.String("OrderNo", orderNo), zap.String("UpdateBy", updateBy))
+	defer func() { logFinish("Completed", nil) }()
 
-	// ตรวจสอบข้อมูลก่อนเริ่มกระบวนการ
+	// ✅ 1. ตรวจสอบ Input
 	if orderNo == "" || updateBy == "" || remark == "" {
-		err := fmt.Errorf("orderNo, updateBy and remark are required")
-		logFinish("Failed", err)
+		err := errors.New("orderNo, updateBy, and remark are required")
 		srv.logger.Error("❌ Invalid input", zap.Error(err))
-		return time.Time{}, err
+		logFinish("Failed", err)
+		return nil, err
 	}
 
-	// ตรวจสอบว่ามีออเดอร์อยู่จริง
+	// ✅ 2. ดึงข้อมูลออเดอร์จาก Repository
 	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
-		logFinish("Failed", fmt.Errorf("failed to get order: %v", err))
-		srv.logger.Error("❌ Failed to get order", zap.Error(err))
-		return time.Time{}, err
+		err = errors.Wrap(err, "failed to get order")
+		srv.logger.Error("❌ Failed to get order", zap.String("OrderNo", orderNo), zap.Error(err))
+		logFinish("Failed", err)
+		return nil, err
 	}
 	if order == nil {
 		err := fmt.Errorf("order not found: %s", orderNo)
-		logFinish("Not Found", err)
 		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", orderNo))
-		return time.Time{}, err
+		logFinish("Not Found", err)
+		return nil, err
 	}
 
-	// ตรวจสอบว่ายกเลิกไปแล้วหรือไม่
-	if (order.StatusConfID != nil && *order.StatusConfID == 3) || (order.StatusReturnID != nil && *order.StatusReturnID == 2) {
+	// ✅ 3. ตรวจสอบว่าสามารถยกเลิกได้หรือไม่
+	if utils.IsStatusCanceled(order.StatusConfID, order.StatusReturnID) {
 		err := fmt.Errorf("order %s is already canceled", orderNo)
-		logFinish("Failed", err)
 		srv.logger.Warn("⚠️ Order is already canceled", zap.String("OrderNo", orderNo))
-		return time.Time{}, err
+		logFinish("Failed", err)
+		return nil, err
 	}
 
-	// ยกเลิกออเดอร์
-	cancelDate := time.Now()
-	if err = srv.beforeReturnRepo.CancelSaleReturn(ctx, orderNo, updateBy, remark, cancelDate); err != nil {
-		logFinish("Failed", fmt.Errorf("failed to cancel order: %v", err))
-		srv.logger.Error("❌ Failed to cancel order", zap.Error(err))
-		return time.Time{}, err
+	// ✅ 4. เรียกใช้ Repository Layer
+	err = srv.beforeReturnRepo.CancelSaleReturn(ctx, orderNo, updateBy, remark)
+	if err != nil {
+		err = errors.Wrap(err, "failed to cancel order")
+		srv.logger.Error("❌ Failed to cancel order", zap.String("OrderNo", orderNo), zap.Error(err))
+		logFinish("Failed", err)
+		return nil, err
 	}
 
-	// Log สำเร็จ 🪄
+	// ✅ 5. สร้าง Response และคืนค่า (Service Layer สร้าง Response เอง)
+	response := &response.CancelSaleReturnResponse{
+		RefID:        orderNo,
+		CancelStatus: true,
+		CancelBy:     updateBy,
+		Remark:       remark,
+		CancelDate:   time.Now(),
+	}
+
+	// 🪄 Logging Success
+	srv.logger.Info("✅ Order canceled successfully", zap.String("OrderNo", orderNo), zap.String("CanceledBy", updateBy))
 	logFinish("Success", nil)
-	return cancelDate, nil
+
+	return response, nil
 }
 
 func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {

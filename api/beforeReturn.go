@@ -45,7 +45,7 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 			r.Post("/create", app.CreateSaleReturn)
 			r.Patch("/update", app.UpdateSaleReturn)
 			r.Patch("/confirm/{orderNo}", app.ConfirmSaleReturn)
-			r.Patch("/cancel/{orderNo}", app.CancelSaleReturn)
+			r.Post("/cancel/{orderNo}", app.CancelSaleReturn)
 		})
 	})
 
@@ -458,7 +458,7 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
-	
+
 	req.UpdateBy = userID
 
 	// 4. ตรวจสอบข้อมูลที่จำเป็น
@@ -542,63 +542,47 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/cancel/{orderNo} [post]
 func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request) {
-	// 1. Validation ข้อมูล
-	orderNo := chi.URLParam(r, "orderNo") // รับค่า orderNo จาก URL
+	// ✅ 1. Extract Order Number from URL
+	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
-		http.Error(w, "OrderNo is required", http.StatusBadRequest)
+		handleResponse(w, false, "❌ OrderNo is required", nil, http.StatusBadRequest)
 		return
 	}
 
-	// 2. ตรวจสอบว่า order มีอยู่จริง
-	existingOrder, err := app.Service.BeforeReturn.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
-	if err != nil || existingOrder == nil {
-		handleResponse(w, false, "⚠️ Order not found ⚠️", nil, http.StatusNotFound)
-		return
-	}
-
-	// 3. Authentication - ตรวจสอบ JWT token
+	// ✅ 2. Authenticate User (JWT)
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
 		handleError(w, fmt.Errorf("unauthorized"))
 		return
 	}
 
-	// 4. ดึง userID จาก token
+	// ✅ 3. Extract User ID from Token
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	// 5. รับและตรวจสอบข้อมูล request
+	// ✅ 4. Decode & Validate Request Body
 	var req request.CancelSaleReturn
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		handleResponse(w, false, "❌ Invalid request payload", nil, http.StatusBadRequest)
 		return
 	}
 	if req.Remark == "" {
-		http.Error(w, "Remark is required", http.StatusBadRequest)
+		handleResponse(w, false, "❌ Remark is required", nil, http.StatusBadRequest)
 		return
 	}
 
-	// 6. เรียกใช้ Service Layer
-	cancelDate, err := app.Service.BeforeReturn.CancelSaleReturn(r.Context(), orderNo, userID, req.Remark)
+	// ✅ 5. Call Service Layer (Ensuring Correct Response Handling)
+	result, err := app.Service.BeforeReturn.CancelSaleReturn(r.Context(), orderNo, userID, req.Remark)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	// 7. ส่ง Response กลับ
-	handleResponse(w, true, "⭐ Sale return order canceled successfully ⭐", 
-		res.CancelSaleReturnResponse{
-			RefID:        orderNo,
-			CancelStatus: true,
-			CancelBy:     userID,
-			Remark:       req.Remark,
-			CancelDate:   cancelDate,
-		}, 
-		http.StatusOK,
-	)
+	// ✅ 6. Return JSON Response
+	handleResponse(w, true, "⭐ Sale return order canceled successfully ⭐", result, http.StatusOK)
 }
 
 // ListDraftOrders godoc
