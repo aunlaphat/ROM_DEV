@@ -6,7 +6,7 @@ import (
 )
 
 // เพิ่มฟังก์ชัน validate สำหรับ CreateSaleReturn
-func ValidateCreateSaleReturn(req req.BeforeReturnOrder) error {
+func ValidateCreateBeforeReturn(req req.BeforeReturnOrder) error {
 	// 1. ตรวจสอบข้อมูลพื้นฐาน
 	if req.OrderNo == "" {
 		return fmt.Errorf("order number is required")

@@ -23,9 +23,9 @@ func PrintOrderDetails(order *res.BeforeReturnOrderResponse) {
 	fmt.Printf("✅ StatusConfID: %d\n", order.StatusConfID)
 	fmt.Printf("👤 ConfirmBy: %v\n", order.ConfirmBy)
 	fmt.Printf("👤 CreateBy: %s\n", order.CreateBy)
-	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate)
+	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate.Format("2006-01-02 15:04:05"))
 	fmt.Printf("👤 UpdateBy: %v\n", order.UpdateBy)
-	fmt.Printf("📅 UpdateDate: %v\n", order.UpdateDate)
+	fmt.Printf("📅 UpdateDate: %v\n", order.UpdateDate.Format("2006-01-02 15:04:05"))
 	fmt.Printf("❌ CancelID: %v\n", order.CancelID)
 }
 
@@ -36,7 +36,7 @@ func PrintOrderLineDetails(line *res.BeforeReturnOrderLineResponse) {
 	fmt.Printf("📲 ReturnQTY: %d\n", line.ReturnQTY)
 	fmt.Printf("💲 Price: %.2f ฿\n", line.Price)
 	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
-	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate)
+	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate.Format("2006-01-02 15:04:05"))
 }
 
 func PrintSaleOrderDetails(order *res.SaleOrderResponse) {
@@ -44,7 +44,7 @@ func PrintSaleOrderDetails(order *res.SaleOrderResponse) {
 	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
 	fmt.Printf("📊 StatusMKP: %s\n", order.StatusMKP)
 	fmt.Printf("📄 SalesStatus: %s\n", order.SalesStatus)
-	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate)
+	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate.Format("2006-01-02 15:04:05"))
 }
 
 func PrintSaleOrderLineDetails(line *res.SaleOrderLineResponse) {
@@ -67,7 +67,7 @@ func PrintDraftConfirmOrderDetails(draft *res.ListDraftConfirmOrdersResponse) {
 	fmt.Printf("📦 TrackingNo: %s\n", draft.TrackingNo)
 	fmt.Printf("🚚 Logistic: %s\n", draft.Logistic)
 	fmt.Printf("📡 Channel: %d\n", draft.ChannelID)
-	fmt.Printf("📅 CreateDate: %v\n", draft.CreateDate)
+	fmt.Printf("📅 CreateDate: %v\n", draft.CreateDate.Format("2006-01-02 15:04:05"))
 	fmt.Printf("🏢 Warehouse: %d\n", draft.WarehouseID)
 }
 
@@ -153,6 +153,8 @@ func PrintUpdateReturnOrder(order *res.UpdateReturnOrder) {
 	fmt.Printf("📅 UpdateDate: %s\n", convertDate(order.UpdateDate)) 
 	fmt.Printf("❌ CancelID: %s\n", convertInt(order.CancelID)) 
 }
+
+// ************************ Trade Return ************************ //
 
 func PrintImportOrderDetails(order *res.ImportOrderResponse) {
 	fmt.Printf("🧾 OrderNo: %s\n", order.OrderNo)

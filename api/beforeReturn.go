@@ -971,10 +971,6 @@ func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Reques
 // @Router 		/before-return-order/delete-befodline/{recID} [delete]
 func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *http.Request) {
 	recID := chi.URLParam(r, "recID")
-	if recID == "" {
-		handleError(w, errors.ValidationError("RecID is required in the path"))
-		return
-	}
 
 	if err := api.Service.BeforeReturn.DeleteBeforeReturnOrderLine(r.Context(), recID); err != nil {
 		handleError(w, err)

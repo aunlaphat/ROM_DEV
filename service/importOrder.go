@@ -5,6 +5,7 @@ import (
 	"boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
 	"context"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"os"
@@ -24,57 +25,54 @@ type ImportOrderService interface {
 }
 
 func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error) {
-	srv.logger.Info("🏁 Starting to search OrderNo or TrackingNo", zap.String("Search", search))
+	logFinish := srv.logger.LogAPICall(ctx, "SearchOrderORTracking", zap.String("Search", search))
+    defer logFinish("Completed", nil)
+    srv.logger.Info("🔎 Starting get return order process 🔎", zap.String("Search", search))
 
 	order, err := srv.importOrderRepo.SearchOrderORTracking(ctx, search)
 	if err != nil {
-		srv.logger.Error("❌ Failed to search OrderNo or TrackingNo",
-			zap.String("Search", search),
-			zap.Error(err),
-		)
-		return nil, err
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to search OrderNo or TrackingNo", zap.String("Search", search), zap.Error(err))
+		return nil, fmt.Errorf("failed to search OrderNo or TrackingNo: %w", err)
 	}
 
 	if order == nil {
-		srv.logger.Info("❗ No OrderNo or TrackingNo order found",
-			zap.String("Search", search),
-		)
-		return nil, nil
+		logFinish("Failed", err)
+		srv.logger.Error("❗ No OrderNo or TrackingNo order found", zap.String("Search", search), zap.Error(err))
+		return nil, fmt.Errorf("no OrderNo or TrackingNo order found: %w", err)
 	}
 
-	srv.logger.Info("✅ Successfully searched OrderNo or TrackingNo",
-		zap.String("Search", search),
-		zap.Any("Order", order),
-	)
+	logFinish("Success", nil)
 	return []response.ImportOrderResponse{*order}, nil
 }
 
 // retrieves ReturnID and OrderNo based on SoNo
 func (srv service) GetReturnDetailsFromSaleOrder(ctx context.Context, soNo string) (string, error) {
-	srv.logger.Info("🏁 Service: Fetching OrderNo from SoNo", zap.String("SoNo", soNo))
+	logFinish := srv.logger.LogAPICall(ctx, "GetReturnDetailsFromSaleOrder", zap.String("SoNo", soNo))
+    defer logFinish("Completed", nil)
+    srv.logger.Info("🔎 Starting get return order process 🔎", zap.String("SoNo", soNo))
 
 	// Validate SoNo
 	if soNo == "" {
-		srv.logger.Error("❌ SoNo is empty")
-		return "", errors.ValidationError("SoNo is required")
+		err := fmt.Errorf("❗ SoNo is required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return "", err
 	}
 
 	// Fetch data from repository
 	orderNo, err := srv.importOrderRepo.FetchReturnDetailsBySaleOrder(ctx, soNo)
 	if err != nil {
-		srv.logger.Error("❌ Error fetching OrderNo",
-			zap.String("SoNo", soNo),
-			zap.Error(err),
-		)
-		return "", errors.InternalError("Failed to fetch OrderNo")
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error fetching OrderNo", zap.String("SoNo", soNo), zap.Error(err))
+		return "", fmt.Errorf("failed to fetch OrderNo: %w", err)
 	}
 
-	srv.logger.Info("✅ Successfully fetched ReturnID and OrderNo",
-		zap.String("OrderNo", orderNo),
-	)
+	logFinish("Success", nil)
 	return orderNo, nil
 }
 
+// ยังไม่ได้ใช้ ทำรอไว้เผื่อใช้
 // saves image metadata to the database
 func (srv service) SaveImageMetadata(ctx context.Context, image request.Images) (int, error) {
 	srv.logger.Info("🏁 Service: Saving image metadata", zap.Any("Image", image))
