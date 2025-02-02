@@ -229,7 +229,7 @@ type ConfirmReturnOrderDetails struct {
 type BeforeReturnOrderResponse struct {
 	OrderNo                string                          `json:"orderNo" db:"OrderNo"`
 	SoNo                   string                          `json:"soNo" db:"SoNo"`
-	SrNo                   string                          `json:"srNo" db:"SrNo"`
+	SrNo                   *string                         `json:"srNo" db:"SrNo"`
 	ChannelID              int                             `json:"channelId" db:"ChannelID"`
 	Reason                 string                          `json:"reason" db:"Reason"`
 	CustomerID             string                          `json:"customerId" db:"CustomerID"`

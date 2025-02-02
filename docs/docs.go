@@ -2234,7 +2234,7 @@ const docTemplate = `{
         },
         "/sale-return/create": {
             "post": {
-                "description": "Create a new sale return order based on the provided details",
+                "description": "Creates a new sale return order with the provided details",
                 "consumes": [
                     "application/json"
                 ],
@@ -2248,8 +2248,8 @@ const docTemplate = `{
                 "operationId": "create-sale-return",
                 "parameters": [
                     {
-                        "description": "Sale Return Order",
-                        "name": "saleReturn",
+                        "description": "Sale return order details",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -2258,7 +2258,7 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "201": {
                         "description": "Sale return order created successfully",
                         "schema": {
                             "allOf": [
@@ -2277,13 +2277,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request - Invalid request data",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - Missing or invalid token",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2305,7 +2299,7 @@ const docTemplate = `{
         },
         "/sale-return/search": {
             "get": {
-                "description": "Retrieve the details of a order by its SO number or Order number",
+                "description": "Retrieve the details of an order by its SO number or Order number",
                 "consumes": [
                     "application/json"
                 ],

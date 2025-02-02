@@ -6,7 +6,7 @@ type BeforeReturnOrder struct {
 	//RecID		   int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
 	OrderNo        string     `json:"orderNo" db:"OrderNo"`
 	SoNo           string     `json:"soNo" db:"SoNo"`
-	SrNo           string     `json:"srNo" db:"SrNo"`
+	SrNo           *string    `json:"srNo" db:"SrNo"`
 	ChannelID      int        `json:"channelID" db:"ChannelID"`
 	Reason         string     `json:"reason" db:"Reason"`
 	CustomerID     string     `json:"customerID" db:"CustomerID"`

@@ -2319,19 +2319,19 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new sale return order based on the provided details
+      description: Creates a new sale return order with the provided details
       operationId: create-sale-return
       parameters:
-      - description: Sale Return Order
+      - description: Sale return order details
         in: body
-        name: saleReturn
+        name: request
         required: true
         schema:
           $ref: '#/definitions/request.BeforeReturnOrder'
       produces:
       - application/json
       responses:
-        "200":
+        "201":
           description: Sale return order created successfully
           schema:
             allOf:
@@ -2341,11 +2341,7 @@ paths:
                   $ref: '#/definitions/response.BeforeReturnOrderResponse'
               type: object
         "400":
-          description: Bad Request - Invalid request data
-          schema:
-            $ref: '#/definitions/api.Response'
-        "401":
-          description: Unauthorized - Missing or invalid token
+          description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
         "409":
@@ -2363,7 +2359,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve the details of a order by its SO number or Order number
+      description: Retrieve the details of an order by its SO number or Order number
       operationId: search-order
       parameters:
       - description: SO number
