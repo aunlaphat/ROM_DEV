@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 // GetUserInfoFromClaims ดึง userID และ roleID จาก claims
@@ -26,7 +27,20 @@ func GetUserInfoFromClaims(claims map[string]interface{}) (userID string, roleID
 	}
 	roleID, ok = roleIDVal.(int)
 	if !ok {
-		return "", 0, errors.New("invalid roleID in token claims")
+		// ลองแปลงจาก float64 หรือ string เป็น int
+		switch v := roleIDVal.(type) {
+		case float64:
+			// แปลงจาก float64 เป็น int
+			roleID = int(v)
+		case string:
+			// แปลงจาก string เป็น int
+			roleID, err = strconv.Atoi(v)
+			if err != nil {
+				return "", 0, fmt.Errorf("invalid roleID format in token claims: %w", err)
+			}
+		default:
+			return "", 0, errors.New("invalid roleID format in token claims")
+		}
 	}
 
 	return userID, roleID, nil
@@ -41,31 +55,28 @@ func GetUserIDFromClaims(claims map[string]interface{}) (string, error) {
 	return userID, nil
 }
 
-// GetRoleIDFromClaims ดึง roleID เท่านั้นจาก claims
+// GetRoleIDFromClaims ดึง roleID จาก JWT Claims และแปลงให้ถูกต้อง
 func GetRoleIDFromClaims(claims map[string]interface{}) (int, error) {
-	// ดึง roleID จาก claims
 	roleIDVal, ok := claims["roleID"]
 	if !ok {
 		return 0, fmt.Errorf("roleID is missing in token claims")
 	}
 
-	// ตรวจสอบว่า roleID เป็น int หรือไม่
-	roleID, ok := roleIDVal.(int)
-	if !ok {
-		// ถ้าไม่ใช่ int, ลองแปลงจาก string เป็น int
-		if strRoleID, ok := roleIDVal.(string); ok {
-			var convertedRoleID int
-			// แปลง string เป็น int
-			_, err := fmt.Sscanf(strRoleID, "%d", &convertedRoleID)
-			if err != nil {
-				return 0, fmt.Errorf("invalid roleID format in token claims")
-			}
-			return convertedRoleID, nil
-		}
-		// ถ้าไม่สามารถแปลงได้
-		return 0, fmt.Errorf("invalid roleID format in token claims")
-	}
+	// ✅ Debug Log ตรวจสอบค่าก่อนแปลง
+	fmt.Printf("🔍 Debug: roleIDVal=%v (Type: %T)\n", roleIDVal, roleIDVal)
 
-	// ถ้าเป็น int ก็ให้ใช้เลย
-	return roleID, nil
+	switch v := roleIDVal.(type) {
+	case int:
+		return v, nil
+	case float64: // ✅ JSON อาจเก็บ roleID เป็น float64 -> แปลงเป็น int
+		return int(v), nil
+	case string: // ✅ ถ้า roleID เป็น string -> แปลงเป็น int
+		roleID, err := strconv.Atoi(v)
+		if err != nil {
+			return 0, fmt.Errorf("invalid roleID format in token claims: %w", err)
+		}
+		return roleID, nil
+	default:
+		return 0, fmt.Errorf("invalid roleID format in token claims (type: %T)", roleIDVal)
+	}
 }

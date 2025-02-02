@@ -499,6 +499,7 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 	// ✅ 2. Authenticate User (JWT)
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
+		app.Logger.Error("❌ Unauthorized access attempt", zap.String("OrderNo", orderNo))
 		handleResponse(w, false, "❌ Unauthorized: Invalid JWT or Claims", nil, http.StatusUnauthorized)
 		return
 	}
@@ -506,24 +507,47 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 	// ✅ 3. Extract UserID and RoleID from Token Claims
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
+		app.Logger.Error("❌ Invalid UserID in token claims", zap.String("OrderNo", orderNo), zap.Error(err))
 		handleResponse(w, false, "❌ Invalid UserID in token claims", nil, http.StatusUnauthorized)
 		return
 	}
+
 	roleID, err := utils.GetRoleIDFromClaims(claims)
 	if err != nil {
+		app.Logger.Error("❌ Invalid RoleID in token claims", zap.String("OrderNo", orderNo), zap.Error(err))
 		handleResponse(w, false, "❌ Invalid RoleID in token claims", nil, http.StatusUnauthorized)
 		return
 	}
 
+	// ✅ Log RoleID Before Proceeding
+	app.Logger.Info("🔹 Processing ConfirmSaleReturn",
+		zap.String("OrderNo", orderNo),
+		zap.String("UserID", userID),
+		zap.Int("RoleID", roleID),
+	)
+
 	// ✅ 4. Call Service Layer to Confirm Sale Return
 	result, err := app.Service.BeforeReturn.ConfirmSaleReturn(r.Context(), orderNo, roleID, userID)
 	if err != nil {
+		app.Logger.Error("❌ Error confirming sale return",
+			zap.String("OrderNo", orderNo),
+			zap.String("UserID", userID),
+			zap.Int("RoleID", roleID),
+			zap.Error(err),
+		)
 		handleResponse(w, false, fmt.Sprintf("❌ %s", err.Error()), nil, http.StatusInternalServerError)
 		return
 	}
 
 	// ✅ 5. Return JSON Response with Success
 	handleResponse(w, true, "⭐ Sale return order confirmed successfully ⭐", result, http.StatusOK)
+
+	// 🪄 Log successful confirmation
+	app.Logger.Info("✅ Sale return order confirmed successfully",
+		zap.String("OrderNo", orderNo),
+		zap.String("ConfirmedBy", userID),
+		zap.Int("RoleID", roleID),
+	)
 }
 
 // CancelSaleReturn godoc

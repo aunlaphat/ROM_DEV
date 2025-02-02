@@ -237,36 +237,33 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, roleID
 	var statusReturnID, statusConfID int
 
 	switch roleID {
-	case 2: // Accounting
+	case 2: // ACCOUNTING
 		if order.IsCNCreated != nil && !*order.IsCNCreated { // If CN is not created
 			statusReturnID = 1 // Pending
 			statusConfID = 1   // Draft
 		} else {
 			// CN already created, confirmation is allowed
-			if order.StatusReturnID != nil {
-				statusReturnID = *order.StatusReturnID
-			} else {
-				statusReturnID = 1 // Default fallback
-			}
-			if order.StatusConfID != nil {
-				statusConfID = *order.StatusConfID
-			} else {
-				statusConfID = 1 // Default fallback
-			}
+			statusReturnID = 1 // Default fallback for now (Pending)
+			statusConfID = 1   // Default fallback for now (Draft)
 		}
-	case 3: // Warehouse
+	case 3: // WAREHOUSE
 		if order.IsEdited != nil && !*order.IsEdited { // No edits, direct confirmation
 			statusReturnID = 3 // Booking
 			statusConfID = 2   // Confirm
 		} else {
+			// Edited, confirmation is not allowed
 			statusReturnID = 1 // Pending
 			statusConfID = 1   // Draft
 		}
 	default:
-		err := fmt.Errorf("unauthorized role: %d", roleID)
-		srv.logger.Warn("⚠️ Unauthorized Role", zap.Int("RoleID", roleID))
-		logFinish("Failed", err)
-		return nil, err
+		// ✅ ถ้า Role อื่น ๆ ที่ไม่ใช่ Accounting หรือ Warehouse ให้ตั้งค่าตามที่กำหนด
+		srv.logger.Warn("⚠️ Role has limited confirmation permissions - Defaulting to Pending/Draft",
+			zap.Int("RoleID", roleID),
+			zap.String("OrderNo", orderNo),
+		)
+
+		statusReturnID = 1 // Pending
+		statusConfID = 1   // Draft
 	}
 
 	// ✅ 4. Log Determined Status Before Updating

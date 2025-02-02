@@ -35,7 +35,7 @@ func (app *Application) GenerateToken(tokenData res.Login) string {
 	data := map[string]interface{}{
 		"userID":     tokenData.UserID,
 		"userName":   tokenData.UserName,
-		"roleID":     tokenData.RoleID,
+		"roleID":     int(tokenData.RoleID),
 		"fullNameTH": tokenData.FullNameTH,
 		"nickName":   tokenData.NickName,
 		"department": tokenData.DepartmentNo,
