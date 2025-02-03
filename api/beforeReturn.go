@@ -299,7 +299,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
 		app.Logger.Error("Authorization failed", zap.Error(err))
-		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -351,8 +351,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// // @Security BearerAuth
-// @Param saleReturn body request.BeforeReturnOrder true "Sale Return Order"
+// @Param saleReturn body request.CreateSaleReturnRequest true "Sale Return Order"
 // @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "Sale return order created successfully"
 // @Failure 400 {object} api.Response "Bad Request - Invalid request data"
 // @Failure 401 {object} api.Response "Unauthorized - Missing or invalid token"
@@ -360,63 +359,55 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/create [post]
 func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request) {
-	// 1. Authentication check
+	// ✅ 1. Authenticate User
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🔑 Invalid UserID in Token Claims 🔑", nil, http.StatusUnauthorized)
 		return
 	}
 
-	var req request.BeforeReturnOrder
+	// ✅ 2. Decode Request Body
+	var req request.CreateSaleReturnRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		app.Logger.Error("Failed to decode request", zap.Error(err))
-		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
+		app.Logger.Error("❌ Failed to decode request", zap.Error(err))
+		handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
 		return
 	}
 
-	// Set user information from claims
+	// ✅ 3. Assign UserID as CreateBy
 	req.CreateBy = userID
-	for i := range req.BeforeReturnOrderLines {
-		req.BeforeReturnOrderLines[i].CreateBy = userID
+	for i := range req.OrderLines {
+		req.OrderLines[i].CreateBy = userID
 	}
 
-	// 4. Call service
+	// ✅ 4. Call Service Layer
 	result, err := app.Service.BeforeReturn.CreateSaleReturn(r.Context(), req)
 	if err != nil {
-		app.Logger.Error("Failed to create sale return",
+		app.Logger.Error("❌ Failed to create sale return",
 			zap.Error(err),
-			zap.String("orderNo", req.OrderNo))
-
-		// Handle specific error cases
-		switch {
-		case strings.Contains(err.Error(), "validation failed"):
-			handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
-		case strings.Contains(err.Error(), "already exists"):
-			handleResponse(w, false, err.Error(), nil, http.StatusConflict)
-		default:
-			handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
-		}
+			zap.String("OrderNo", req.OrderNo))
+		handleError(w, err)
 		return
 	}
 
-	// Debug logging (always print for now, can be controlled by log level later)
-	fmt.Printf("\n📋 ========== Created Sale Return Order ========== 📋\n")
+	fmt.Printf("\n📋 ========== Order Details ========== 📋\n")
 	utils.PrintOrderDetails(result)
-	fmt.Printf("\n📋 ========== Sale Return Order Line Details ========== 📋\n")
+
+	fmt.Printf("\n📋 ========== Order Line Details ========== 📋\n")
 	for i, line := range result.BeforeReturnOrderLines {
 		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
 		utils.PrintOrderLineDetails(&line)
 	}
-	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.BeforeReturnOrderLines)) // Add logging for the number of lines
+	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.BeforeReturnOrderLines))
 	fmt.Println("=====================================")
 
-	// Send successful response
+	// ✅ 5. Return Success Response
 	handleResponse(w, true, "⭐ Sale return order created successfully ⭐", result, http.StatusOK)
 }
 
@@ -438,14 +429,14 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 	// ✅ 1. Authenticate User (JWT)
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "🔒 Unauthorized", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
 	// ✅ 2. Extract UserID from JWT Claims (ใช้แทน UpdateBy)
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		handleResponse(w, false, "🔒 Invalid user token", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🔑 Invalid UserID in Token Claims 🔑", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -491,19 +482,19 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 	// ✅ 2. Authenticate User (JWT)
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleResponse(w, false, "🔒 Unauthorized: Invalid JWT or Claims", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
 	// ✅ 3. Extract UserID and RoleID from Token Claims
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		handleResponse(w, false, "🔒 Invalid user token", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🔑 Invalid UserID in Token Claims 🔑", nil, http.StatusUnauthorized)
 		return
 	}
 	roleID, err := utils.GetRoleIDFromClaims(claims)
 	if err != nil {
-		handleResponse(w, false, "🔒 Invalid RoleID in token claims", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🔑 Invalid RoleID in Token Claims 🔑", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -543,16 +534,14 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 	// ✅ 2. Authenticate User (JWT)
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		app.Logger.Error("🔒 Unauthorized access attempt")
-		handleResponse(w, false, "🔒 Unauthorized", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
 	// ✅ 3. Extract User ID from Token
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		app.Logger.Error("🔒 Invalid user token", zap.Error(err))
-		handleResponse(w, false, "🔒 Invalid user token", nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🔑 Invalid UserID in Token Claims 🔑", nil, http.StatusUnauthorized)
 		return
 	}
 

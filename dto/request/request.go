@@ -6,28 +6,29 @@ type BeforeReturnOrder struct {
 	//RecID		   int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
 	OrderNo        string     `json:"orderNo" db:"OrderNo"`
 	SoNo           string     `json:"soNo" db:"SoNo"`
-	SrNo           string     `json:"srNo" db:"SrNo"`
+	SrNo           *string    `json:"srNo" db:"SrNo"`
 	ChannelID      int        `json:"channelID" db:"ChannelID"`
 	Reason         string     `json:"reason" db:"Reason"`
 	CustomerID     string     `json:"customerID" db:"CustomerID"`
 	TrackingNo     string     `json:"trackingNo" db:"TrackingNo"`
 	Logistic       string     `json:"logistic" db:"Logistic"`
 	WarehouseID    int        `json:"warehouseID" db:"WarehouseID"`
-	SoStatusID     *int       `json:"soStatusID" db:"SoStatusID"`
-	MkpStatusID    *int       `json:"mkpStatusID" db:"MkpStatusID"`
-	ReturnDate     *time.Time `json:"returnDate" db:"ReturnDate"`
-	StatusReturnID *int       `json:"statusReturnID" db:"StatusReturnID"`
-	StatusConfID   *int       `json:"statusConfID" db:"StatusConfID"`
-	ConfirmBy      *string    `json:"confirmBy" db:"ConfirmBy"`
-	//ConfirmDate  *time.Time `json:"confirmDate" db:"ConfirmDate"`
-	CreateBy string `json:"createBy" db:"CreateBy"`
+	SoStatus       *string    `json:"soStatus,omitempty" db:"SoStatus"`
+	MkpStatus      *string    `json:"mkpStatus,omitempty" db:"MkpStatus"`
+	ReturnDate     *time.Time `json:"returnDate,omitempty" db:"ReturnDate"`
+	StatusReturnID *int       `json:"statusReturnID,omitempty" db:"StatusReturnID"`
+	StatusConfID   *int       `json:"statusConfID,omitempty" db:"StatusConfID"`
+	CreateBy       string     `json:"createBy" db:"CreateBy"`
 	//CreateDate  *time.Time `json:"createDate" db:"CreateDate"`
+	ConfirmBy *string `json:"confirmBy" db:"ConfirmBy"`
+	//ConfirmDate  *time.Time `json:"confirmDate" db:"ConfirmDate"`
 	UpdateBy *string `json:"updateBy" db:"UpdateBy"`
 	//UpdateDate   *time.Time `json:"updateDate" db:"UpdateDate"`
 	CancelID               *int                    `json:"cancelID" db:"CancelID"`
+	IsCNCreated            *bool                   `json:"isCNCreated" db:"IsCNCreated"`
+	IsEdited               *bool                   `json:"isEdited" db:"IsEdited"`
 	BeforeReturnOrderLines []BeforeReturnOrderLine `json:"beforeReturnOrderLines"`
 }
-
 type BeforeReturnOrderLine struct {
 	//RecID		  int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
 	OrderNo   string  `json:"orderNo" db:"OrderNo"`
@@ -42,6 +43,36 @@ type BeforeReturnOrderLine struct {
 	//UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"`
 	TrackingNo *string `json:"trackingNo" db:"TrackingNo"`
 	AlterSKU   *string `json:"alterSKU" db:"AlterSKU"`
+}
+
+type CreateSaleReturnRequest struct {
+	OrderNo     string     `json:"orderNo" db:"OrderNo"`
+	SoNo        string     `json:"soNo" db:"SoNo"`
+	ChannelID   int        `json:"channelID" db:"ChannelID"`
+	Reason      string     `json:"reason" db:"Reason"`
+	CustomerID  string     `json:"customerID" db:"CustomerID"`
+	TrackingNo  string     `json:"trackingNo" db:"TrackingNo"`
+	Logistic    string     `json:"logistic" db:"Logistic"`
+	WarehouseID int        `json:"warehouseID" db:"WarehouseID"`
+	SoStatus    *string    `json:"soStatus,omitempty" db:"SoStatus"`
+	MkpStatus   *string    `json:"mkpStatus,omitempty" db:"MkpStatus"`
+	ReturnDate  *time.Time `json:"returnDate,omitempty" db:"ReturnDate"`
+	CreateBy    string     `json:"createBy" db:"CreateBy"`
+	//CreateDate             *time.Time                   `json:"createDate" db:"CreateDate"`
+	OrderLines []CreateSaleReturnOrderLine `json:"beforeReturnOrderLines"`
+}
+
+type CreateSaleReturnOrderLine struct {
+	OrderNo   string  `json:"orderNo" db:"OrderNo"`
+	SKU       string  `json:"sku" db:"SKU"`
+	ItemName  string  `json:"itemName" db:"ItemName"`
+	QTY       int     `json:"qty" db:"QTY"`
+	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
+	Price     float64 `json:"price" db:"Price"`
+	CreateBy  string  `json:"createBy" db:"CreateBy"`
+	//CreateDate *time.Time `json:"createDate" db:"CreateDate"`
+	TrackingNo *string `json:"trackingNo,omitempty" db:"TrackingNo"`
+	AlterSKU   *string `json:"alterSKU,omitempty" db:"AlterSKU"`
 }
 
 type UpdateSaleReturn struct {

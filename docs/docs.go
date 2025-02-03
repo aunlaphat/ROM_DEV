@@ -2252,7 +2252,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.BeforeReturnOrder"
+                            "$ref": "#/definitions/request.CreateSaleReturnRequest"
                         }
                     }
                 ],
@@ -3204,20 +3204,26 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "confirmBy": {
+                    "description": "CreateDate  *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + `",
                     "type": "string"
                 },
                 "createBy": {
-                    "description": "ConfirmDate  *time.Time ` + "`" + `json:\"confirmDate\" db:\"ConfirmDate\"` + "`" + `",
                     "type": "string"
                 },
                 "customerID": {
                     "type": "string"
                 },
+                "isCNCreated": {
+                    "type": "boolean"
+                },
+                "isEdited": {
+                    "type": "boolean"
+                },
                 "logistic": {
                     "type": "string"
                 },
-                "mkpStatusID": {
-                    "type": "integer"
+                "mkpStatus": {
+                    "type": "string"
                 },
                 "orderNo": {
                     "description": "RecID\t\t   int        ` + "`" + `json:\"recID\" db:\"RecID\"` + "`" + ` // (PK - Auto Increment)",
@@ -3232,8 +3238,8 @@ const docTemplate = `{
                 "soNo": {
                     "type": "string"
                 },
-                "soStatusID": {
-                    "type": "integer"
+                "soStatus": {
+                    "type": "string"
                 },
                 "srNo": {
                     "type": "string"
@@ -3248,7 +3254,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updateBy": {
-                    "description": "CreateDate  *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + `",
+                    "description": "ConfirmDate  *time.Time ` + "`" + `json:\"confirmDate\" db:\"ConfirmDate\"` + "`" + `",
                     "type": "string"
                 },
                 "warehouseID": {
@@ -3419,6 +3425,87 @@ const docTemplate = `{
                 "trackingNo": {
                     "type": "string",
                     "example": "12345678TH"
+                }
+            }
+        },
+        "request.CreateSaleReturnOrderLine": {
+            "type": "object",
+            "properties": {
+                "alterSKU": {
+                    "type": "string"
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "itemName": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "description": "CreateDate *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + `",
+                    "type": "string"
+                }
+            }
+        },
+        "request.CreateSaleReturnRequest": {
+            "type": "object",
+            "properties": {
+                "beforeReturnOrderLines": {
+                    "description": "CreateDate             *time.Time                   ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + `",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.CreateSaleReturnOrderLine"
+                    }
+                },
+                "channelID": {
+                    "type": "integer"
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "customerID": {
+                    "type": "string"
+                },
+                "logistic": {
+                    "type": "string"
+                },
+                "mkpStatus": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "returnDate": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "soStatus": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "type": "integer"
                 }
             }
         },
@@ -3623,6 +3710,12 @@ const docTemplate = `{
         "response.BeforeReturnOrderLineResponse": {
             "type": "object",
             "properties": {
+                "alterSKU": {
+                    "type": "string"
+                },
+                "createBy": {
+                    "type": "string"
+                },
                 "createDate": {
                     "type": "string"
                 },
@@ -3688,8 +3781,8 @@ const docTemplate = `{
                 "logistic": {
                     "type": "string"
                 },
-                "mkpStatusId": {
-                    "type": "integer"
+                "mkpStatus": {
+                    "type": "string"
                 },
                 "orderNo": {
                     "type": "string"
@@ -3703,8 +3796,8 @@ const docTemplate = `{
                 "soNo": {
                     "type": "string"
                 },
-                "soStatusId": {
-                    "type": "integer"
+                "soStatus": {
+                    "type": "string"
                 },
                 "srNo": {
                     "type": "string"

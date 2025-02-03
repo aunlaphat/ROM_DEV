@@ -16,8 +16,8 @@ type BeforeReturnOrder struct {
 	TrackingNo     string     `db:"TrackingNo"`     // เลขพัสดุ
 	Logistic       string     `db:"Logistic"`       // ขนส่ง
 	WarehouseID    int        `db:"WarehouseID"`    // รหัสคลังสินค้า
-	SoStatusID     *int       `db:"SoStatusID"`     // สถานะใบสั่งขาย
-	MkpStatusID    *int       `db:"MkpStatusID"`    // สถานะในตลาด
+	SoStatus     *int       `db:"SoStatus"`     // สถานะใบสั่งขาย
+	MkpStatus    *int       `db:"MkpStatus"`    // สถานะในตลาด
 	ReturnDate     *time.Time `db:"ReturnDate"`     // วันที่คืนสินค้า
 	StatusReturnID int        `db:"StatusReturnID"` // สถานะการคืนสินค้า
 	StatusConfID   int        `db:"StatusConfID"`   // สถานะการยืนยัน

@@ -31,7 +31,7 @@ type BeforeReturnRepository interface {
 
 	// Create Return Order MKP //
 	SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error)
-	CreateSaleReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
+	CreateSaleReturn(ctx context.Context, req request.CreateSaleReturnRequest) (*response.BeforeReturnOrderResponse, error)
 	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn, userID string) error
 	ConfirmSaleReturn(ctx context.Context, orderNo string, statusReturnID, statusConfID int, userID string) error
 	CancelSaleReturn(ctx context.Context, req request.CancelSaleReturn, userID string) error
@@ -373,70 +373,64 @@ func (repo repositoryDB) SearchOrder(ctx context.Context, soNo, orderNo string) 
 	return &orderHead, nil
 }
 
-func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
-	// 1. เริ่ม Transaction
+func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.CreateSaleReturnRequest) (*response.BeforeReturnOrderResponse, error) {
+	// ✅ Start Transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %w", err)
+		return nil, fmt.Errorf("❌ Failed to start transaction: %w", err)
 	}
-
 	defer func() {
-		if r := recover(); r != nil {
+		if p := recover(); p != nil {
 			_ = tx.Rollback()
-			panic(r)
+			panic(p)
 		} else if err != nil {
 			_ = tx.Rollback()
 		}
 	}()
 
-	// Logging
-	fmt.Println("Transaction started")
-
-	// 2. Insert BeforeReturnOrder (Header)
+	// ✅ Insert Header (BeforeReturnOrder)
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
-            OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, 
-            SoStatusID, MkpStatusID, ReturnDate, CreateBy, CreateDate
+            OrderNo, SoNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, 
+            SoStatus, MkpStatus, ReturnDate, CreateBy, CreateDate
         ) VALUES (
-            :OrderNo, :SoNo, :SrNo, :ChannelID, :Reason, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
-            :SoStatusID, :MkpStatusID, :ReturnDate, :CreateBy, GETDATE()
+            :OrderNo, :SoNo, :ChannelID, :Reason, :CustomerID, ISNULL(:TrackingNo, ''), :Logistic, :WarehouseID, 
+            ISNULL(:SoStatus, ''), ISNULL(:MkpStatus, ''), :ReturnDate, :CreateBy, GETDATE()
         )
     `
-	if _, err = tx.NamedExecContext(ctx, queryOrder, order); err != nil {
-		return nil, fmt.Errorf("failed to create BeforeReturnOrder: %w", err)
+
+	_, err = tx.NamedExecContext(ctx, queryOrder, &order)
+	if err != nil {
+		return nil, fmt.Errorf("❌ Failed to create BeforeReturnOrder: %w", err)
 	}
 
-	// Logging
-	fmt.Println("Inserted BeforeReturnOrder")
-
-	// 3. Insert BeforeReturnOrderLine (Lines)
+	// ✅ Insert Lines (BeforeReturnOrderLine)
 	queryLine := `
         INSERT INTO BeforeReturnOrderLine (
-            OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate
+            OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo
         ) VALUES (
-            :OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE()
+            :OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), ISNULL(:TrackingNo, '')
         )
     `
-	if _, err = tx.NamedExecContext(ctx, queryLine, order.BeforeReturnOrderLines); err != nil {
-		return nil, fmt.Errorf("failed to create BeforeReturnOrderLine: %w", err)
+
+	// ✅ ใช้ `NamedExecContext` Insert ถ้ามีข้อมูล
+	if len(order.OrderLines) > 0 {
+		_, err = tx.NamedExecContext(ctx, queryLine, order.OrderLines)
+		if err != nil {
+			return nil, fmt.Errorf("❌ Failed to create BeforeReturnOrderLine: %w", err)
+		}
 	}
 
-	// 4. Commit transaction
+	// ✅ Commit Transaction
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, fmt.Errorf("❌ Failed to commit transaction: %w", err)
 	}
 
-	// Logging
-	fmt.Println("Transaction committed")
-
-	// 5. ดึงข้อมูลที่สร้างเสร็จแล้ว
+	// ✅ Fetch Created Order
 	createdOrder, err := repo.GetBeforeReturnOrderByOrderNo(ctx, order.OrderNo)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch created order: %w", err)
+		return nil, fmt.Errorf("❌ Failed to fetch created order: %w", err)
 	}
-
-	// Logging
-	fmt.Println("Fetched created order")
 
 	return createdOrder, nil
 }
@@ -1122,10 +1116,10 @@ func (repo repositoryDB) CreateTradeReturn(ctx context.Context, order request.Be
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
             OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, 
-            SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy
+            SoStatus, MkpStatus, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy
         ) VALUES (
             :OrderNo, :SoNo, :SrNo, :ChannelID, :Reason, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
-            :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy
+            :SoStatus, :MkpStatus, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy
         )
     `
 	_, err = tx.NamedExecContext(ctx, queryOrder, map[string]interface{}{
@@ -1138,8 +1132,8 @@ func (repo repositoryDB) CreateTradeReturn(ctx context.Context, order request.Be
 		"TrackingNo":     order.TrackingNo,
 		"Logistic":       order.Logistic,
 		"WarehouseID":    order.WarehouseID,
-		"SoStatusID":     order.SoStatusID,
-		"MkpStatusID":    order.MkpStatusID,
+		"SoStatus":       order.SoStatus,
+		"MkpStatus":      order.MkpStatus,
 		"ReturnDate":     order.ReturnDate,
 		"StatusReturnID": 3,
 		"StatusConfID":   order.StatusConfID,
@@ -1203,9 +1197,9 @@ func (repo repositoryDB) CreateTradeReturn(ctx context.Context, order request.Be
 func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order request.BeforeReturnOrder) error {
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
-            OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CancelID
+            OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatus, MkpStatus, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CancelID
         ) VALUES (
-            :OrderNo, :SoNo, :SrNo, :ChannelID, :Reason, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, :CancelID
+            :OrderNo, :SoNo, :SrNo, :ChannelID, :Reason, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, :SoStatus, :MkpStatus, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy, :CancelID
         )
     `
 	paramsOrder := map[string]interface{}{
@@ -1218,8 +1212,8 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, order requ
 		"TrackingNo":     order.TrackingNo,
 		"Logistic":       order.Logistic,
 		"WarehouseID":    order.WarehouseID,
-		"SoStatusID":     order.SoStatusID,
-		"MkpStatusID":    order.MkpStatusID,
+		"SoStatus":       order.SoStatus,
+		"MkpStatus":      order.MkpStatus,
 		"ReturnDate":     order.ReturnDate,
 		"StatusReturnID": order.StatusReturnID,
 		"StatusConfID":   order.StatusConfID,
@@ -1272,10 +1266,10 @@ func (repo repositoryDB) CreateBeforeReturnOrderWithTransaction(ctx context.Cont
 	queryOrder := `
         INSERT INTO BeforeReturnOrder (
             OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, 
-            SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy
+            SoStatus, MkpStatus, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy
         ) VALUES (
             :OrderNo, :SoNo, :SrNo, :ChannelID, :Reason, :CustomerID, :TrackingNo, :Logistic, :WarehouseID, 
-            :SoStatusID, :MkpStatusID, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy
+            :SoStatus, :MkpStatus, :ReturnDate, :StatusReturnID, :StatusConfID, :ConfirmBy, :CreateBy
         )
     `
 	_, err = tx.NamedExecContext(ctx, queryOrder, map[string]interface{}{
@@ -1288,8 +1282,8 @@ func (repo repositoryDB) CreateBeforeReturnOrderWithTransaction(ctx context.Cont
 		"TrackingNo":     order.TrackingNo,
 		"Logistic":       order.Logistic,
 		"WarehouseID":    order.WarehouseID,
-		"SoStatusID":     order.SoStatusID,
-		"MkpStatusID":    order.MkpStatusID,
+		"SoStatus":       order.SoStatus,
+		"MkpStatus":      order.MkpStatus,
 		"ReturnDate":     order.ReturnDate,
 		"StatusReturnID": order.StatusReturnID,
 		"StatusConfID":   order.StatusConfID,
@@ -1334,7 +1328,7 @@ func (repo repositoryDB) CreateBeforeReturnOrderWithTransaction(ctx context.Cont
 
 func (repo repositoryDB) ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error) {
 	query := `
-        SELECT OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
+        SELECT OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatus, MkpStatus, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID
         FROM BeforeReturnOrder
         ORDER BY RecID ASC
     `
@@ -1425,7 +1419,7 @@ func (repo repositoryDB) ListBeforeReturnOrderLinesByOrderNo(ctx context.Context
 
 func (repo repositoryDB) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error) {
 	query := `
-        SELECT OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatusID, MkpStatusID, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID, IsCNCreated, IsEdited 
+        SELECT OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatus, MkpStatus, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID, IsCNCreated, IsEdited 
         FROM BeforeReturnOrder
         WHERE OrderNo = :OrderNo
     `
@@ -1496,8 +1490,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order requ
             TrackingNo = COALESCE(:TrackingNo, TrackingNo),
             Logistic = COALESCE(:Logistic, Logistic),
             WarehouseID = COALESCE(:WarehouseID, WarehouseID),
-            SoStatusID = COALESCE(:SoStatusID, SoStatusID),
-            MkpStatusID = COALESCE(:MkpStatusID, MkpStatusID),
+            SoStatus = COALESCE(:SoStatus, SoStatus),
+            MkpStatus = COALESCE(:MkpStatus, MkpStatus),
             ReturnDate = COALESCE(:ReturnDate, ReturnDate),
             StatusReturnID = COALESCE(:StatusReturnID, StatusReturnID),
             StatusConfID = COALESCE(:StatusConfID, StatusConfID),
@@ -1515,8 +1509,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrder(ctx context.Context, order requ
 		"TrackingNo":     order.TrackingNo,
 		"Logistic":       order.Logistic,
 		"WarehouseID":    order.WarehouseID,
-		"SoStatusID":     order.SoStatusID,
-		"MkpStatusID":    order.MkpStatusID,
+		"SoStatus":       order.SoStatus,
+		"MkpStatus":      order.MkpStatus,
 		"ReturnDate":     order.ReturnDate,
 		"StatusReturnID": order.StatusReturnID,
 		"StatusConfID":   order.StatusConfID,
@@ -1627,8 +1621,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
             TrackingNo = COALESCE(:TrackingNo, TrackingNo),
             Logistic = COALESCE(:Logistic, Logistic),
             WarehouseID = COALESCE(:WarehouseID, WarehouseID),
-            SoStatusID = COALESCE(:SoStatusID, SoStatusID),
-            MkpStatusID = COALESCE(:MkpStatusID, MkpStatusID),
+            SoStatus = COALESCE(:SoStatus, SoStatus),
+            MkpStatus = COALESCE(:MkpStatus, MkpStatus),
             ReturnDate = COALESCE(:ReturnDate, ReturnDate),
             StatusReturnID = COALESCE(:StatusReturnID, StatusReturnID),
             StatusConfID = COALESCE(:StatusConfID, StatusConfID),
@@ -1648,8 +1642,8 @@ func (repo repositoryDB) UpdateBeforeReturnOrderWithTransaction(ctx context.Cont
 		"TrackingNo":     order.TrackingNo,
 		"Logistic":       order.Logistic,
 		"WarehouseID":    order.WarehouseID,
-		"SoStatusID":     order.SoStatusID,
-		"MkpStatusID":    order.MkpStatusID,
+		"SoStatus":       order.SoStatus,
+		"MkpStatus":      order.MkpStatus,
 		"ReturnDate":     order.ReturnDate,
 		"StatusReturnID": order.StatusReturnID,
 		"StatusConfID":   order.StatusConfID,
