@@ -29,16 +29,16 @@ type BeforeReturnRepository interface {
 	UpdateBeforeReturnOrderLine(ctx context.Context, orderNo string, line request.BeforeReturnOrderLine) error
 	UpdateBeforeReturnOrderWithTransaction(ctx context.Context, order request.BeforeReturnOrder) error
 
-	// Create Return Order MKP //
+	// Create Return Order MKP 🚨//
 	SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error)
 	CreateSaleReturn(ctx context.Context, req request.CreateSaleReturnRequest) (*response.BeforeReturnOrderResponse, error)
 	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn, userID string) error
 	ConfirmSaleReturn(ctx context.Context, orderNo string, statusReturnID, statusConfID int, userID string) error
 	CancelSaleReturn(ctx context.Context, req request.CancelSaleReturn, userID string) error
 
-	// Draft & Confirm MKP //
-	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
-	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
+	// Draft & Confirm MKP 🚨//
+	ListDraftOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error)
+	ListConfirmOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error)
 	GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, []response.DraftLineResponse, error)
 	ListCodeR(ctx context.Context) ([]response.CodeRResponse, error)
 	AddCodeR(ctx context.Context, codeR request.CodeR) (*response.DraftLineResponse, error)
@@ -587,50 +587,74 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, req request.Cance
 	return nil
 }
 
-// Draft & Confirm MKP //
-func (repo repositoryDB) ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error) {
+// Draft & Confirm MKP 🚨//
+func (repo repositoryDB) ListDraftOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error) {
+	// คำสั่ง SQL สำหรับดึงข้อมูล Draft Orders
 	query := `
-        SELECT OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
+        SELECT TOP 100 OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
         FROM BeforeReturnOrder
         WHERE StatusConfID = 1 -- Draft status
-		ORDER BY CreateDate DESC
+        AND CreateDate BETWEEN :startDate AND :endDate
+        ORDER BY CreateDate DESC
     `
 
 	var orders []response.ListDraftConfirmOrdersResponse
+
+	// เตรียมคำสั่ง SQL
 	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare statement: %w", err)
 	}
 	defer nstmt.Close()
 
-	err = nstmt.SelectContext(ctx, &orders, map[string]interface{}{})
+	// กำหนดพารามิเตอร์สำหรับคำสั่ง SQL
+	params := map[string]interface{}{
+		"startDate": startDate,
+		"endDate":   endDate,
+	}
+
+	// ดึงข้อมูล Draft Orders จากฐานข้อมูล
+	err = nstmt.SelectContext(ctx, &orders, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list draft orders: %w", err)
 	}
 
+	// คืนค่าข้อมูล Draft Orders
 	return orders, nil
 }
 
-func (repo repositoryDB) ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error) {
+func (repo repositoryDB) ListConfirmOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error) {
+	// คำสั่ง SQL สำหรับดึงข้อมูล Confirm Orders
 	query := `
-        SELECT OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
+        SELECT TOP 100 OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
         FROM BeforeReturnOrder
         WHERE StatusConfID = 2 -- Confirm status
-		ORDER BY CreateDate DESC
+        AND CreateDate BETWEEN :startDate AND :endDate
+        ORDER BY CreateDate DESC
     `
 
 	var orders []response.ListDraftConfirmOrdersResponse
+
+	// เตรียมคำสั่ง SQL
 	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare statement: %w", err)
 	}
 	defer nstmt.Close()
 
-	err = nstmt.SelectContext(ctx, &orders, map[string]interface{}{})
+	// กำหนดพารามิเตอร์สำหรับคำสั่ง SQL
+	params := map[string]interface{}{
+		"startDate": startDate,
+		"endDate":   endDate,
+	}
+
+	// ดึงข้อมูล Confirm Orders จากฐานข้อมูล
+	err = nstmt.SelectContext(ctx, &orders, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list confirm orders: %w", err)
 	}
 
+	// คืนค่าข้อมูล Confirm Orders
 	return orders, nil
 }
 
