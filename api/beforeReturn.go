@@ -147,6 +147,7 @@ func (app *Application) CreateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Router /before-return-order/update/{orderNo} [patch]
 func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
+
 	var req request.BeforeReturnOrder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, err)
@@ -187,6 +188,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Router /before-return-order/{orderNo} [get]
 func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
+	
 	result, err := app.Service.BeforeReturn.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
@@ -247,6 +249,7 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 // @Router /before-return-order/line/{orderNo} [get]
 func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
+	
 	result, err := app.Service.BeforeReturn.GetBeforeReturnOrderLineByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)

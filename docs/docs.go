@@ -2570,7 +2570,7 @@ const docTemplate = `{
             }
         },
         "/trade-return/confirm-return/{orderNo}": {
-            "patch": {
+            "post": {
                 "description": "Confirm a trade return order based on the provided order number (OrderNo) and input lines for ReturnOrderLine.",
                 "consumes": [
                     "application/json"
@@ -2728,7 +2728,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -2779,7 +2779,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -2846,7 +2846,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -2913,7 +2913,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -3206,7 +3206,7 @@ const docTemplate = `{
                 "logistic": {
                     "type": "string"
                 },
-                "mkpStatusID": {
+                "mkpStatus": {
                     "type": "integer"
                 },
                 "orderNo": {
@@ -3222,7 +3222,7 @@ const docTemplate = `{
                 "soNo": {
                     "type": "string"
                 },
-                "soStatusID": {
+                "soStatus": {
                     "type": "integer"
                 },
                 "srNo": {
@@ -3899,6 +3899,44 @@ const docTemplate = `{
                 },
                 "sku": {
                     "type": "string"
+                }
+            }
+        },
+        "response.DraftTradeDetail": {
+            "type": "object",
+            "properties": {
+                "channelId": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string",
+                    "example": "ORD0001"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string",
+                    "example": "SO0001"
+                },
+                "srNo": {
+                    "type": "string",
+                    "example": "SR0001"
+                },
+                "statusCheckId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "trackingNo": {
+                    "type": "string",
+                    "example": "12345678TH"
                 }
             }
         },

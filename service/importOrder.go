@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -26,9 +27,19 @@ type ImportOrderService interface {
 
 func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "SearchOrderORTracking", zap.String("Search", search))
-    defer logFinish("Completed", nil)
-    srv.logger.Info("🔎 Starting get return order process 🔎", zap.String("Search", search))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting search order process", zap.String("Search", search))
 
+	// ตรวจสอบ search ว่าเป็นค่าว่างหรือไม่
+	search = strings.TrimSpace(search)
+	if search == "" {
+		err := fmt.Errorf("❌ Search input is required (OrderNo or TrackingNo)")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
+	}
+
+	// ค้นหา order จาก repository
 	order, err := srv.importOrderRepo.SearchOrderORTracking(ctx, search)
 	if err != nil {
 		logFinish("Failed", err)
@@ -36,10 +47,18 @@ func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]
 		return nil, fmt.Errorf("failed to search OrderNo or TrackingNo: %w", err)
 	}
 
+	// หากไม่พบข้อมูล
 	if order == nil {
+		err := fmt.Errorf("❗ No OrderNo or TrackingNo order found")
 		logFinish("Failed", err)
-		srv.logger.Error("❗ No OrderNo or TrackingNo order found", zap.String("Search", search), zap.Error(err))
-		return nil, fmt.Errorf("no OrderNo or TrackingNo order found: %w", err)
+		srv.logger.Error(err)
+		return nil, err
+	}
+
+	// เติมค่าของ OrderLines (TrackingNo และ OrderNo)
+	for i := range order.OrderLines {
+		order.OrderLines[i].TrackingNo = order.TrackingNo
+		order.OrderLines[i].OrderNo = order.OrderNo
 	}
 
 	logFinish("Success", nil)
@@ -49,8 +68,8 @@ func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]
 // retrieves ReturnID and OrderNo based on SoNo
 func (srv service) GetReturnDetailsFromSaleOrder(ctx context.Context, soNo string) (string, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "GetReturnDetailsFromSaleOrder", zap.String("SoNo", soNo))
-    defer logFinish("Completed", nil)
-    srv.logger.Info("🔎 Starting get return order process 🔎", zap.String("SoNo", soNo))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting get return order process 🔎", zap.String("SoNo", soNo))
 
 	// Validate SoNo
 	if soNo == "" {
@@ -102,15 +121,40 @@ func (srv service) SaveImageMetadata(ctx context.Context, image request.Images) 
 }
 
 func (srv service) ConfirmFromWH(ctx context.Context, soNo string, imageTypeID int, skus string, files []*multipart.FileHeader) ([]response.ImageResponse, error) {
-	srv.logger.Info("🏁 Processing Image Upload", zap.String("SoNo", soNo))
+	logFinish := srv.logger.LogAPICall(ctx, "ConfirmFromWH")
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting confirm from WH process 🔎", zap.String("soNo", soNo), zap.Int("imageTypeID", imageTypeID))
+
+	if soNo == "" {
+		err := fmt.Errorf("SoNo is required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
+	}
+
+	if imageTypeID < 1 || imageTypeID > 3 {
+		err := fmt.Errorf("invalid Image Type ID")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
+	}
+
+	if len(files) == 0 {
+		err := fmt.Errorf("no files uploaded")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
+	}
 
 	orderNo, err := srv.importOrderRepo.FetchReturnDetailsBySaleOrder(ctx, soNo)
 	if err != nil {
+		logFinish("Failed", err)
 		srv.logger.Error("❌ Error fetching OrderNo", zap.String("SoNo", soNo), zap.Error(err))
 		return nil, errors.InternalError("Failed to fetch OrderNo")
 	}
 
 	var result []response.ImageResponse
+	
 	for _, file := range files {
 		filePath, err := srv.SaveImage(file)
 		if err != nil {
@@ -127,6 +171,7 @@ func (srv service) ConfirmFromWH(ctx context.Context, soNo string, imageTypeID i
 
 		imageID, err := srv.importOrderRepo.InsertImageMetadata(ctx, image)
 		if err != nil {
+			logFinish("Failed", err)
 			srv.logger.Error("❌ Error saving image metadata", zap.Any("Image", image), zap.Error(err))
 			return nil, errors.InternalError("Failed to save image metadata")
 		}
@@ -135,6 +180,7 @@ func (srv service) ConfirmFromWH(ctx context.Context, soNo string, imageTypeID i
 	}
 
 	srv.logger.Info("✅ Successfully processed image upload", zap.Int("Total Images", len(result)))
+	logFinish("Success", nil)
 	return result, nil
 }
 

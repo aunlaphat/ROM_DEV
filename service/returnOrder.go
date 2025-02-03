@@ -39,6 +39,13 @@ func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrde
 		return nil, fmt.Errorf("error fetching all return orders: %w", err)
 	}
 
+	// เช็คเมื่อไม่มีข้อมูลในคำสั่งซื้อ
+	if len(allorder) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("No return orders found")
+		return []response.ReturnOrder{}, nil
+	}
+
 	logFinish("Success", nil)
 	return allorder, nil
 }
@@ -61,12 +68,19 @@ func (srv service) GetReturnOrderByOrderNo(ctx context.Context, orderNo string) 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logFinish("Failed", err)
-			srv.logger.Error("❗Return order not found", zap.Error(err))
-			return nil, fmt.Errorf("return order not found: %w", err)
+			srv.logger.Warn("⚠️ This OrderNo not found", zap.Error(err))
+			return nil, fmt.Errorf("⚠️ This OrderNo not found: %s", orderNo)
 		}
 		logFinish("Failed", err)
-		srv.logger.Error("Error fetching ReturnOrder by ID", zap.Error(err))
-		return nil, fmt.Errorf("error fetching ReturnOrder by ID: %s => %w", orderNo, err)
+		srv.logger.Error("Error fetching ReturnOrder by OrderNo", zap.Error(err))
+		return nil, fmt.Errorf("error fetching ReturnOrder by OrderNo: %s => %w", orderNo, err)
+	}
+
+	// เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
+	if len(idorder.ReturnOrderLine) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("No lines found for this order")
+		return idorder, nil
 	}
 
 	logFinish("Success", nil)
@@ -83,6 +97,13 @@ func (srv service) GetAllReturnOrderLines(ctx context.Context) ([]response.Retur
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Error fetching all return order lines", zap.Error(err))
 		return nil, fmt.Errorf("error fetching all return order lines: %w", err)
+	}
+
+	// เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
+	if len(lines) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("No lines found")
+		return lines, nil
 	}
 
 	logFinish("Success", nil)
@@ -105,12 +126,19 @@ func (srv service) GetReturnOrderLinesByReturnID(ctx context.Context, orderNo st
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logFinish("Failed", err)
-			srv.logger.Error("❌ This Return Order Line not found", zap.Error(err))
-			return nil, fmt.Errorf("this Return Order Line not found: %w", err)
+			srv.logger.Warn("⚠️ This Return Order Line not found", zap.Error(err))
+			return nil, fmt.Errorf("⚠️ This Return Order Line not found: %s", orderNo)
 		}
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Error fetching return order lines by OrderNo", zap.Error(err))
 		return nil, fmt.Errorf("error fetching return order lines by OrderNo: %w", err)
+	}
+
+	// เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
+	if len(lines) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("No lines found for this order number")
+		return lines, nil
 	}
 
 	logFinish("Success", nil)
@@ -127,6 +155,12 @@ func (srv service) GetReturnOrdersByStatus(ctx context.Context, statusCheckID in
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to fetch Return Orders", zap.Error(err))
 		return nil, errors.InternalError("failed to fetch Return Orders")
+	}
+
+	if len(orders) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("⚠️ No order found")
+		return []response.DraftTradeDetail{}, nil
 	}
 
 	srv.logger.Info("✅ Successfully fetched Return Orders", zap.Int("StatusCheckID", statusCheckID), zap.Int("Count", len(orders)))
@@ -146,6 +180,13 @@ func (srv service) GetReturnOrdersByStatusAndDateRange(ctx context.Context, stat
 		return nil, fmt.Errorf("failed to fetch Return Orders: %w", err)
 	}
 
+	// เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
+	if len(orders) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("⚠️ No order found within the specified date range")
+		return []response.DraftTradeDetail{}, nil
+	}
+
 	srv.logger.Info("✅ Successfully fetched Return Orders", zap.Int("StatusCheckID", statusCheckID), zap.Int("Count", len(orders)))
 	logFinish("Success", nil)
 	return orders, nil
@@ -156,6 +197,13 @@ func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateRetu
 	defer logFinish("Completed", nil)
 	srv.logger.Info("🔎 Starting return order creation process 🔎", zap.String("OrderNo", req.OrderNo))
 
+	if len(req.ReturnOrderLine) == 0 {
+		err := fmt.Errorf("❗ReturnOrderLine cannot be empty")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
+	}
+	
 	// Validate request
 	if err := utils.ValidateCreateReturnOrder(req); err != nil {
 		logFinish("Failed", err)
@@ -172,10 +220,11 @@ func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateRetu
 	}
 	if exists {
 		logFinish("Failed", err)
-		srv.logger.Error("❌ OrderNo already exists", zap.Error(err))
-		return nil, fmt.Errorf("orderNo already exists: %w", err)
+		srv.logger.Error("❗ OrderNo already exists", zap.Error(err))
+		return nil, (fmt.Errorf("❗ orderNo already exists: %s", req.OrderNo))
 	}
 
+	// บันทึกลง database
 	err = srv.returnOrderRepo.CreateReturnOrder(ctx, req)
 	if err != nil {
 		logFinish("Failed", err)
@@ -183,6 +232,7 @@ func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateRetu
 		return nil, fmt.Errorf("failed to create order with lines: %w", err)
 	}
 
+	// ดึงข้อมูล order ที่สร้างสำเร็จ
 	createdOrder, err := srv.returnOrderRepo.GetCreateReturnOrder(ctx, req.OrderNo)
 	if err != nil {
 		logFinish("Failed", err)
@@ -215,8 +265,8 @@ func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateRetu
 	}
 	if !exists {
 		logFinish("Failed", err)
-		srv.logger.Error("❗ OrderNo not found", zap.Error(err))
-		return nil, fmt.Errorf("orderNo not found: %w", err)
+		srv.logger.Warn("❗ OrderNo not found", zap.Error(err))
+		return nil, fmt.Errorf("❗OrderNo not found: %s", req.OrderNo)
 	}
 
 	err = srv.returnOrderRepo.UpdateReturnOrder(ctx, req, updateBy)
@@ -257,8 +307,8 @@ func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error 
 	}
 	if !exists {
 		logFinish("Failed", err)
-		srv.logger.Error("❗ OrderNo not found", zap.Error(err))
-		return fmt.Errorf("orderNo not found: %w", err)
+		srv.logger.Warn("❗ OrderNo not found", zap.Error(err))
+		return fmt.Errorf("❗OrderNo not found: %s", orderNo)
 
 	}
 

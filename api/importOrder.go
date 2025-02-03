@@ -7,7 +7,6 @@ import (
 
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth"
@@ -41,14 +40,7 @@ func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /import-order/search [get]
 func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Request) {
-
 	search := r.URL.Query().Get("search")
-	if search == "" {
-		handleResponse(w, false, "Search input is required (OrderNo or TrackingNo)", nil, http.StatusBadRequest)
-		return
-	}
-
-	search = strings.TrimSpace(search)
 
 	// ตรวจสอบ JWT Token (Authorization)
 	_, claims, err := jwtauth.FromContext(r.Context())
@@ -59,21 +51,14 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 
 	result, err := app.Service.ImportOrder.SearchOrderORTracking(r.Context(), search)
 	if err != nil {
-		handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
-		return
-	}
-	// หากไม่พบข้อมูล
-	if len(result) == 0 {
-		handleResponse(w, false, "No orders found for the given input", nil, http.StatusNotFound)
-		return
-	}
-
-	// Correctly populate soNo and orderNo in orderLines
-	for i := range result {
-		for j := range result[i].OrderLines {
-			result[i].OrderLines[j].TrackingNo = result[i].TrackingNo
-			result[i].OrderLines[j].OrderNo = result[i].OrderNo
+		statusCode := http.StatusInternalServerError
+		if err.Error() == "❌ Search input is required (OrderNo or TrackingNo)" {
+			statusCode = http.StatusBadRequest
+		} else if err.Error() == "❗ No OrderNo or TrackingNo order found" {
+			statusCode = http.StatusNotFound
 		}
+		handleResponse(w, false, err.Error(), nil, statusCode)
+		return
 	}
 
 	// Debug logging (always print for now, can be controlled by log level later)
@@ -109,35 +94,30 @@ func (app *Application) SearchOrderORTracking(w http.ResponseWriter, r *http.Req
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /import-order/create-confirm-wh [post]
 func (app *Application) ConfirmFromWH(w http.ResponseWriter, r *http.Request) {
+	// ✅ Parse Form Data
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		handleError(w, errors.ValidationError("Unable to parse form data"))
 		return
 	}
 
+	// ✅ รับค่าจาก Form
 	soNo := r.FormValue("soNo")
-	if soNo == "" {
-		handleError(w, errors.ValidationError("SoNo is required"))
-		return
-	}
-
 	imageTypeID, err := strconv.Atoi(r.FormValue("imageTypeID"))
-	if err != nil || imageTypeID < 1 || imageTypeID > 3 {
+	if err != nil {
 		handleError(w, errors.ValidationError("Invalid Image Type ID"))
 		return
 	}
 
 	skus := r.FormValue("skus")
 	files := r.MultipartForm.File["files"]
-	if len(files) == 0 {
-		handleError(w, errors.ValidationError("No files uploaded"))
-		return
-	}
 
+	// ✅ เรียก Service เพื่อประมวลผล
 	result, err := app.Service.ImportOrder.ConfirmFromWH(r.Context(), soNo, imageTypeID, skus, files)
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
+	// ✅ ส่ง Response กลับไป
 	handleResponse(w, true, "⭐ Data Insert successful ⭐", result, http.StatusOK)
 }

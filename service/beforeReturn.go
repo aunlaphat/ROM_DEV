@@ -72,36 +72,11 @@ type BeforeReturnService interface {
 	ConfirmReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
 }
 
-func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {
-	logFinish := srv.logger.LogAPICall(ctx, "DeleteBeforeReturnOrderLine", zap.String("RecID", recID))
-	defer logFinish("Completed", nil)
-	srv.logger.Info("🔎 Starting delete process 🔎", zap.String("RecID", recID))
-
-	// ตรวจสอบ RecID
-	if recID == "" {
-		err := fmt.Errorf("❗ RecID is required")
-		logFinish("Failed", err)
-		srv.logger.Error("❌ RecID is missing", zap.Error(err))
-		return err
-	}
-
-	// เรียกใช้งาน repository เพื่อลบข้อมูล
-	err := srv.beforeReturnRepo.DeleteBeforeReturnOrderLine(ctx, recID)
-	if err != nil {
-		logFinish("Failed", err)
-		srv.logger.Error("❌ Failed to delete order line", zap.String("RecID", recID), zap.Error(err))
-		return fmt.Errorf("❌ failed to delete order line: %w", err)
-	}
-
-	logFinish("Success", nil)
-	return nil
-}
-
 // create trade , set statusReturnID = 3 (booking)
 func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
-	logFinish := srv.logger.LogAPICall(ctx, "CreateTradeReturn", zap.String("OrderNo", req.OrderNo), zap.Int("StatusReturnID", *req.StatusReturnID))
+	logFinish := srv.logger.LogAPICall(ctx, "CreateTradeReturn", zap.String("OrderNo", req.OrderNo))
 	defer logFinish("Completed", nil)
-	srv.logger.Info("🔎 Starting trade return creation process 🔎", zap.String("OrderNo", req.OrderNo), zap.Int("StatusReturnID", *req.StatusReturnID))
+	srv.logger.Info("🔎 Starting trade return creation process 🔎", zap.String("OrderNo", req.OrderNo))
 
 	// Validate request
 	if err := utils.ValidateCreateBeforeReturn(req); err != nil {
@@ -110,7 +85,7 @@ func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeRetu
 		return nil, fmt.Errorf("❌ Validation failed: %w", err)
 	}
 
-	// ตรวจสอบว่า order มีอยู่แล้วหรือไม่
+	// check OrderNo
 	existingOrder, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
 	if err != nil {
 		logFinish("Failed", err)
@@ -120,7 +95,7 @@ func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeRetu
 	if existingOrder != nil {
 		logFinish("Failed", err)
 		srv.logger.Warn("⚠️ Order already exists", zap.String("OrderNo", req.OrderNo))
-		return nil, fmt.Errorf("❌ order already exists: %s", req.OrderNo)
+		return nil, fmt.Errorf("⚠️ order already exists: %s", req.OrderNo)
 	}
 
 	// สร้าง trade return order
@@ -141,6 +116,14 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 	defer logFinish("Completed", nil)
 	srv.logger.Info("🔎 Starting trade return line creation process 🔎", zap.String("OrderNo", orderNo))
 
+	// ตรวจสอบว่ามี OrderNo
+	if orderNo == "" {
+		err := fmt.Errorf("❌ OrderNo is required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
+	}
+
 	// ตรวจสอบ OrderNo ว่ามีอยู่ในระบบ
 	exists, err := srv.beforeReturnRepo.CheckBefOrderNoExists(ctx, orderNo)
 	if err != nil {
@@ -151,7 +134,7 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 	if !exists {
 		logFinish("Failed", err)
 		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", orderNo))
-		return nil, fmt.Errorf("❌ order not found: %s", orderNo)
+		return nil, fmt.Errorf("⚠️ order not found: %s", orderNo)
 	}
 
 	// สร้างข้อมูลใน BeforeReturnOrderLine
@@ -162,7 +145,7 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 		return nil, fmt.Errorf("❌ Failed to create trade return line: %w", err)
 	}
 
-	// สร้าง trade return order
+	// ดึงข้อมูลของ order lines ที่เพิ่งสร้างขึ้น
 	createdOrderLines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)
 	if err != nil {
 		logFinish("Failed", err)
@@ -174,13 +157,37 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 	return createdOrderLines, nil
 }
 
+func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {
+	logFinish := srv.logger.LogAPICall(ctx, "DeleteBeforeReturnOrderLine", zap.String("RecID", recID))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting delete process 🔎", zap.String("RecID", recID))
+
+	// ตรวจสอบ RecID
+	if recID == "" {
+		err := fmt.Errorf("❗ RecID is required")
+		logFinish("Failed", err)
+		srv.logger.Error("❌ RecID is missing", zap.Error(err))
+		return err
+	}
+
+	err := srv.beforeReturnRepo.DeleteBeforeReturnOrderLine(ctx, recID)
+	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to delete order line", zap.String("RecID", recID), zap.Error(err))
+		return fmt.Errorf("❌ failed to delete order line: %w", err)
+	}
+
+	logFinish("Success", nil)
+	return nil
+}
+
 func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
 	logFinish := srv.logger.LogAPICall(ctx, "ConfirmReceipt", zap.String("Identifier", req.Identifier))
 	defer logFinish("Completed", nil)
 	srv.logger.Info("🔎 Starting confirm receipt process", zap.String("Identifier", req.Identifier))
 
 	// ตรวจสอบค่าว่าง
-	if req.Identifier == "" || updateBy == "" {
+	if req.Identifier == "" {
 		err := fmt.Errorf("❗ identifier (OrderNo or TrackingNo) are required")
 		logFinish("Failed", err)
 		srv.logger.Error(err)
@@ -196,8 +203,8 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 	}
 	if !exists {
 		logFinish("Failed", err)
-		srv.logger.Error("❌ Not found", zap.String("Identifier", req.Identifier), zap.Error(err))
-		return fmt.Errorf("❌ Not found: %s", req.Identifier)
+		srv.logger.Warn("⚠️ Not found", zap.String("Identifier", req.Identifier), zap.Error(err))
+		return fmt.Errorf("⚠️ Not found: %s", req.Identifier)
 	}
 
 	// ตรวจสอบ sku ที่เพิ่มมาว่าตรงกับใน BeforeReturn ที่กรอกเข้ามาไหม หากมีจึงจะสามารถเพิ่มได้ เพราะของหน้าคลังต้องตรงกับข้อมูลที่กรอกเข้าระบบ
@@ -210,7 +217,7 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 		}
 		if !exists {
 			logFinish("Failed", err)
-			srv.logger.Error("❌ SKU not found", zap.String("SKU", line.SKU), zap.String("Identifier", req.Identifier), zap.Error(err))
+			srv.logger.Warn("⚠️ SKU not found", zap.String("SKU", line.SKU), zap.String("Identifier", req.Identifier), zap.Error(err))
 			return fmt.Errorf("SKU %s does not exist in BeforeReturnOrderLine for Identifier %s", line.SKU, req.Identifier)
 		}
 	}
@@ -264,9 +271,9 @@ func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToRetur
 	defer logFinish("Completed", nil)
 	srv.logger.Info("🔎 Starting confirm return process 🔎", zap.String("OrderNo", req.OrderNo))
 
-	// ตรวจสอบว่ามี OrderNo และ UpdateBy หรือไม่
-	if req.OrderNo == "" || updateBy == "" {
-		err := errors.New("❌ OrderNo and UpdateBy are required")
+	// ตรวจสอบว่ามี OrderNo
+	if req.OrderNo == "" {
+		err := errors.New("❌ OrderNo is required")
 		logFinish("Failed", err)
 		srv.logger.Error(err)
 		return err
@@ -349,6 +356,8 @@ func (srv service) GetAllOrderDetail(ctx context.Context) ([]response.OrderDetai
 			return nil, fmt.Errorf("get order error: %w", err)
 		}
 	}
+
+	logFinish("Success", nil)
 	return allorder, nil
 }
 
