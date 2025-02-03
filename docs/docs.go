@@ -2119,13 +2119,6 @@ const docTemplate = `{
                 "operationId": "cancel-sale-return",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Order number",
-                        "name": "orderNo",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Cancel Sale Return",
                         "name": "request",
                         "in": "body",
@@ -2379,7 +2372,7 @@ const docTemplate = `{
         },
         "/sale-return/update": {
             "patch": {
-                "description": "Update the SR number for a sale return order based on the provided details",
+                "description": "Updates the SR Number (SrNo) for a given OrderNo",
                 "consumes": [
                     "application/json"
                 ],
@@ -2389,11 +2382,11 @@ const docTemplate = `{
                 "tags": [
                     "Sale Return"
                 ],
-                "summary": "Update the SR number for a sale return order",
+                "summary": "Update a sale return order (SR Number)",
                 "operationId": "update-sale-return",
                 "parameters": [
                     {
-                        "description": "SR number details",
+                        "description": "Update Sale Return",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -2404,7 +2397,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "SR number updated successfully",
+                        "description": "Sale return updated successfully",
                         "schema": {
                             "allOf": [
                                 {
@@ -2422,19 +2415,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request - Invalid input or missing required fields",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized - Missing or invalid token",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
                     },
                     "404": {
-                        "description": "Not Found - Order not found",
+                        "description": "Order not found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -3304,8 +3297,11 @@ const docTemplate = `{
         "request.CancelSaleReturn": {
             "type": "object",
             "properties": {
+                "orderNo": {
+                    "type": "string",
+                    "example": "ORD-TEST-123456"
+                },
                 "remark": {
-                    "description": "OrderNo      string ` + "`" + `json:\"orderNo\" db:\"OrderNo\" example:\"ORD-TEST-123456\"` + "`" + `\nCancelStatus bool   ` + "`" + `json:\"cancelStatus\" db:\"CancelStatus\"` + "`" + `",
                     "type": "string",
                     "example": "cancel order"
                 }
@@ -3613,10 +3609,6 @@ const docTemplate = `{
                 "srNo": {
                     "type": "string",
                     "example": "SR-TEST-123456"
-                },
-                "updateBy": {
-                    "type": "string",
-                    "example": "dev03"
                 }
             }
         },

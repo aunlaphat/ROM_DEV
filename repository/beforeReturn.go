@@ -32,9 +32,9 @@ type BeforeReturnRepository interface {
 	// Create Return Order MKP //
 	SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error)
 	CreateSaleReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
-	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn) error
+	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn, userID string) error
 	ConfirmSaleReturn(ctx context.Context, orderNo string, statusReturnID, statusConfID int, userID string) error
-	CancelSaleReturn(ctx context.Context, orderNo, updateBy, remark string) error
+	CancelSaleReturn(ctx context.Context, req request.CancelSaleReturn, userID string) error
 
 	// Draft & Confirm MKP //
 	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
@@ -441,12 +441,12 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, order request.Bef
 	return createdOrder, nil
 }
 
-func (repo repositoryDB) UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn) error {
+func (repo repositoryDB) UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn, userID string) error {
+	// ✅ Start Transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
-
 	defer func() {
 		if p := recover(); p != nil {
 			_ = tx.Rollback()
@@ -456,31 +456,41 @@ func (repo repositoryDB) UpdateSaleReturn(ctx context.Context, req request.Updat
 		}
 	}()
 
+	// ✅ Update SrNo in BeforeReturnOrder
 	query := `
         UPDATE BeforeReturnOrder
         SET SrNo = :SrNo,
-            UpdateBy = :UpdateBy,
+            UpdateBy = :UserID,
             UpdateDate = GETDATE()
         WHERE OrderNo = :OrderNo
     `
 
-	result, err := tx.NamedExecContext(ctx, query, req)
+	// 🔎 Debug Params
+	params := map[string]interface{}{
+		"SrNo":    req.SrNo,
+		"UserID":  userID, // ✅ ใช้ `UserID` แทน `UpdateBy`
+		"OrderNo": req.OrderNo,
+	}
+	fmt.Println("🔍 Debug Params:", params) // ✅ Log Debugging Params
+
+	result, err := tx.NamedExecContext(ctx, query, params)
 	if err != nil {
 		_ = tx.Rollback()
-		return fmt.Errorf("failed to update sale return: %w", err)
+		return fmt.Errorf("❌ Failed to update sale return: %w", err)
 	}
 
+	// ✅ Check Rows Affected
 	rows, err := result.RowsAffected()
 	if err != nil {
 		_ = tx.Rollback()
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		return fmt.Errorf("❌ Failed to get rows affected: %w", err)
 	}
-
 	if rows == 0 {
 		_ = tx.Rollback()
-		return fmt.Errorf("no rows updated for order: %s", req.OrderNo)
+		return fmt.Errorf("⚠️ No rows updated for order: %s", req.OrderNo)
 	}
 
+	// ✅ Commit Transaction
 	return tx.Commit()
 }
 
@@ -491,10 +501,12 @@ func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, orderNo string, 
         SET StatusReturnID = :StatusReturnID,
             StatusConfID = :StatusConfID,
             ConfirmBy = :ConfirmBy,
-            ConfirmDate = GETDATE(),
-            UpdateDate = GETDATE()
+            ConfirmDate = GETDATE()
         WHERE OrderNo = :OrderNo
     `
+
+	// 🔎 Debug
+	fmt.Println("🔍 Debug Params:", orderNo, statusReturnID, statusConfID, userID) // ✅ Log Debugging Params
 
 	res, err := repo.db.NamedExecContext(ctx, updateQuery, map[string]interface{}{
 		"OrderNo":        orderNo,
@@ -517,7 +529,7 @@ func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, orderNo string, 
 	return nil
 }
 
-func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo, updateBy, remark string) error {
+func (repo repositoryDB) CancelSaleReturn(ctx context.Context, req request.CancelSaleReturn, userID string) error {
 	// ✅ Start Transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -539,10 +551,13 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo, updateBy
 
 	var cancelID int64
 	params := map[string]interface{}{
-		"OrderNo":  orderNo,
-		"Remark":   remark,
-		"CancelBy": updateBy,
+		"OrderNo":  req.OrderNo,
+		"Remark":   req.Remark,
+		"CancelBy": userID,
 	}
+
+	// 🔎 Debug
+	fmt.Println("🔍 Debug Params:", params) // ✅ Log Debugging Params
 
 	stmt, err := tx.PrepareNamedContext(ctx, insertCancelStatus)
 	if err != nil {
@@ -567,9 +582,9 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo, updateBy
     `
 
 	_, err = tx.NamedExecContext(ctx, updateOrder, map[string]interface{}{
-		"OrderNo":  orderNo,
+		"OrderNo":  req.OrderNo,
 		"CancelID": cancelID,
-		"UpdateBy": updateBy,
+		"UpdateBy": userID,
 	})
 	if err != nil {
 		return fmt.Errorf("❌ Failed to update order status: %w", err)

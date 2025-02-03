@@ -151,10 +151,10 @@ definitions:
     type: object
   request.CancelSaleReturn:
     properties:
+      orderNo:
+        example: ORD-TEST-123456
+        type: string
       remark:
-        description: |-
-          OrderNo      string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
-          CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
         example: cancel order
         type: string
     type: object
@@ -369,9 +369,6 @@ definitions:
         type: string
       srNo:
         example: SR-TEST-123456
-        type: string
-      updateBy:
-        example: dev03
         type: string
     type: object
   request.UpdateToReturn:
@@ -2238,11 +2235,6 @@ paths:
       description: Cancel a sale return order based on the provided details
       operationId: cancel-sale-return
       parameters:
-      - description: Order number
-        in: path
-        name: orderNo
-        required: true
-        type: string
       - description: Cancel Sale Return
         in: body
         name: request
@@ -2405,11 +2397,10 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Update the SR number for a sale return order based on the provided
-        details
+      description: Updates the SR Number (SrNo) for a given OrderNo
       operationId: update-sale-return
       parameters:
-      - description: SR number details
+      - description: Update Sale Return
         in: body
         name: request
         required: true
@@ -2419,7 +2410,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: SR number updated successfully
+          description: Sale return updated successfully
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
@@ -2428,22 +2419,22 @@ paths:
                   $ref: '#/definitions/response.UpdateSaleReturnResponse'
               type: object
         "400":
-          description: Bad Request - Invalid input or missing required fields
+          description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
         "401":
-          description: Unauthorized - Missing or invalid token
+          description: Unauthorized
           schema:
             $ref: '#/definitions/api.Response'
         "404":
-          description: Not Found - Order not found
+          description: Order not found
           schema:
             $ref: '#/definitions/api.Response'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Update the SR number for a sale return order
+      summary: Update a sale return order (SR Number)
       tags:
       - Sale Return
   /trade-return/add-line/{orderNo}:

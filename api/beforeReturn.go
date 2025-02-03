@@ -421,58 +421,50 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 }
 
 // UpdateSaleReturn godoc
-// @Summary Update the SR number for a sale return order
-// @Description Update the SR number for a sale return order based on the provided details
+// @Summary Update a sale return order (SR Number)
+// @Description Updates the SR Number (SrNo) for a given OrderNo
 // @ID update-sale-return
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// @Param request body request.UpdateSaleReturn true "SR number details"
-// @Success 200 {object} api.Response{data=response.UpdateSaleReturnResponse} "SR number updated successfully"
-// @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
-// @Failure 404 {object} api.Response "Not Found - Order not found"
-// @Failure 401 {object} api.Response "Unauthorized - Missing or invalid token"
+// @Param request body request.UpdateSaleReturn true "Update Sale Return"
+// @Success 200 {object} api.Response{data=response.UpdateSaleReturnResponse} "Sale return updated successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 401 {object} api.Response "Unauthorized"
+// @Failure 404 {object} api.Response "Order not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/update [patch]
 func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request) {
-	// 1. ดึง JWT Claims จาก Context
+	// ✅ 1. Authenticate User (JWT)
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		handleResponse(w, false, "🔒 Unauthorized", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// 2. รับ JWT Claims และดึง userID
+	// ✅ 2. Extract UserID from JWT Claims (ใช้แทน UpdateBy)
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		handleResponse(w, false, "🔒 Invalid user token", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// 3. Decode Request Body
+	// ✅ 3. Decode Request Body (Only `OrderNo` & `SrNo`)
 	var req request.UpdateSaleReturn
-	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request format", http.StatusBadRequest)
+		handleResponse(w, false, "❌ Invalid request payload", nil, http.StatusBadRequest)
 		return
 	}
 
-	req.UpdateBy = userID
-
-	// 4. ตรวจสอบข้อมูลที่จำเป็น
-	if req.SrNo == "" {
-		http.Error(w, "SrNo is required", http.StatusBadRequest)
+	// ✅ 4. Call Service Layer (Passing userID)
+	result, err := app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), req, userID)
+	if err != nil {
+		handleError(w, err)
 		return
 	}
 
-	// 5. อัพเดท Sale Return โดยใช้ Service
-	if err := app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), req); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// 6. ส่ง Response กลับ
-	handleResponse(w, true, "⭐ SR number updated successfully ⭐", nil, http.StatusOK)
+	// ✅ 5. Return Success Response
+	handleResponse(w, true, "⭐ Sale return order updated successfully ⭐", result, http.StatusOK)
 }
 
 // ConfirmSaleReturn godoc
@@ -533,7 +525,6 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// @Param orderNo path string true "Order number"
 // @Param request body request.CancelSaleReturn true "Cancel Sale Return"
 // @Success 200 {object} api.Response{data=response.CancelSaleReturnResponse} "Sale return order canceled successfully"
 // @Failure 400 {object} api.Response "Bad Request"
@@ -588,7 +579,7 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 	)
 
 	// ✅ 6. Call Service Layer (Ensuring Correct Response Handling)
-	result, err := app.Service.BeforeReturn.CancelSaleReturn(r.Context(), orderNo, userID, req.Remark)
+	result, err := app.Service.BeforeReturn.CancelSaleReturn(r.Context(), req, userID)
 	if err != nil {
 		app.Logger.Error("❌ Failed to cancel sale return", zap.Error(err))
 		handleError(w, err)

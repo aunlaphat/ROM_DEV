@@ -45,15 +45,13 @@ type BeforeReturnOrderLine struct {
 }
 
 type UpdateSaleReturn struct {
-	OrderNo  string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
-	SrNo     string `json:"srNo" db:"SrNo" example:"SR-TEST-123456"`
-	UpdateBy string `json:"updateBy" db:"UpdateBy" example:"dev03"`
+	OrderNo string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
+	SrNo    string `json:"srNo" db:"SrNo" example:"SR-TEST-123456"`
 }
 
 type CancelSaleReturn struct {
-	//OrderNo      string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
-	//CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
-	Remark string `json:"remark" db:"Remark" example:"cancel order"`
+	OrderNo string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
+	Remark  string `json:"remark" db:"Remark" example:"cancel order"`
 }
 
 // Draft & Confirm MKP
@@ -151,7 +149,7 @@ type TradeReturnLineRequest struct {
 	//TrackingNo string  `json:"trackingNo" db:"TrackingNo"`	// add form data BeforeReturnOrder
 	CreateBy string `json:"-" db:"CreateBy" ` // from user login
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
-	FilePath    string `json:"filePath" db:"FilePath"` // เข้า Images
+	FilePath    string `json:"filePath" db:"FilePath"`       // เข้า Images
 	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"` // เข้า Images
 }
 
