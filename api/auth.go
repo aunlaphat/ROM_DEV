@@ -200,6 +200,8 @@ func (app *Application) CheckAuthen(w http.ResponseWriter, r *http.Request) {
 	// ดึง claims จาก context (ถูกเพิ่มโดย middleware)
 	_, claims, _ := jwtauth.FromContext(r.Context())
 
+	fmt.Printf("JWT Claims: %+v\n", claims)
+
 	// ส่ง claims กลับเพื่อแสดงข้อมูลผู้ใช้
 	handleResponse(w, true, "Checked", claims, http.StatusOK)
 }

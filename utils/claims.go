@@ -6,11 +6,9 @@ import (
 	"strconv"
 )
 
-// GetUserInfoFromClaims ดึง userID และ roleID จาก claims
-// - userID เป็น required field และต้องเป็น string ที่ไม่ว่างเปล่า
-// - roleID เป็น optional field และต้องเป็น string ถ้ามี
+// GetUserInfoFromClaims extracts userID and roleID from JWT claims.
 func GetUserInfoFromClaims(claims map[string]interface{}) (userID string, roleID int, err error) {
-	// ดึง userID
+	// ✅ Extract userID
 	userIDVal, ok := claims["userID"]
 	if !ok {
 		return "", 0, errors.New("userID is missing in token claims")
@@ -20,63 +18,49 @@ func GetUserInfoFromClaims(claims map[string]interface{}) (userID string, roleID
 		return "", 0, errors.New("invalid userID in token claims")
 	}
 
-	// ดึง roleID (optional)
-	roleIDVal, ok := claims["roleID"]
-	if !ok {
-		return userID, 0, nil // ถ้า roleID ไม่มี ก็ให้เป็นค่าเริ่มต้น 0
-	}
-	roleID, ok = roleIDVal.(int)
-	if !ok {
-		// ลองแปลงจาก float64 หรือ string เป็น int
-		switch v := roleIDVal.(type) {
-		case float64:
-			// แปลงจาก float64 เป็น int
-			roleID = int(v)
-		case string:
-			// แปลงจาก string เป็น int
-			roleID, err = strconv.Atoi(v)
-			if err != nil {
-				return "", 0, fmt.Errorf("invalid roleID format in token claims: %w", err)
-			}
-		default:
-			return "", 0, errors.New("invalid roleID format in token claims")
-		}
+	// ✅ Extract and convert roleID
+	roleID, err = GetRoleIDFromClaims(claims)
+	if err != nil {
+		return "", 0, err
 	}
 
 	return userID, roleID, nil
 }
 
-// GetUserIDFromClaims ดึง userID เท่านั้นจาก claims
+// GetUserIDFromClaims extracts only the userID from JWT claims.
 func GetUserIDFromClaims(claims map[string]interface{}) (string, error) {
 	userID, ok := claims["userID"].(string)
 	if !ok || userID == "" {
-		return "", fmt.Errorf("invalid user information in token")
+		return "", fmt.Errorf("invalid userID in token claims")
 	}
 	return userID, nil
 }
 
-// GetRoleIDFromClaims ดึง roleID จาก JWT Claims และแปลงให้ถูกต้อง
+// GetRoleIDFromClaims extracts and ensures roleID is an int.
 func GetRoleIDFromClaims(claims map[string]interface{}) (int, error) {
 	roleIDVal, ok := claims["roleID"]
 	if !ok {
+		fmt.Println("🔴 roleID is missing in claims:", claims) // Debug log
 		return 0, fmt.Errorf("roleID is missing in token claims")
 	}
 
-	// ✅ Debug Log ตรวจสอบค่าก่อนแปลง
-	fmt.Printf("🔍 Debug: roleIDVal=%v (Type: %T)\n", roleIDVal, roleIDVal)
-
 	switch v := roleIDVal.(type) {
 	case int:
+		fmt.Println("🟢 roleID is an int:", v) // Debug log
 		return v, nil
-	case float64: // ✅ JSON อาจเก็บ roleID เป็น float64 -> แปลงเป็น int
+	case float64: // JSON numbers default to float64 in Go
+		fmt.Println("🟡 roleID is float64, converting:", v) // Debug log
 		return int(v), nil
-	case string: // ✅ ถ้า roleID เป็น string -> แปลงเป็น int
-		roleID, err := strconv.Atoi(v)
+	case string:
+		convertedRoleID, err := strconv.Atoi(v)
 		if err != nil {
-			return 0, fmt.Errorf("invalid roleID format in token claims: %w", err)
+			fmt.Println("🔴 Failed to convert roleID string to int:", v) // Debug log
+			return 0, fmt.Errorf("invalid roleID format in token claims: %s", v)
 		}
-		return roleID, nil
+		fmt.Println("🟢 roleID converted from string:", convertedRoleID) // Debug log
+		return convertedRoleID, nil
 	default:
-		return 0, fmt.Errorf("invalid roleID format in token claims (type: %T)", roleIDVal)
+		fmt.Println("🔴 Invalid roleID type:", v) // Debug log
+		return 0, fmt.Errorf("invalid roleID type in token claims")
 	}
 }
