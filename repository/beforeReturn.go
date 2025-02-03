@@ -318,33 +318,30 @@ func (repo repositoryDB) SearchOrder(ctx context.Context, soNo, orderNo string) 
 	queryHead := `
         SELECT SoNo, OrderNo, StatusMKP, SalesStatus, CreateDate
         FROM ROM_V_OrderHeadDetail
-        WHERE (:SoNo IS NULL OR SoNo = :SoNo) 
-        AND (:OrderNo IS NULL OR OrderNo = :OrderNo)
+        WHERE (:SoNo = '' OR SoNo = :SoNo) 
+        AND (:OrderNo = '' OR OrderNo = :OrderNo)
     `
 
 	// คำสั่ง SQL สำหรับดึงข้อมูล OrderLine
 	queryLines := `
         SELECT SKU, ItemName, QTY, Price
         FROM ROM_V_OrderLineDetail
-        WHERE (:SoNo IS NULL OR SoNo = :SoNo) 
-        AND (:OrderNo IS NULL OR OrderNo = :OrderNo)
-        ORDER BY SKU
+        WHERE (:SoNo = '' OR SoNo = :SoNo) 
+        AND (:OrderNo = '' OR OrderNo = :OrderNo)
+        ORDER BY RecID
     `
 
-	// กำหนดพารามิเตอร์สำหรับคำสั่ง SQL โดยใช้ sql.NullString เพื่อจัดการกับค่า null
 	params := map[string]interface{}{
-		"SoNo":    sql.NullString{String: soNo, Valid: soNo != ""},
-		"OrderNo": sql.NullString{String: orderNo, Valid: orderNo != ""},
+		"SoNo":    soNo,
+		"OrderNo": orderNo,
 	}
 
 	// ดึงข้อมูล OrderHead จากฐานข้อมูล
 	var orderHead response.SaleOrderResponse
-	// ใช้ PrepareNamed ของ sqlx เพื่อเตรียมคำสั่ง SQL สำหรับ OrderHead
 	stmtHead, err := repo.db.PrepareNamed(queryHead)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare head query: %w", err)
 	}
-	// ใช้ GetContext ของ sqlx เพื่อดึงข้อมูล OrderHead จากฐานข้อมูล
 	err = stmtHead.GetContext(ctx, &orderHead, params)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -355,12 +352,10 @@ func (repo repositoryDB) SearchOrder(ctx context.Context, soNo, orderNo string) 
 
 	// ดึงข้อมูล OrderLine จากฐานข้อมูล
 	var orderLines []response.SaleOrderLineResponse
-	// ใช้ PrepareNamed ของ sqlx เพื่อเตรียมคำสั่ง SQL สำหรับ OrderLine
 	stmtLines, err := repo.db.PrepareNamed(queryLines)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare lines query: %w", err)
 	}
-	// ใช้ SelectContext ของ sqlx เพื่อดึงข้อมูล OrderLine จากฐานข้อมูล
 	err = stmtLines.SelectContext(ctx, &orderLines, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
