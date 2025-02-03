@@ -5,9 +5,11 @@ import (
 	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/utils"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth"
@@ -51,18 +53,22 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Use(jwtauth.Verifier(app.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
-		// Draft & Confirm ใช้เหมือนกันในส่วนของการเปิด Modal และดูรายละเอียดของ Order
-		r.Get("/detail/{orderNo}", app.GetDraftConfirmOrderByOrderNo)
+		// 📌 Draft & Confirm (ใช้ดูรายละเอียดของ Order)
+		//r.Get("/detail/{orderNo}", app.GetDraftConfirmOrderByOrderNo)
 
-		// Draft
-		r.Get("/list-drafts", app.ListDraftOrders)
-		r.Get("/list-code-r", app.ListCodeR)
-		r.Post("/code-r", app.AddCodeR)
-		r.Delete("/code-r/{orderNo}/{sku}", app.DeleteCodeR)
-		r.Patch("/update-draft/{orderNo}", app.UpdateDraftOrder)
+		// 📌 Draft Status Orders
+		r.Route("/drafts", func(draft chi.Router) {
+			draft.Get("/", app.ListDraftOrders)
+			draft.Get("/code-r", app.ListCodeR)
+			draft.Post("/code-r", app.AddCodeR)
+			draft.Delete("/code-r/{orderNo}/{sku}", app.DeleteCodeR)
+			draft.Patch("/{orderNo}", app.UpdateDraftOrder)
+		})
 
-		// Confirm
-		r.Get("/list-confirms", app.ListConfirmOrders)
+		// 📌 Confirm Status Orders
+		r.Route("/confirms", func(confirm chi.Router) {
+			confirm.Get("/", app.ListConfirmOrders)
+		})
 	})
 }
 
@@ -492,7 +498,7 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 		handleResponse(w, false, "🔑 Invalid UserID in Token Claims 🔑", nil, http.StatusUnauthorized)
 		return
 	}
-	roleID, err := utils.GetRoleIDFromClaims(claims)
+	roleID, err := utils.GetRoleIDFromClaims(claims, &zap.Logger{})
 	if err != nil {
 		handleResponse(w, false, "🔑 Invalid RoleID in Token Claims 🔑", nil, http.StatusUnauthorized)
 		return
@@ -586,101 +592,225 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 
 // ListDraftOrders godoc
 // @Summary List all draft orders
-// @Description Retrieve a list of all draft orders
+// @Description Retrieve a list of all draft orders within a date range
 // @ID list-draft-orders
 // @Tags Draft & Confirm
 // @Accept json
 // @Produce json
+// @Param startDate query string true "Start Date (YYYY-MM-DD)"
+// @Param endDate query string true "End Date (YYYY-MM-DD)"
 // @Success 200 {object} api.Response{data=[]response.ListDraftConfirmOrdersResponse} "All Draft orders retrieved successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 404 {object} api.Response "Draft orders not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /draft-confirm/list-drafts [get]
 func (app *Application) ListDraftOrders(w http.ResponseWriter, r *http.Request) {
-	// Call service layer with error handling
-	result, err := app.Service.BeforeReturn.ListDraftOrders(r.Context())
+	startDate := r.URL.Query().Get("startDate")
+	endDate := r.URL.Query().Get("endDate")
+
+	// 📌 ตรวจสอบค่าที่รับเข้ามา
+	if startDate == "" || endDate == "" {
+		app.Logger.Warn("⚠️ Missing required query parameters ⚠️")
+		handleResponse(w, false, "⚠️ Missing startDate or endDate parameters ⚠️", nil, http.StatusBadRequest)
+		return
+	}
+
+	// ✅ ตรวจสอบรูปแบบวันที่
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		app.Logger.Warn("⚠️ Invalid startDate format ⚠️", zap.String("startDate", startDate))
+		handleResponse(w, false, "⚠️ Invalid startDate format (YYYY-MM-DD) ⚠️", nil, http.StatusBadRequest)
+		return
+	}
+
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		app.Logger.Warn("⚠️ Invalid endDate format ⚠️", zap.String("endDate", endDate))
+		handleResponse(w, false, "⚠️ Invalid endDate format (YYYY-MM-DD) ⚠️", nil, http.StatusBadRequest)
+		return
+	}
+
+	if start.After(end) {
+		app.Logger.Warn("⚠️ startDate cannot be after endDate ⚠️",
+			zap.String("startDate", startDate),
+			zap.String("endDate", endDate),
+		)
+		handleResponse(w, false, "⚠️ startDate cannot be after endDate ⚠️", nil, http.StatusBadRequest)
+		return
+	}
+
+	// 📌 เรียกใช้งาน Service Layer
+	result, err := app.Service.BeforeReturn.ListDraftOrders(r.Context(), startDate, endDate)
 	if err != nil {
 		app.Logger.Error("🚨 Failed to list draft orders 🚨", zap.Error(err))
-		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
+		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
 		return
 	}
 
-	// Handle no results found
+	// ⚠️ ถ้าไม่มีรายการ ส่ง response 404
 	if len(result) == 0 {
-		handleResponse(w, false, "⚠️ No draft orders found ⚠️", nil, http.StatusOK)
+		app.Logger.Warn("⚠️ No draft orders found ⚠️",
+			zap.String("startDate", startDate),
+			zap.String("endDate", endDate),
+		)
+		handleResponse(w, false, "⚠️ No draft orders found ⚠️", nil, http.StatusNotFound)
 		return
 	}
 
-	// Debug logging (always print for now, can be controlled by log level later)
-	fmt.Printf("\n📋 ========== All Draft Orders (%d) ========== 📋\n", len(result))
-	for i, order := range result {
-		fmt.Printf("\n📦 Draft Order #%d 📦\n", i+1)
-		utils.PrintDraftConfirmOrderDetails(&order)
-	}
+	// ✅ Debug logging
+	app.Logger.Debug("📋 Retrieved draft orders",
+		zap.Int("count", len(result)),
+		zap.String("startDate", startDate),
+		zap.String("endDate", endDate),
+	)
 
-	// Send successful response
+	// ✅ ส่ง response กลับไป
 	handleResponse(w, true, "⭐ Draft orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // ListConfirmOrders godoc
 // @Summary List all confirm orders
-// @Description Retrieve a list of all confirm orders
+// @Description Retrieve a list of all confirm orders within a date range
 // @ID list-confirm-orders
 // @Tags Draft & Confirm
 // @Accept json
 // @Produce json
+// @Param startDate query string true "Start Date (YYYY-MM-DD)"
+// @Param endDate query string true "End Date (YYYY-MM-DD)"
 // @Success 200 {object} api.Response{data=[]response.ListDraftConfirmOrdersResponse} "All Confirm orders retrieved successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 404 {object} api.Response "Confirm orders not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /draft-confirm/list-confirms [get]
 func (app *Application) ListConfirmOrders(w http.ResponseWriter, r *http.Request) {
-	// Call service layer with error handling
-	result, err := app.Service.BeforeReturn.ListConfirmOrders(r.Context())
+	startDate := r.URL.Query().Get("startDate")
+	endDate := r.URL.Query().Get("endDate")
+
+	// 📌 ตรวจสอบค่าที่รับเข้ามา
+	if startDate == "" || endDate == "" {
+		app.Logger.Warn("⚠️ Missing required query parameters ⚠️")
+		handleResponse(w, false, "⚠️ Missing startDate or endDate parameters ⚠️", nil, http.StatusBadRequest)
+		return
+	}
+
+	// ✅ ตรวจสอบรูปแบบวันที่
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		app.Logger.Warn("⚠️ Invalid startDate format ⚠️", zap.String("startDate", startDate))
+		handleResponse(w, false, "⚠️ Invalid startDate format (YYYY-MM-DD) ⚠️", nil, http.StatusBadRequest)
+		return
+	}
+
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		app.Logger.Warn("⚠️ Invalid endDate format ⚠️", zap.String("endDate", endDate))
+		handleResponse(w, false, "⚠️ Invalid endDate format (YYYY-MM-DD) ⚠️", nil, http.StatusBadRequest)
+		return
+	}
+
+	if start.After(end) {
+		app.Logger.Warn("⚠️ startDate cannot be after endDate ⚠️",
+			zap.String("startDate", startDate),
+			zap.String("endDate", endDate),
+		)
+		handleResponse(w, false, "⚠️ startDate cannot be after endDate ⚠️", nil, http.StatusBadRequest)
+		return
+	}
+
+	// 📌 เรียกใช้งาน Service Layer
+	result, err := app.Service.BeforeReturn.ListConfirmOrders(r.Context(), startDate, endDate)
 	if err != nil {
 		app.Logger.Error("🚨 Failed to list confirm orders 🚨", zap.Error(err))
-		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
+		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
 		return
 	}
 
-	// Handle no results found
+	// ⚠️ ถ้าไม่มีรายการ ส่ง response 404
 	if len(result) == 0 {
-		handleResponse(w, false, "⚠️ No confirm orders found ⚠️", nil, http.StatusOK)
+		app.Logger.Warn("⚠️ No confirm orders found ⚠️",
+			zap.String("startDate", startDate),
+			zap.String("endDate", endDate),
+		)
+		handleResponse(w, false, "⚠️ No confirm orders found ⚠️", nil, http.StatusNotFound)
 		return
 	}
 
-	// Debug logging (always print for now, can be controlled by log level later)
-	fmt.Printf("\n📋 ========== All Confirm Orders (%d) ========== 📋\n", len(result))
-	for i, order := range result {
-		fmt.Printf("\n📦 Confirm Order #%d 📦\n", i+1)
-		utils.PrintDraftConfirmOrderDetails(&order)
-	}
+	// ✅ Debug logging
+	app.Logger.Debug("📋 Retrieved confirm orders",
+		zap.Int("count", len(result)),
+		zap.String("startDate", startDate),
+		zap.String("endDate", endDate),
+	)
 
-	// Send successful response
+	// ✅ ส่ง response กลับไป
 	handleResponse(w, true, "⭐ Confirm orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
-// ListCodeR godoc
-// @Summary List all CodeR
-// @Description Retrieve a list of all codeR
-// @ID list-code-r
+/* // GetDraftConfirmOrderByOrderNo godoc
+// @Summary Get Draft Confirm Order by OrderNo
+// @Description Retrieve Draft Confirm Order Head and Lines
+// @ID get-draft-confirm-order
 // @Tags Draft & Confirm
 // @Accept json
 // @Produce json
-// @Success 200 {object} api.Response{data=[]response.CodeRResponse} "CodeR retrieved successfully"
+// @Param orderNo path string true "Order Number"
+// @Success 200 {object} api.Response{data=response.DraftHeadResponse} "Draft Confirm Order retrieved successfully"
 // @Failure 400 {object} api.Response "Bad Request"
+// @Failure 404 {object} api.Response "Order not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /draft-confirm/list-code-r [get]
-func (app *Application) ListCodeR(w http.ResponseWriter, r *http.Request) {
-	// Call service layer with error handling
-	result, err := app.Service.BeforeReturn.ListCodeR(r.Context())
+// @Router /draft-confirm/detail/{orderNo} [get]
+func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
+	orderNo := chi.URLParam(r, "orderNo")
+
+	// 📌 ใช้ Logger ที่มี `orderNo` ติดอยู่
+	logger := app.Logger.With(zap.String("orderNo", orderNo))
+
+	// ✅ Log API Call Start
+	logFinish := logger.LogAPICall(r.Context(), "GetDraftConfirmOrderByOrderNo")
+	defer logFinish("Completed", nil)
+
+	// 📌 เรียก Service Layer และรับ Response + Error
+	order, err := app.Service.BeforeReturn.GetDraftConfirmOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
-		app.Logger.Error("🚨 Failed to get all CodeR 🚨", zap.Error(err))
-		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
+		handleResponse(w, err, logger)
 		return
 	}
 
-	handleResponse(w, true, "⭐ CodeR retrieved successfully ⭐", result, http.StatusOK)
+	// ✅ ส่ง Response กลับไป
+	handleResponse(w, true, "⭐ Draft Confirm Order retrieved successfully ⭐", nil, http.StatusOK)
+} */
+
+// ListCodeR godoc
+// @Summary List all CodeR (SKU, ItemName) where SKU starts with 'R'
+// @Description Retrieve a list of CodeR from ROM_V_ProductAll where SKU starts with 'R'
+// @ID list-code-r
+// @Tags CodeR
+// @Accept json
+// @Produce json
+// @Success 200 {object} api.Response{data=[]response.ListCodeRResponse} "All CodeR retrieved successfully"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /code-r/list [get]
+func (app *Application) ListCodeR(w http.ResponseWriter, r *http.Request) {
+	// 📌 เรียกใช้งาน Service Layer
+	result, err := app.Service.BeforeReturn.ListCodeR(r.Context())
+	if err != nil {
+		app.Logger.Error("🚨 Failed to list CodeR 🚨", zap.Error(err))
+		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
+		return
+	}
+
+	// ⚠️ ถ้าไม่มีรายการ CodeR ส่ง response 404
+	if len(result) == 0 {
+		app.Logger.Warn("⚠️ No CodeR found (WHERE SKU LIKE 'R%') ⚠️")
+		handleResponse(w, false, "⚠️ No CodeR found ⚠️", nil, http.StatusNotFound)
+		return
+	}
+
+	// ✅ Debug logging
+	app.Logger.Debug("📋 Retrieved CodeR list", zap.Int("count", len(result)))
+
+	// ✅ ส่ง response กลับไป
+	handleResponse(w, true, "⭐ CodeR list retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // AddCodeR godoc
@@ -690,43 +820,50 @@ func (app *Application) ListCodeR(w http.ResponseWriter, r *http.Request) {
 // @Tags Draft & Confirm
 // @Accept json
 // @Produce json
-// @Param body body request.CodeR true "CodeR details"
-// @Success 201 {object} api.Response{data=response.DraftLineResponse} "CodeR added successfully"
+// @Param body body request.AddCodeR true "CodeR details"
+// @Success 201 {object} api.Response{data=[]response.AddCodeRResponse} "CodeR added successfully"
 // @Failure 400 {object} api.Response "Bad Request"
+// @Failure 401 {object} api.Response "Unauthorized"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /draft-confirm/code-r [post]
 func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
-	var req request.CodeR
+	var req request.AddCodeR
+
+	// ✅ Decode JSON Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		app.Logger.Error("🚨 Failed to decode request 🚨", zap.Error(err))
-		handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
+		handleResponse(w, false, "❌ Invalid request format", nil, http.StatusBadRequest)
 		return
 	}
 
-	// Extract userID from claims
+	// ✅ Extract JWT Claims from Context
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
+		app.Logger.Warn("🚷 Unauthorized access attempt")
 		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
+	// ✅ Extract userID from Claims
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
+		app.Logger.Warn("🚷 Failed to extract userID from claims")
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// Set CreateBy from claims
-	req.CreateBy = userID
+	app.Logger.Info("👤 User authenticated", zap.String("userID", userID))
 
-	result, err := app.Service.BeforeReturn.AddCodeR(r.Context(), req)
+	// ✅ Call Service Layer
+	results, err := app.Service.BeforeReturn.AddCodeR(r.Context(), req, userID)
 	if err != nil {
 		app.Logger.Error("🚨 Failed to add CodeR 🚨", zap.Error(err))
-		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
+		handleResponse(w, false, "❌ Failed to add CodeR", nil, http.StatusInternalServerError)
 		return
 	}
 
-	handleResponse(w, true, "⭐ CodeR added successfully ⭐", result, http.StatusCreated)
+	// ✅ Return Success Response
+	handleResponse(w, true, "⭐ CodeR added successfully ⭐", results, http.StatusCreated)
 }
 
 // DeleteCodeR godoc
@@ -740,57 +877,60 @@ func (app *Application) AddCodeR(w http.ResponseWriter, r *http.Request) {
 // @Param sku path string true "SKU"
 // @Success 200 {object} api.Response "CodeR deleted successfully"
 // @Failure 400 {object} api.Response "Bad Request"
+// @Failure 401 {object} api.Response "Unauthorized"
+// @Failure 404 {object} api.Response "Not Found"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /draft-confirm/code-r/{orderNo}/{sku} [delete]
 func (app *Application) DeleteCodeR(w http.ResponseWriter, r *http.Request) {
+	// ✅ รับค่า `orderNo` และ `sku` จาก URL Path
 	orderNo := chi.URLParam(r, "orderNo")
 	sku := chi.URLParam(r, "sku")
+
+	// ✅ ตรวจสอบว่าค่าถูกต้อง
 	if orderNo == "" || sku == "" {
-		handleResponse(w, false, "OrderNo and SKU are required", nil, http.StatusBadRequest)
+		app.Logger.Warn("⚠️ Missing required parameters: OrderNo and SKU")
+		handleResponse(w, false, "⚠️ OrderNo and SKU are required", nil, http.StatusBadRequest)
 		return
 	}
 
-	err := app.Service.BeforeReturn.DeleteCodeR(r.Context(), orderNo, sku)
+	// ✅ Extract JWT Claims
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || claims == nil {
+		app.Logger.Warn("🚷 Unauthorized access attempt")
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
+		return
+	}
+
+	// ✅ Extract userID from Claims
+	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
+		app.Logger.Warn("🚷 Failed to extract userID from claims")
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
+		return
+	}
+
+	app.Logger.Info("🗑️ User deleting CodeR",
+		zap.String("userID", userID),
+		zap.String("orderNo", orderNo),
+		zap.String("sku", sku),
+	)
+
+	// ✅ Call Service Layer
+	err = app.Service.BeforeReturn.DeleteCodeR(r.Context(), orderNo, sku, userID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			app.Logger.Warn("⚠️ CodeR not found", zap.String("orderNo", orderNo), zap.String("sku", sku))
+			handleResponse(w, false, "⚠️ CodeR not found", nil, http.StatusNotFound)
+			return
+		}
+
 		app.Logger.Error("🚨 Failed to delete CodeR 🚨", zap.Error(err))
-		handleResponse(w, false, err.Error(), nil, http.StatusInternalServerError)
+		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
 		return
 	}
 
-	handleResponse(w, true, "⭐ CodeR deleted successfully ⭐", nil, http.StatusOK)
-}
-
-// GetDraftConfirmOrderByOrderNo godoc
-// @Summary Get draft order by order number
-// @Description Retrieve the details of a specific draft order by its order number
-// @ID get-draft-order-by-order-no
-// @Tags Draft & Confirm
-// @Accept json
-// @Produce json
-// @Param orderNo path string true "Order number"
-// @Success 200 {object} api.Response{data=[]response.DraftHeadResponse} "Draft order retrieved successfully"
-// @Failure 404 {object} api.Response
-// @Failure 500 {object} api.Response
-// @Router /draft-confirm/detail/{orderNo} [get]
-func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
-	result, err := app.Service.BeforeReturn.GetDraftConfirmOrderByOrderNo(r.Context(), orderNo)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	fmt.Printf("\n📋 ========== Draft Order Details ========== 📋\n")
-	utils.PrintDraftOrderDetails(result)
-	fmt.Printf("\n📋 ========== Draft Order Line Details ========== 📋\n")
-	for i, line := range result.OrderLines {
-		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
-		utils.PrintDraftOrderLineDetails(&line)
-	}
-	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.OrderLines))
-	fmt.Println("=====================================")
-
-	handleResponse(w, true, "⭐ Draft order retrieved successfully ⭐", result, http.StatusOK)
+	// ✅ Return Success Response
+	handleResponse(w, true, "⭐ Draft order retrieved successfully ⭐", nil, http.StatusOK)
 }
 
 // UpdateDraftOrders godoc
@@ -801,18 +941,21 @@ func (app *Application) GetDraftConfirmOrderByOrderNo(w http.ResponseWriter, r *
 // @Accept json
 // @Produce json
 // @Param orderNo path string true "Order number"
-// @Success 200 {object} api.Response{data=[]response.DraftHeadResponse} "Draft orders updated successfully"
+// @Success 200 {object} api.Response{data=response.UpdateOrderStatusResponse} "Draft order updated successfully"
 // @Failure 400 {object} api.Response "Bad Request"
+// @Failure 401 {object} api.Response "Unauthorized"
+// @Failure 404 {object} api.Response "Not Found"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /draft-confirm/update-draft/{orderNo} [patch]
 func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request) {
+	// ✅ รับค่า `orderNo` จาก URL Path
 	orderNo := chi.URLParam(r, "orderNo")
 	if orderNo == "" {
-		handleResponse(w, false, "Order number is required", nil, http.StatusBadRequest)
+		handleResponse(w, false, "⚠️ Order number is required", nil, http.StatusBadRequest)
 		return
 	}
 
-	// Extract userID from claims
+	// ✅ Extract userID from claims
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
 		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
@@ -821,34 +964,23 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
+		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
 		return
 	}
 
-	err = app.Service.BeforeReturn.UpdateDraftOrder(r.Context(), orderNo, userID)
+	// ✅ Call Service Layer
+	updatedOrder, err := app.Service.BeforeReturn.UpdateDraftOrder(r.Context(), orderNo, userID)
 	if err != nil {
-		handleError(w, err)
+		if strings.Contains(err.Error(), "not found") {
+			handleResponse(w, false, "⚠️ Draft order not found", nil, http.StatusNotFound)
+			return
+		}
+		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
 		return
 	}
 
-	// Fetch updated order details
-	result, err := app.Service.BeforeReturn.GetDraftConfirmOrderByOrderNo(r.Context(), orderNo)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	fmt.Printf("\n📋 ========== Draft Orders Updated Successfully ========== 📋\n")
-	utils.PrintDraftOrderDetails(result)
-	fmt.Printf("\n📋 ========== Draft Order Line Details ========== 📋\n")
-	for i, line := range result.OrderLines {
-		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
-		utils.PrintDraftOrderLineDetails(&line)
-	}
-	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.OrderLines))
-	fmt.Println("=====================================")
-
-	handleResponse(w, true, "⭐ Draft orders updated successfully ⭐", result, http.StatusOK)
+	// ✅ Return Success Response
+	handleResponse(w, true, "⭐ Draft order updated successfully ⭐", updatedOrder, http.StatusOK)
 }
 
 // @Summary 	Get Before Return Order

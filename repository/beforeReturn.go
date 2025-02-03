@@ -39,11 +39,11 @@ type BeforeReturnRepository interface {
 	// Draft & Confirm MKP 🚨//
 	ListDraftOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error)
 	ListConfirmOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error)
-	GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, []response.DraftLineResponse, error)
-	ListCodeR(ctx context.Context) ([]response.CodeRResponse, error)
-	AddCodeR(ctx context.Context, codeR request.CodeR) (*response.DraftLineResponse, error)
-	DeleteCodeR(ctx context.Context, orderNo string, sku string) error
-	UpdateOrderStatus(ctx context.Context, orderNo string, statusConfID int, statusReturnID int, userID string) error
+	GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error)
+	ListCodeR(ctx context.Context) ([]response.ListCodeRResponse, error)
+	AddCodeR(ctx context.Context, req request.AddCodeR) ([]response.AddCodeRResponse, error)
+	DeleteCodeR(ctx context.Context, orderNo string, sku string) (int64, error)
+	UpdateOrderStatus(ctx context.Context, orderNo string, statusConfID int, statusReturnID int, userID string) (*response.UpdateOrderStatusResponse, error)
 
 	// Get Real Order
 	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
@@ -588,77 +588,54 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, req request.Cance
 }
 
 // Draft & Confirm MKP 🚨//
+// ListDraftOrders ดึงรายการ Draft Status Orders 🚗
 func (repo repositoryDB) ListDraftOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error) {
-	// คำสั่ง SQL สำหรับดึงข้อมูล Draft Orders
 	query := `
         SELECT TOP 100 OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
         FROM BeforeReturnOrder
         WHERE StatusConfID = 1 -- Draft status
-        AND CreateDate BETWEEN :startDate AND :endDate
+        AND CreateDate BETWEEN CONVERT(DATETIME, :startDate, 120) AND CONVERT(DATETIME, :endDate, 120)
         ORDER BY CreateDate DESC
     `
 
 	var orders []response.ListDraftConfirmOrdersResponse
 
-	// เตรียมคำสั่ง SQL
-	nstmt, err := repo.db.PrepareNamed(query)
+	err := repo.db.SelectContext(ctx, &orders, query, map[string]interface{}{
+		"startDate": startDate + " 00:00:00",
+		"endDate":   endDate + " 23:59:59",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer nstmt.Close()
-
-	// กำหนดพารามิเตอร์สำหรับคำสั่ง SQL
-	params := map[string]interface{}{
-		"startDate": startDate,
-		"endDate":   endDate,
+		return nil, fmt.Errorf("failed to fetch draft orders: %w", err)
 	}
 
-	// ดึงข้อมูล Draft Orders จากฐานข้อมูล
-	err = nstmt.SelectContext(ctx, &orders, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list draft orders: %w", err)
-	}
-
-	// คืนค่าข้อมูล Draft Orders
 	return orders, nil
 }
 
+// ListConfirmOrders ดึงรายการ Confirm Satus Orders 🚗
 func (repo repositoryDB) ListConfirmOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error) {
-	// คำสั่ง SQL สำหรับดึงข้อมูล Confirm Orders
 	query := `
-        SELECT TOP 100 OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
+        SELECT OrderNo, SoNo, SrNo, CustomerID, TrackingNo, Logistic, ChannelID, CreateDate, WarehouseID
         FROM BeforeReturnOrder
         WHERE StatusConfID = 2 -- Confirm status
-        AND CreateDate BETWEEN :startDate AND :endDate
+        AND CreateDate BETWEEN CONVERT(DATETIME, :startDate, 120) AND CONVERT(DATETIME, :endDate, 120)
         ORDER BY CreateDate DESC
     `
 
 	var orders []response.ListDraftConfirmOrdersResponse
 
-	// เตรียมคำสั่ง SQL
-	nstmt, err := repo.db.PrepareNamed(query)
+	err := repo.db.SelectContext(ctx, &orders, query, map[string]interface{}{
+		"startDate": startDate + " 00:00:00",
+		"endDate":   endDate + " 23:59:59",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer nstmt.Close()
-
-	// กำหนดพารามิเตอร์สำหรับคำสั่ง SQL
-	params := map[string]interface{}{
-		"startDate": startDate,
-		"endDate":   endDate,
+		return nil, fmt.Errorf("failed to fetch confirm orders: %w", err)
 	}
 
-	// ดึงข้อมูล Confirm Orders จากฐานข้อมูล
-	err = nstmt.SelectContext(ctx, &orders, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list confirm orders: %w", err)
-	}
-
-	// คืนค่าข้อมูล Confirm Orders
 	return orders, nil
 }
 
-func (repo repositoryDB) GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, []response.DraftLineResponse, error) {
+// GetDraftConfirmOrderByOrderNo ดึงข้อมูล Draft Status Order หรือ Confirm Status Order ตาม OrderNo 🚗
+func (repo repositoryDB) GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error) {
 	var head response.DraftHeadResponse
 	var lines []response.DraftLineResponse
 
@@ -670,15 +647,9 @@ func (repo repositoryDB) GetDraftConfirmOrderByOrderNo(ctx context.Context, orde
         FROM BeforeReturnOrder
         WHERE OrderNo = :OrderNo
     `
-
-	headQuery, args, err := sqlx.Named(headQuery, map[string]interface{}{"OrderNo": orderNo})
+	err := repo.db.GetContext(ctx, &head, repo.db.Rebind(headQuery), orderNo)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to prepare head query: %w", err)
-	}
-	headQuery = repo.db.Rebind(headQuery)
-	err = repo.db.GetContext(ctx, &head, headQuery, args...)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get head data: %w", err)
+		return nil, err
 	}
 
 	lineQuery := `
@@ -690,83 +661,83 @@ func (repo repositoryDB) GetDraftConfirmOrderByOrderNo(ctx context.Context, orde
         FROM BeforeReturnOrderLine
         WHERE OrderNo = :OrderNo
     `
-	lineQuery, args, err = sqlx.Named(lineQuery, map[string]interface{}{"OrderNo": orderNo})
+	err = repo.db.SelectContext(ctx, &lines, repo.db.Rebind(lineQuery), orderNo)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to prepare line query: %w", err)
-	}
-	lineQuery = repo.db.Rebind(lineQuery)
-	err = repo.db.SelectContext(ctx, &lines, lineQuery, args...)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get line data: %w", err)
+		return nil, err
 	}
 
-	return &head, lines, nil
+	head.OrderLines = lines
+
+	return &head, nil
 }
 
-// Implementation สำหรับ ListCodeR
-func (repo repositoryDB) ListCodeR(ctx context.Context) ([]response.CodeRResponse, error) {
+// ListCodeR ดึงรายการ CodeR ที่ขึ้นต้นด้วย 'R' 🚗
+func (repo repositoryDB) ListCodeR(ctx context.Context) ([]response.ListCodeRResponse, error) {
 	query := `
-		SELECT SKU, NameAlias
-		FROM ROM_V_ProductAll
-		WHERE SKU LIKE 'R%'
-	`
+        SELECT SKU, ItemName
+        FROM ROM_V_ProductAll
+        WHERE SKU LIKE 'R%' -- ดึงเฉพาะ SKU ที่ขึ้นต้นด้วย 'R'
+        ORDER BY ItemName ASC
+    `
 
-	var CodeR []response.CodeRResponse
-	err := repo.db.SelectContext(ctx, &CodeR, query)
+	var codeRList []response.ListCodeRResponse
+
+	err := repo.db.SelectContext(ctx, &codeRList, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get CodeR: %w", err)
+		return nil, fmt.Errorf("failed to fetch CodeR list: %w", err)
 	}
 
-	return CodeR, nil
+	return codeRList, nil
 }
 
-func (repo repositoryDB) AddCodeR(ctx context.Context, CodeR request.CodeR) (*response.DraftLineResponse, error) {
-	CodeR.ReturnQTY = CodeR.QTY
-
+func (repo repositoryDB) AddCodeR(ctx context.Context, req request.AddCodeR) ([]response.AddCodeRResponse, error) {
 	query := `
         INSERT INTO BeforeReturnOrderLine (OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate)
+        OUTPUT inserted.OrderNo, inserted.SKU, inserted.ItemName, inserted.QTY, inserted.ReturnQTY, inserted.Price, inserted.CreateBy, inserted.CreateDate
         VALUES (:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE())
     `
 
-	_, err := repo.db.NamedExecContext(ctx, query, CodeR)
+	var results []response.AddCodeRResponse
+
+	err := repo.db.SelectContext(ctx, &results, query, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert CodeR: %w", err)
 	}
 
-	result := &response.DraftLineResponse{
-		SKU:      CodeR.SKU,
-		ItemName: CodeR.ItemName,
-		QTY:      CodeR.QTY,
-		Price:    CodeR.Price,
-	}
-
-	return result, nil
+	return results, nil
 }
 
-func (repo repositoryDB) DeleteCodeR(ctx context.Context, orderNo string, sku string) error {
+func (repo repositoryDB) DeleteCodeR(ctx context.Context, orderNo string, sku string) (int64, error) {
 	query := `
         DELETE FROM BeforeReturnOrderLine
         WHERE OrderNo = :OrderNo AND SKU = :SKU
     `
 
-	_, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{
+	result, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{
 		"OrderNo": orderNo,
 		"SKU":     sku,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to delete CodeR: %w", err)
+		return 0, fmt.Errorf("failed to delete CodeR: %w", err)
 	}
 
-	return nil
+	// ✅ ตรวจสอบจำนวนแถวที่ถูกลบ
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	return rowsAffected, nil
 }
 
-func (repo repositoryDB) UpdateOrderStatus(ctx context.Context, orderNo string, statusConfID int, statusReturnID int, userID string) error {
+func (repo repositoryDB) UpdateOrderStatus(ctx context.Context, orderNo string, statusConfID int, statusReturnID int, userID string) (*response.UpdateOrderStatusResponse, error) {
 	query := `
         UPDATE BeforeReturnOrder
         SET StatusConfID = :StatusConfID,
             StatusReturnID = :StatusReturnID,
             UpdateBy = :UpdateBy,
             UpdateDate = GETDATE()
+        OUTPUT inserted.OrderNo, inserted.StatusConfID, inserted.StatusReturnID, inserted.UpdateBy, inserted.UpdateDate
         WHERE OrderNo = :OrderNo
     `
 	params := map[string]interface{}{
@@ -776,12 +747,13 @@ func (repo repositoryDB) UpdateOrderStatus(ctx context.Context, orderNo string, 
 		"UpdateBy":       userID,
 	}
 
-	_, err := repo.db.NamedExecContext(ctx, query, params)
+	var updatedOrder response.UpdateOrderStatusResponse
+	err := repo.db.GetContext(ctx, &updatedOrder, query, params)
 	if err != nil {
-		return fmt.Errorf("failed to update order status: %w", err)
+		return nil, fmt.Errorf("failed to update order status: %w", err)
 	}
 
-	return nil
+	return &updatedOrder, nil
 }
 
 func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, identifier, sku string) (bool, error) {

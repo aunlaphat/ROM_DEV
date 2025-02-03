@@ -356,7 +356,26 @@ type DraftLineResponse struct {
 	Price    float64 `db:"Price"`
 }
 
-type CodeRResponse struct {
+type ListCodeRResponse struct {
 	SKU       string `json:"sku" db:"SKU"`
 	NameAlias string `json:"nameAlias" db:"NameAlias"`
+}
+
+type AddCodeRResponse struct {
+	OrderNo    string    `json:"orderNo" db:"OrderNo"`
+	SKU        string    `json:"SKU" db:"SKU"`
+	ItemName   string    `json:"itemName" db:"ItemName"`
+	QTY        int       `json:"qty" db:"QTY"`
+	ReturnQTY  int       `json:"returnQty" db:"ReturnQTY"`
+	Price      float64   `json:"price" db:"Price"`
+	CreateBy   string    `json:"createBy" db:"CreateBy"`
+	CreateDate time.Time `json:"createDate" db:"CreateDate"`
+}
+
+type UpdateOrderStatusResponse struct {
+	OrderNo        string    `json:"orderNo" db:"OrderNo"`
+	StatusReturnID int       `json:"statusReturnId" db:"StatusReturnID"`
+	StatusConfID   int       `json:"statusConfId" db:"StatusConfID"`
+	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
 }

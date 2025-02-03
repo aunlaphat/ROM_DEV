@@ -29,32 +29,21 @@ type BeforeReturnService interface {
 	// Method สำหรับอัพเดท Before Return Order พร้อมกับ Lines
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 
-	// ************************ Create Sale Return ************************ //
-	// Method สำหรับค้นหา Order โดยใช้ SoNo และ OrderNo
+	// Create Return Order MKP 🚨//
 	SearchOrder(ctx context.Context, soNo, orderNo string) ([]response.SaleOrderResponse, error)
-	// Method สำหรับสร้าง Sale Return
 	CreateSaleReturn(ctx context.Context, req request.CreateSaleReturnRequest) (*response.BeforeReturnOrderResponse, error)
-	// Method สำหรับอัพเดท Sale Return
 	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn, userID string) (*response.UpdateSaleReturnResponse, error)
-	// Method สำหรับยืนยัน Sale Return
 	ConfirmSaleReturn(ctx context.Context, orderNo string, roleID int, userID string) (*response.ConfirmSaleReturnResponse, error)
-	// Method สำหรับยกเลิก Sale Return
 	CancelSaleReturn(ctx context.Context, req request.CancelSaleReturn, userID string) (*response.CancelSaleReturnResponse, error)
 
-	// Method สำหรับดึงรายการ Draft Orders ทั้งหมด
-	ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
-	// Method สำหรับดึงรายการ Confirm Orders ทั้งหมด
-	ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error)
-	// Method สำหรับดึง Draft Confirm Order โดยใช้ OrderNo
+	// Draft & Confirm MKP 🚨//
+	ListDraftOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error)
+	ListConfirmOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error)
 	GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error)
-	// Method สำหรับดึง CodeR ทั้งหมด
-	ListCodeR(ctx context.Context) ([]response.CodeRResponse, error)
-	// Method สำหรับเพิ่ม CodeR
-	AddCodeR(ctx context.Context, req request.CodeR) (*response.DraftLineResponse, error)
-	// Method สำหรับลบ CodeR
-	DeleteCodeR(ctx context.Context, orderNo string, sku string) error
-	// Method สำหรับอัพเดท Draft Order
-	UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error
+	ListCodeR(ctx context.Context) ([]response.ListCodeRResponse, error)
+	AddCodeR(ctx context.Context, req request.AddCodeR, userID string) ([]response.AddCodeRResponse, error)
+	DeleteCodeR(ctx context.Context, orderNo string, sku string, userID string) error
+	UpdateDraftOrder(ctx context.Context, orderNo string, userID string) (*response.UpdateOrderStatusResponse, error)
 
 	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อทั้งหมด
 	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
@@ -754,174 +743,258 @@ func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderN
 	return lines, nil
 }
 
-// Method สำหรับดึงรายการ Draft Orders ทั้งหมด
-func (srv service) ListDraftOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error) {
-	// เริ่มต้น Logging ของ API Call
+// Draft & Confirm MKP 🚨//
+// ListDraftOrders ดึงรายการ Draft Status Orders 🚗
+func (srv service) ListDraftOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "ListDraftOrders")
 	defer logFinish("Completed", nil)
 
-	// Logging ว่าเริ่มการทำงาน
-	srv.logger.Info("🔎 Starting to list all draft orders 🔎")
+	srv.logger.Info("🔎 Fetching all draft orders...",
+		zap.String("method", "ListDraftOrders"),
+		zap.String("startDate", startDate),
+		zap.String("endDate", endDate),
+	)
 
-	// เรียก Repository เพื่อค้นหา Order ทั้งหมดที่ Status เป็น Draft
-	orders, err := srv.beforeReturnRepo.ListDraftOrders(ctx)
+	// 📌 ตรวจสอบว่า startDate < endDate หรือไม่
+	start, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
-		// หากเกิดข้อผิดพลาด อัปเดต Log ที่ Error
-		logFinish("Failed", fmt.Errorf("❌ Failed to list draft orders : %v", err))
-		srv.logger.Error("❌ Failed to list draft orders", zap.Error(err))
-		return nil, err
+		srv.logger.Warn("⚠️ Invalid startDate format ⚠️", zap.String("startDate", startDate))
+		logFinish("Failed", err)
+		return nil, fmt.Errorf("invalid startDate format (expected YYYY-MM-DD): %w", err)
 	}
 
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
-	logFinish("Success", nil)
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		srv.logger.Warn("⚠️ Invalid endDate format ⚠️", zap.String("endDate", endDate))
+		logFinish("Failed", err)
+		return nil, fmt.Errorf("invalid endDate format (expected YYYY-MM-DD): %w", err)
+	}
+
+	if start.After(end) {
+		srv.logger.Warn("⚠️ startDate cannot be after endDate ⚠️",
+			zap.String("startDate", startDate),
+			zap.String("endDate", endDate),
+		)
+		logFinish("Failed", fmt.Errorf("startDate cannot be after endDate"))
+		return nil, fmt.Errorf("startDate cannot be after endDate")
+	}
+
+	// 📌 ดึงข้อมูลจาก Repository Layer
+	orders, err := srv.beforeReturnRepo.ListDraftOrders(ctx, startDate, endDate)
+	if err != nil {
+		srv.logger.Error("❌ Failed to list draft orders",
+			zap.Error(err),
+			zap.String("startDate", startDate),
+			zap.String("endDate", endDate),
+		)
+		logFinish("Failed", err)
+		return nil, fmt.Errorf("ListDraftOrders failed: %w", err)
+	}
+
+	srv.logger.Info("✅ Successfully retrieved draft orders",
+		zap.Int("count", len(orders)),
+		zap.String("startDate", startDate),
+		zap.String("endDate", endDate),
+	)
+	logFinish(fmt.Sprintf("Success - %d orders", len(orders)), nil)
+
 	return orders, nil
 }
 
-// Method สำหรับดึงรายการ Confirm Orders ทั้งหมด
-func (srv service) ListConfirmOrders(ctx context.Context) ([]response.ListDraftConfirmOrdersResponse, error) {
-	// เริ่มต้น Logging ของ API Call
+// ListConfirmOrders ดึงรายการ Confirm Satus Orders 🚗
+func (srv service) ListConfirmOrders(ctx context.Context, startDate, endDate string) ([]response.ListDraftConfirmOrdersResponse, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "ListConfirmOrders")
 	defer logFinish("Completed", nil)
 
-	srv.logger.Info("🔎 Starting to list all confirm orders 🔎")
+	srv.logger.Info("🔎 Fetching all confirm orders...",
+		zap.String("startDate", startDate),
+		zap.String("endDate", endDate),
+	)
 
-	// เรียก Repository เพื่อค้นหา Order ทั้งหมดที่ Status เป็น Confirm
-	orders, err := srv.beforeReturnRepo.ListConfirmOrders(ctx)
+	// 📌 ตรวจสอบว่า startDate < endDate หรือไม่
+	start, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
-		// หากเกิดข้อผิดพลาด อัปเดต Log ที่ Error
-		logFinish("Failed", fmt.Errorf("❌ Failed to list confirm orders : %v", err))
-		srv.logger.Error("❌ Failed to list confirm orders", zap.Error(err))
-		return nil, err
+		srv.logger.Warn("⚠️ Invalid startDate format ⚠️", zap.String("startDate", startDate))
+		logFinish("Failed", err)
+		return nil, fmt.Errorf("invalid startDate format (expected YYYY-MM-DD): %w", err)
 	}
 
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
-	logFinish("Success", nil)
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		srv.logger.Warn("⚠️ Invalid endDate format ⚠️", zap.String("endDate", endDate))
+		logFinish("Failed", err)
+		return nil, fmt.Errorf("invalid endDate format (expected YYYY-MM-DD): %w", err)
+	}
+
+	if start.After(end) {
+		srv.logger.Warn("⚠️ startDate cannot be after endDate ⚠️",
+			zap.String("startDate", startDate),
+			zap.String("endDate", endDate),
+		)
+		logFinish("Failed", fmt.Errorf("startDate cannot be after endDate"))
+		return nil, fmt.Errorf("startDate cannot be after endDate")
+	}
+
+	// 📌 ดึงข้อมูลจาก Repository Layer
+	orders, err := srv.beforeReturnRepo.ListConfirmOrders(ctx, startDate, endDate)
+	if err != nil {
+		srv.logger.Error("❌ Failed to list confirm orders",
+			zap.Error(err),
+			zap.String("startDate", startDate),
+			zap.String("endDate", endDate),
+		)
+		logFinish("Failed", err)
+		return nil, fmt.Errorf("ListConfirmOrders failed: %w", err)
+	}
+
+	srv.logger.Info("✅ Successfully retrieved confirm orders",
+		zap.Int("count", len(orders)),
+		zap.String("startDate", startDate),
+		zap.String("endDate", endDate),
+	)
+	logFinish(fmt.Sprintf("Success - %d orders", len(orders)), nil)
+
 	return orders, nil
 }
 
-// Method สำหรับดึง Draft Confirm Order โดยใช้ OrderNo
+// GetDraftConfirmOrderByOrderNo ดึงข้อมูล Order และทำ Logging 🚗
 func (srv service) GetDraftConfirmOrderByOrderNo(ctx context.Context, orderNo string) (*response.DraftHeadResponse, error) {
-	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "GetDraftConfirmOrderByOrderNo", zap.String("OrderNo", orderNo))
+	logFinish := srv.logger.LogAPICall(ctx, "GetDraftConfirmOrderByOrderNo")
 	defer logFinish("Completed", nil)
 
-	// Logging ว่าเริ่มการทำงาน
-	srv.logger.Info("🔎 Starting to get draft order by order number 🔎", zap.String("OrderNo", orderNo))
+	srv.logger.Info("🔎 Fetching Draft Confirm Order...", zap.String("orderNo", orderNo))
 
-	head, lines, err := srv.beforeReturnRepo.GetDraftConfirmOrderByOrderNo(ctx, orderNo)
+	// 📌 เรียกใช้ Repository Layer
+	order, err := srv.beforeReturnRepo.GetDraftConfirmOrderByOrderNo(ctx, orderNo)
 	if err != nil {
-		// อัปเดต Log ว่าไม่สามารถดึงข้อมูลได้
-		logFinish("Failed", fmt.Errorf("❌ Failed to get draft order : %v", err))
-		srv.logger.Error("❌ Failed to get draft order", zap.Error(err))
+		srv.logger.Error("❌ Failed to get Draft Confirm Order", zap.String("orderNo", orderNo), zap.Error(err))
+		logFinish("Failed", err)
 		return nil, err
 	}
 
-	head.OrderLines = lines
-
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
+	srv.logger.Info("✅ Successfully retrieved Draft Confirm Order", zap.String("orderNo", orderNo), zap.Int("lineCount", len(order.OrderLines)))
 	logFinish("Success", nil)
-	return head, nil
+
+	return order, nil
 }
 
-// Method สำหรับดึง CodeR ทั้งหมด
-func (srv service) ListCodeR(ctx context.Context) ([]response.CodeRResponse, error) {
-	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "GetCodeR")
+// ListCodeR ดึงรายการ CodeR ที่ขึ้นต้นด้วย 'R' 🚗
+func (srv service) ListCodeR(ctx context.Context) ([]response.ListCodeRResponse, error) {
+	logFinish := srv.logger.LogAPICall(ctx, "ListCodeR")
 	defer logFinish("Completed", nil)
 
-	// Logging ว่าเริ่มการทำงาน
-	srv.logger.Info("🔎 Starting to get CodeR 🔎")
+	srv.logger.Info("🔎 Fetching all CodeR from ROM_V_ProductAll (WHERE SKU LIKE 'R%')...")
 
-	// เรียก Repository เพื่อค้นหา CodeR ทั้งหมด
-	codeR, err := srv.beforeReturnRepo.ListCodeR(ctx)
+	codeRList, err := srv.beforeReturnRepo.ListCodeR(ctx)
 	if err != nil {
-		// หากเกิดข้อผิดพลาด อัปเดต Log ที่ Error
-		logFinish("Failed", fmt.Errorf("❌ Failed to get CodeR : %v", err))
-		srv.logger.Error("❌ Failed to get CodeR", zap.Error(err))
-		return nil, err
+		srv.logger.Error("❌ Failed to list CodeR", zap.Error(err))
+		logFinish("Failed", err)
+		return nil, fmt.Errorf("ListCodeR failed: %w", err)
 	}
 
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
-	logFinish("Success", nil)
-	return codeR, nil
+	srv.logger.Info("✅ Successfully retrieved CodeR list", zap.Int("count", len(codeRList)))
+	logFinish(fmt.Sprintf("Success - %d CodeR", len(codeRList)), nil)
+
+	return codeRList, nil
 }
 
-// Method สำหรับเพิ่ม CodeR
-func (srv service) AddCodeR(ctx context.Context, req request.CodeR) (*response.DraftLineResponse, error) {
-	// เริ่มต้น Logging ของ API Call
+func (srv service) AddCodeR(ctx context.Context, req request.AddCodeR, userID string) ([]response.AddCodeRResponse, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "AddCodeR")
 	defer logFinish("Completed", nil)
 
-	// Logging ว่าเริ่มการทำงาน
-	srv.logger.Info("🔎 Starting to add CodeR 🔎")
-
-	// ตรวจสอบว่า SKU มีอยู่แล้วหรือไม่
-	existingLines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, req.OrderNo)
-	if err != nil {
-		logFinish("Failed", fmt.Errorf("failed to check existing SKUs: %v", err))
-		srv.logger.Error("❌ Failed to check existing SKUs", zap.Error(err))
-		return nil, err
+	// ✅ ตรวจสอบค่า `QTY` และ `Price` (ต้องเป็นค่าบวก)
+	if req.QTY <= 0 || req.Price <= 0 {
+		srv.logger.Warn("⚠️ Invalid QTY or Price",
+			zap.Int("qty", req.QTY),
+			zap.Float64("price", req.Price),
+		)
+		logFinish("Failed - Invalid QTY or Price", nil)
+		return nil, fmt.Errorf("invalid QTY (%d) or Price (%.2f)", req.QTY, req.Price)
 	}
 
-	for _, line := range existingLines {
-		if line.SKU == req.SKU {
-			err := fmt.Errorf("SKU already exists for OrderNo: %s", req.OrderNo)
-			logFinish("Failed", err)
-			srv.logger.Warn("⚠️ Duplicate SKU found", zap.String("OrderNo", req.OrderNo), zap.String("SKU", req.SKU))
-			return nil, err
-		}
-	}
+	// ✅ ตั้งค่า `ReturnQTY = QTY`
+	req.ReturnQTY = req.QTY
 
-	// เรียกใช้ repository layer
-	result, err := srv.beforeReturnRepo.AddCodeR(ctx, req)
+	srv.logger.Info("➕ Adding new CodeR...",
+		zap.String("orderNo", req.OrderNo),
+		zap.String("sku", req.SKU),
+		zap.String("itemName", req.ItemName),
+		zap.Int("qty", req.QTY),
+		zap.Float64("price", req.Price),
+		zap.String("createBy", userID),
+	)
+
+	// ✅ เรียกใช้งาน Repository Layer
+	results, err := srv.beforeReturnRepo.AddCodeR(ctx, req)
 	if err != nil {
-		logFinish("Failed", fmt.Errorf("failed to add CodeR: %v", err))
 		srv.logger.Error("❌ Failed to add CodeR", zap.Error(err))
-		return nil, err
+		logFinish("Failed", err)
+		return nil, fmt.Errorf("AddCodeR failed: %w", err)
 	}
 
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
-	logFinish("Success", nil)
-	return result, nil
+	srv.logger.Info("✅ Successfully added CodeR", zap.Int("count", len(results)))
+	logFinish(fmt.Sprintf("Success - %d records", len(results)), nil)
+
+	return results, nil
 }
 
-// Method สำหรับลบ CodeR
-func (srv service) DeleteCodeR(ctx context.Context, orderNo string, sku string) error {
-	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "DeleteCodeR", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
+func (srv service) DeleteCodeR(ctx context.Context, orderNo string, sku string, userID string) error {
+	logFinish := srv.logger.LogAPICall(ctx, "DeleteCodeR")
 	defer logFinish("Completed", nil)
 
-	// เรียกใช้ repository layer
-	if err := srv.beforeReturnRepo.DeleteCodeR(ctx, orderNo, sku); err != nil {
-		// อัปเดต Log ว่าไม่สามารถลบ CodeR ได้ เนื่องจากเกิดข้อผิดพลาด
-		logFinish("Failed", fmt.Errorf("failed to delete CodeR: %v", err))
+	srv.logger.Info("🗑️ Deleting CodeR...",
+		zap.String("orderNo", orderNo),
+		zap.String("sku", sku),
+		zap.String("deletedBy", userID),
+	)
+
+	// ✅ เรียกใช้งาน Repository Layer
+	rowsAffected, err := srv.beforeReturnRepo.DeleteCodeR(ctx, orderNo, sku)
+	if err != nil {
 		srv.logger.Error("❌ Failed to delete CodeR", zap.Error(err))
-		return err
+		logFinish("Failed", err)
+		return fmt.Errorf("DeleteCodeR failed: %w", err)
 	}
 
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
-	logFinish("Success", nil)
+	// ✅ ตรวจสอบว่ามีข้อมูลถูกลบหรือไม่
+	if rowsAffected == 0 {
+		srv.logger.Warn("⚠️ CodeR not found", zap.String("orderNo", orderNo), zap.String("sku", sku))
+		return fmt.Errorf("no CodeR found with OrderNo: %s and SKU: %s", orderNo, sku)
+	}
+
+	srv.logger.Info("✅ Successfully deleted CodeR",
+		zap.String("orderNo", orderNo),
+		zap.String("sku", sku),
+		zap.Int64("rowsAffected", rowsAffected),
+	)
+
+	logFinish(fmt.Sprintf("Success - Deleted %d rows", rowsAffected), nil)
 	return nil
 }
 
 // Method สำหรับอัพเดท Draft Order
-func (srv service) UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error {
-	// เริ่มต้น Logging ของ API Call
+func (srv service) UpdateDraftOrder(ctx context.Context, orderNo string, userID string) (*response.UpdateOrderStatusResponse, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "UpdateDraftOrder", zap.String("OrderNo", orderNo), zap.String("UserID", userID))
 	defer logFinish("Completed", nil)
 
-	// Logging ว่าเริ่มการทำงาน
 	srv.logger.Info("🔎 Starting draft order update process 🔎", zap.String("OrderNo", orderNo))
 
-	// Update order status
-	err := srv.beforeReturnRepo.UpdateOrderStatus(ctx, orderNo, 2, 3, userID) // StatusConfID = 2 (Confirm), StatusReturnID = 3 (Booking)
+	// ✅ Update order status
+	updatedOrder, err := srv.beforeReturnRepo.UpdateOrderStatus(ctx, orderNo, 2, 3, userID) // StatusConfID = 2 (Confirm), StatusReturnID = 3 (Booking)
 	if err != nil {
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to update order status", zap.Error(err))
-		return err
+		return nil, err
 	}
 
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
+	srv.logger.Info("✅ Successfully updated draft order",
+		zap.String("OrderNo", updatedOrder.OrderNo),
+		zap.Int("StatusConfID", updatedOrder.StatusConfID),
+		zap.Int("StatusReturnID", updatedOrder.StatusReturnID),
+		zap.String("UpdateBy", updatedOrder.UpdateBy),
+		zap.Time("UpdateDate", updatedOrder.UpdateDate),
+	)
+
 	logFinish("Success", nil)
-	return nil
+	return updatedOrder, nil
 }
