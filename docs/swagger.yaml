@@ -418,6 +418,10 @@ definitions:
         type: string
       customerId:
         type: string
+      isCNCreated:
+        type: boolean
+      isEdited:
+        type: boolean
       logistic:
         type: string
       mkpStatusId:
@@ -486,8 +490,12 @@ definitions:
         type: string
       confirmDate:
         type: string
-      orderNo:
+      refId:
         type: string
+      statusConfID:
+        type: integer
+      statusReturnID:
+        type: integer
     type: object
   response.ConfirmToReturnOrder:
     properties:
@@ -2272,7 +2280,7 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Confirm a sale return order based on the provided details
+      description: Confirm a sale return order based on user role and data validation
       operationId: confirm-sale-return
       parameters:
       - description: Order number
@@ -2293,11 +2301,15 @@ paths:
                   $ref: '#/definitions/response.ConfirmSaleReturnResponse'
               type: object
         "400":
-          description: Bad Request
+          description: 'Bad Request: OrderNo is missing or invalid'
+          schema:
+            $ref: '#/definitions/api.Response'
+        "401":
+          description: 'Unauthorized: Invalid JWT or Claims'
           schema:
             $ref: '#/definitions/api.Response'
         "500":
-          description: Internal Server Error
+          description: 'Internal Server Error: Something went wrong while processing'
           schema:
             $ref: '#/definitions/api.Response'
       summary: Confirm a sale return order

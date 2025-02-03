@@ -102,14 +102,14 @@ type DeleteReturnOrder struct {
 type DraftTradeDetail struct {
 	OrderNo       string    `json:"orderNo" db:"OrderNo" example:"ORD0001"`
 	SoNo          string    `json:"soNo" db:"SoNo" example:"SO0001"`
-	SrNo          *string    `json:"srNo" db:"SrNo" example:"SR0001"`
-	TrackingNo    *string    `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
-	ChannelID     *int       `json:"channelId" db:"ChannelID" example:"2"`
-	Reason        *string    `json:"reason" db:"Reason"`
+	SrNo          *string   `json:"srNo" db:"SrNo" example:"SR0001"`
+	TrackingNo    *string   `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	ChannelID     *int      `json:"channelId" db:"ChannelID" example:"2"`
+	Reason        *string   `json:"reason" db:"Reason"`
 	StatusCheckID int       `json:"statusCheckId" db:"StatusCheckID" example:"1"`
 	CreateBy      string    `json:"createBy" db:"CreateBy"`
 	CreateDate    time.Time `json:"createDate" db:"CreateDate"`
-} 
+}
 
 /********** OrderHead + Line data Project ***************/
 
@@ -248,6 +248,8 @@ type BeforeReturnOrderResponse struct {
 	UpdateBy               *string                         `json:"updateBy" db:"UpdateBy"`
 	UpdateDate             *time.Time                      `json:"updateDate" db:"UpdateDate"`
 	CancelID               *int                            `json:"cancelId" db:"CancelID"`
+	IsCNCreated            *bool                           `json:"isCNCreated" db:"IsCNCreated"`
+	IsEdited               *bool                           `json:"isEdited" db:"IsEdited"`
 	BeforeReturnOrderLines []BeforeReturnOrderLineResponse `json:"beforeReturnOrderLines"`
 }
 
@@ -311,9 +313,11 @@ type UpdateSaleReturnResponse struct {
 }
 
 type ConfirmSaleReturnResponse struct {
-	OrderNo     string    `json:"orderNo" db:"OrderNo"`
-	ConfirmBy   string    `json:"confirmBy" db:"ConfirmBy"`
-	ConfirmDate time.Time `json:"confirmDate" db:"ConfirmDate"`
+	RefID          string    `json:"refId" db:"RefID"`
+	StatusReturnID int       `json:"statusReturnID" db:"StatusReturnID"`
+	StatusConfID   int       `json:"statusConfID" db:"StatusConfID"`
+	ConfirmBy      string    `json:"confirmBy" db:"ConfirmBy"`
+	ConfirmDate    time.Time `json:"confirmDate" db:"ConfirmDate"`
 }
 
 type CancelSaleReturnResponse struct {
