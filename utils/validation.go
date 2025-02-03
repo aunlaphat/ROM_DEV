@@ -9,7 +9,7 @@ import (
 	"boilerplate-backend-go/dto/response"
 )
 
-// IsStatusCanceled ตรวจสอบว่าสถานะเป็น "ยกเลิก" หรือ "ยืนยันแล้ว"
+// IsStatusCanceled ตรวจสอบว่าสถานะเป็น "ยกเลิก" หรือไม่
 func IsStatusCanceled(statusConfID, statusReturnID *int) bool {
 	if (statusConfID != nil && *statusConfID == 3) || (statusReturnID != nil && *statusReturnID == 2) {
 		return true

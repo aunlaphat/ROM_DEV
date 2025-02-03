@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -253,19 +254,18 @@ func (srv service) ConfirmSaleReturn(ctx context.Context, orderNo string, confir
 }
 
 func (srv service) CancelSaleReturn(ctx context.Context, orderNo, updateBy, remark string) (*response.CancelSaleReturnResponse, error) {
-	// 🪄 Logging จุดเริ่มต้น
 	logFinish := srv.logger.LogAPICall(ctx, "CancelSaleReturn", zap.String("OrderNo", orderNo), zap.String("UpdateBy", updateBy))
 	defer func() { logFinish("Completed", nil) }()
 
-	// ✅ 1. ตรวจสอบ Input
-	if orderNo == "" || updateBy == "" || remark == "" {
+	// ✅ ตรวจสอบ Input
+	if strings.TrimSpace(orderNo) == "" || strings.TrimSpace(updateBy) == "" || strings.TrimSpace(remark) == "" {
 		err := errors.New("orderNo, updateBy, and remark are required")
 		srv.logger.Error("❌ Invalid input", zap.Error(err))
 		logFinish("Failed", err)
 		return nil, err
 	}
 
-	// ✅ 2. ดึงข้อมูลออเดอร์จาก Repository
+	// ✅ ตรวจสอบว่าสามารถยกเลิกได้หรือไม่
 	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
 		err = errors.Wrap(err, "failed to get order")
@@ -280,15 +280,7 @@ func (srv service) CancelSaleReturn(ctx context.Context, orderNo, updateBy, rema
 		return nil, err
 	}
 
-	// ✅ 3. ตรวจสอบว่าสามารถยกเลิกได้หรือไม่
-	if utils.IsStatusCanceled(order.StatusConfID, order.StatusReturnID) {
-		err := fmt.Errorf("order %s is already canceled", orderNo)
-		srv.logger.Warn("⚠️ Order is already canceled", zap.String("OrderNo", orderNo))
-		logFinish("Failed", err)
-		return nil, err
-	}
-
-	// ✅ 4. เรียกใช้ Repository Layer
+	// ✅ เรียกใช้ Repository Layer (แต่ไม่ต้องรับ `CancelID`)
 	err = srv.beforeReturnRepo.CancelSaleReturn(ctx, orderNo, updateBy, remark)
 	if err != nil {
 		err = errors.Wrap(err, "failed to cancel order")
@@ -297,7 +289,7 @@ func (srv service) CancelSaleReturn(ctx context.Context, orderNo, updateBy, rema
 		return nil, err
 	}
 
-	// ✅ 5. สร้าง Response และคืนค่า (Service Layer สร้าง Response เอง)
+	// ✅ สร้าง Response (ไม่ต้องมี CancelID)
 	response := &response.CancelSaleReturnResponse{
 		RefID:        orderNo,
 		CancelStatus: true,

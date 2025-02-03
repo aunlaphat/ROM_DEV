@@ -525,30 +525,41 @@ func (repo repositoryDB) ConfirmSaleReturn(ctx context.Context, orderNo string, 
 }
 
 func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo, updateBy, remark string) error {
-	// Start Transaction
+	// ✅ Start Transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("failed to start transaction: %w", err)
+		return fmt.Errorf("❌ Failed to start transaction: %w", err)
 	}
+
 	defer func() {
 		if err != nil {
 			_ = tx.Rollback()
 		}
 	}()
 
-	// ✅ Insert Cancel Status
+	// ✅ Insert Cancel Status & Retrieve CancelID
 	insertCancelStatus := `
         INSERT INTO CancelStatus (RefID, CancelStatus, Remark, CancelBy, CancelDate) 
+        OUTPUT INSERTED.CancelID
         VALUES (:OrderNo, 1, :Remark, :CancelBy, GETDATE())
     `
 
-	_, err = tx.NamedExecContext(ctx, insertCancelStatus, map[string]interface{}{
+	var cancelID int64
+	params := map[string]interface{}{
 		"OrderNo":  orderNo,
 		"Remark":   remark,
 		"CancelBy": updateBy,
-	})
+	}
+
+	stmt, err := tx.PrepareNamedContext(ctx, insertCancelStatus)
 	if err != nil {
-		return fmt.Errorf("failed to create cancel status: %w", err)
+		return fmt.Errorf("❌ Failed to prepare cancel status query: %w", err)
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRowxContext(ctx, params).Scan(&cancelID)
+	if err != nil {
+		return fmt.Errorf("❌ Failed to create cancel status: %w", err)
 	}
 
 	// ✅ Update Order Status
@@ -556,30 +567,24 @@ func (repo repositoryDB) CancelSaleReturn(ctx context.Context, orderNo, updateBy
         UPDATE BeforeReturnOrder
         SET StatusReturnID = 2,
             StatusConfID = 3,
+            CancelID = :CancelID,
             UpdateBy = :UpdateBy,
             UpdateDate = GETDATE()
         WHERE OrderNo = :OrderNo
     `
 
-	res, err := tx.NamedExecContext(ctx, updateOrder, map[string]interface{}{
+	_, err = tx.NamedExecContext(ctx, updateOrder, map[string]interface{}{
 		"OrderNo":  orderNo,
+		"CancelID": cancelID,
 		"UpdateBy": updateBy,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to update order status: %w", err)
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-	if rowsAffected == 0 {
-		return fmt.Errorf("no rows updated for order: %s", orderNo)
+		return fmt.Errorf("❌ Failed to update order status: %w", err)
 	}
 
 	// ✅ Commit Transaction
 	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		return fmt.Errorf("❌ Failed to commit transaction: %w", err)
 	}
 
 	return nil

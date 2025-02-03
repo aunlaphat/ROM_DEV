@@ -539,12 +539,14 @@ func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request
 // @Param request body request.CancelSaleReturn true "Cancel Sale Return"
 // @Success 200 {object} api.Response{data=response.CancelSaleReturnResponse} "Sale return order canceled successfully"
 // @Failure 400 {object} api.Response "Bad Request"
+// @Failure 401 {object} api.Response "Unauthorized"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/cancel/{orderNo} [post]
 func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request) {
 	// ✅ 1. Extract Order Number from URL
-	orderNo := chi.URLParam(r, "orderNo")
+	orderNo := strings.TrimSpace(chi.URLParam(r, "orderNo"))
 	if orderNo == "" {
+		app.Logger.Warn("❌ Missing orderNo in request")
 		handleResponse(w, false, "❌ OrderNo is required", nil, http.StatusBadRequest)
 		return
 	}
@@ -552,36 +554,55 @@ func (app *Application) CancelSaleReturn(w http.ResponseWriter, r *http.Request)
 	// ✅ 2. Authenticate User (JWT)
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		handleError(w, fmt.Errorf("unauthorized"))
+		app.Logger.Error("🔒 Unauthorized access attempt")
+		handleResponse(w, false, "🔒 Unauthorized", nil, http.StatusUnauthorized)
 		return
 	}
 
 	// ✅ 3. Extract User ID from Token
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		handleError(w, err)
+		app.Logger.Error("🔒 Invalid user token", zap.Error(err))
+		handleResponse(w, false, "🔒 Invalid user token", nil, http.StatusUnauthorized)
 		return
 	}
 
 	// ✅ 4. Decode & Validate Request Body
 	var req request.CancelSaleReturn
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		app.Logger.Warn("❌ Invalid request payload", zap.Error(err))
 		handleResponse(w, false, "❌ Invalid request payload", nil, http.StatusBadRequest)
 		return
 	}
+
+	req.Remark = strings.TrimSpace(req.Remark)
 	if req.Remark == "" {
+		app.Logger.Warn("❌ Missing remark in request")
 		handleResponse(w, false, "❌ Remark is required", nil, http.StatusBadRequest)
 		return
 	}
 
-	// ✅ 5. Call Service Layer (Ensuring Correct Response Handling)
+	// ✅ 5. Log Request Data
+	app.Logger.Info("🛑 CancelSaleReturn requested",
+		zap.String("OrderNo", orderNo),
+		zap.String("CanceledBy", userID),
+		zap.String("Remark", req.Remark),
+	)
+
+	// ✅ 6. Call Service Layer (Ensuring Correct Response Handling)
 	result, err := app.Service.BeforeReturn.CancelSaleReturn(r.Context(), orderNo, userID, req.Remark)
 	if err != nil {
+		app.Logger.Error("❌ Failed to cancel sale return", zap.Error(err))
 		handleError(w, err)
 		return
 	}
 
-	// ✅ 6. Return JSON Response
+	// ✅ 7. Return JSON Response
+	app.Logger.Info("✅ Sale return order canceled successfully",
+		zap.String("OrderNo", orderNo),
+		zap.String("CanceledBy", userID),
+	)
+
 	handleResponse(w, true, "⭐ Sale return order canceled successfully ⭐", result, http.StatusOK)
 }
 
