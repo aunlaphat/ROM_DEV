@@ -48,8 +48,8 @@ func PrintSaleOrderDetails(order *res.SaleOrderResponse) {
 }
 
 func PrintSaleOrderLineDetails(line *res.SaleOrderLineResponse) {
-	fmt.Printf("🛒 SoNo: %s\n", line.SoNo)
-	fmt.Printf("🧾 OrderNo: %s\n", line.OrderNo)
+	//fmt.Printf("🛒 SoNo: %s\n", line.SoNo)
+	//fmt.Printf("🧾 OrderNo: %s\n", line.OrderNo)
 	fmt.Printf("🔖 SKU: %s\n", line.SKU)
 	fmt.Printf("🏷️  ItemName: %s\n", line.ItemName)
 	fmt.Printf("📱 QTY: %d\n", line.QTY)

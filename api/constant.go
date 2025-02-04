@@ -2,13 +2,7 @@ package api
 
 //for dropdown
 
-import (
-	"boilerplate-backend-go/utils"
-	"net/http"
-
-	"github.com/go-chi/chi/v5"
-)
-
+/*
 func (app *Application) Constants(apiRouter *chi.Mux) {
 	apiRouter.Route("/constants", func(r chi.Router) {
 		r.Get("/get-province", app.GetThaiProvince)
@@ -192,3 +186,4 @@ func (app *Application) GetProductAlls(w http.ResponseWriter, r *http.Request) {
 // 		handleResponse(w, true, "⭐ successfully ⭐", result, http.StatusOK)
 
 // }
+*/

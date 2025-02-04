@@ -1,25 +1,18 @@
 package service
 
-import (
-	entity "boilerplate-backend-go/Entity"
-	"context"
-	"database/sql"
-	"fmt"
-)
-
 type Constants interface {
-	GetThaiProvince() ([]entity.Province, error)
+	/* GetThaiProvince() ([]entity.Province, error)
 	GetThaiDistrict() ([]entity.District, error)
 	GetThaiSubDistrict() ([]entity.SubDistrict, error)
 	// GetPostCode() ([]entity.PostCode, error)
 	GetWarehouse() ([]entity.Warehouse, error)
 	GetProductAll() ([]entity.ROM_V_ProductAll, error)
-	GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, error)
+	GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, error) */
 	//GetCustomer() ([]entity.ROM_V_Customer, error)
 
 }
 
-func (srv service) GetThaiProvince() ([]entity.Province, error) {
+/* func (srv service) GetThaiProvince() ([]entity.Province, error) {
 
 	getProvince, err := srv.constant.GetThaiProvince()
 	if err != nil {
@@ -34,10 +27,10 @@ func (srv service) GetThaiProvince() ([]entity.Province, error) {
 	}
 
 	return getProvince, nil
-}
+} */
 
-func (srv service) GetThaiDistrict() ([]entity.District, error) {
-	
+/* func (srv service) GetThaiDistrict() ([]entity.District, error) {
+
 	getDistrict, err := srv.constant.GetThaiDistrict()
 	if err != nil {
 		switch err {
@@ -51,10 +44,9 @@ func (srv service) GetThaiDistrict() ([]entity.District, error) {
 	}
 
 	return getDistrict, nil
-}
+} */
 
-func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
-	
+/* func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 	getSubDistrict, err := srv.constant.GetThaiSubDistrict()
 	if err != nil {
 		switch err {
@@ -68,7 +60,7 @@ func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 	}
 
 	return getSubDistrict, nil
-}
+} */
 
 // func (srv service) GetPostCode() ([]entity.PostCode, error) {
 
@@ -87,9 +79,8 @@ func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 // 	return getPostCode, nil
 // }
 
+/* func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
 
-func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
-	
 	getWarehouse, err := srv.constant.GetWarehouse()
 	if err != nil {
 		switch err {
@@ -103,10 +94,10 @@ func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
 	}
 
 	return getWarehouse, nil
-}
+} */
 
-func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
-	
+/* func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
+
 	getProductAll, err := srv.constant.GetProductAll()
 	if err != nil {
 		switch err {
@@ -120,20 +111,19 @@ func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
 	}
 
 	return getProductAll, nil
-}
+} */
 
-func (srv service) GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, error) {
-	
+/* func (srv service) GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, error) {
+
 	offset := (page - 1) * limit
 
-    products, err := srv.constant.GetProductAllWithPagination(context.Background(), offset, limit)
-    if err != nil {
-        return nil, err
-    }
+	products, err := srv.constant.GetProductAllWithPagination(context.Background(), offset, limit)
+	if err != nil {
+		return nil, err
+	}
 
-    return products, nil
-}
-
+	return products, nil
+} */
 
 // func (srv service) GetCustomer() ([]entity.ROM_V_Customer, error) {
 // 	getCustomer, err := srv.constant.GetCustomer()

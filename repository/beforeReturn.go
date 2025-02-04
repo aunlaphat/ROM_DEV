@@ -6,7 +6,6 @@ import (
 	"boilerplate-backend-go/utils"
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 
@@ -31,7 +30,7 @@ type BeforeReturnRepository interface {
 
 	// Create Return Order MKP 🚨//
 	SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error)
-	CreateSaleReturn(ctx context.Context, req request.CreateSaleReturnRequest) (*response.BeforeReturnOrderResponse, error)
+	CreateSaleReturn(ctx context.Context, req request.CreateSaleReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn, userID string) (*response.UpdateSaleReturnResponse, error)
 	ConfirmSaleReturn(ctx context.Context, orderNo string, statusReturnID, statusConfID int, userID string) (*response.ConfirmSaleReturnResponse, error)
 	CancelSaleReturn(ctx context.Context, req request.CancelSaleReturn, userID string) error
@@ -309,58 +308,88 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 
 // Create Return Order MKP
 func (repo repositoryDB) SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error) {
-	// Ensure that either SoNo or OrderNo is provided
+	// ✅ ตรวจสอบว่ามีค่า SoNo หรือ OrderNo อย่างน้อยหนึ่งค่า
 	if soNo == "" && orderNo == "" {
 		return nil, fmt.Errorf("🚩 Either SoNo or OrderNo must be provided 🚩")
 	}
 
-	// 🔹 SQL query to fetch Order Head details
+	// 🛠 กำหนดค่าพารามิเตอร์สำหรับ SQL Query
+	params := map[string]interface{}{}
 	queryHead := `
         SELECT SoNo, OrderNo, StatusMKP, SalesStatus, CreateDate
         FROM ROM_V_OrderHeadDetail
-        WHERE (:SoNo = '' OR SoNo = :SoNo) 
-        AND (:OrderNo = '' OR OrderNo = :OrderNo)
+        WHERE 1=1
     `
 
-	// 🔹 SQL query to fetch Order Line items
+	if soNo != "" {
+		queryHead += " AND SoNo = :SoNo"
+		params["SoNo"] = soNo
+	}
+	if orderNo != "" {
+		queryHead += " AND OrderNo = :OrderNo"
+		params["OrderNo"] = orderNo
+	}
+
+	// 🔎 ดึงข้อมูล OrderHead
+	rows, err := repo.db.NamedQueryContext(ctx, queryHead, params)
+	if err != nil {
+		return nil, fmt.Errorf("⚠️ Failed to fetch OrderHead: %w", err)
+	}
+	defer rows.Close()
+
+	var order response.SaleOrderResponse
+	if rows.Next() {
+		if err := rows.StructScan(&order); err != nil {
+			return nil, fmt.Errorf("⚠️ Failed to map OrderHead data: %w", err)
+		}
+	} else {
+		return nil, nil // ✅ ถ้าไม่พบข้อมูล ให้คืนค่า nil
+	}
+
+	// 🔎 ดึงข้อมูล OrderLine
 	queryLines := `
         SELECT SKU, ItemName, QTY, Price
         FROM ROM_V_OrderLineDetail
-        WHERE (:SoNo = '' OR SoNo = :SoNo) 
-        AND (:OrderNo = '' OR OrderNo = :OrderNo)
-        ORDER BY RecID
+        WHERE 1=1
     `
-
-	params := map[string]interface{}{
-		"SoNo":    soNo,
-		"OrderNo": orderNo,
+	if soNo != "" {
+		queryLines += " AND SoNo = :SoNo"
+	}
+	if orderNo != "" {
+		queryLines += " AND OrderNo = :OrderNo"
 	}
 
-	// ✅ Fetch Order Head
-	var orderHead response.SaleOrderResponse
-	if err := repo.db.GetContext(ctx, &orderHead, queryHead, params); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // Return nil if no order is found
+	rows, err = repo.db.NamedQueryContext(ctx, queryLines, params)
+	if err != nil {
+		return nil, fmt.Errorf("⚠️ Failed to fetch OrderLines: %w", err)
+	}
+	defer rows.Close()
+
+	var items []response.SaleOrderLineResponse
+	for rows.Next() {
+		var item response.SaleOrderLineResponse
+		if err := rows.StructScan(&item); err != nil {
+			return nil, fmt.Errorf("⚠️ Failed to map OrderLine data: %w", err)
 		}
-		return nil, fmt.Errorf("❌ failed to fetch Order Head: %w", err)
+		items = append(items, item)
 	}
+	order.OrderLines = items
 
-	// ✅ Fetch Order Lines
-	var orderLines []response.SaleOrderLineResponse
-	if err := repo.db.SelectContext(ctx, &orderLines, queryLines, params); err != nil {
-		return nil, fmt.Errorf("❌ failed to fetch Order Lines: %w", err)
-	}
-
-	// 📝 Attach Order Lines to the Order Head
-	orderHead.OrderLines = orderLines
-
-	return &orderHead, nil
+	return &order, nil
 }
 
-func (repo repositoryDB) CreateSaleReturn(ctx context.Context, req request.CreateSaleReturnRequest) (*response.BeforeReturnOrderResponse, error) {
+func (repo repositoryDB) CreateSaleReturn(ctx context.Context, req request.CreateSaleReturnOrder) (*response.BeforeReturnOrderResponse, error) {
+	// 📝 เริ่มต้น Transaction
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("❌ Failed to start transaction: %w", err)
+	}
+
+	// ✅ ใช้ req เป็นพารามิเตอร์ได้โดยตรง (ยกเว้น slice `OrderLines`)
 	queryHead := `
         INSERT INTO BeforeReturnOrder 
-        (OrderNo, SoNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, SoStatus, MkpStatus, ReturnDate, CreateBy, CreateDate)
+        (OrderNo, SoNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, 
+         SoStatus, MkpStatus, ReturnDate, CreateBy, CreateDate)
         OUTPUT inserted.OrderNo, inserted.SoNo, inserted.ChannelID, inserted.Reason, inserted.CustomerID, 
                inserted.TrackingNo, inserted.Logistic, inserted.WarehouseID, inserted.SoStatus, inserted.MkpStatus, 
                inserted.ReturnDate, inserted.CreateBy, inserted.CreateDate
@@ -368,40 +397,38 @@ func (repo repositoryDB) CreateSaleReturn(ctx context.Context, req request.Creat
                 :SoStatus, :MkpStatus, :ReturnDate, :CreateBy, GETDATE())
     `
 
-	queryLines := `
-        INSERT INTO BeforeReturnOrderLine 
-        (OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo, AlterSKU)
-        OUTPUT inserted.OrderNo, inserted.SKU, inserted.ItemName, inserted.QTY, inserted.ReturnQTY, 
-               inserted.Price, inserted.CreateBy, inserted.CreateDate, inserted.TrackingNo, inserted.AlterSKU
-        VALUES (:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), :TrackingNo, :AlterSKU)
-    `
-
-	tx, err := repo.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("❌ failed to start transaction: %w", err)
-	}
-
+	// 🔄 Insert `BeforeReturnOrder`
 	var createdOrder response.BeforeReturnOrderResponse
 	err = tx.GetContext(ctx, &createdOrder, queryHead, req)
 	if err != nil {
 		tx.Rollback()
-		return nil, fmt.Errorf("❌ failed to insert into BeforeReturnOrder: %w", err)
+		return nil, fmt.Errorf("❌ Failed to insert into BeforeReturnOrder: %w", err)
 	}
 
-	var createdLines []response.BeforeReturnOrderLineResponse
+	// ✅ ตรวจสอบว่ามีสินค้าให้บันทึกหรือไม่
 	if len(req.OrderLines) > 0 {
-		err = tx.SelectContext(ctx, &createdLines, queryLines, req.OrderLines)
-		if err != nil {
-			tx.Rollback()
-			return nil, fmt.Errorf("❌ failed to insert into BeforeReturnOrderLine: %w", err)
+		queryLines := `
+            INSERT INTO BeforeReturnOrderLine 
+            (OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo, AlterSKU)
+            VALUES (:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), :TrackingNo, :AlterSKU)
+        `
+
+		// 🔄 Execute Query สำหรับแต่ละ `OrderLine`
+		for _, line := range req.OrderLines {
+			_, err := tx.NamedExecContext(ctx, queryLines, line)
+			if err != nil {
+				tx.Rollback()
+				return nil, fmt.Errorf("❌ Failed to insert into BeforeReturnOrderLine: %w", err)
+			}
 		}
-		createdOrder.BeforeReturnOrderLines = createdLines
 	}
 
+	// 🔒 Commit Transaction
 	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("❌ failed to commit transaction: %w", err)
+		return nil, fmt.Errorf("❌ Failed to commit transaction: %w", err)
 	}
 
+	// ✅ คืนค่า Success Response
 	return &createdOrder, nil
 }
 

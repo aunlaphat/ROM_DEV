@@ -6,6 +6,7 @@ import (
 	"boilerplate-backend-go/utils"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -26,8 +27,8 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
 
 		// get real order
-		r.Get("/get-order", app.GetAllOrderDetail)                             // get Order of ROM_V_OrderDetail
-		r.Get("/get-orders", app.GetAllOrderDetails)                           // get Order of ROM_V_OrderDetail with paginate
+		//r.Get("/get-order", app.GetAllOrderDetail)                             // get Order of ROM_V_OrderDetail
+		//r.Get("/get-orders", app.GetAllOrderDetails)                           // get Order of ROM_V_OrderDetail with paginate
 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)                 // search by SO of ROM_V_OrderDetail
 		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine) // delete line by recID of BeforeReturnOrder
 	})
@@ -272,7 +273,7 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 }
 
 // SearchSaleOrder godoc
-// @Summary Search order by SO number or Order number
+// @Summary 🔎 Search order by SO number or Order number
 // @Description Retrieve the details of an order by its SO number or Order number
 // @ID search-order
 // @Tags Sale Return
@@ -280,43 +281,62 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 // @Produce json
 // @Param soNo query string false "SO number"
 // @Param orderNo query string false "Order number"
-// @Success 200 {object} api.Response{data=response.SaleOrderResponse} "Order retrieved successfully"
-// @Failure 400 {object} api.Response "Bad Request"
-// @Failure 404 {object} api.Response "Sale order not found"
-// @Failure 500 {object} api.Response "Internal Server Error"
+// @Success 200 {object} api.Response{data=response.SaleOrderResponse} "⭐ Order retrieved successfully ⭐"
+// @Failure 400 {object} api.Response "⚠️ Bad Request"
+// @Failure 404 {object} api.Response "❌ Sale order not found"
+// @Failure 500 {object} api.Response "🔥 Internal Server Error"
 // @Router /sale-return/search [get]
 func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
-	// Extract query parameters
-	soNo := strings.TrimSpace(r.URL.Query().Get("soNo"))
-	orderNo := strings.TrimSpace(r.URL.Query().Get("orderNo"))
+	// ✅ รับค่า Query Parameters
+	soNo := r.URL.Query().Get("soNo")
+	orderNo := r.URL.Query().Get("orderNo")
 
-	// Validate input parameters
+	// 🚨 ตรวจสอบว่าอย่างน้อยต้องมีค่าใดค่าหนึ่ง
 	if soNo == "" && orderNo == "" {
-		app.Logger.Warn("Missing search criteria")
-		handleResponse(w, false, "Either SoNo or OrderNo is required", nil, http.StatusBadRequest)
+		app.Logger.Warn("⚠️ Missing search criteria")
+		handleResponse(w, false, "⚠️ Either SoNo or OrderNo is required", nil, http.StatusBadRequest)
 		return
 	}
 
-	// Call service layer
+	// 🔎 Log ค้นหาข้อมูลคำสั่งขาย
+	app.Logger.Info("🔎 Searching for Sale Order...",
+		zap.String("SoNo", soNo),
+		zap.String("OrderNo", orderNo),
+	)
+
+	// 🛠 เรียกใช้ Service Layer
 	order, err := app.Service.BeforeReturn.SearchOrder(r.Context(), soNo, orderNo)
 	if err != nil {
-		app.Logger.Error("❌ Failed to search order",
+		errMsg := err.Error()
+
+		// ❌ กรณีไม่พบข้อมูล
+		if errMsg == "ไม่พบข้อมูลคำสั่งซื้อสินค้า" {
+			app.Logger.Warn("⚠️ No Sale Order found",
+				zap.String("SoNo", soNo),
+				zap.String("OrderNo", orderNo),
+				zap.String("Error", errMsg),
+			)
+			handleResponse(w, false, "⚠️ Sale order not found", nil, http.StatusNotFound)
+			return
+		}
+
+		// 🔥 กรณีเกิดข้อผิดพลาดอื่น ๆ
+		app.Logger.Error("🔥 Failed to search order",
+			zap.String("SoNo", soNo),
+			zap.String("OrderNo", orderNo),
+			zap.String("Error", errMsg),
 			zap.Error(err),
-			zap.String("soNo", soNo),
-			zap.String("orderNo", orderNo),
 		)
-		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
+		handleResponse(w, false, "🔥 Internal server error", nil, http.StatusInternalServerError)
 		return
 	}
 
-	// No order found
-	if order == nil {
-		app.Logger.Warn("⚠️ No Sale Order found", zap.String("soNo", soNo), zap.String("orderNo", orderNo))
-		handleResponse(w, false, "⚠️ No orders found ⚠️", nil, http.StatusNotFound)
-		return
-	}
-
-	// Return the response
+	// ✅ คืนค่าผลลัพธ์สำเร็จ
+	app.Logger.Info("✅ Order retrieved successfully",
+		zap.String("SoNo", order.SoNo),
+		zap.String("OrderNo", order.OrderNo),
+		zap.Int("TotalItems", len(order.OrderLines)),
+	)
 	handleResponse(w, true, "⭐ Order retrieved successfully ⭐", order, http.StatusOK)
 }
 
@@ -327,7 +347,7 @@ func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// @Param request body request.CreateSaleReturnRequest true "Create Sale Return Request"
+// @Param request body request.CreateSaleReturnOrder true "Create Sale Return Request"
 // @Success 201 {object} api.Response{data=response.BeforeReturnOrderResponse} "Sale Return Order created successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 401 {object} api.Response "Unauthorized"
@@ -337,7 +357,8 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	// ✅ Extract claims from JWT
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
-		app.Logger.Error("🚷 Unauthorized access - Missing or invalid JWT claims", zap.Error(err))
+		errMsg := "Unauthorized access - Missing or invalid JWT claims"
+		app.Logger.Error("🚷 "+errMsg, zap.Error(err))
 		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
@@ -345,24 +366,30 @@ func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request)
 	// ✅ Extract userID from claims
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		app.Logger.Error("🚷 Unauthorized access - userID extraction failed", zap.Error(err))
+		errMsg := "Unauthorized access - userID extraction failed"
+		app.Logger.Error("🚷 "+errMsg, zap.Error(err))
 		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
 	// ✅ Decode request body
-	var req request.CreateSaleReturnRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		app.Logger.Warn("⚠️ Invalid request format", zap.Error(err))
-		handleResponse(w, false, "Invalid request format", nil, http.StatusBadRequest)
+	var req request.CreateSaleReturnOrder
+	body, _ := io.ReadAll(r.Body) // อ่าน JSON ก่อน Decode
+	app.Logger.Info("📥 Received Request Body", zap.String("body", string(body)))
+
+	if err := json.Unmarshal(body, &req); err != nil {
+		errMsg := "Invalid request format"
+		app.Logger.Warn("⚠️ "+errMsg, zap.Error(err))
+		handleResponse(w, false, errMsg, nil, http.StatusBadRequest)
 		return
 	}
 
 	// ✅ Call Service Layer
 	createdOrder, err := app.Service.BeforeReturn.CreateSaleReturn(r.Context(), req, userID)
 	if err != nil {
-		app.Logger.Error("❌ Failed to create Sale Return Order", zap.Error(err))
-		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
+		errMsg := "Failed to create Sale Return Order"
+		app.Logger.Error("❌ "+errMsg, zap.Error(err))
+		handleResponse(w, false, errMsg, nil, http.StatusInternalServerError)
 		return
 	}
 
@@ -420,6 +447,21 @@ func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request)
 	handleResponse(w, true, "⭐ Sale Return Order updated successfully ⭐", updatedOrder, http.StatusOK)
 }
 
+// ConfirmSaleReturn godoc
+// @Summary Confirm Sale Return order
+// @Description Confirm Sale Return order by updating StatusReturnID and StatusConfID
+// @ID confirm-sale-return
+// @Tags Sale Return
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order number"
+// @Success 200 {object} api.Response{data=response.ConfirmSaleReturnResponse} "Sale Return Order confirmed successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 401 {object} api.Response "Unauthorized"
+// @Failure 403 {object} api.Response "Forbidden - Insufficient permissions"
+// @Failure 404 {object} api.Response "Sale order not found"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router /sale-return/confirm/{orderNo} [patch]
 func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request) {
 	// ✅ Extract claims from JWT
 	_, claims, err := jwtauth.FromContext(r.Context())
@@ -924,6 +966,7 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 	handleResponse(w, true, "⭐ Draft order updated successfully ⭐", updatedOrder, http.StatusOK)
 }
 
+/*
 // @Summary 	Get Before Return Order
 // @Description Get all Before Return Order
 // @ID 			Allget-BefReturnOrder
@@ -944,8 +987,8 @@ func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request
 	}
 
 	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
-}
-
+} */
+/*
 // @Summary 	Get Paginated Before Return Order
 // @Description Get all Before Return Order with pagination
 // @ID 			Get-BefReturnOrder-Paginated
@@ -970,7 +1013,7 @@ func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Reques
 	}
 
 	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
-}
+} */
 
 // @Summary      Get Before Return Order by SO
 // @Description  Get details of an order by its SO number

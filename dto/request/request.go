@@ -45,7 +45,7 @@ type BeforeReturnOrderLine struct {
 	AlterSKU   *string `json:"alterSKU" db:"AlterSKU"`
 }
 
-type CreateSaleReturnRequest struct {
+type CreateSaleReturnOrder struct {
 	OrderNo     string     `json:"orderNo" db:"OrderNo"`
 	SoNo        string     `json:"soNo" db:"SoNo"`
 	ChannelID   int        `json:"channelID" db:"ChannelID"`
