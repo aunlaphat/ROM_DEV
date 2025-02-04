@@ -308,10 +308,12 @@ type SaleOrderLineResponse struct {
 }
 
 type UpdateSaleReturnResponse struct {
-	OrderNo    string    `json:"orderNo" db:"OrderNo"`
-	SrNo       string    `json:"srNo" db:"SrNo"`
-	UpdateBy   string    `json:"updateBy" db:"UpdateBy"`
-	UpdateDate time.Time `json:"updateDate" db:"UpdateDate"`
+	OrderNo        string    `json:"orderNo" db:"OrderNo"`
+	SrNo           string    `json:"srNo" db:"SrNo"`
+	StatusReturnID int       `json:"statusReturnID" db:"StatusReturnID"`
+	StatusConfID   int       `json:"statusConfID" db:"StatusConfID"`
+	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
 }
 
 type ConfirmSaleReturnResponse struct {

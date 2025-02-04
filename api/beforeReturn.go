@@ -5,7 +5,6 @@ import (
 	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/utils"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -274,7 +273,7 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 
 // SearchSaleOrder godoc
 // @Summary Search order by SO number or Order number
-// @Description Retrieve the details of a order by its SO number or Order number
+// @Description Retrieve the details of an order by its SO number or Order number
 // @ID search-order
 // @Tags Sale Return
 // @Accept json
@@ -287,232 +286,174 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/search [get]
 func (app *Application) SearchOrder(w http.ResponseWriter, r *http.Request) {
-	soNo := r.URL.Query().Get("soNo")
-	orderNo := r.URL.Query().Get("orderNo")
+	// Extract query parameters
+	soNo := strings.TrimSpace(r.URL.Query().Get("soNo"))
+	orderNo := strings.TrimSpace(r.URL.Query().Get("orderNo"))
 
 	// Validate input parameters
 	if soNo == "" && orderNo == "" {
-		app.Logger.Warn("No search criteria provided")
+		app.Logger.Warn("Missing search criteria")
 		handleResponse(w, false, "Either SoNo or OrderNo is required", nil, http.StatusBadRequest)
 		return
 	}
 
-	// Input sanitization (optional)
-	soNo = strings.TrimSpace(soNo)
-	orderNo = strings.TrimSpace(orderNo)
-
-	// Authorization check
-	_, claims, err := jwtauth.FromContext(r.Context())
-	if err != nil || claims == nil {
-		app.Logger.Error("Authorization failed", zap.Error(err))
-		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
-		return
-	}
-
-	// Call service layer with error handling
-	result, err := app.Service.BeforeReturn.SearchOrder(r.Context(), soNo, orderNo)
+	// Call service layer
+	order, err := app.Service.BeforeReturn.SearchOrder(r.Context(), soNo, orderNo)
 	if err != nil {
-		app.Logger.Error("Failed to search order",
+		app.Logger.Error("❌ Failed to search order",
 			zap.Error(err),
 			zap.String("soNo", soNo),
-			zap.String("orderNo", orderNo))
-		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
+			zap.String("orderNo", orderNo),
+		)
+		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
 		return
 	}
 
-	// Handle no results found
-	if len(result) == 0 {
+	// No order found
+	if order == nil {
+		app.Logger.Warn("⚠️ No Sale Order found", zap.String("soNo", soNo), zap.String("orderNo", orderNo))
 		handleResponse(w, false, "⚠️ No orders found ⚠️", nil, http.StatusNotFound)
 		return
 	}
 
-	// Correctly populate soNo and orderNo in orderLines
-	for i := range result {
-		for j := range result[i].OrderLines {
-			result[i].OrderLines[j].SoNo = result[i].SoNo
-			result[i].OrderLines[j].OrderNo = result[i].OrderNo
-		}
-	}
-
-	// Debug logging (always print for now, can be controlled by log level later)
-	fmt.Printf("\n📋 ========== Order Details ========== 📋\n")
-	for _, order := range result {
-		utils.PrintSaleOrderDetails(&order)
-		fmt.Printf("\n📋 ========== Order Line Details ========== 📋\n")
-		for i, line := range order.OrderLines {
-			fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
-			utils.PrintSaleOrderLineDetails(&line)
-		}
-		fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(order.OrderLines))
-		fmt.Println("=====================================")
-	}
-
-	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
+	// Return the response
+	handleResponse(w, true, "⭐ Order retrieved successfully ⭐", order, http.StatusOK)
 }
 
 // CreateSaleReturn godoc
 // @Summary Create a new sale return order
-// @Description Create a new sale return order based on the provided details
+// @Description Create a new sale return order with order details and items
 // @ID create-sale-return
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// @Param saleReturn body request.CreateSaleReturnRequest true "Sale Return Order"
-// @Success 200 {object} api.Response{data=response.BeforeReturnOrderResponse} "Sale return order created successfully"
-// @Failure 400 {object} api.Response "Bad Request - Invalid request data"
-// @Failure 401 {object} api.Response "Unauthorized - Missing or invalid token"
-// @Failure 409 {object} api.Response "Conflict - Order already exists"
+// @Param request body request.CreateSaleReturnRequest true "Create Sale Return Request"
+// @Success 201 {object} api.Response{data=response.BeforeReturnOrderResponse} "Sale Return Order created successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 401 {object} api.Response "Unauthorized"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/create [post]
 func (app *Application) CreateSaleReturn(w http.ResponseWriter, r *http.Request) {
-	// ✅ 1. Authenticate User
+	// ✅ Extract claims from JWT
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
+		app.Logger.Error("🚷 Unauthorized access - Missing or invalid JWT claims", zap.Error(err))
 		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
+	// ✅ Extract userID from claims
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		handleResponse(w, false, "🔑 Invalid UserID in Token Claims 🔑", nil, http.StatusUnauthorized)
+		app.Logger.Error("🚷 Unauthorized access - userID extraction failed", zap.Error(err))
+		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// ✅ 2. Decode Request Body
+	// ✅ Decode request body
 	var req request.CreateSaleReturnRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		app.Logger.Error("❌ Failed to decode request", zap.Error(err))
-		handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
+		app.Logger.Warn("⚠️ Invalid request format", zap.Error(err))
+		handleResponse(w, false, "Invalid request format", nil, http.StatusBadRequest)
 		return
 	}
 
-	// ✅ 3. Assign UserID as CreateBy
-	req.CreateBy = userID
-	for i := range req.OrderLines {
-		req.OrderLines[i].CreateBy = userID
-	}
-
-	// ✅ 4. Call Service Layer
-	result, err := app.Service.BeforeReturn.CreateSaleReturn(r.Context(), req)
+	// ✅ Call Service Layer
+	createdOrder, err := app.Service.BeforeReturn.CreateSaleReturn(r.Context(), req, userID)
 	if err != nil {
-		app.Logger.Error("❌ Failed to create sale return",
-			zap.Error(err),
-			zap.String("OrderNo", req.OrderNo))
-		handleError(w, err)
+		app.Logger.Error("❌ Failed to create Sale Return Order", zap.Error(err))
+		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Order Details ========== 📋\n")
-	utils.PrintOrderDetails(result)
-
-	fmt.Printf("\n📋 ========== Order Line Details ========== 📋\n")
-	for i, line := range result.BeforeReturnOrderLines {
-		fmt.Printf("\n📦 Order Line #%d 📦\n", i+1)
-		utils.PrintOrderLineDetails(&line)
-	}
-	fmt.Printf("\n🚁 Total lines: %d 🚁\n", len(result.BeforeReturnOrderLines))
-	fmt.Println("=====================================")
-
-	// ✅ 5. Return Success Response
-	handleResponse(w, true, "⭐ Sale return order created successfully ⭐", result, http.StatusOK)
+	// ✅ Return Success Response
+	handleResponse(w, true, "⭐ Sale Return Order created successfully ⭐", createdOrder, http.StatusCreated)
 }
 
 // UpdateSaleReturn godoc
-// @Summary Update a sale return order (SR Number)
-// @Description Updates the SR Number (SrNo) for a given OrderNo
+// @Summary Update Sale Return order
+// @Description Update Sale Return order with SrNo
 // @ID update-sale-return
 // @Tags Sale Return
 // @Accept json
 // @Produce json
-// @Param request body request.UpdateSaleReturn true "Update Sale Return"
-// @Success 200 {object} api.Response{data=response.UpdateSaleReturnResponse} "Sale return updated successfully"
+// @Param request body request.UpdateSaleReturn true "Update Sale Return Request"
+// @Success 200 {object} api.Response{data=response.UpdateSaleReturnResponse} "Sale Return Order updated successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 401 {object} api.Response "Unauthorized"
-// @Failure 404 {object} api.Response "Order not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /sale-return/update [patch]
 func (app *Application) UpdateSaleReturn(w http.ResponseWriter, r *http.Request) {
-	// ✅ 1. Authenticate User (JWT)
+	// ✅ Extract claims from JWT
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
+		app.Logger.Error("🚷 Unauthorized access - Missing or invalid JWT claims", zap.Error(err))
 		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// ✅ 2. Extract UserID from JWT Claims (ใช้แทน UpdateBy)
+	// ✅ Extract userID from claims
 	userID, err := utils.GetUserIDFromClaims(claims)
 	if err != nil {
-		handleResponse(w, false, "🔑 Invalid UserID in Token Claims 🔑", nil, http.StatusUnauthorized)
+		app.Logger.Error("🚷 Unauthorized access - userID extraction failed", zap.Error(err))
+		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// ✅ 3. Decode Request Body (Only `OrderNo` & `SrNo`)
+	// ✅ Decode request body
 	var req request.UpdateSaleReturn
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleResponse(w, false, "❌ Invalid request payload", nil, http.StatusBadRequest)
+		app.Logger.Warn("⚠️ Invalid request format", zap.Error(err))
+		handleResponse(w, false, "Invalid request format", nil, http.StatusBadRequest)
 		return
 	}
 
-	// ✅ 4. Call Service Layer (Passing userID)
-	result, err := app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), req, userID)
+	// ✅ Call Service Layer
+	updatedOrder, err := app.Service.BeforeReturn.UpdateSaleReturn(r.Context(), req, userID)
 	if err != nil {
-		handleError(w, err)
+		app.Logger.Error("❌ Failed to update Sale Return Order", zap.Error(err))
+		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
 		return
 	}
 
-	// ✅ 5. Return Success Response
-	handleResponse(w, true, "⭐ Sale return order updated successfully ⭐", result, http.StatusOK)
+	// ✅ Return Success Response
+	handleResponse(w, true, "⭐ Sale Return Order updated successfully ⭐", updatedOrder, http.StatusOK)
 }
 
-// ConfirmSaleReturn godoc
-// @Summary Confirm a sale return order
-// @Description Confirm a sale return order based on user role and data validation
-// @ID confirm-sale-return
-// @Tags Sale Return
-// @Accept json
-// @Produce json
-// @Param orderNo path string true "Order number"
-// @Success 200 {object} api.Response{data=response.ConfirmSaleReturnResponse} "Sale return order confirmed successfully"
-// @Failure 400 {object} api.Response "Bad Request: OrderNo is missing or invalid"
-// @Failure 401 {object} api.Response "Unauthorized: Invalid JWT or Claims"
-// @Failure 500 {object} api.Response "Internal Server Error: Something went wrong while processing"
-// @Router /sale-return/confirm/{orderNo} [patch]
 func (app *Application) ConfirmSaleReturn(w http.ResponseWriter, r *http.Request) {
-	// ✅ 1. Extract Order Number
-	orderNo := chi.URLParam(r, "orderNo")
-	if orderNo == "" {
-		handleResponse(w, false, "❌ OrderNo is required", nil, http.StatusBadRequest)
-		return
-	}
-
-	// ✅ 2. Authenticate User (JWT)
+	// ✅ Extract claims from JWT
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil || claims == nil {
+		app.Logger.Error("🚷 Unauthorized access - Missing or invalid JWT claims", zap.Error(err))
 		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// ✅ 3. Extract UserID and RoleID from Token Claims
-	userID, err := utils.GetUserIDFromClaims(claims)
+	// ✅ Extract userID and roleID
+	userID, roleID, err := utils.GetUserInfoFromClaims(claims)
 	if err != nil {
-		handleResponse(w, false, "🔑 Invalid UserID in Token Claims 🔑", nil, http.StatusUnauthorized)
-		return
-	}
-	roleID, err := utils.GetRoleIDFromClaims(claims, &zap.Logger{})
-	if err != nil {
-		handleResponse(w, false, "🔑 Invalid RoleID in Token Claims 🔑", nil, http.StatusUnauthorized)
+		app.Logger.Error("🚷 Unauthorized access - userID or roleID extraction failed", zap.Error(err))
+		handleResponse(w, false, "🚷 Unauthorized Access 🚷", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// ✅ 4. Call Service Layer to Confirm Sale Return
-	result, err := app.Service.BeforeReturn.ConfirmSaleReturn(r.Context(), orderNo, roleID, userID)
-	if err != nil {
-		handleError(w, err)
+	// ✅ Extract `orderNo` from path
+	orderNo := chi.URLParam(r, "orderNo")
+	if orderNo == "" {
+		app.Logger.Warn("⚠️ Missing OrderNo in request path")
+		handleResponse(w, false, "OrderNo is required", nil, http.StatusBadRequest)
 		return
 	}
 
-	// ✅ 5. Return JSON Response
-	handleResponse(w, true, "⭐ Sale return order confirmed successfully ⭐", result, http.StatusOK)
+	// ✅ Call Service Layer
+	confirmedOrder, err := app.Service.BeforeReturn.ConfirmSaleReturn(r.Context(), orderNo, roleID, userID)
+	if err != nil {
+		app.Logger.Error("❌ Failed to confirm Sale Return Order", zap.Error(err))
+		handleResponse(w, false, "❌ Internal Server Error", nil, http.StatusInternalServerError)
+		return
+	}
+
+	handleResponse(w, true, "⭐ Sale Return Order confirmed successfully ⭐", confirmedOrder, http.StatusOK)
 }
 
 // CancelSaleReturn godoc
