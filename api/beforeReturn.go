@@ -30,7 +30,7 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Get("/get-order", app.GetAllOrderDetail)                             // get Order of ROM_V_OrderDetail
 		r.Get("/get-orders", app.GetAllOrderDetails)                           // get Order of ROM_V_OrderDetail with paginate
 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)                 // search by SO of ROM_V_OrderDetail
-		r.Delete("/delete-befodline/{recID}", app.DeleteBeforeReturnOrderLine) // delete line by recID of BeforeReturnOrder
+		r.Delete("/delete-line/{orderNo}/{sku}", app.DeleteBeforeReturnOrderLine) // delete line by recID of BeforeReturnOrder
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
@@ -966,16 +966,18 @@ func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Reques
 // @Tags 		Before Return Order
 // @Accept 		json
 // @Produce 	json
-// @Param 		recID path string true "Rec ID"
+// @Param 		orderNo path string true "Order No"
+// @Param 		sku path string true "SKU"
 // @Success 	200 {object} Response{result=string} "Before ReturnOrderLine Deleted"
 // @Failure 	404 {object} Response "Order Not Found"
 // @Failure 	422 {object} Response "Validation Error"
 // @Failure 	500 {object} Response "Internal Server Error"
-// @Router 		/before-return-order/delete-befodline/{recID} [delete]
+// @Router 		/before-return-order/delete-line/{orderNo}/{sku} [delete]
 func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *http.Request) {
-	recID := chi.URLParam(r, "recID")
+	orderNo := chi.URLParam(r, "orderNo")
+	sku := chi.URLParam(r, "sku")
 
-	if err := api.Service.BeforeReturn.DeleteBeforeReturnOrderLine(r.Context(), recID); err != nil {
+	if err := api.Service.BeforeReturn.DeleteBeforeReturnOrderLine(r.Context(), orderNo, sku); err != nil {
 		handleError(w, err)
 		return
 	}

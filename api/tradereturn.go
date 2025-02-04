@@ -30,7 +30,7 @@ func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 		r.Post("/create-trade", app.CreateTradeReturn)
 		r.Post("/add-line/{orderNo}", app.CreateTradeReturnLine)
 		r.Post("/confirm-receipt/{identifier}", app.ConfirmReceipt)
-		r.Post("/confirm-return/{orderNo}", app.ConfirmReturn)
+		r.Patch("/confirm-return/{orderNo}", app.ConfirmReturn)
 	})
 
 }
@@ -344,7 +344,7 @@ func (app *Application) ConfirmReceipt(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} api.Response{result=response.ConfirmToReturnOrder} "Trade return order confirmed successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /trade-return/confirm-return/{orderNo} [Post]
+// @Router /trade-return/confirm-return/{orderNo} [Patch]
 func (app *Application) ConfirmReturn(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 

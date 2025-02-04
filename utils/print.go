@@ -113,9 +113,9 @@ func PrintReturnOrderLineDetails(line *res.ReturnOrderLine) {
 	// fmt.Printf("🏷️  ItemName: %s\n", line.ItemName)
 	fmt.Printf("📱 QTY: %d\n", line.QTY)
 	fmt.Printf("📲 ReturnQTY: %d\n", line.ReturnQTY)
-	fmt.Printf("📲 ActualQTY: %d\n", line.ActualQTY)
+	fmt.Printf("📲 ActualQTY: %s\n", convertInt(line.ActualQTY))
 	fmt.Printf("💲 Price: %.2f ฿\n", line.Price)
-	fmt.Printf("📦 TrackingNo: %s\n", line.TrackingNo)
+	fmt.Printf("📦 TrackingNo: %s\n", convertString(line.TrackingNo))
 	fmt.Printf("📅 CreateDate: %s\n", line.CreateDate.Format("2006-01-02 15:04:05"))
 }
 

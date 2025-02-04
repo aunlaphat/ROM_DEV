@@ -43,10 +43,10 @@ type ReturnOrder struct {
 
 type ReturnOrderLine struct {
 	OrderNo    string     `json:"orderNo" db:"OrderNo"`
-	TrackingNo string     `json:"trackingNo" db:"TrackingNo"`
+	TrackingNo *string     `json:"trackingNo" db:"TrackingNo"`
 	SKU        string     `json:"sku" db:"SKU"`
 	ReturnQTY  int        `json:"returnQTY" db:"ReturnQTY"`
-	ActualQTY  int        `json:"actualQTY" db:"ActualQTY"`
+	ActualQTY  *int        `json:"actualQTY" db:"ActualQTY"`
 	QTY        int        `json:"qty" db:"QTY"`
 	Price      float64    `json:"price" db:"Price"`
 	CreateBy   string     `json:"createBy" db:"CreateBy"`

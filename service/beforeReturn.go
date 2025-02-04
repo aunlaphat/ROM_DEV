@@ -60,8 +60,8 @@ type BeforeReturnService interface {
 	GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error)
 	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อโดยใช้หมายเลข SO
 	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
-	// Method ลบรายการ BeforeReturnOrderLine โดยใช้ RecID
-	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
+	// Method ลบรายการ BeforeReturnOrderLine
+	DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error
 	// Method สร้างคำสั่งซื้อคืนสินค้า
 	CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	// Method สร้างรายการคืนสินค้า
@@ -116,7 +116,7 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 	defer logFinish("Completed", nil)
 	srv.logger.Info("🔎 Starting trade return line creation process 🔎", zap.String("OrderNo", orderNo))
 
-	// ตรวจสอบว่ามี OrderNo
+	// 1️⃣ ตรวจสอบว่ามี OrderNo
 	if orderNo == "" {
 		err := fmt.Errorf("❌ OrderNo is required")
 		logFinish("Failed", err)
@@ -124,7 +124,7 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 		return nil, err
 	}
 
-	// ตรวจสอบ OrderNo ว่ามีอยู่ในระบบ
+	// 2️⃣ ตรวจสอบ OrderNo ว่ามีอยู่ในระบบ
 	exists, err := srv.beforeReturnRepo.CheckBefOrderNoExists(ctx, orderNo)
 	if err != nil {
 		logFinish("Failed", err)
@@ -135,6 +135,13 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 		logFinish("Failed", err)
 		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", orderNo))
 		return nil, fmt.Errorf("⚠️ order not found: %s", orderNo)
+	}
+
+	// Validate request
+	if err := utils.ValidateCreateBeforeReturnLine(lines.TradeReturnLine); err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Validation failed", zap.Error(err))
+		return nil, fmt.Errorf("❌ Validation failed: %w", err)
 	}
 
 	// สร้างข้อมูลใน BeforeReturnOrderLine
@@ -157,23 +164,29 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 	return createdOrderLines, nil
 }
 
-func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {
-	logFinish := srv.logger.LogAPICall(ctx, "DeleteBeforeReturnOrderLine", zap.String("RecID", recID))
+func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error{
+	logFinish := srv.logger.LogAPICall(ctx, "DeleteBeforeReturnOrderLine", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
 	defer logFinish("Completed", nil)
-	srv.logger.Info("🔎 Starting delete process 🔎", zap.String("RecID", recID))
+	srv.logger.Info("🔎 Starting delete process 🔎", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
 
-	// ตรวจสอบ RecID
-	if recID == "" {
-		err := fmt.Errorf("❗ RecID is required")
+	if orderNo == "" {
+		err := fmt.Errorf("❗ orderNo is required")
 		logFinish("Failed", err)
-		srv.logger.Error("❌ RecID is missing", zap.Error(err))
+		srv.logger.Error("❌ orderNo is missing", zap.Error(err))
 		return err
 	}
 
-	err := srv.beforeReturnRepo.DeleteBeforeReturnOrderLine(ctx, recID)
+	if sku == "" {
+		err := fmt.Errorf("❗ sku is required")
+		logFinish("Failed", err)
+		srv.logger.Error("❌ sku is missing", zap.Error(err))
+		return err
+	}
+
+	err := srv.beforeReturnRepo.DeleteBeforeReturnOrderLine(ctx, orderNo, sku)
 	if err != nil {
 		logFinish("Failed", err)
-		srv.logger.Error("❌ Failed to delete order line", zap.String("RecID", recID), zap.Error(err))
+		srv.logger.Error("❌ Failed to delete order line", zap.String("OrderNo", orderNo), zap.String("SKU", sku), zap.Error(err))
 		return fmt.Errorf("❌ failed to delete order line: %w", err)
 	}
 

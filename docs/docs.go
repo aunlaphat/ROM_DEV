@@ -265,7 +265,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/before-return-order/delete-befodline/{recID}": {
+        "/before-return-order/delete-line/{orderNo}/{sku}": {
             "delete": {
                 "description": "Delete an order line",
                 "consumes": [
@@ -282,8 +282,15 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Rec ID",
-                        "name": "recID",
+                        "description": "Order No",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU",
+                        "name": "sku",
                         "in": "path",
                         "required": true
                     }
@@ -1975,7 +1982,7 @@ const docTemplate = `{
                     "Return Order"
                 ],
                 "summary": "Get Return Order Line by OrderNo",
-                "operationId": "GetLineByID-ReturnOrder",
+                "operationId": "GetLineByOrderNo-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
@@ -2570,7 +2577,7 @@ const docTemplate = `{
             }
         },
         "/trade-return/confirm-return/{orderNo}": {
-            "post": {
+            "patch": {
                 "description": "Confirm a trade return order based on the provided order number (OrderNo) and input lines for ReturnOrderLine.",
                 "consumes": [
                     "application/json"

@@ -1087,16 +1087,21 @@ paths:
       summary: Create a new return order with lines
       tags:
       - Before Return Order
-  /before-return-order/delete-befodline/{recID}:
+  /before-return-order/delete-line/{orderNo}/{sku}:
     delete:
       consumes:
       - application/json
       description: Delete an order line
       operationId: delete-BeforeReturnOrderLine
       parameters:
-      - description: Rec ID
+      - description: Order No
         in: path
-        name: recID
+        name: orderNo
+        required: true
+        type: string
+      - description: SKU
+        in: path
+        name: sku
         required: true
         type: string
       produces:
@@ -2124,7 +2129,7 @@ paths:
       consumes:
       - application/json
       description: Get details of an order line by its order no
-      operationId: GetLineByID-ReturnOrder
+      operationId: GetLineByOrderNo-ReturnOrder
       parameters:
       - description: Order No
         in: path
@@ -2500,7 +2505,7 @@ paths:
       tags:
       - Trade Return
   /trade-return/confirm-return/{orderNo}:
-    post:
+    patch:
       consumes:
       - application/json
       description: Confirm a trade return order based on the provided order number

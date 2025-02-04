@@ -6,7 +6,6 @@ import (
 	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/utils"
 	"context"
-	"database/sql"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -17,7 +16,7 @@ type ReturnOrderService interface {
 	GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error)
 	GetReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.ReturnOrder, error)
 	GetAllReturnOrderLines(ctx context.Context) ([]response.ReturnOrderLine, error)
-	GetReturnOrderLinesByReturnID(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error)
+	GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error)
 	CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) (*response.CreateReturnOrder, error)
 	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) (*response.UpdateReturnOrder, error)
 	DeleteReturnOrder(ctx context.Context, orderNo string) error
@@ -63,16 +62,25 @@ func (srv service) GetReturnOrderByOrderNo(ctx context.Context, orderNo string) 
 		return nil, err
 	}
 
+	// Step 2: ตรวจสอบว่า OrderNo มีอยู่จริงใน ReturnOrderLine
+	exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, orderNo)
+	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error checking OrderNo existence", zap.Error(err))
+		return nil, fmt.Errorf("error checking OrderNo existence: %w", err)
+	}
+	if !exists {
+		err := fmt.Errorf("⚠️ This OrderNo not found: %s", orderNo)
+		logFinish("Failed", err)
+		srv.logger.Warn("❗OrderNo not found", zap.String("OrderNo", orderNo))
+		return nil, err
+	}
+
 	// Step 2: เรียก repository เพื่อดึงข้อมูล ReturnOrder โดยใช้ OrderNo
 	idorder, err := srv.returnOrderRepo.GetReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			logFinish("Failed", err)
-			srv.logger.Warn("⚠️ This OrderNo not found", zap.Error(err))
-			return nil, fmt.Errorf("⚠️ This OrderNo not found: %s", orderNo)
-		}
 		logFinish("Failed", err)
-		srv.logger.Error("Error fetching ReturnOrder by OrderNo", zap.Error(err))
+		srv.logger.Error("Error fetching ReturnOrder by OrderNo", zap.String("OrderNo", orderNo), zap.Error(err))
 		return nil, fmt.Errorf("error fetching ReturnOrder by OrderNo: %s => %w", orderNo, err)
 	}
 
@@ -110,8 +118,8 @@ func (srv service) GetAllReturnOrderLines(ctx context.Context) ([]response.Retur
 	return lines, nil
 }
 
-func (srv service) GetReturnOrderLinesByReturnID(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error) {
-	logFinish := srv.logger.LogAPICall(ctx, "GetReturnOrderLinesByReturnID", zap.String("OrderNo", orderNo))
+func (srv service) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error) {
+	logFinish := srv.logger.LogAPICall(ctx, "GetReturnOrderLineByOrderNo", zap.String("OrderNo", orderNo))
 	defer logFinish("Completed", nil)
 	srv.logger.Info("🔎 Starting get return order line process 🔎", zap.String("OrderNo", orderNo))
 
@@ -122,13 +130,23 @@ func (srv service) GetReturnOrderLinesByReturnID(ctx context.Context, orderNo st
 		return nil, err
 	}
 
-	lines, err := srv.returnOrderRepo.GetReturnOrderLinesByReturnID(ctx, orderNo)
+	// ตรวจสอบว่า OrderNo มีอยู่จริงใน ReturnOrderLine
+	exists, err := srv.returnOrderRepo.CheckOrderNoLineExist(ctx, orderNo)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			logFinish("Failed", err)
-			srv.logger.Warn("⚠️ This Return Order Line not found", zap.Error(err))
-			return nil, fmt.Errorf("⚠️ This Return Order Line not found: %s", orderNo)
-		}
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error checking OrderNo existence", zap.Error(err))
+		return nil, fmt.Errorf("error checking OrderNo existence: %w", err)
+	}
+	if !exists {
+		err := fmt.Errorf("⚠️  This Return Order Line not found: %s", orderNo)
+		logFinish("Failed", err)
+		srv.logger.Warn(err.Error())
+		return nil, err
+	}
+
+	// ดึงข้อมูล ReturnOrderLines
+	lines, err := srv.returnOrderRepo.GetReturnOrderLineByOrderNo(ctx, orderNo)
+	if err != nil {
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Error fetching return order lines by OrderNo", zap.Error(err))
 		return nil, fmt.Errorf("error fetching return order lines by OrderNo: %w", err)
@@ -203,7 +221,7 @@ func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateRetu
 		srv.logger.Error(err)
 		return nil, err
 	}
-	
+
 	// Validate request
 	if err := utils.ValidateCreateReturnOrder(req); err != nil {
 		logFinish("Failed", err)

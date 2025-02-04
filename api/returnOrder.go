@@ -24,13 +24,13 @@ func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
 		r.Use(jwtauth.Verifier(app.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
-		r.Get("/get-all", app.GetAllReturnOrder)                         // GET /return-order/get-all
-		r.Get("/get-all/{orderNo}", app.GetReturnOrderByOrderNo)         // GET /return-order/getbyID/{orderNo}
-		r.Get("/get-lines", app.GetAllReturnOrderLines)                  // GET /return-order/allgetline
-		r.Get("/get-lines/{orderNo}", app.GetReturnOrderLinesByReturnID) // GET /return-order/getlinebyID/{orderNo}
-		r.Post("/create", app.CreateReturnOrder)                         // POST /return-order/create
-		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)              // PATCH /return-order/update/{orderNo}
-		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)             // DELETE /return-order/delete/{orderNo}
+		r.Get("/get-all", app.GetAllReturnOrder)                       // GET /return-order/get-all
+		r.Get("/get-all/{orderNo}", app.GetReturnOrderByOrderNo)       // GET /return-order/getbyID/{orderNo}
+		r.Get("/get-lines", app.GetAllReturnOrderLines)                // GET /return-order/allgetline
+		r.Get("/get-lines/{orderNo}", app.GetReturnOrderLineByOrderNo) // GET /return-order/getlinebyID/{orderNo}
+		r.Post("/create", app.CreateReturnOrder)                       // POST /return-order/create
+		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)            // PATCH /return-order/update/{orderNo}
+		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)           // DELETE /return-order/delete/{orderNo}
 	})
 }
 
@@ -132,7 +132,7 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 
 // @Summary      Get Return Order Line by OrderNo
 // @Description  Get details of an order line by its order no
-// @ID           GetLineByID-ReturnOrder
+// @ID           GetLineByOrderNo-ReturnOrder
 // @Tags         Return Order
 // @Accept       json
 // @Produce      json
@@ -142,10 +142,10 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 // @Failure      404      {object} Response "Not Found Endpoint"
 // @Failure      500      {object} Response "Internal Server Error"
 // @Router       /return-order/get-lines/{orderNo} [get]
-func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *http.Request) {
+func (app *Application) GetReturnOrderLineByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 
-	result, err := app.Service.ReturnOrder.GetReturnOrderLinesByReturnID(r.Context(), orderNo)
+	result, err := app.Service.ReturnOrder.GetReturnOrderLineByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return

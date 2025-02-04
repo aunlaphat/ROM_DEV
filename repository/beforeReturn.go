@@ -50,12 +50,12 @@ type BeforeReturnRepository interface {
 	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
 
 	// Delete Line
-	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
+	DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error
 
 	// ************************ Trade Return ************************ //
-	CheckBefOrderNoExists(ctx context.Context, orderNo string) (bool, error)
 	CreateTradeReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	CreateTradeReturnLine(ctx context.Context, orderNo string, lines []request.OrderLines) error
+	CheckBefOrderNoExists(ctx context.Context, orderNo string) (bool, error)
 	CheckBefLineSKUExists(ctx context.Context, identifier, sku string) (bool, error)
 	// ConfirmToReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
 
@@ -75,35 +75,6 @@ type BeforeReturnRepository interface {
 	GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ConfirmReturnOrderDetails, error)
 	UpdateBefToWaiting(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
 	CheckBefOrderOrTrackingExists(ctx context.Context, identifier string) (bool, error)
-}
-
-// ตรวจสอบว่ามี OrderNo ใน BeforeReturnOrder หรือไม่
-func (repo repositoryDB) CheckBefOrderNoExists(ctx context.Context, orderNo string) (bool, error) {
-	var exists bool
-	query := ` SELECT CASE 
-			   WHEN EXISTS (SELECT 1 FROM BeforeReturnOrder WHERE OrderNo = @OrderNo) 
-			   THEN 1 ELSE 0 
-		       END `
-	err := repo.db.QueryRowContext(ctx, query, sql.Named("OrderNo", orderNo)).Scan(&exists)
-	if err != nil {
-		return false, fmt.Errorf("failed to check order existence: %w", err)
-	}
-
-	return exists, nil
-}
-
-func (repo repositoryDB) CheckBefOrderOrTrackingExists(ctx context.Context, identifier string) (bool, error) {
-	var exists bool
-	query := ` SELECT CASE 
-               WHEN EXISTS (SELECT 1 FROM BeforeReturnOrder WHERE OrderNo = @Identifier OR TrackingNo = @Identifier) 
-               THEN 1 ELSE 0 
-               END `
-	err := repo.db.QueryRowContext(ctx, query, sql.Named("Identifier", identifier)).Scan(&exists)
-	if err != nil {
-		return false, fmt.Errorf("failed to check order existence: %w", err)
-	}
-
-	return exists, nil
 }
 
 // search trackingNo by OrderNo
@@ -154,7 +125,7 @@ func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo stri
 				"QTY":        line.QTY,
 				"ReturnQTY":  line.ReturnQTY,
 				"Price":      line.Price,
-				"CreateBy":   line.CreateBy, // ใช้ CreateBy จากคำขอ
+				"CreateBy":   line.CreateBy, // ใช้ CreateBy จาก userID
 				"TrackingNo": trackingNo,
 			})
 		}
@@ -186,8 +157,7 @@ func (repo repositoryDB) UpdateStatusToSuccess(ctx context.Context, orderNo, upd
         `
 		stmt, err := tx.PrepareNamed(query)
 		if err != nil {
-			log.Printf("Error preparing statement for OrderNo %s: %v", orderNo, err)
-			return fmt.Errorf("failed to prepare statement: %w", err)
+			return fmt.Errorf("error preparing statement for OrderNo %s: %w", orderNo, err)
 		}
 		defer stmt.Close()
 
@@ -196,8 +166,7 @@ func (repo repositoryDB) UpdateStatusToSuccess(ctx context.Context, orderNo, upd
 			"UpdateBy": updateBy,
 		})
 		if err != nil {
-			log.Printf("Error updating status to success for OrderNo %s: %v", orderNo, err)
-			return fmt.Errorf("failed to update status to success: %w", err)
+			return fmt.Errorf("error updating status to success for OrderNo %s: %w", orderNo, err)
 		}
 
 		return nil
@@ -227,10 +196,10 @@ func (repo repositoryDB) GetBeforeOrderDetails(ctx context.Context, orderNo stri
 	return &returnOrderData, nil
 }
 
-// step 3: update
+// step 3: update return order (status,sr) + line (actualqty,price)
 func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ConfirmReturnOrderDetails) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
-		// Step 2: อัปเดต ReturnOrder
+		// อัปเดต ReturnOrder
 		for _, head := range req.UpdateToReturn {
 			queryUpdateReturnOrder := ` UPDATE ReturnOrder
                                         SET StatusCheckID = 2, --CONFIRM status
@@ -259,7 +228,7 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 			}
 		}
 
-		// Step 3: อัปเดต ReturnOrderLine
+		// อัปเดต ReturnOrderLine
 		for _, line := range req.ImportLinesActual { // COALESCE => ฟิลด์ที่ไม่ได้ใช้จะดึงค่าเดิมมาแทน
 
 			queryUpdateReturnOrderLine := ` UPDATE ReturnOrderLine
@@ -301,49 +270,9 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 			}
 		}
 
-		// Step 4: Commit Transaction
+		// Commit Transaction
 		return nil
 	})
-}
-
-func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, identifier, sku string) (bool, error) {
-	query := ` SELECT 1 FROM BeforeReturnOrderLine 
-               WHERE SKU = :SKU AND (OrderNo = :Identifier OR TrackingNo = :Identifier) `
-	stmt, err := repo.db.PrepareNamed(query)
-	if err != nil {
-		return false, fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer stmt.Close()
-
-	var exists int
-	err = stmt.QueryRowx(map[string]interface{}{"SKU": sku, "Identifier": identifier}).Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, orderNo, sku string) (bool, error) {
-	query := ` SELECT 1 FROM ReturnOrderLine 
-               WHERE SKU = :SKU AND OrderNo = :OrderNo `
-	stmt, err := repo.db.PrepareNamed(query)
-	if err != nil {
-		return false, fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer stmt.Close()
-
-	var exists int
-	err = stmt.QueryRowx(map[string]interface{}{"SKU": sku, "OrderNo": orderNo}).Scan(&exists)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
 }
 
 /************** Confirm Receipt ****************/
@@ -471,24 +400,98 @@ func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *resp
 
 /************************** Delete Line *************************/
 
-func (repo repositoryDB) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {
+func (repo repositoryDB) DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
-		// ลบ BeforeReturnOrderLine ตาม RecID
+		// ลบ BeforeReturnOrderLine ตาม OrderNo และ SKU
 		deleteQuery := `
 			DELETE FROM BeforeReturnOrderLine
-			WHERE RecID = :RecID
+			WHERE OrderNo = :OrderNo AND SKU = :SKU
 		`
 
 		_, err := tx.NamedExecContext(ctx, deleteQuery, map[string]interface{}{
-			"RecID": recID,
+			"OrderNo": orderNo,
+			"SKU":     sku,
 		})
 		if err != nil {
-			log.Printf("Error deleting BeforeReturnOrderLine by RecID: %v", err)
-			return fmt.Errorf("failed to delete BeforeReturnOrderLine: %w", err)
+			return fmt.Errorf("❌ Error deleting BeforeReturnOrderLine by OrderNo: %s, SKU: %s, Error: %w", orderNo, sku, err)
 		}
 
 		return nil
 	})
+}
+
+/************************** Validate *************************/
+
+// ตรวจสอบว่ามี OrderNo ใน BeforeReturnOrder หรือไม่
+func (repo repositoryDB) CheckBefOrderNoExists(ctx context.Context, orderNo string) (bool, error) {
+	var exists bool
+	query := ` SELECT CASE 
+			   WHEN EXISTS (SELECT 1 FROM BeforeReturnOrder WHERE OrderNo = @OrderNo) 
+			   THEN 1 ELSE 0 
+		       END `
+	err := repo.db.QueryRowContext(ctx, query, sql.Named("OrderNo", orderNo)).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check order existence: %w", err)
+	}
+
+	return exists, nil
+}
+
+// ตรวจสอบว่ามี OrderNo, TrackingNo ใน BeforeReturnOrder หรือไม่
+func (repo repositoryDB) CheckBefOrderOrTrackingExists(ctx context.Context, identifier string) (bool, error) {
+	var exists bool
+	query := ` SELECT CASE 
+               WHEN EXISTS (SELECT 1 FROM BeforeReturnOrder WHERE OrderNo = @Identifier OR TrackingNo = @Identifier) 
+               THEN 1 ELSE 0 
+               END `
+	err := repo.db.QueryRowContext(ctx, query, sql.Named("Identifier", identifier)).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check order existence: %w", err)
+	}
+
+	return exists, nil
+}
+
+// ตรวจสอบว่ามี sku นี้ของ OrderNo,TrackingNo ใน BeforeReturnOrderLine หรือไม่
+func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, identifier, sku string) (bool, error) {
+	query := ` SELECT 1 FROM BeforeReturnOrderLine 
+               WHERE SKU = :SKU AND (OrderNo = :Identifier OR TrackingNo = :Identifier) `
+	stmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return false, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var exists int
+	err = stmt.QueryRowx(map[string]interface{}{"SKU": sku, "Identifier": identifier}).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// ตรวจสอบว่ามี sku นี้ของ OrderNo ใน ReturnOrderLine หรือไม่
+func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, orderNo, sku string) (bool, error) {
+	query := ` SELECT 1 FROM ReturnOrderLine 
+               WHERE SKU = :SKU AND OrderNo = :OrderNo `
+	stmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return false, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var exists int
+	err = stmt.QueryRowx(map[string]interface{}{"SKU": sku, "OrderNo": orderNo}).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 /************************** Get Order Head+Line *************************/
@@ -544,12 +547,11 @@ func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit i
 	headQuery := `
         SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
         FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
-        ORDER BY OrderNo
+        ORDER BY OrderNo 
         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
     `
 	err := repo.db.SelectContext(ctx, &headDetails, headQuery, sql.Named("offset", offset), sql.Named("limit", limit))
 	if err != nil {
-		log.Printf("Error querying OrderHeadDetail: %v", err)
 		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
 	}
 
@@ -567,7 +569,6 @@ func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit i
     `
 	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("offset", offset), sql.Named("limit", limit))
 	if err != nil {
-		log.Printf("Error querying OrderLineDetail: %v", err)
 		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
 	}
 
@@ -603,7 +604,6 @@ func (repo repositoryDB) GetOrderDetailBySO(ctx context.Context, soNo string) (*
 		if err == sql.ErrNoRows {
 			return nil, sql.ErrNoRows
 		}
-		log.Printf("Error querying OrderHeadDetail by SO: %v", err)
 		return nil, fmt.Errorf("error querying OrderHeadDetail by SO: %w", err)
 	}
 
@@ -615,7 +615,6 @@ func (repo repositoryDB) GetOrderDetailBySO(ctx context.Context, soNo string) (*
     `
 	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("SoNo", soNo))
 	if err != nil {
-		log.Printf("Error querying OrderLineDetail by SO: %v", err)
 		return nil, fmt.Errorf("error querying OrderLineDetail by SO: %w", err)
 	}
 
