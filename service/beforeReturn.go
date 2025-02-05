@@ -1,21 +1,8 @@
 package service
 
-import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/utils"
-	"context"
-	"fmt"
-	"strings"
-	"time"
-
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
-)
-
 // BefROService interface กำหนด method สำหรับการทำงานกับ Before Return Order
 type BeforeReturnService interface {
-	// Method สำหรับสร้าง Before Return Order พร้อมกับ Lines
+	/* // Method สำหรับสร้าง Before Return Order พร้อมกับ Lines
 	CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	// Method สำหรับดึงรายการ Before Return Orders ทั้งหมด
 	ListBeforeReturnOrders(ctx context.Context) ([]response.BeforeReturnOrderResponse, error)
@@ -29,7 +16,7 @@ type BeforeReturnService interface {
 	UpdateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 
 	// Create Return Order MKP 🚨//
-	SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error)
+	//SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SearchOrderResponse, error)
 	CreateSaleReturn(ctx context.Context, req request.CreateSaleReturnOrder, userID string) (*response.BeforeReturnOrderResponse, error)
 	UpdateSaleReturn(ctx context.Context, req request.UpdateSaleReturn, userID string) (*response.UpdateSaleReturnResponse, error)
 	ConfirmSaleReturn(ctx context.Context, orderNo string, roleID int, userID string) (*response.ConfirmSaleReturnResponse, error)
@@ -61,58 +48,71 @@ type BeforeReturnService interface {
 	// Method ยืนยันการคืนสินค้าโดยสมบูรณ์
 	ConfirmReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
 	// Method ตรวจสอบความถูกต้องของข้อมูลก่อนสร้างคำสั่งซื้อคืนสินค้า
-	ValidateCreate(req request.BeforeReturnOrder) error
+	ValidateCreate(req request.BeforeReturnOrder) error */
 }
 
 // Create Return Order MKP
-func (srv service) SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SaleOrderResponse, error) {
-	logFinish := srv.logger.LogAPICall(ctx, "SearchOrder", zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
+/* func (srv service) SearchOrder(ctx context.Context, soNo, orderNo string) (*response.SearchOrderResponse, error) {
+	// 📝 เริ่มต้นการ Log การเรียก API โดยใช้ logFinish
+	logFinish := srv.logger.LogAPICall(ctx, "SearchOrder",
+		zap.String("SoNo", soNo),
+		zap.String("OrderNo", orderNo),
+	)
 	defer func() {
-		logFinish("Completed", nil)
+		// 🚀 ใช้ defer เพื่อจับ panic และ log ข้อมูล
+		if r := recover(); r != nil {
+			srv.logger.Error("🔥 Panic occurred in SearchOrder", zap.Any("panic", r))
+			logFinish("Panic", fmt.Errorf("unexpected panic: %v", r))
+		}
 	}()
 
-	srv.logger.Info("🔎 Searching for Sale Order",
+	// 📌 Log การเริ่มต้นค้นหาคำสั่งขาย
+	srv.logger.Info("🔍 Searching for Sale Order",
 		zap.String("SoNo", soNo),
 		zap.String("OrderNo", orderNo),
 	)
 
-	// ✅ ตรวจสอบว่ามีค่า SoNo หรือ OrderNo อย่างน้อย 1 ค่า
+	// ✅ ตรวจสอบเงื่อนไข: ต้องมีค่า SoNo หรือ OrderNo อย่างน้อยหนึ่งค่า
 	if soNo == "" && orderNo == "" {
-		errMsg := "ต้องระบุ SoNo หรือ OrderNo อย่างน้อยหนึ่งค่า"
-		srv.logger.Warn("⚠️ Invalid search request", zap.String("Error", errMsg))
-		logFinish("Invalid Request", nil)
-		return nil, errors.New(errMsg)
+		err := errors.New("either SoNo or OrderNo must be provided")
+		srv.logger.Warn("⚠️ Invalid request - Missing parameters", zap.Error(err))
+		logFinish("Invalid Request", err)
+		return nil, err
 	}
 
-	// 🔍 ค้นหาข้อมูลจาก Repository Layer
+	// 🔍 ค้นหาข้อมูลคำสั่งขายจาก Repository Layer
 	order, err := srv.beforeReturnRepo.SearchOrder(ctx, soNo, orderNo)
 	if err != nil {
-		// ❌ กรณีเกิดปัญหาอื่น ๆ (เช่น Database ล่ม)
-		errMsg := "ค้นหาข้อมูลคำสั่งขายล้มเหลว"
-		srv.logger.Error("❌ Failed to search Sale Order", zap.String("Error", errMsg), zap.Error(err))
+		if errors.Is(err, sql.ErrNoRows) {
+			// ✅ ไม่พบข้อมูลคำสั่งขาย
+			errMsg := "Sale order not found"
+			srv.logger.Warn("⚠️ No Sale Order found", zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
+			logFinish("Not Found", errors.New(errMsg))
+			return nil, errors.New(errMsg)
+		}
+
+		// ❌ กรณีเกิดปัญหาอื่น ๆ เช่น Database ล่ม
+		errMsg := "Failed to retrieve sale order"
+		srv.logger.Error("❌ Failed to search Sale Order",
+			zap.String("SoNo", soNo),
+			zap.String("OrderNo", orderNo),
+			zap.Error(err),
+		)
 		logFinish("Failed", err)
 		return nil, fmt.Errorf("%s: %w", errMsg, err)
 	}
 
-	// ✅ ถ้าไม่พบข้อมูล ให้คืนค่า Error "ไม่พบข้อมูลคำสั่งขาย"
-	if order == nil {
-		errMsg := "ไม่พบข้อมูลคำสั่งขาย"
-		srv.logger.Warn("⚠️ No Sale Order found", zap.String("Error", errMsg))
-		logFinish("Not Found", nil)
-		return nil, errors.New(errMsg)
-	}
-
-	// ✅ ค้นหาสำเร็จ
+	// ✅ ถ้าพบข้อมูลคำสั่งขาย
 	srv.logger.Info("✅ Sale Order found",
 		zap.String("SoNo", order.SoNo),
 		zap.String("OrderNo", order.OrderNo),
-		zap.Int("TotalItems", len(order.OrderLines)),
+		zap.Int("TotalItems", len(order.Items)), // ✅ แสดงจำนวนรายการสินค้าในออเดอร์
 	)
 
 	logFinish("Success", nil)
 	return order, nil
-}
-
+} */
+/*
 func (srv service) CreateSaleReturn(ctx context.Context, req request.CreateSaleReturnOrder, userID string) (*response.BeforeReturnOrderResponse, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "CreateSaleReturn",
 		zap.String("OrderNo", req.OrderNo),
@@ -387,7 +387,7 @@ func (srv service) ValidateCreate(req request.BeforeReturnOrder) error {
 	}
 	if !validReturnTypes[req.ReturnType] {
 		return fmt.Errorf("invalid return type: %s", req.ReturnType)
-	} */
+	}
 
 	// 4. ตรวจสอบ order lines
 	if len(req.BeforeReturnOrderLines) == 0 {
@@ -637,7 +637,7 @@ func (srv service) GetAllOrderDetails(ctx context.Context, page, limit int) ([]r
 		}
 	}
 	return allorder, nil
-} */
+} *
 
 func (srv service) GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error) {
 	soOrder, err := srv.beforeReturnRepo.GetOrderDetailBySO(ctx, soNo)
@@ -991,3 +991,4 @@ func (srv service) UpdateDraftOrder(ctx context.Context, orderNo string, userID 
 	logFinish("Success", nil)
 	return updatedOrder, nil
 }
+*/

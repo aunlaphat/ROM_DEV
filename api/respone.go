@@ -1,26 +1,17 @@
 package api
 
-import (
-	"encoding/json"
-	"net/http"
-)
+import "github.com/gin-gonic/gin"
 
-// Response represents the standard API response structure.
-// @swagger:response
 type Response struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
-	Result  interface{} `json:"result,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
-func handleResponse(w http.ResponseWriter, success bool, message string, result interface{}, statusCode int) {
-	response := Response{
+func handleResponse(c *gin.Context, success bool, message string, data interface{}, status int) {
+	c.JSON(status, Response{
 		Success: success,
 		Message: message,
-		Result:  result,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(response)
+		Data:    data,
+	})
 }

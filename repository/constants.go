@@ -1,25 +1,19 @@
 package repository
 
-import (
-	entity "boilerplate-backend-go/Entity"
-	"context"
-	"time"
-	"fmt"
-)
-
 type Constants interface {
-	GetThaiProvince() ([]entity.Province, error) // จังหวัด
-	GetThaiDistrict() ([]entity.District, error) // เขต
-	GetThaiSubDistrict() ([]entity.SubDistrict, error) // ตำบล
-	// GetPostCode() ([]entity.PostCode, error) // เลขไปรษณีย์
-	GetProductAll() ([]entity.ROM_V_ProductAll, error) 	// รายการสินค้าทั้งหมด
-	GetProductAllWithPagination(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) // รายการสินค้าแบบแบ่งรายการ
-	GetWarehouse() ([]entity.Warehouse, error) // คลังสินค้า
-	// GetCustomer() ([]entity.ROM_V_Customer, error) // ข้อมูลลูกค้า
-	// GetTax() ([]entity.ROM_V_Tax, error) // ข้อมูลภาษีลูกค้า
-
+	/* 	GetThaiProvince() ([]entity.Province, error) // จังหวัด
+	   	GetThaiDistrict() ([]entity.District, error) // เขต
+	   	GetThaiSubDistrict() ([]entity.SubDistrict, error) // ตำบล
+	   	// GetPostCode() ([]entity.PostCode, error) // เลขไปรษณีย์
+	   	GetProductAll() ([]entity.ROM_V_ProductAll, error) 	// รายการสินค้าทั้งหมด
+	   	GetProductAllWithPagination(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) // รายการสินค้าแบบแบ่งรายการ
+	   	GetWarehouse() ([]entity.Warehouse, error) // คลังสินค้า
+	   	// GetCustomer() ([]entity.ROM_V_Customer, error) // ข้อมูลลูกค้า
+	   	// GetTax() ([]entity.ROM_V_Tax, error) // ข้อมูลภาษีลูกค้า
+	*/
 }
 
+/*
 func (repo repositoryDB) GetThaiProvince() ([]entity.Province, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -221,7 +215,7 @@ func (repo repositoryDB) GetProductAllWithPagination(ctx context.Context, offset
         OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY;
     `
     countQuery := `
-        SELECT COUNT(*) 
+        SELECT COUNT(*)
         FROM Data_WebReturn.dbo.ROM_V_ProductAll;
     `
 
@@ -260,3 +254,4 @@ func (repo repositoryDB) GetProductAllWithPagination(ctx context.Context, offset
 
 
 // }
+*/

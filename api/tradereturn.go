@@ -1,30 +1,16 @@
 package api
 
 import (
-	"boilerplate-backend-go/dto/request"
-	res "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/utils"
-	"encoding/json"
-	"fmt"
-	"net/http"
-
-	"strings"
-	"time"
-
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth"
-	"go.uber.org/zap"
 )
 
 func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
-	apiRouter.Post("/login", app.Login)
+	/* apiRouter.Post("/login", app.Login)
 
 	apiRouter.Route("/trade-return", func(r chi.Router) {
 		// Add auth middleware for protected routes
 		r.Use(jwtauth.Verifier(app.TokenAuth))
 		r.Use(jwtauth.Authenticator)
-
-		/******** Trade Retrun ********/
 		r.Get("/get-waiting", app.GetStatusWaitingDetail)       // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =1
 		r.Get("/get-confirm", app.GetStatusConfirmDetail)       // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =2
 		r.Get("/search-waiting", app.SearchStatusWaitingDetail) // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =1 ตามช่วงวันที่สร้าง(CreateDate)ที่เลือก วันที่เริ่มต้น-สิ้นสุด แสดงข้อมูลจำนวนตามวันที่นั้น
@@ -33,10 +19,11 @@ func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 		r.Post("/add-line/{orderNo}", app.CreateTradeReturnLine)
 		r.Post("/confirm-receipt/{identifier}", app.ConfirmReceipt)
 		r.Patch("/confirm-return/{orderNo}", app.ConfirmReturn)
-	})
+	}) */
 
 }
 
+/*
 // @Summary Get Return Orders with StatusCheckID = 1
 // @Description Retrieve Return Orders with StatusCheckID = 1 (Waiting)
 // @ID Get-Waiting-ReturnOrder
@@ -453,3 +440,4 @@ func (app *Application) ConfirmReturn(w http.ResponseWriter, r *http.Request) {
 	}
 	handleResponse(w, true, "⭐ Confirmed to Return Order successfully => Status [success ✔️, confirm ✔️] ⭐", response, http.StatusOK)
 }
+*/

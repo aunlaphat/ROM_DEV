@@ -1,12 +1,6 @@
 package repository
 
-import (
-	entity "boilerplate-backend-go/Entity"
-	"context"
-	"database/sql"
-	"time"
-)
-
+/*
 func (repo repositoryDB) SelectData() ([]entity.Province, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -49,3 +43,4 @@ func (repo repositoryDB) SelectOneData() (entity.Province, error) {
 
 	return provinces, nil
 }
+*/

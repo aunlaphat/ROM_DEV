@@ -1,20 +1,11 @@
 package api
 
 import (
-	"boilerplate-backend-go/errors"
-	"boilerplate-backend-go/utils"
-	"fmt"
-
-	"net/http"
-	"strconv"
-	"strings"
-
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth"
 )
 
 func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
-	apiRouter.Post("/login", app.Login)
+	/* apiRouter.Post("/login", app.Login)
 
 	apiRouter.Route("/import-order", func(r chi.Router) {
 		// Add auth middleware for protected routes
@@ -24,9 +15,10 @@ func (app *Application) ImportOrderRoute(apiRouter *chi.Mux) {
 		r.Get("/search", app.SearchOrderORTracking)
 		r.Post("/create-confirm-wh", app.ConfirmFromWH)
 
-	})
+	}) */
 }
 
+/*
 // SearchOrderORTracking godoc
 // @Summary Search order by OrderNo or TrackingNo
 // @Description Retrieve the details of an order by its OrderNo or TrackingNo using a single input
@@ -141,3 +133,4 @@ func (app *Application) ConfirmFromWH(w http.ResponseWriter, r *http.Request) {
 
 	handleResponse(w, true, "⭐ Data Insert successful ⭐", result, http.StatusOK)
 }
+*/

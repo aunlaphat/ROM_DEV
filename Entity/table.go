@@ -16,11 +16,11 @@ type BeforeReturnOrder struct {
 	TrackingNo     string     `db:"TrackingNo"`     // เลขพัสดุ
 	Logistic       string     `db:"Logistic"`       // ขนส่ง
 	WarehouseID    int        `db:"WarehouseID"`    // รหัสคลังสินค้า
-	SoStatus     *string      `db:"SoStatus"`     // สถานะใบสั่งขาย
-	MkpStatus    *string       `db:"MkpStatus"`   // สถานะของ Marketplace
+	SoStatus       *string    `db:"SoStatus"`       // สถานะใบสั่งขาย
+	MkpStatus      *string    `db:"MkpStatus"`      // สถานะของ Marketplace
 	ReturnDate     *time.Time `db:"ReturnDate"`     // วันที่คืนสินค้า
-	StatusReturnID int        `db:"StatusReturnID"` // สถานะการคืนสินค้า
-	StatusConfID   int        `db:"StatusConfID"`   // สถานะการยืนยัน
+	StatusReturnID *int       `db:"StatusReturnID"` // สถานะการคืนสินค้า
+	StatusConfID   *int       `db:"StatusConfID"`   // สถานะการยืนยัน
 	ConfirmBy      *string    `db:"ConfirmBy"`      // ผู้ยืนยัน
 	ConfirmDate    *time.Time `db:"ConfirmDate"`    // วันที่ยืนยัน
 	CreateBy       string     `db:"CreateBy"`       // ผู้สร้างรายการ
@@ -28,6 +28,8 @@ type BeforeReturnOrder struct {
 	UpdateBy       *string    `db:"UpdateBy"`       // ผู้แก้ไขล่าสุด
 	UpdateDate     *time.Time `db:"UpdateDate"`     // วันที่แก้ไขล่าสุด
 	CancelID       *int       `db:"CancelID"`       // รหัสการยกเลิก
+	IsCNCreated    *bool      `db:"IsCNCreated"`    // สถานะการสร้าง CN
+	IsEdited       *bool      `db:"IsEdited"`       // สถานะการแก้ไข
 }
 
 // BeforeReturnOrderLine คือตารางสำหรับเก็บรายการสินค้าที่ต้องการคืน
@@ -45,7 +47,7 @@ type BeforeReturnOrderLine struct {
 	AlterSKU   *string    `db:"AlterSKU"`   // รหัสสินค้าทดแทน (ถ้ามี)
 	UpdateBy   *string    `db:"UpdateBy"`   // ผู้แก้ไขล่าสุด
 	UpdateDate *time.Time `db:"UpdateDate"` // วันที่แก้ไขล่าสุด
-	TrackingNo string     `db:"TrackingNo"` // เลขพัสดุ
+	TrackingNo *string    `db:"TrackingNo"` // เลขพัสดุ
 }
 
 type Warehouse struct {
@@ -119,27 +121,6 @@ type ROM_V_ProductAll struct {
 	SizeID    string  `db:"SizeID" json:"sizeID"`       // รหัสขนาดของสินค้า
 	Barcode   *string `db:"Barcode" json:"barcode"`     // บาร์โค้ดของสินค้า
 	Type      *string `db:"Type" json:"type"`           // ประเภทของสินค้า
-}
-
-type ROM_V_OrderHeadDetail struct {
-	OrderNo     string                  `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
-	SoNo        string                  `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
-	StatusMKP   string                  `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
-	SalesStatus string                  `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
-	CreateDate  time.Time               `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
-	OrderLines  []ROM_V_OrderLineDetail `json:"orderLines"`                   // รายการสินค้า
-}
-
-type ROM_V_OrderLineDetail struct {
-	OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
-	SoNo        string    `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
-	StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
-	SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
-	SKU         string    `db:"SKU" json:"sku"`                 // รหัสสินค้า
-	ItemName    string    `db:"ItemName" json:"itemName"`       // ชื่อสินค้า
-	QTY         int       `db:"QTY" json:"qty"`                 // จำนวนสินค้า
-	Price       float64   `db:"Price" json:"price"`             // ราคาต่อหน่วย
-	CreateDate  time.Time `db:"CreateDate" json:"createDate"`   // วันที่สร้างรายการ
 }
 
 /* type ROM_V_User struct {

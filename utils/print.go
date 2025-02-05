@@ -1,5 +1,6 @@
 package utils
 
+/*
 import (
 	res "boilerplate-backend-go/dto/response"
 	"fmt"
@@ -39,7 +40,7 @@ func PrintOrderLineDetails(line *res.BeforeReturnOrderLineResponse) {
 	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate)
 }
 
-func PrintSaleOrderDetails(order *res.SaleOrderResponse) {
+func PrintSaleOrderDetails(order *res.SearchOrderResponse) {
 	fmt.Printf("🧾 OrderNo: %s\n", order.OrderNo)
 	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
 	fmt.Printf("📊 StatusMKP: %s\n", order.StatusMKP)
@@ -47,7 +48,7 @@ func PrintSaleOrderDetails(order *res.SaleOrderResponse) {
 	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate)
 }
 
-func PrintSaleOrderLineDetails(line *res.SaleOrderLineResponse) {
+func PrintSaleOrderLineDetails(line *res.SearchOrderLineResponse) {
 	//fmt.Printf("🛒 SoNo: %s\n", line.SoNo)
 	//fmt.Printf("🧾 OrderNo: %s\n", line.OrderNo)
 	fmt.Printf("🔖 SKU: %s\n", line.SKU)
@@ -201,3 +202,4 @@ func convertDate(t *time.Time) string {
 	}
 	return ""
 }
+*/

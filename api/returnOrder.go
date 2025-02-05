@@ -7,22 +7,11 @@ package api
 // service handle error about business logic/ relation data send error to api
 // ตรวจสอบส่วนหน้า ส่วนที่รับมาจาก client เช่น input ที่ถูกป้อนเข้ามา
 import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
-	"boilerplate-backend-go/utils"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"strings"
-
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth"
-	"go.uber.org/zap"
 )
 
 func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
-	apiRouter.Route("/return-order", func(r chi.Router) {
+	/* apiRouter.Route("/return-order", func(r chi.Router) {
 		r.Use(jwtauth.Verifier(app.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
@@ -33,9 +22,10 @@ func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
 		r.Post("/create", app.CreateReturnOrder)                         // POST /return-order/create
 		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)              // PATCH /return-order/update/{orderNo}
 		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)             // DELETE /return-order/delete/{orderNo}
-	})
+	}) */
 }
 
+/*
 // @Summary 	Get Return Order
 // @Description Retrieve the details of Return Order
 // @ID 			GetAll-ReturnOrder
@@ -350,3 +340,4 @@ func (api *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request
 
 	handleResponse(w, true, "⭐ Deleted successfully ⭐", response, http.StatusOK)
 }
+*/
