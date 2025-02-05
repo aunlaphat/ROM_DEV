@@ -15,8 +15,9 @@ import (
 
 // 📌 SetupRoutes กำหนดเส้นทาง API ทั้งหมด
 func SetupRoutes(router *gin.Engine, app *Application) {
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
+	// Logger and Recovery middleware are already added in server.go
+	// router.Use(gin.Logger())
+	// router.Use(gin.Recovery())
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"}, // อนุญาตเฉพาะ frontend ที่กำหนด
@@ -31,9 +32,9 @@ func SetupRoutes(router *gin.Engine, app *Application) {
 
 	apiRouter.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	apiRouter.GET("/", func(c *gin.Context) {
+	/* apiRouter.GET("/", func(c *gin.Context) {
 		c.String(http.StatusOK, "Welcome to the API!")
-	})
+	}) */
 
 	workDir, _ := os.Getwd()
 	filesDir := filepath.Join(workDir, "uploads")
@@ -41,11 +42,4 @@ func SetupRoutes(router *gin.Engine, app *Application) {
 
 	app.AuthRoute(apiRouter)
 	app.OrderRoute(apiRouter)
-	/* app.FileServerRoute(apiRouter)
-	app.Excels(apiRouter)
-	app.UserRoute(apiRouter)
-	app.BeforeReturnRoute(apiRouter)
-	app.ReturnOrders(apiRouter)
-	app.ImportOrderRoute(apiRouter)
-	app.TradeReturnRoute(apiRouter) */
 }

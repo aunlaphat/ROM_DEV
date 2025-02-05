@@ -8,49 +8,24 @@ import (
 )
 
 type service struct {
-	userRepo repository.UserRepository //Repository of service
-	//usertestRepo     repository.UserTestRepository
-	logger   logs.Logger //Logger of service
-	constant repository.Constants
-	//befRORepo        repository.BefRORepository
-	returnOrderRepo  repository.ReturnOrderRepository
-	importOrderRepo  repository.ImportOrderRepository
-	beforeReturnRepo repository.BeforeReturnRepository
-	orderRepo        repository.OrderRepository
+	userRepo  repository.UserRepository //Repository of service
+	logger    logs.Logger               //Logger of service
+	orderRepo repository.OrderRepository
 }
 type AllOfService struct {
-	User UserService
-	//UserTest     UserTestService
-	Constant Constants
-	//BefRO        BefROService
-	ReturnOrder  ReturnOrderService
-	ImportOrder  ImportOrderService
-	BeforeReturn BeforeReturnService
-	// Login	    LoginService
+	User  UserService
 	Order OrderService
 }
 
 func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 	repo := repository.NewDB(db)
 	srv := service{
-		userRepo: repo,
-		//usertestRepo:     repo,
-		logger:   logger,
-		constant: repo,
-		//befRORepo:        repo,
-		returnOrderRepo:  repo,
-		importOrderRepo:  repo,
-		beforeReturnRepo: repo,
-		orderRepo:        repo,
+		userRepo:  repo,
+		logger:    logger,
+		orderRepo: repo,
 	}
 	return AllOfService{
-		User: srv,
-		//UserTest:     srv,
-		Constant: srv,
-		//BefRO:        srv,
-		ReturnOrder:  srv,
-		ImportOrder:  srv,
-		BeforeReturn: srv,
-		Order:        srv,
+		User:  srv,
+		Order: srv,
 	}
 }

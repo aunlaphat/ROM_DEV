@@ -1,8 +1,8 @@
 package api
 
 import (
-	req "boilerplate-backend-go/dto/request"
-	res "boilerplate-backend-go/dto/response"
+	request "boilerplate-backend-go/dto/request"
+	response "boilerplate-backend-go/dto/response"
 	"fmt"
 	"net/http"
 
@@ -26,6 +26,7 @@ func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 			c.Abort()
 			return
 		}
+		app.Logger.Info("🔑 JWT Claims", zap.Any("claims", claims))
 		c.Set("jwt_claims", claims)
 		c.Next()
 	})
@@ -35,7 +36,7 @@ func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 }
 
 // 📌 สร้าง JWT Token
-func (app *Application) GenerateToken(tokenData res.Login) string {
+func (app *Application) GenerateToken(tokenData response.Login) string {
 	claims := map[string]interface{}{
 		"userID":     tokenData.UserID,
 		"userName":   tokenData.UserName,
@@ -46,7 +47,9 @@ func (app *Application) GenerateToken(tokenData res.Login) string {
 		"platform":   tokenData.Platform,
 	}
 	_, tokenString, _ := app.TokenAuth.Encode(claims)
-	fmt.Println("🔑 JWT Token:", tokenString)
+	app.Logger.Info(fmt.Sprintf("🔑 JWT Claims: %+v", claims))
+	app.Logger.Info("🔑 JWT Token: " + tokenString)
+
 	return tokenString
 }
 
@@ -63,7 +66,7 @@ func (app *Application) GenerateToken(tokenData res.Login) string {
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /auth/login [post]
 func (app *Application) Login(c *gin.Context) {
-	var req req.LoginWeb
+	var req request.LoginWeb
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handleResponse(c, false, "Invalid request", nil, http.StatusBadRequest)
 		return
@@ -77,7 +80,7 @@ func (app *Application) Login(c *gin.Context) {
 	}
 
 	// 🔹 สร้าง JWT Token
-	token := app.GenerateToken(res.Login{
+	token := app.GenerateToken(response.Login{
 		UserID:       user.UserID,
 		UserName:     user.UserName,
 		RoleID:       user.RoleID,
@@ -107,7 +110,7 @@ func (app *Application) Login(c *gin.Context) {
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /auth/login-lark [post]
 func (app *Application) LoginFromLark(c *gin.Context) {
-	var req req.LoginLark
+	var req request.LoginLark
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handleResponse(c, false, "Invalid request", nil, http.StatusBadRequest)
 		return
@@ -119,7 +122,7 @@ func (app *Application) LoginFromLark(c *gin.Context) {
 		return
 	}
 
-	token := app.GenerateToken(res.Login{
+	token := app.GenerateToken(response.Login{
 		UserID:       user.UserID,
 		UserName:     user.UserName,
 		RoleID:       user.RoleID,
@@ -174,6 +177,5 @@ func (app *Application) CheckAuthen(c *gin.Context) {
 		return
 	}
 
-	app.Logger.Info("🟢 Authentication Checked", zap.Any("claims", claimsMap))
 	handleResponse(c, true, "🟢 Authentication Checked 🟢", claimsMap, http.StatusOK)
 }

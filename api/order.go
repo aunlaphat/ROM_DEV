@@ -30,19 +30,19 @@ func (app *Application) SearchOrder(c *gin.Context) {
 	orderNo := c.Query("orderNo")
 
 	if soNo == "" && orderNo == "" {
-		handleResponse(c, false, "⚠️ Either SoNo or OrderNo is required", nil, http.StatusBadRequest)
+		handleResponse(c, false, "⚠️ either soNo or orderNo is required", nil, http.StatusBadRequest)
 		return
 	}
 
 	order, err := app.Service.Order.SearchOrder(c, soNo, orderNo)
 	if err != nil {
-		if err.Error() == "Sale order not found" {
-			handleResponse(c, false, "⚠️ Sale order not found", nil, http.StatusNotFound)
+		if err.Error() == "sale order not found" {
+			handleResponse(c, false, "⚠️ sale order not found", nil, http.StatusNotFound)
 			return
 		}
-		handleResponse(c, false, "🔥 Internal server error", nil, http.StatusInternalServerError)
+		handleResponse(c, false, "🔥 internal server error", nil, http.StatusInternalServerError)
 		return
 	}
 
-	handleResponse(c, true, "⭐ Order retrieved successfully ⭐", order, http.StatusOK)
+	handleResponse(c, true, "⭐ order retrieved successfully ⭐", order, http.StatusOK)
 }

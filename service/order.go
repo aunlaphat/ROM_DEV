@@ -37,7 +37,7 @@ func (srv service) SearchOrder(ctx context.Context, soNo, orderNo string) (*resp
 
 	// ✅ ตรวจสอบเงื่อนไข: ต้องมีค่า SoNo หรือ OrderNo อย่างน้อยหนึ่งค่า
 	if soNo == "" && orderNo == "" {
-		err := errors.New("either SoNo or OrderNo must be provided")
+		err := errors.New("either soNo or orderNo must be provided")
 		srv.logger.Warn("⚠️ Invalid request - Missing parameters", zap.Error(err))
 		logFinish.Warn("Invalid Request", zap.Error(err))
 		return nil, err
@@ -50,7 +50,7 @@ func (srv service) SearchOrder(ctx context.Context, soNo, orderNo string) (*resp
 			// ✅ ไม่พบข้อมูลคำสั่งขาย
 			srv.logger.Warn("⚠️ No Sale Order found", zap.String("SoNo", soNo), zap.String("OrderNo", orderNo))
 			logFinish.Warn("Not Found", zap.String("error", "Sale order not found"))
-			return nil, errors.New("Sale order not found")
+			return nil, errors.New("sale order not found")
 		}
 
 		// ❌ กรณีเกิดปัญหาอื่น ๆ เช่น Database ล่ม
@@ -60,7 +60,7 @@ func (srv service) SearchOrder(ctx context.Context, soNo, orderNo string) (*resp
 			zap.Error(err),
 		)
 		logFinish.Error("Failed", zap.String("error", "Failed to retrieve sale order"), zap.Error(err))
-		return nil, fmt.Errorf("Failed to retrieve sale order: %w", err)
+		return nil, fmt.Errorf("failed to retrieve sale order: %w", err)
 	}
 
 	// ✅ ถ้าพบข้อมูลคำสั่งขาย

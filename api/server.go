@@ -16,8 +16,12 @@ import (
 
 // 📌 Serve ทำหน้าที่ Start Server และ Handle Graceful Shutdown
 func (app *Application) Serve() error {
-	// ✅ สร้าง Router (Gin Engine)
-	router := gin.Default()
+	// ✅ สร้าง Router (Gin Engine) โดยไม่ใช้ gin.Default()
+	router := gin.New()
+
+	// ✅ เพิ่ม Logger และ Recovery Middleware
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
 
 	// ✅ Setup Routes
 	SetupRoutes(router, app)
