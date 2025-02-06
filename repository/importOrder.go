@@ -11,11 +11,14 @@ import (
 
 type ImportOrderRepository interface {
 	SearchOrderORTracking(ctx context.Context, search string) (*response.ImportOrderResponse, error)
+	ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error)
 
+	// ยังไม่ใช้
 	FetchReturnDetailsBySaleOrder(ctx context.Context, soNo string) (string, error)
 	InsertImageMetadata(ctx context.Context, image request.Images) (int, error)
 }
 
+// review
 func (repo repositoryDB) SearchOrderORTracking(ctx context.Context, search string) (*response.ImportOrderResponse, error) {
 	// Query สำหรับดึงข้อมูล Order Head
 	queryHead := `
@@ -68,6 +71,22 @@ func (repo repositoryDB) SearchOrderORTracking(ctx context.Context, search strin
 	orderHead.OrderLines = orderLines
 
 	return &orderHead, nil
+}
+
+// review
+func (repo repositoryDB) ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error) {
+    var exists bool
+    query := `
+        SELECT CASE WHEN EXISTS (
+            SELECT 1 FROM BeforeReturnOrderLine WHERE OrderNo = @OrderNo AND SKU = @SKU
+        ) THEN 1 ELSE 0 END
+    `
+    err := repo.db.GetContext(ctx, &exists, query, sql.Named("OrderNo", orderNo), sql.Named("SKU", sku))
+    if err != nil {
+        return false, fmt.Errorf("failed to validate SKU: %w", err)
+    }
+
+    return exists, nil
 }
 
 // ทำรอไว้ยังไม่ได้ใช้

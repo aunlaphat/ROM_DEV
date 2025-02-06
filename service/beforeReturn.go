@@ -72,6 +72,7 @@ type BeforeReturnService interface {
 	ConfirmReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
 }
 
+// review
 // create trade , set statusReturnID = 3 (booking)
 func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "CreateTradeReturn", zap.String("OrderNo", req.OrderNo))
@@ -110,6 +111,7 @@ func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeRetu
 	return createdOrder, nil
 }
 
+// review
 // add line create trade
 func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) ([]response.BeforeReturnOrderLineResponse, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "CreateTradeReturnLine", zap.String("OrderNo", orderNo))
@@ -164,6 +166,7 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 	return createdOrderLines, nil
 }
 
+// review
 func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error{
 	logFinish := srv.logger.LogAPICall(ctx, "DeleteBeforeReturnOrderLine", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
 	defer logFinish("Completed", nil)
@@ -194,6 +197,7 @@ func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, orderNo stri
 	return nil
 }
 
+// review
 func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
 	logFinish := srv.logger.LogAPICall(ctx, "ConfirmReceipt", zap.String("Identifier", req.Identifier))
 	defer logFinish("Completed", nil)
@@ -278,6 +282,7 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 	return nil
 }
 
+// review
 // check trade line from scan => confirm => success (unsuccess in process future..)
 func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error {
 	logFinish := srv.logger.LogAPICall(ctx, "ConfirmReturn", zap.String("OrderNo", req.OrderNo))
@@ -351,6 +356,7 @@ func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToRetur
 	return nil
 }
 
+// review
 func (srv service) GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "GetAllOrderDetail")
 	defer logFinish("Completed", nil)
@@ -374,6 +380,7 @@ func (srv service) GetAllOrderDetail(ctx context.Context) ([]response.OrderDetai
 	return allorder, nil
 }
 
+// review
 func (srv service) GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "GetAllOrderDetails")
 	defer logFinish("Completed", nil)
@@ -399,6 +406,7 @@ func (srv service) GetAllOrderDetails(ctx context.Context, page, limit int) ([]r
 	return allorder, nil
 }
 
+// review
 func (srv service) GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "GetOrderDetailBySO", zap.String("SoNo", soNo))
 	defer logFinish("Completed", nil)
@@ -415,6 +423,7 @@ func (srv service) GetOrderDetailBySO(ctx context.Context, soNo string) (*respon
 	return soOrder, nil
 }
 
+// review
 // Method สำหรับสร้าง Before Return Order พร้อมกับ Lines
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "CreateBeforeReturnOrderWithLines", zap.String("OrderNo", req.OrderNo))

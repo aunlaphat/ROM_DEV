@@ -636,6 +636,15 @@ definitions:
       trackingNo:
         type: string
     type: object
+  response.ImportOrderSummary:
+    properties:
+      orderNo:
+        type: string
+      photo:
+        type: string
+      sku:
+        type: string
+    type: object
   response.ListDraftConfirmOrdersResponse:
     properties:
       channelId:
@@ -1830,6 +1839,48 @@ paths:
       summary: Update draft orders
       tags:
       - Draft & Confirm
+  /import-order/confirm-receipt/{identifier}:
+    post:
+      consumes:
+      - application/json
+      description: Confirm a trade return order based on the provided identifier (OrderNo
+        or TrackingNo) and input lines for ReturnOrderLine.
+      operationId: confirm-trade-return
+      parameters:
+      - description: OrderNo or TrackingNo
+        in: path
+        name: identifier
+        required: true
+        type: string
+      - description: Trade return request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ConfirmTradeReturnRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trade return order confirmed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  $ref: '#/definitions/response.ConfirmReceipt'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Confirm Receipt from Ware House
+      tags:
+      - Import Order
   /import-order/create-confirm-wh:
     post:
       consumes:
@@ -1883,9 +1934,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve the details of an order by its OrderNo or TrackingNo using
-        a single input
-      operationId: search-orderNo-or-trackingNo-single
+      description: Retrieve the details of an order by its OrderNo or TrackingNo
+      operationId: search-orderNo-or-trackingNo
       parameters:
       - description: OrderNo or TrackingNo
         in: query
@@ -1917,6 +1967,126 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Search order by OrderNo or TrackingNo
+      tags:
+      - Import Order
+  /import-order/summary/{orderNo}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of Receipt
+      operationId: GetSummary-ImportOrder
+      parameters:
+      - description: Order No
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get All
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ImportOrderSummary'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found Endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Sum detail of Import Order
+      tags:
+      - Import Order
+  /import-order/upload-photo:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a photo for a return order
+      operationId: upload-photo
+      parameters:
+      - description: Order No
+        in: formData
+        name: orderNo
+        required: true
+        type: string
+      - description: ImageTypeID (1, 2, 3)
+        in: formData
+        name: imageTypeID
+        required: true
+        type: string
+      - description: SKU (required if imageTypeID is '3')
+        in: formData
+        name: sku
+        type: string
+      - description: Photo file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Upload Photo
+      tags:
+      - Import Order
+  /import-order/validate-sku/{orderNo}/{sku}:
+    post:
+      consumes:
+      - application/json
+      description: Validate SKU
+      operationId: validate-sku
+      parameters:
+      - description: Order No
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: SKU
+        in: path
+        name: sku
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Validate SKU
       tags:
       - Import Order
   /return-order/create:
@@ -2460,48 +2630,6 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Add a new trade return line to an existing order
-      tags:
-      - Trade Return
-  /trade-return/confirm-receipt/{identifier}:
-    post:
-      consumes:
-      - application/json
-      description: Confirm a trade return order based on the provided identifier (OrderNo
-        or TrackingNo) and input lines for ReturnOrderLine.
-      operationId: confirm-trade-return
-      parameters:
-      - description: OrderNo or TrackingNo
-        in: path
-        name: identifier
-        required: true
-        type: string
-      - description: Trade return request details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.ConfirmTradeReturnRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Trade return order confirmed successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  $ref: '#/definitions/response.ConfirmReceipt'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Confirm Receipt from Ware House
       tags:
       - Trade Return
   /trade-return/confirm-return/{orderNo}:

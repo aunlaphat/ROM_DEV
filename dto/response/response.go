@@ -226,6 +226,12 @@ type ConfirmReturnOrderDetails struct {
 // 	Price     float64 `json:"price" db:"Price"`
 // }
 
+type ImportOrderSummary struct {
+    OrderNo  string `json:"orderNo"`
+    SKU      string `json:"sku"`
+    Photo    string `json:"photo"`
+}
+
 type BeforeReturnOrderResponse struct {
 	OrderNo                string                          `json:"orderNo" db:"OrderNo"`
 	SoNo                   string                          `json:"soNo" db:"SoNo"`

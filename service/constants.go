@@ -7,6 +7,7 @@ import (
 	"fmt"
 )
 
+// ส่วนรับ dropdown
 type Constants interface {
 	GetThaiProvince() ([]entity.Province, error)
 	GetThaiDistrict() ([]entity.District, error)
@@ -87,7 +88,7 @@ func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 // 	return getPostCode, nil
 // }
 
-
+// review
 func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
 	
 	getWarehouse, err := srv.constant.GetWarehouse()
@@ -105,6 +106,7 @@ func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
 	return getWarehouse, nil
 }
 
+// review
 func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
 	
 	getProductAll, err := srv.constant.GetProductAll()
@@ -122,6 +124,7 @@ func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
 	return getProductAll, nil
 }
 
+// review
 func (srv service) GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, error) {
 	
 	offset := (page - 1) * limit

@@ -75,7 +75,7 @@ type BeforeReturnRepository interface {
 	UpdateBefToWaiting(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
 	CheckBefOrderOrTrackingExists(ctx context.Context, identifier string) (bool, error)
 }
-
+// review
 // search trackingNo by OrderNo
 func (repo repositoryDB) GetTrackingNoByOrderNo(ctx context.Context, orderNo string) (string, error) {
 	var trackingNo string
@@ -91,7 +91,7 @@ func (repo repositoryDB) GetTrackingNoByOrderNo(ctx context.Context, orderNo str
 	}
 	return trackingNo, nil
 }
-
+// review
 func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo string, lines []request.OrderLines) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// ตรวจสอบว่า OrderNo มีอยู่ใน BeforeReturnOrder หรือไม่
@@ -143,7 +143,7 @@ func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo stri
 
 /************** Confirm To ReturnOrder ****************/
 // รวม func. UpdateStatusToSuccess + GetBeforeOrderDetails + UpdateReturnOrderAndLines + InsertReturnOrderLine in service
-
+// review
 // step 1: update status BeforeReturnOrder, เก็บค่าผู้ updateBy Date เพื่อนำไปใช้เข้าใน CreateBy Date => ReturnOrder,Line
 func (repo repositoryDB) UpdateStatusToSuccess(ctx context.Context, orderNo, updateBy string) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -171,7 +171,7 @@ func (repo repositoryDB) UpdateStatusToSuccess(ctx context.Context, orderNo, upd
 		return nil
 	})
 }
-
+// review
 // step 2: Fetch ค่า Befod ออกมา เก็บค่าผู้ updateBy Date เพื่อนำไปใช้เข้าใน CreateBy Date => ReturnOrder,Line
 func (repo repositoryDB) GetBeforeOrderDetails(ctx context.Context, orderNo string) (*response.ConfirmReturnOrderDetails, error) {
 	query := ` SELECT UpdateBy, UpdateDate
@@ -194,7 +194,7 @@ func (repo repositoryDB) GetBeforeOrderDetails(ctx context.Context, orderNo stri
 	}
 	return &returnOrderData, nil
 }
-
+// review
 // step 3: update return order (status,sr) + line (actualqty,price)
 func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ConfirmReturnOrderDetails) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -276,7 +276,7 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 
 /************** Confirm Receipt ****************/
 // รวม func. UpdateBefToWaiting + GetBeforeReturnOrderData + InsertReturnOrder + InsertReturnOrderLine in service
-
+// review
 // 1. Update สถานะใน BeforeReturnOrder to "WAITING" (Page: Confirm Trade)
 func (repo repositoryDB) UpdateBefToWaiting(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -295,7 +295,7 @@ func (repo repositoryDB) UpdateBefToWaiting(ctx context.Context, req request.Con
 		return err
 	})
 }
-
+// review
 // 2. ดึงข้อมูลจาก BeforeReturnOrder fetch ออกมาเพื่อเอาเข้า ReturnOrder
 func (repo repositoryDB) GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ConfirmReturnOrderDetails, error) {
 	querySelectOrder := `
@@ -322,7 +322,7 @@ func (repo repositoryDB) GetBeforeReturnOrderData(ctx context.Context, req reque
 
 	return &returnOrderData, nil
 }
-
+// review
 // 3. Insert ข้อมูลลงใน ReturnOrder
 func (repo repositoryDB) InsertReturnOrder(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -338,7 +338,7 @@ func (repo repositoryDB) InsertReturnOrder(ctx context.Context, returnOrderData 
 
 	})
 }
-
+// review
 // 4. Insert ข้อมูลจาก importLines ลงใน ReturnOrderLine
 func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -368,7 +368,7 @@ func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderD
 		return nil
 	})
 }
-
+// review
 // InsertImages ฟังก์ชันที่ใช้เพิ่มข้อมูลภาพลงในฐานข้อมูล
 func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -398,7 +398,7 @@ func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *resp
 }
 
 /************************** Delete Line *************************/
-
+// review
 func (repo repositoryDB) DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// ลบ BeforeReturnOrderLine ตาม OrderNo และ SKU
@@ -420,7 +420,7 @@ func (repo repositoryDB) DeleteBeforeReturnOrderLine(ctx context.Context, orderN
 }
 
 /************************** Validate *************************/
-
+// review
 // ตรวจสอบว่ามี OrderNo ใน BeforeReturnOrder หรือไม่
 func (repo repositoryDB) CheckBefOrderNoExists(ctx context.Context, orderNo string) (bool, error) {
 	var exists bool
@@ -435,7 +435,7 @@ func (repo repositoryDB) CheckBefOrderNoExists(ctx context.Context, orderNo stri
 
 	return exists, nil
 }
-
+// review
 // ตรวจสอบว่ามี OrderNo, TrackingNo ใน BeforeReturnOrder หรือไม่
 func (repo repositoryDB) CheckBefOrderOrTrackingExists(ctx context.Context, identifier string) (bool, error) {
 	var exists bool
@@ -450,7 +450,7 @@ func (repo repositoryDB) CheckBefOrderOrTrackingExists(ctx context.Context, iden
 
 	return exists, nil
 }
-
+// review
 // ตรวจสอบว่ามี sku นี้ของ OrderNo,TrackingNo ใน BeforeReturnOrderLine หรือไม่
 func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, identifier, sku string) (bool, error) {
 	query := ` SELECT 1 FROM BeforeReturnOrderLine 
@@ -471,7 +471,7 @@ func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, identifier, 
 	}
 	return true, nil
 }
-
+// review
 // ตรวจสอบว่ามี sku นี้ของ OrderNo ใน ReturnOrderLine หรือไม่
 func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, orderNo, sku string) (bool, error) {
 	query := ` SELECT 1 FROM ReturnOrderLine 
@@ -494,7 +494,7 @@ func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, orderNo, sku 
 }
 
 /************************** Get Order Head+Line *************************/
-
+// review
 func (repo repositoryDB) GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error) {
 	var headDetails []response.OrderHeadDetail
 	var lineDetails []response.OrderLineDetail
@@ -537,7 +537,7 @@ func (repo repositoryDB) GetAllOrderDetail(ctx context.Context) ([]response.Orde
 }
 
 /************************** Get Order Head+Line : Paginate *************************/
-
+// review
 func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit int) ([]response.OrderDetail, error) {
 	var headDetails []response.OrderHeadDetail
 	var lineDetails []response.OrderLineDetail
@@ -587,7 +587,7 @@ func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit i
 }
 
 /************************** Search by SO *************************/
-
+// review
 func (repo repositoryDB) GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error) {
 	var headDetails []response.OrderHeadDetail
 	var lineDetails []response.OrderLineDetail
@@ -695,7 +695,7 @@ func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderN
 	}
 	return nil
 }
-
+// review
 func (repo repositoryDB) CreateTradeReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	// 1. เริ่ม transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)
@@ -755,11 +755,6 @@ func (repo repositoryDB) CreateTradeReturn(ctx context.Context, order request.Be
         )
     `
 	for _, line := range order.BeforeReturnOrderLines {
-		// Ensure TrackingNo is not NULL
-		// trackingNo := line.TrackingNo
-		// if trackingNo == "" {
-		// 	trackingNo = "N/A" // Default value if TrackingNo is not provided
-		// }
 
 		_, err = tx.NamedExecContext(ctx, queryLine, map[string]interface{}{
 			"OrderNo":    order.OrderNo,

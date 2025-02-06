@@ -301,7 +301,7 @@ func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter,
 // @Failure 	404 {object} Response "not found endpoint"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/before-return-order/get-order [get]
-func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request) {
+func (app *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request) {
 	result, err := api.Service.BefRO.GetAllOrderDetail(r.Context())
 	if err != nil {
 		handleError(w, err)
@@ -324,7 +324,7 @@ func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request
 // @Failure 	404 {object} Response "Not Found"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/before-return-order/get-orders [get]
-func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Request) {
+func (app *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Request) {
 	page, limit := parsePagination(r) // ฟังก์ชันช่วยดึง page และ limit จาก Query Parameters
 
 	result, err := api.Service.BefRO.GetAllOrderDetails(r.Context(), page, limit)
@@ -483,7 +483,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Failure 	422 {object} Response "Validation Error"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/before-return-order/delete-befodline/{recID} [delete]
-func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *http.Request) {
+func (app *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *http.Request) {
 	recID := chi.URLParam(r, "recID")
 	if recID == "" {
 		handleError(w, errors.ValidationError("ReturnID is required in the path"))

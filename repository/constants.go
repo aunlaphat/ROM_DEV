@@ -14,7 +14,7 @@ type Constants interface {
 	// GetPostCode() ([]entity.PostCode, error) // เลขไปรษณีย์
 	GetProductAll() ([]entity.ROM_V_ProductAll, error) 	// รายการสินค้าทั้งหมด
 	GetProductAllWithPagination(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) // รายการสินค้าแบบแบ่งรายการ
-	GetWarehouse() ([]entity.Warehouse, error) // คลังสินค้า
+	GetWarehouse() ([]entity.Warehouse, error) // ชื่อคลังสินค้า
 	// GetCustomer() ([]entity.ROM_V_Customer, error) // ข้อมูลลูกค้า
 	// GetTax() ([]entity.ROM_V_Tax, error) // ข้อมูลภาษีลูกค้า
 
@@ -153,6 +153,7 @@ func (repo repositoryDB) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 // 	return postCodes, nil
 // }
 
+// review
 func (repo repositoryDB) GetWarehouse() ([]entity.Warehouse, error) {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
@@ -181,7 +182,7 @@ func (repo repositoryDB) GetWarehouse() ([]entity.Warehouse, error) {
     return warehouses, nil
 }
 
-
+// review
 func (repo repositoryDB) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
@@ -211,7 +212,7 @@ func (repo repositoryDB) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
     return products, nil
 
 }
-
+// review
 func (repo repositoryDB) GetProductAllWithPagination(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) {
 
     query := `

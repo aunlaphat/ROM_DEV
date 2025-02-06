@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -18,13 +19,18 @@ import (
 
 type ImportOrderService interface {
 	SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
+	UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error 
+	GetSummaryImportOrder(ctx context.Context, orderNo string) ([]response.ImportOrderSummary, error)
+	ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error)
+
+	// ยังไม่ใช้
 	GetReturnDetailsFromSaleOrder(ctx context.Context, soNo string) (string, error)
 	SaveImageMetadata(ctx context.Context, image request.Images) (int, error)
-
 	ConfirmFromWH(ctx context.Context, soNo string, imageTypeID int, skus string, files []*multipart.FileHeader) ([]response.ImageResponse, error)
 	SaveImage(file *multipart.FileHeader) (string, error)
 }
 
+// review
 func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "SearchOrderORTracking", zap.String("Search", search))
 	defer logFinish("Completed", nil)
@@ -63,6 +69,98 @@ func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]
 
 	logFinish("Success", nil)
 	return []response.ImportOrderResponse{*order}, nil
+}
+
+var (
+    photoData = make(map[string][]response.ImportOrderSummary) // ข้อมูลภาพ+sku จะบันทึกลงตัวแปรนี้เพื่อนำไปแสดงที่ GetSummaryImportOrder
+    mu        sync.Mutex
+)
+
+// review
+func (srv service) UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error {
+    logFinish := srv.logger.LogAPICall(ctx, "UploadPhoto", zap.String("OrderNo", orderNo), zap.String("ImageTypeID", imageTypeID), zap.String("SKU", sku), zap.String("Filename", filename))
+    defer logFinish("Completed", nil)
+    srv.logger.Info("🔎 Starting upload photo process 🔎", zap.String("OrderNo", orderNo), zap.String("ImageTypeID", imageTypeID), zap.String("SKU", sku), zap.String("Filename", filename))
+
+    // สร้าง path สำหรับบันทึกไฟล์
+    dirPath := filepath.Join("uploads/images", orderNo, imageTypeID)
+    if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
+        logFinish("Failed", err)
+        srv.logger.Error("Failed to create directory", zap.Error(err))
+        return err
+    }
+
+    filePath := filepath.Join(dirPath, filename)
+    out, err := os.Create(filePath)
+    if err != nil {
+        logFinish("Failed", err)
+        srv.logger.Error("Failed to create file", zap.Error(err))
+        return err
+    }
+    defer out.Close()
+
+    _, err = io.Copy(out, file)
+    if err != nil {
+        logFinish("Failed", err)
+        srv.logger.Error("Failed to save file", zap.Error(err))
+        return err
+    }
+
+    // บันทึกข้อมูลรูปภาพในหน่วยความจำ
+    if imageTypeID == "3" {
+        mu.Lock()
+        defer mu.Unlock()
+        photoData[orderNo] = append(photoData[orderNo], response.ImportOrderSummary{
+            OrderNo:  orderNo,
+            SKU:      sku,
+            Photo:    filename,
+        })
+    }
+
+    logFinish("Success", nil)
+    return nil
+}
+
+// review
+func (srv service) GetSummaryImportOrder(ctx context.Context, orderNo string) ([]response.ImportOrderSummary, error) {
+    logFinish := srv.logger.LogAPICall(ctx, "GetSummaryImportOrder", zap.String("OrderNo", orderNo))
+    defer logFinish("Completed", nil)
+    srv.logger.Info("🔎 Starting get summary import order process 🔎", zap.String("OrderNo", orderNo))
+
+    mu.Lock()
+    defer mu.Unlock()
+
+    summary, exists := photoData[orderNo]
+    if !exists {
+        return nil, fmt.Errorf("no data found for orderNo: %s", orderNo)
+    }
+
+    logFinish("Success", nil)
+    return summary, nil
+}
+
+// review
+func (srv service) ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error) {
+	logFinish := srv.logger.LogAPICall(ctx, "ValidateSKU", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting validate SKU process 🔎", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
+
+	if orderNo == "" || sku == "" {
+		err := errors.ValidationError("OrderNo and SKU are required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return false, err
+	}
+
+	valid, err := srv.importOrderRepo.ValidateSKU(ctx, orderNo, sku)
+	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to validate SKU", zap.Error(err))
+		return false, errors.InternalError("failed to validate SKU")
+	}
+
+	logFinish("Success", nil)
+	return valid, nil
 }
 
 // retrieves ReturnID and OrderNo based on SoNo
@@ -154,7 +252,7 @@ func (srv service) ConfirmFromWH(ctx context.Context, soNo string, imageTypeID i
 	}
 
 	var result []response.ImageResponse
-	
+
 	for _, file := range files {
 		filePath, err := srv.SaveImage(file)
 		if err != nil {

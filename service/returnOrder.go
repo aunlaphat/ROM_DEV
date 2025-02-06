@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// ตัวสื่อกลางในการรับส่งกับ API และประมวลผลข้อมูลที่รับมาจาก API
 type ReturnOrderService interface {
 	GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error)
 	GetReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.ReturnOrder, error)
@@ -25,6 +24,7 @@ type ReturnOrderService interface {
 	GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error)
 }
 
+// review
 func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "GetAllReturnOrder")
 	defer logFinish("Completed", nil)
@@ -49,6 +49,7 @@ func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrde
 	return allorder, nil
 }
 
+// review
 func (srv service) GetReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.ReturnOrder, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "GetReturnOrderByOrderNo", zap.String("OrderNo", orderNo))
 	defer logFinish("Completed", nil)
@@ -95,6 +96,7 @@ func (srv service) GetReturnOrderByOrderNo(ctx context.Context, orderNo string) 
 	return idorder, nil
 }
 
+// review
 func (srv service) GetAllReturnOrderLines(ctx context.Context) ([]response.ReturnOrderLine, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "GetAllReturnOrderLines")
 	defer logFinish("Completed", nil)
@@ -118,6 +120,7 @@ func (srv service) GetAllReturnOrderLines(ctx context.Context) ([]response.Retur
 	return lines, nil
 }
 
+// review
 func (srv service) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "GetReturnOrderLineByOrderNo", zap.String("OrderNo", orderNo))
 	defer logFinish("Completed", nil)
@@ -163,6 +166,7 @@ func (srv service) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo stri
 	return lines, nil
 }
 
+// review
 func (srv service) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "GetReturnOrdersByStatus", zap.Int("StatusCheckID", statusCheckID))
 	defer logFinish("Completed", nil)
@@ -186,6 +190,7 @@ func (srv service) GetReturnOrdersByStatus(ctx context.Context, statusCheckID in
 	return orders, nil
 }
 
+// review
 func (srv service) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "GetReturnOrdersByStatusAndDateRange", zap.String("StartDate", startDate), zap.String("EndDate", endDate))
 	defer logFinish("Completed", nil)
@@ -210,6 +215,7 @@ func (srv service) GetReturnOrdersByStatusAndDateRange(ctx context.Context, stat
 	return orders, nil
 }
 
+// review
 func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) (*response.CreateReturnOrder, error) {
 	logFinish := srv.logger.LogAPICall(ctx, "CreateReturnOrder", zap.String("OrderNo", req.OrderNo))
 	defer logFinish("Completed", nil)
@@ -262,6 +268,7 @@ func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateRetu
 	return createdOrder, nil
 }
 
+// review
 func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) (*response.UpdateReturnOrder, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "UpdateReturnOrder", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", updateBy))
@@ -305,6 +312,7 @@ func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateRetu
 	return updatedOrder, nil
 }
 
+// review
 func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error {
 	logFinish := srv.logger.LogAPICall(ctx, "DeleteReturnOrder", zap.String("OrderNo", orderNo))
 	defer logFinish("Completed", nil)

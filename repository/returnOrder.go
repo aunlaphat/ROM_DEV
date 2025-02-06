@@ -31,7 +31,7 @@ type ReturnOrderRepository interface {
 	GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error)
 	GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error)
 }
-
+// review
 func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
 	var orders []response.ReturnOrder
 
@@ -60,7 +60,7 @@ func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.Retu
 
 	return orders, nil
 }
-
+// review
 func (repo repositoryDB) GetReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.ReturnOrder, error) {
 	var order response.ReturnOrder
 
@@ -91,7 +91,7 @@ func (repo repositoryDB) GetReturnOrderByOrderNo(ctx context.Context, orderNo st
 
 	return &order, nil
 }
-
+// review
 // Get All ReturnOrderLines
 func (repo repositoryDB) GetAllReturnOrderLines(ctx context.Context) ([]response.ReturnOrderLine, error) {
 	var lines []response.ReturnOrderLine
@@ -110,7 +110,7 @@ func (repo repositoryDB) GetAllReturnOrderLines(ctx context.Context) ([]response
 
 	return lines, nil
 }
-
+// review
 // Get ReturnOrderLines by OrderNo
 func (repo repositoryDB) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error) {
 	// ดึงข้อมูล ReturnOrderLines
@@ -137,7 +137,7 @@ func (repo repositoryDB) GetReturnOrderLineByOrderNo(ctx context.Context, orderN
 
 	return lines, nil
 }
-
+// review
 func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error) {
 	var orders []response.DraftTradeDetail
 
@@ -163,7 +163,7 @@ func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusChec
 
 	return orders, nil
 }
-
+// review
 func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error) {
 	var orders []response.DraftTradeDetail
 
@@ -211,7 +211,7 @@ func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context
 	log.Printf("Fetched %d return orders", len(orders))
 	return orders, nil
 }
-
+// review
 func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) error {
 	// เริ่มต้น Transaction
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -279,6 +279,7 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 	})
 }
 
+// แสดงข้อมูลออเดอร์ที่เพิ่งสร้างไป
 func (repo repositoryDB) GetCreateReturnOrder(ctx context.Context, orderNo string) (*response.CreateReturnOrder, error) {
 	// ดึงข้อมูล ReturnOrder จาก OrderNo
 	var order response.CreateReturnOrder
@@ -309,6 +310,7 @@ func (repo repositoryDB) GetCreateReturnOrder(ctx context.Context, orderNo strin
 	return &order, nil
 }
 
+// แสดงข้อมูลออเดอร์นั้นที่เพิ่งอัพเดตไป
 func (repo repositoryDB) GetUpdateReturnOrder(ctx context.Context, orderNo string) (*response.UpdateReturnOrder, error) {
 	// ดึงข้อมูล ReturnOrder จาก OrderNo
 	var order response.UpdateReturnOrder
@@ -330,8 +332,9 @@ func (repo repositoryDB) GetUpdateReturnOrder(ctx context.Context, orderNo strin
 
 	return &order, nil
 }
-
-// อัปเดต ReturnOrder และ ReturnOrderLine
+// review
+// สามารถอัปเดตข้อมูลออเดอได้ทั้งหมด แต่ข้อมูลรายการออเดอจะอัพเดตแค่ตอนเลข tracking มีการเปลี่ยนแปลง
+// หากเผลออัพเดตค่าเดิมทั้งหมดจะทำการตรวจสอบกับข้อมูลปจบ.ก่อน เพื่อให้วันเวลาอัพเดตแสดงตามจริง เฉพาะฟิลด์ที่มีการเปลี่ยนแปลงจริง
 func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// Step 1: ดึงค่าปัจจุบันจากฐานข้อมูล
@@ -462,7 +465,8 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 		return nil
 	})
 }
-
+// review
+// ลบออเดอร์ head+line ที่สินค้าเข้าคลังมาเรียบร้อยแล้วออก
 func (repo repositoryDB) DeleteReturnOrder(ctx context.Context, orderNo string) error {
 	// Step 1: เริ่ม Transaction
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -490,8 +494,8 @@ func (repo repositoryDB) DeleteReturnOrder(ctx context.Context, orderNo string) 
 		return nil
 	})
 }
-
-// Check ว่ามี OrderNo ในฐานข้อมูล
+// review
+// Check ว่ามี OrderNo ในออเดอร์นั้นจริง
 func (repo repositoryDB) CheckOrderNoExist(ctx context.Context, orderNo string) (bool, error) {
 	var exists bool
 	query := `
@@ -506,7 +510,8 @@ func (repo repositoryDB) CheckOrderNoExist(ctx context.Context, orderNo string) 
 
 	return exists, nil
 }
-
+// review
+// Check ว่ามี OrderNo ในรายการออเดอร์นั้นจริง 
 func (repo repositoryDB) CheckOrderNoLineExist(ctx context.Context, orderNo string) (bool, error) {
 	var exists bool
 	query := `

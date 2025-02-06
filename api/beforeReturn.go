@@ -27,10 +27,10 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
 
 		// get real order
-		r.Get("/get-order", app.GetAllOrderDetail)                             // get Order of ROM_V_OrderDetail
-		r.Get("/get-orders", app.GetAllOrderDetails)                           // get Order of ROM_V_OrderDetail with paginate
-		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO)                 // search by SO of ROM_V_OrderDetail
-		r.Delete("/delete-line/{orderNo}/{sku}", app.DeleteBeforeReturnOrderLine) // delete line by recID of BeforeReturnOrder
+		r.Get("/get-order", app.GetAllOrderDetail)   // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ  
+		r.Get("/get-orders", app.GetAllOrderDetails) // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate                        
+		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO) // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO               
+		r.Delete("/delete-line/{orderNo}/{sku}", app.DeleteBeforeReturnOrderLine) // ลบรายการคืนแต่ละรายการ
 	})
 
 	apiRouter.Route("/sale-return", func(r chi.Router) {
@@ -188,7 +188,7 @@ func (app *Application) UpdateBeforeReturnOrderWithLines(w http.ResponseWriter, 
 // @Router /before-return-order/{orderNo} [get]
 func (app *Application) GetBeforeReturnOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	
+
 	result, err := app.Service.BeforeReturn.GetBeforeReturnOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
@@ -249,7 +249,7 @@ func (app *Application) ListBeforeReturnOrderLines(w http.ResponseWriter, r *htt
 // @Router /before-return-order/line/{orderNo} [get]
 func (app *Application) GetBeforeReturnOrderLineByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	
+
 	result, err := app.Service.BeforeReturn.GetBeforeReturnOrderLineByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
@@ -884,6 +884,7 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 	handleResponse(w, true, "⭐ Draft orders updated successfully ⭐", result, http.StatusOK)
 }
 
+// review // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ 
 // @Summary 	Get Before Return Order
 // @Description Get all Before Return Order
 // @ID 			Allget-BefReturnOrder
@@ -895,9 +896,9 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 // @Failure 	404 {object} Response "not found endpoint"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/before-return-order/get-order [get]
-func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request) {
+func (app *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request) {
 
-	result, err := api.Service.BeforeReturn.GetAllOrderDetail(r.Context())
+	result, err := app.Service.BeforeReturn.GetAllOrderDetail(r.Context())
 	if err != nil {
 		handleError(w, err)
 		return
@@ -906,6 +907,7 @@ func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request
 	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
+// review // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
 // @Summary 	Get Paginated Before Return Order
 // @Description Get all Before Return Order with pagination
 // @ID 			Get-BefReturnOrder-Paginated
@@ -919,11 +921,11 @@ func (api *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request
 // @Failure 	404 {object} Response "Not Found"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/before-return-order/get-orders [get]
-func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Request) {
+func (app *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Request) {
 
 	page, limit := utils.ParsePagination(r)
 
-	result, err := api.Service.BeforeReturn.GetAllOrderDetails(r.Context(), page, limit)
+	result, err := app.Service.BeforeReturn.GetAllOrderDetails(r.Context(), page, limit)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -932,6 +934,7 @@ func (api *Application) GetAllOrderDetails(w http.ResponseWriter, r *http.Reques
 	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
+// review // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO
 // @Summary      Get Before Return Order by SO
 // @Description  Get details of an order by its SO number
 // @ID           GetBySO-BefReturnOrder
@@ -960,6 +963,7 @@ func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Reques
 	handleResponse(w, true, "⭐ Orders retrieved by SO successfully ⭐", result, http.StatusOK)
 }
 
+// review // ลบรายการคืนแต่ละรายการ
 // @Summary 	Delete Order line
 // @Description Delete an order line
 // @ID 			delete-BeforeReturnOrderLine
@@ -973,11 +977,11 @@ func (app *Application) GetOrderDetailBySO(w http.ResponseWriter, r *http.Reques
 // @Failure 	422 {object} Response "Validation Error"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/before-return-order/delete-line/{orderNo}/{sku} [delete]
-func (api *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *http.Request) {
+func (app *Application) DeleteBeforeReturnOrderLine(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 	sku := chi.URLParam(r, "sku")
 
-	if err := api.Service.BeforeReturn.DeleteBeforeReturnOrderLine(r.Context(), orderNo, sku); err != nil {
+	if err := app.Service.BeforeReturn.DeleteBeforeReturnOrderLine(r.Context(), orderNo, sku); err != nil {
 		handleError(w, err)
 		return
 	}

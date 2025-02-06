@@ -19,21 +19,23 @@ import (
 	"github.com/go-chi/jwtauth"
 )
 
-func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
+// ReturnOrder => ข้อมูลรับเข้าจากส่วนหน้าคลังทั้งหมด ข้อมูลสินค้าที่ถูกส่งคืนมาทั้งหมด
+func (app *Application) ReturnOrder(apiRouter *chi.Mux) {
 	apiRouter.Route("/return-order", func(r chi.Router) {
 		r.Use(jwtauth.Verifier(app.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
-		r.Get("/get-all", app.GetAllReturnOrder)                       // GET /return-order/get-all
-		r.Get("/get-all/{orderNo}", app.GetReturnOrderByOrderNo)       // GET /return-order/getbyID/{orderNo}
-		r.Get("/get-lines", app.GetAllReturnOrderLines)                // GET /return-order/allgetline
-		r.Get("/get-lines/{orderNo}", app.GetReturnOrderLineByOrderNo) // GET /return-order/getlinebyID/{orderNo}
-		r.Post("/create", app.CreateReturnOrder)                       // POST /return-order/create
-		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)            // PATCH /return-order/update/{orderNo}
-		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)           // DELETE /return-order/delete/{orderNo}
+		r.Get("/get-all", app.GetAllReturnOrder) // แสดงข้อมูลรับเข้ารวม                  
+		r.Get("/get-all/{orderNo}", app.GetReturnOrderByOrderNo) // แสดงข้อมูลรับเข้าด้วยโดย orderNo    
+		r.Get("/get-lines", app.GetAllReturnOrderLines)  // แสดงรายการคืนของรวม
+		r.Get("/get-lines/{orderNo}", app.GetReturnOrderLineByOrderNo) // แสดงรายการคืนของโดย orderNo
+		r.Post("/create", app.CreateReturnOrder) // สร้างข้อมูลของที่ถูกส่งคืนมา
+		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)   // อัพเดทข้อมูลของที่ถูกส่งคืน
+		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)  // ลบ order ที่ทำการคืนมาออกหมด head+line
 	})
 }
 
+// review
 // @Summary 	Get Return Order
 // @Description Retrieve the details of Return Order
 // @ID 			GetAll-ReturnOrder
@@ -45,9 +47,9 @@ func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
 // @Failure 	404 {object} Response "Not Found Endpoint"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/get-all [get]
-func (api *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request) {
+func (app *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request) {
 
-	result, err := api.Service.ReturnOrder.GetAllReturnOrder(r.Context())
+	result, err := app.Service.ReturnOrder.GetAllReturnOrder(r.Context())
 	if err != nil {
 		handleError(w, err)
 		return
@@ -69,6 +71,7 @@ func (api *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request
 	handleResponse(w, true, "⭐ Get Return Order successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary      Get Return Order by OrderNo
 // @Description  Get details return order by order no
 // @ID           GetAllByOrderNo-ReturnOrder
@@ -102,6 +105,7 @@ func (app *Application) GetReturnOrderByOrderNo(w http.ResponseWriter, r *http.R
 	handleResponse(w, true, "⭐ Get Return Order by OrderNo successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary 	Get Return Order Line
 // @Description Get all Return Order Line
 // @ID 			GetAllLines-ReturnOrderLine
@@ -130,6 +134,7 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 	handleResponse(w, true, "⭐ Get Return Order Lines successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary      Get Return Order Line by OrderNo
 // @Description  Get details of an order line by its order no
 // @ID           GetLineByOrderNo-ReturnOrder
@@ -162,6 +167,7 @@ func (app *Application) GetReturnOrderLineByOrderNo(w http.ResponseWriter, r *ht
 
 }
 
+// review
 // @Summary 	Create Return Order
 // @Description Create a new return order
 // @ID 			Create-ReturnOrder
@@ -218,6 +224,7 @@ func (app *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 	handleResponse(w, true, "⭐ Created successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary Update Return Order
 // @Description Update an existing return order using orderNo in the path
 // @ID Update-ReturnOrder
@@ -270,6 +277,7 @@ func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 	handleResponse(w, true, "⭐ Updated successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary 	Delete Order
 // @Description Delete an order
 // @ID 			delete-ReturnOrder
@@ -283,10 +291,10 @@ func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Failure 	404 {object} Response "Order Not Found"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/delete/{orderNo} [delete]
-func (api *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request) {
+func (app *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
 
-	err := api.Service.ReturnOrder.DeleteReturnOrder(r.Context(), orderNo)
+	err := app.Service.ReturnOrder.DeleteReturnOrder(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
