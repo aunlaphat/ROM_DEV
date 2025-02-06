@@ -43,5 +43,9 @@ func Routes(router *gin.Engine, app *Application) {
 	filesDir := filepath.Join(workDir, "uploads")
 	apiRouter.StaticFS("/uploads", http.Dir(filesDir))
 
+	// Authenticated & User Routes
+	app.AuthRoute(apiRouter)
+	app.UserRoute(apiRouter)
+
 	app.OrderRoute(apiRouter)
 }

@@ -1,172 +1,154 @@
 package api
 
-/*
-// 📌 กำหนดเส้นทาง Authentication
+import (
+	"context"
+	"net/http"
+
+	"boilerplate-backend-go/dto/request"
+	"boilerplate-backend-go/dto/response"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-chi/jwtauth"
+	"go.uber.org/zap"
+)
+
+// 📌 กำหนดเส้นทางสำหรับ Authentication API
 func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 	auth := apiRouter.Group("/auth")
+	auth.POST("/login", app.Login)              // Login ปกติ
+	auth.POST("/login-lark", app.LoginFromLark) // Login ผ่าน Lark
 
-	auth.POST("/login", app.Login)              // 🔹 Login
-	auth.POST("/login-lark", app.LoginFromLark) // 🔹 Login ผ่าน Lark
-
-	// 🔹 Protected Routes (ต้องใช้ JWT)
-	auth.Use(func(c *gin.Context) {
-		_, claims, err := jwtauth.FromContext(c.Request.Context())
-		if err != nil {
-			handleResponse(c, false, "❌ Unauthorized", nil, http.StatusUnauthorized)
-			c.Abort()
-			return
-		}
-		app.Logger.Info("🔑 JWT Claims", zap.Any("claims", claims))
-		c.Set("jwt_claims", claims)
-		c.Next()
-	})
-
-	auth.GET("/", app.CheckAuthen)   // 🔹 ตรวจสอบสิทธิ์
-	auth.POST("/logout", app.Logout) // 🔹 Logout
+	// Routes ที่ต้องมี JWT
+	auth.Use(jwtauth.Verifier(app.TokenAuth)) // middleware ตรวจสอบ token
+	auth.Use(jwtauth.Authenticator)           // middleware ยืนยันตัวตน
+	auth.GET("/", app.CheckAuthen)            // ตรวจสอบ Authentication
+	auth.POST("/logout", app.Logout)          // Logout
 }
 
-// 📌 สร้าง JWT Token
-func (app *Application) GenerateToken(tokenData response.Login) string {
+// ✅ **GenerateToken()**
+// ฟังก์ชันสร้าง JWT Token สำหรับผู้ใช้
+func (app *Application) GenerateToken(user response.User) string {
 	claims := map[string]interface{}{
-		"userID":     tokenData.UserID,
-		"userName":   tokenData.UserName,
-		"roleID":     tokenData.RoleID,
-		"fullNameTH": tokenData.FullNameTH,
-		"nickName":   tokenData.NickName,
-		"department": tokenData.DepartmentNo,
-		"platform":   tokenData.Platform,
+		"userID":     user.UserID,
+		"userName":   user.UserName,
+		"roleID":     user.RoleID,
+		"fullNameTH": user.FullNameTH,
+		"nickName":   user.NickName,
+		"department": user.DepartmentNo,
+		"platform":   user.Platform,
 	}
-	_, tokenString, _ := app.TokenAuth.Encode(claims)
-	app.Logger.Info(fmt.Sprintf("🔑 JWT Claims: %+v", claims))
-	app.Logger.Info("🔑 JWT Token: " + tokenString)
 
+	// สร้างและเข้ารหัส Token
+	_, tokenString, _ := app.TokenAuth.Encode(claims)
 	return tokenString
 }
 
-// 📌 User Login
+// ✅ **Login API**
 // @Summary User Login
-// @Description Authenticate user and generate JWT token
-// @ID user-login
+// @Description ตรวจสอบ credentials และออก JWT Token
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param login-request body request.LoginWeb true "User credentials"
-// @Success 200 {object} api.Response{data=string} "JWT token"
+// @Param login-request body request.LoginWeb true "User login credentials in JSON format"
+// @Success 200 {object} response.Login "JWT token"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /auth/login [post]
 func (app *Application) Login(c *gin.Context) {
 	var req request.LoginWeb
 	if err := c.ShouldBindJSON(&req); err != nil {
-		handleResponse(c, false, "Invalid request", nil, http.StatusBadRequest)
+		handleResponse(c, false, "Invalid request payload", nil, http.StatusBadRequest)
 		return
 	}
 
-	// 🔹 ตรวจสอบ User Credentials
-	user, err := app.Service.User.Login(req)
+	// ✅ ตรวจสอบ username และ password
+	ctx := context.Background()
+	user, err := app.Service.User.Login(ctx, req)
 	if err != nil {
-		handleResponse(c, false, err.Error(), nil, http.StatusUnauthorized)
+		app.Logger.Warn("⚠️ Login failed", zap.String("username", req.UserName), zap.Error(err))
+		handleResponse(c, false, "Invalid username or password", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// 🔹 สร้าง JWT Token
-	token := app.GenerateToken(response.Login{
-		UserID:       user.UserID,
-		UserName:     user.UserName,
-		RoleID:       user.RoleID,
-		FullNameTH:   user.FullNameTH,
-		NickName:     user.NickName,
-		DepartmentNo: user.DepartmentNo,
-		Platform:     user.Platform,
-	})
+	// ✅ สร้าง JWT Token
+	token := app.GenerateToken(user)
+	app.Logger.Info("✅ Login successful", zap.String("username", user.UserName))
 
-	// 🔹 ตั้งค่า Cookie ที่มี Token
+	// ✅ ตั้งค่า Cookie ให้ JWT
 	c.SetCookie("jwt", token, 4*3600, "/", "", false, true) // 4 ชั่วโมง
 
-	// 🔹 ส่ง Response กลับ
-	handleResponse(c, true, "🟢 Login Success", token, http.StatusOK)
+	// ✅ ส่ง Response กลับ
+	handleResponse(c, true, "Login Success", token, http.StatusOK)
 }
 
-// 📌 User Login ผ่าน Lark
+// ✅ **Login ผ่าน Lark**
 // @Summary User Lark Login
-// @Description Authenticate user from Lark and generate JWT token
-// @ID user-login-lark
+// @Description ตรวจสอบ Lark Credentials และออก JWT Token
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param login-request-lark body request.LoginLark true "User credentials from Lark"
-// @Success 200 {object} api.Response{data=string} "JWT token"
+// @Param login-request body request.LoginLark true "User login from Lark in JSON format"
+// @Success 200 {object} response.Login "JWT token"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /auth/login-lark [post]
 func (app *Application) LoginFromLark(c *gin.Context) {
 	var req request.LoginLark
 	if err := c.ShouldBindJSON(&req); err != nil {
-		handleResponse(c, false, "Invalid request", nil, http.StatusBadRequest)
+		handleResponse(c, false, "Invalid request payload", nil, http.StatusBadRequest)
 		return
 	}
 
-	user, err := app.Service.User.LoginLark(req)
+	// ✅ ตรวจสอบ username และ userID จาก Lark
+	ctx := context.Background()
+	user, err := app.Service.User.LoginLark(ctx, req)
 	if err != nil {
-		handleResponse(c, false, err.Error(), nil, http.StatusUnauthorized)
+		app.Logger.Warn("⚠️ Login from Lark failed", zap.String("username", req.UserName), zap.String("userID", req.UserID), zap.Error(err))
+		handleResponse(c, false, "User not found", nil, http.StatusUnauthorized)
 		return
 	}
 
-	token := app.GenerateToken(response.Login{
-		UserID:       user.UserID,
-		UserName:     user.UserName,
-		RoleID:       user.RoleID,
-		FullNameTH:   user.FullNameTH,
-		NickName:     user.NickName,
-		DepartmentNo: user.DepartmentNo,
-		Platform:     user.Platform,
-	})
+	// ✅ สร้าง JWT Token
+	token := app.GenerateToken(user)
+	app.Logger.Info("✅ Lark login successful", zap.String("username", user.UserName))
 
+	// ✅ ตั้งค่า Cookie ให้ JWT
 	c.SetCookie("jwt", token, 4*3600, "/", "", false, true)
 
-	handleResponse(c, true, "🟢 Login via Lark Success", token, http.StatusOK)
+	// ✅ ส่ง Response กลับ
+	handleResponse(c, true, "Lark Login Success", token, http.StatusOK)
 }
 
-// 📌 User Logout
+// ✅ **Logout API**
 // @Summary User Logout
-// @Description Logout user by deleting JWT token
-// @ID user-logout
+// @Description ลบ JWT Token ออกจาก Cookie
 // @Tags Auth
 // @Success 200 {object} api.Response "Logout successful"
-// @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /auth/logout [post]
 func (app *Application) Logout(c *gin.Context) {
-	// ลบ Cookie
+	// ✅ ลบ Cookie โดยการตั้ง MaxAge เป็น -1
 	c.SetCookie("jwt", "", -1, "/", "", false, true)
-	handleResponse(c, true, "🔴 Logout Success", nil, http.StatusOK)
+	app.Logger.Info("✅ User logged out successfully")
+	handleResponse(c, true, "Logout successful", nil, http.StatusOK)
 }
 
-// 📌 ตรวจสอบ Authentication
+// ✅ **Check Authentication API**
 // @Summary Check Authentication
-// @Description Check if the user is authenticated
-// @ID check-authentication
+// @Description ตรวจสอบว่า JWT Token ถูกต้องหรือไม่
 // @Tags Auth
-// @Accept json
-// @Produce json
-// @Success 200 {object} api.Response{data=map[string]interface{}} "Authenticated user details"
+// @Success 200 {object} api.Response "Authenticated user details"
 // @Failure 401 {object} api.Response "Unauthorized"
-// @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /auth [get]
 func (app *Application) CheckAuthen(c *gin.Context) {
-	claims, exists := c.Get("jwt_claims")
+	// ✅ ดึง claims จาก context (ถูกเพิ่มโดย middleware)
+	_, claims, _ := jwtauth.FromContext(c.Request.Context())
 
-	if !exists || claims == nil {
-		handleResponse(c, false, "❌ Unauthorized", nil, http.StatusUnauthorized)
+	if claims == nil {
+		handleResponse(c, false, "Unauthorized", nil, http.StatusUnauthorized)
 		return
 	}
 
-	claimsMap, ok := claims.(map[string]interface{})
-	if !ok {
-		app.Logger.Error("🚨 Invalid JWT Claims Format", zap.Any("claims", claims))
-		handleResponse(c, false, "❌ Invalid Token Data", nil, http.StatusInternalServerError)
-		return
-	}
-
-	handleResponse(c, true, "🟢 Authentication Checked 🟢", claimsMap, http.StatusOK)
+	// ✅ ส่ง claims กลับ
+	app.Logger.Info("✅ User authenticated", zap.Any("claims", claims))
+	handleResponse(c, true, "User authenticated", claims, http.StatusOK)
 }
-*/

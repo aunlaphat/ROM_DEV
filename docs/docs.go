@@ -149,7 +149,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
-	Title:            "Return Order Management Service API ⭐",
+	Title:            "Return Order Management Service ⭐",
 	Description:      "This is a Return Order Management Service API server.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

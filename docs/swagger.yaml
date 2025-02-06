@@ -39,7 +39,7 @@ definitions:
 info:
   contact: {}
   description: This is a Return Order Management Service API server.
-  title: Return Order Management Service API ⭐
+  title: Return Order Management Service ⭐
   version: "1.0"
 paths:
   /order/search:

@@ -8,8 +8,8 @@ import (
 )
 
 type service struct {
-	userRepo  repository.UserRepository //Repository of service
-	logger    logs.Logger               //Logger of service
+	logger    logs.Logger
+	userRepo  repository.UserRepository
 	orderRepo repository.OrderRepository
 }
 type AllOfService struct {
@@ -20,8 +20,8 @@ type AllOfService struct {
 func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 	repo := repository.NewDB(db)
 	srv := service{
-		userRepo:  repo,
 		logger:    logger,
+		userRepo:  repo,
 		orderRepo: repo,
 	}
 	return AllOfService{
