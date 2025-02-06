@@ -31,19 +31,16 @@ func (app *Application) OrderRoute(apiRouter *gin.RouterGroup) {
 func (app *Application) SearchOrder(c *gin.Context) {
 	var req request.SearchOrder
 
-	// ✅ Bind Query Parameters
 	if err := c.ShouldBindQuery(&req); err != nil {
 		handleResponse(c, false, "⚠️ Invalid request parameters", nil, http.StatusBadRequest)
 		return
 	}
 
-	// ✅ Validate required parameters
 	if req.SoNo == "" && req.OrderNo == "" {
 		handleResponse(c, false, "⚠️ Either SoNo or OrderNo must be provided", nil, http.StatusBadRequest)
 		return
 	}
 
-	// 🛠 Call Service Layer (Logging will be handled there)
 	order, err := app.Service.Order.SearchOrder(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

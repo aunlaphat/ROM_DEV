@@ -13,33 +13,35 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// 📌 SetupRoutes กำหนดเส้นทาง API ทั้งหมด
-func SetupRoutes(router *gin.Engine, app *Application) {
-	// Logger and Recovery middleware are already added in server.go
-	// router.Use(gin.Logger())
-	// router.Use(gin.Recovery())
+func SetupSwagger(router *gin.RouterGroup) {
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+}
+
+func Routes(router *gin.Engine, app *Application) {
+	allowedOrigin := os.Getenv("CORS_ORIGIN")
+	if allowedOrigin == "" {
+		allowedOrigin = "http://localhost:3000" // Default
+	}
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"}, // อนุญาตเฉพาะ frontend ที่กำหนด
+		AllowOrigins:     []string{allowedOrigin},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowHeaders:     []string{"X-PINGOTHER", "Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Link"},
 		AllowCredentials: true,
-		MaxAge:           300, // 5 นาที
+		MaxAge:           300, // 5 minutes
 	}))
 
 	apiRouter := router.Group("/api")
 
-	apiRouter.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	SetupSwagger(apiRouter)
 
-	/* apiRouter.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Welcome to the API!")
-	}) */
-
-	workDir, _ := os.Getwd()
+	workDir, err := os.Getwd()
+	if err != nil {
+		panic("failed to get working directory: " + err.Error())
+	}
 	filesDir := filepath.Join(workDir, "uploads")
 	apiRouter.StaticFS("/uploads", http.Dir(filesDir))
 
-	//app.AuthRoute(apiRouter)
 	app.OrderRoute(apiRouter)
 }

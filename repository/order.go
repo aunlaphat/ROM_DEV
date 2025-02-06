@@ -36,14 +36,12 @@ func (repo repositoryDB) SearchOrder(ctx context.Context, req request.SearchOrde
 		queryHead += " WHERE " + strings.Join(queryConditions, " AND ")
 	}
 
-	// ✅ Use PrepareNamedContext()
 	stmt, err := repo.db.PrepareNamedContext(ctx, queryHead)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare query head: %w", err)
 	}
 	defer stmt.Close()
 
-	// ✅ Pass `req` directly because it matches the named parameters
 	var order response.SearchOrderResponse
 	err = stmt.GetContext(ctx, &order, req)
 	if err != nil {
@@ -53,7 +51,6 @@ func (repo repositoryDB) SearchOrder(ctx context.Context, req request.SearchOrde
 		return nil, fmt.Errorf("failed to fetch order head: %w", err)
 	}
 
-	// ✅ Query Order Lines
 	queryLines := `
         SELECT SKU, ItemName, QTY, Price
         FROM ROM_V_OrderLineDetail
@@ -72,7 +69,6 @@ func (repo repositoryDB) SearchOrder(ctx context.Context, req request.SearchOrde
 		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
 	}
 
-	// ✅ Assign Items to Order
 	order.Items = items
 	return &order, nil
 }
