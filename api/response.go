@@ -2,6 +2,7 @@ package api
 
 import "github.com/gin-gonic/gin"
 
+// Response defines the standard API response structure
 type Response struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
@@ -10,9 +11,9 @@ type Response struct {
 
 // handleResponse is a helper function to send JSON responses
 func handleResponse(c *gin.Context, success bool, message string, data interface{}, statusCode int) {
-	c.JSON(statusCode, gin.H{
-		"success": success,
-		"message": message,
-		"data":    data,
+	c.JSON(statusCode, Response{
+		Success: success,
+		Message: message,
+		Data:    data,
 	})
 }

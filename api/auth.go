@@ -1,16 +1,6 @@
 package api
 
-import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"fmt"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-	"github.com/go-chi/jwtauth"
-	"go.uber.org/zap"
-)
-
+/*
 // 📌 กำหนดเส้นทาง Authentication
 func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 	auth := apiRouter.Group("/auth")
@@ -179,3 +169,4 @@ func (app *Application) CheckAuthen(c *gin.Context) {
 
 	handleResponse(c, true, "🟢 Authentication Checked 🟢", claimsMap, http.StatusOK)
 }
+*/

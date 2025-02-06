@@ -1,6 +1,9 @@
 package api
 
 import (
+	"boilerplate-backend-go/dto/request"
+	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +14,7 @@ func (app *Application) OrderRoute(apiRouter *gin.RouterGroup) {
 	order.GET("/search", app.SearchOrder)
 }
 
-// SearchSaleOrder godoc
+// SearchOrder godoc
 // @Summary Search order by SO number or Order number
 // @Description Retrieve the details of an order by its SO number or Order number
 // @ID search-order
@@ -26,23 +29,30 @@ func (app *Application) OrderRoute(apiRouter *gin.RouterGroup) {
 // @Failure 500 {object} Response
 // @Router /order/search [get]
 func (app *Application) SearchOrder(c *gin.Context) {
-	soNo := c.Query("soNo")
-	orderNo := c.Query("orderNo")
+	var req request.SearchOrder
 
-	if soNo == "" && orderNo == "" {
-		handleResponse(c, false, "⚠️ either soNo or orderNo is required", nil, http.StatusBadRequest)
+	// ✅ Bind Query Parameters
+	if err := c.ShouldBindQuery(&req); err != nil {
+		handleResponse(c, false, "⚠️ Invalid request parameters", nil, http.StatusBadRequest)
 		return
 	}
 
-	order, err := app.Service.Order.SearchOrder(c, soNo, orderNo)
+	// ✅ Validate required parameters
+	if req.SoNo == "" && req.OrderNo == "" {
+		handleResponse(c, false, "⚠️ Either SoNo or OrderNo must be provided", nil, http.StatusBadRequest)
+		return
+	}
+
+	// 🛠 Call Service Layer (Logging will be handled there)
+	order, err := app.Service.Order.SearchOrder(c.Request.Context(), req)
 	if err != nil {
-		if err.Error() == "sale order not found" {
-			handleResponse(c, false, "⚠️ sale order not found", nil, http.StatusNotFound)
+		if errors.Is(err, sql.ErrNoRows) {
+			handleResponse(c, false, "⚠️ Order not found", nil, http.StatusNotFound)
 			return
 		}
-		handleResponse(c, false, "🔥 internal server error", nil, http.StatusInternalServerError)
+		handleResponse(c, false, "🔥 Internal server error", nil, http.StatusInternalServerError)
 		return
 	}
 
-	handleResponse(c, true, "⭐ order retrieved successfully ⭐", order, http.StatusOK)
+	handleResponse(c, true, "⭐ Order retrieved successfully ⭐", order, http.StatusOK)
 }

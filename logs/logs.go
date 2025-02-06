@@ -1,10 +1,7 @@
 package logs
 
 import (
-	"context"
-	"fmt"
 	"os"
-	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -83,6 +80,7 @@ func (l *Logger) Sync() {
 	_ = l.logger.Sync()
 }
 
+/*
 func (l *Logger) LogAPICall(ctx context.Context, apiName string, fields ...zap.Field) func(status string, err error, additionalFields ...zap.Field) {
 	start := time.Now()
 	logger := l.logger.With(zap.String("apiName", apiName))
@@ -128,3 +126,4 @@ func (l *Logger) LogAPICall(ctx context.Context, apiName string, fields ...zap.F
 		}
 	}
 }
+*/

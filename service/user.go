@@ -1,26 +1,14 @@
 package service
 
-import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
-	"context"
-	"crypto/md5"
-	"database/sql"
-	"encoding/hex"
-	"fmt"
-
-	"go.uber.org/zap"
-)
-
 type UserService interface {
-	Login(req request.LoginWeb) (response.Login, error)
+	/* Login(req request.LoginWeb) (response.Login, error)
 	LoginLark(req request.LoginLark) (response.Login, error)
 	GetUser(ctx context.Context, req request.LoginLark) (response.Login, error)
 	GetUserFromLark(ctx context.Context, username, password string) (response.Login, error)
-	GetUserWithPermission(ctx context.Context, req request.LoginLark) (response.UserPermission, error)
+	GetUserWithPermission(ctx context.Context, req request.LoginLark) (response.UserPermission, error) */
 }
 
+/*
 func (srv service) Login(req request.LoginWeb) (response.Login, error) {
 	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(context.Background(), "Login", zap.String("username", req.UserName))
@@ -149,3 +137,4 @@ func (srv service) GetUserWithPermission(ctx context.Context, req request.LoginL
 	srv.logger.Debug("✅ Successfully retrieved user with permission", zap.String("username", req.UserID))
 	return user, nil
 }
+*/

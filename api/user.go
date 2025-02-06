@@ -1,21 +1,18 @@
 package api
 
 import (
-	"boilerplate-backend-go/dto/request"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 // 📌 กำหนดเส้นทาง API สำหรับ User
 func (app *Application) UserRoute(apiRouter *gin.RouterGroup) {
-	user := apiRouter.Group("/user")
+	/* user := apiRouter.Group("/user")
 
 	user.POST("/get-user", app.GetUser)
-	user.POST("/get-user-with-permission", app.GetUserWithPermission)
+	user.POST("/get-user-with-permission", app.GetUserWithPermission) */
 }
 
+/*
 // GetUser godoc
 // @Summary Get user by userid and username
 // @Description Retrieve the details of a user by their userid and username
@@ -113,3 +110,4 @@ func (app *Application) GetUserWithPermission(c *gin.Context) {
 	app.Logger.Info("✅ User with permissions retrieved successfully", zap.String("UserID", user.UserID))
 	handleResponse(c, true, "🤹🏻 User with permissions retrieved successfully 🤹🏻", user, http.StatusOK)
 }
+*/

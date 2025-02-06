@@ -2,6 +2,11 @@ package request
 
 import "time"
 
+type SearchOrder struct {
+	SoNo    string `json:"soNo" db:"SoNo" form:"soNo"`
+	OrderNo string `json:"orderNo" db:"OrderNo" form:"orderNo"`
+}
+
 type BeforeReturnOrder struct {
 	//RecID		   int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
 	OrderNo        string     `json:"orderNo" db:"OrderNo"`

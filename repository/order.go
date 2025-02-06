@@ -1,59 +1,78 @@
 package repository
 
 import (
+	"boilerplate-backend-go/dto/request"
 	"boilerplate-backend-go/dto/response"
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"strings"
 )
 
 type OrderRepository interface {
-	SearchOrder(ctx context.Context, orderNo, soNo string) (*response.SearchOrderResponse, error)
+	SearchOrder(ctx context.Context, req request.SearchOrder) (*response.SearchOrderResponse, error)
 }
 
-func (repo repositoryDB) SearchOrder(ctx context.Context, orderNo, soNo string) (*response.SearchOrderResponse, error) {
-	var order response.SearchOrderResponse
-
-	// ✅ คำสั่ง SQL ปรับปรุงใหม่ รองรับหลาย SoNo ต่อ OrderNo
-	query := `
-		SELECT 
-			h.OrderNo, h.SoNo, h.StatusMKP, h.SalesStatus, h.CreateDate,
-			l.SKU, l.ItemName, l.QTY, l.Price
-		FROM ROM_V_OrderHeadDetail h
-		JOIN ROM_V_OrderLineDetail l
-			ON h.OrderNo = l.OrderNo 
-			AND (h.SoNo = l.SoNo OR h.SoNo IS NULL)
-		WHERE (:soNo IS NULL OR h.SoNo = :soNo)
-		  AND (:orderNo IS NULL OR h.OrderNo = :orderNo)
-	`
-
-	// ✅ กำหนด Named Parameters
-	params := map[string]interface{}{
-		"soNo":    soNo,
-		"orderNo": orderNo,
+func (repo repositoryDB) SearchOrder(ctx context.Context, req request.SearchOrder) (*response.SearchOrderResponse, error) {
+	if req.SoNo == "" && req.OrderNo == "" {
+		return nil, fmt.Errorf("either SoNo or OrderNo must be provided")
 	}
 
-	// ✅ ดึงข้อมูลคำสั่งซื้อและรายการสินค้า
-	rows, err := repo.db.NamedQueryContext(ctx, query, params)
+	queryConditions := []string{}
+
+	if req.SoNo != "" {
+		queryConditions = append(queryConditions, "SoNo = :SoNo")
+	}
+	if req.OrderNo != "" {
+		queryConditions = append(queryConditions, "OrderNo = :OrderNo")
+	}
+
+	queryHead := `
+        SELECT SoNo, OrderNo, StatusMKP, SalesStatus, CreateDate
+        FROM ROM_V_OrderHeadDetail
+    `
+	if len(queryConditions) > 0 {
+		queryHead += " WHERE " + strings.Join(queryConditions, " AND ")
+	}
+
+	// ✅ Use PrepareNamedContext()
+	stmt, err := repo.db.PrepareNamedContext(ctx, queryHead)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to prepare query head: %w", err)
 	}
-	defer rows.Close()
+	defer stmt.Close()
 
-	// ✅ Map ข้อมูลที่ได้จาก Query
-	var items []response.SearchOrderItem
-	for rows.Next() {
-		var item response.SearchOrderItem
-		if err := rows.Scan(&order.OrderNo, &order.SoNo, &order.StatusMKP, &order.SalesStatus, &order.CreateDate,
-			&item.SKU, &item.ItemName, &item.QTY, &item.Price); err != nil {
-			return nil, err
+	// ✅ Pass `req` directly because it matches the named parameters
+	var order response.SearchOrderResponse
+	err = stmt.GetContext(ctx, &order, req)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, sql.ErrNoRows
 		}
-		items = append(items, item)
+		return nil, fmt.Errorf("failed to fetch order head: %w", err)
 	}
+
+	// ✅ Query Order Lines
+	queryLines := `
+        SELECT SKU, ItemName, QTY, Price
+        FROM ROM_V_OrderLineDetail
+        WHERE SoNo = :SoNo
+    `
+
+	stmtLines, err := repo.db.PrepareNamedContext(ctx, queryLines)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare query lines: %w", err)
+	}
+	defer stmtLines.Close()
+
+	var items []response.SearchOrderItem
+	err = stmtLines.SelectContext(ctx, &items, map[string]interface{}{"SoNo": order.SoNo})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch order lines: %w", err)
+	}
+
+	// ✅ Assign Items to Order
 	order.Items = items
-
-	// ✅ ตรวจสอบว่าพบข้อมูลหรือไม่
-	if order.OrderNo == "" {
-		return nil, nil
-	}
-
 	return &order, nil
 }
