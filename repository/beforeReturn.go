@@ -44,7 +44,6 @@ type BeforeReturnRepository interface {
 	UpdateOrderStatus(ctx context.Context, orderNo string, statusConfID int, statusReturnID int, userID string) error
 
 	// Get Real Order
-	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
 	GetAllOrderDetails(ctx context.Context, offset, limit int) ([]response.OrderDetail, error)
 	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
 
@@ -76,36 +75,10 @@ type BeforeReturnRepository interface {
 	CheckBefOrderOrTrackingExists(ctx context.Context, identifier string) (bool, error)
 }
 
-// review
-// search trackingNo by OrderNo
-func (repo repositoryDB) GetTrackingNoByOrderNo(ctx context.Context, orderNo string) (string, error) {
-	var trackingNo string
-	query := ` SELECT TrackingNo
-        	   FROM BeforeReturnOrder
-               WHERE OrderNo = @OrderNo `
-	err := repo.db.QueryRowContext(ctx, query, sql.Named("OrderNo", orderNo)).Scan(&trackingNo)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("order not found: %s", orderNo)
-		}
-		return "", fmt.Errorf("failed to fetch TrackingNo: %w", err)
-	}
-	return trackingNo, nil
-}
-
-// review
 func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo string, lines []request.OrderLines) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
-		// ตรวจสอบว่า OrderNo มีอยู่ใน BeforeReturnOrder หรือไม่
-		exists, err := repo.CheckBefOrderNoExists(ctx, orderNo)
-		if err != nil {
-			return fmt.Errorf("failed to check order existence: %w", err)
-		}
-		if !exists {
-			return fmt.Errorf("order not found: %s", orderNo)
-		}
 
-		// ดึง TrackingNo จาก BeforeReturnOrder
+		// ดึงค่า TrackingNo ด้วยเลขออเดอร์ จาก BeforeReturnOrder
 		trackingNo, err := repo.GetTrackingNoByOrderNo(ctx, orderNo)
 		if err != nil {
 			return fmt.Errorf("failed to fetch TrackingNo for OrderNo %s: %w", orderNo, err)
@@ -130,7 +103,6 @@ func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo stri
 			}
 		}
 
-		// ใช้ NamedExecContext ทำ batch insert
 		_, err = tx.NamedExecContext(ctx, query, params)
 		if err != nil {
 			return fmt.Errorf("failed to create trade return lines: %w", err)
@@ -140,9 +112,25 @@ func (repo repositoryDB) CreateTradeReturnLine(ctx context.Context, orderNo stri
 	})
 }
 
+// search trackingNo by OrderNo
+func (repo repositoryDB) GetTrackingNoByOrderNo(ctx context.Context, orderNo string) (string, error) {
+	var trackingNo string
+
+	query := ` SELECT TrackingNo
+        	   FROM BeforeReturnOrder
+               WHERE OrderNo = @OrderNo `
+
+	err := repo.db.QueryRowContext(ctx, query, sql.Named("OrderNo", orderNo)).Scan(&trackingNo)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch TrackingNo: %w", err)
+	}
+
+	return trackingNo, nil
+}
+
 /************** Confirm To ReturnOrder ****************/
 // รวม func. UpdateStatusToSuccess + GetBeforeOrderDetails + UpdateReturnOrderAndLines + InsertReturnOrderLine in service
-// review
+
 // step 1: update status BeforeReturnOrder, เก็บค่าผู้ updateBy Date เพื่อนำไปใช้เข้าใน CreateBy Date => ReturnOrder,Line
 func (repo repositoryDB) UpdateStatusToSuccess(ctx context.Context, orderNo, updateBy string) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -171,7 +159,6 @@ func (repo repositoryDB) UpdateStatusToSuccess(ctx context.Context, orderNo, upd
 	})
 }
 
-// review
 // step 2: Fetch ค่า Befod ออกมา เก็บค่าผู้ updateBy Date เพื่อนำไปใช้เข้าใน CreateBy Date => ReturnOrder,Line
 func (repo repositoryDB) GetBeforeOrderDetails(ctx context.Context, orderNo string) (*response.ConfirmReturnOrderDetails, error) {
 	query := ` SELECT UpdateBy, UpdateDate
@@ -195,7 +182,6 @@ func (repo repositoryDB) GetBeforeOrderDetails(ctx context.Context, orderNo stri
 	return &returnOrderData, nil
 }
 
-// review
 // step 3: update return order (status,sr) + line (actualqty,price)
 func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req request.ConfirmToReturnRequest, returnOrderData *response.ConfirmReturnOrderDetails) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -277,7 +263,7 @@ func (repo repositoryDB) UpdateReturnOrderAndLines(ctx context.Context, req requ
 
 /************** Confirm Receipt ****************/
 // รวม func. UpdateBefToWaiting + GetBeforeReturnOrderData + InsertReturnOrder + InsertReturnOrderLine in service
-// review
+
 // 1. Update สถานะใน BeforeReturnOrder to "WAITING" (Page: Confirm Trade)
 func (repo repositoryDB) UpdateBefToWaiting(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
@@ -297,7 +283,6 @@ func (repo repositoryDB) UpdateBefToWaiting(ctx context.Context, req request.Con
 	})
 }
 
-// review
 // 2. ดึงข้อมูลจาก BeforeReturnOrder fetch ออกมาเพื่อเอาเข้า ReturnOrder
 func (repo repositoryDB) GetBeforeReturnOrderData(ctx context.Context, req request.ConfirmTradeReturnRequest) (*response.ConfirmReturnOrderDetails, error) {
 	querySelectOrder := `
@@ -325,37 +310,34 @@ func (repo repositoryDB) GetBeforeReturnOrderData(ctx context.Context, req reque
 	return &returnOrderData, nil
 }
 
-// review
 // 3. Insert ข้อมูลลงใน ReturnOrder
 func (repo repositoryDB) InsertReturnOrder(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		queryInsertOrder := `
-        INSERT INTO ReturnOrder (
-            OrderNo, SoNo, SrNo, ChannelID, Reason, TrackingNo, CreateBy, CreateDate, StatusCheckID
-        ) VALUES (
-            :OrderNo, :SoNo, :SrNo, :ChannelID, :Reason, :TrackingNo, :CreateBy, :CreateDate, :StatusCheckID
-        )
-    `
+				INSERT INTO ReturnOrder (
+					OrderNo, SoNo, SrNo, ChannelID, Reason, TrackingNo, CreateBy, CreateDate, StatusCheckID
+				) VALUES (
+					:OrderNo, :SoNo, :SrNo, :ChannelID, :Reason, :TrackingNo, :CreateBy, :CreateDate, :StatusCheckID
+				) `
 		_, err := tx.NamedExecContext(ctx, queryInsertOrder, returnOrderData)
-		return err
 
+		return err
 	})
 }
 
-// review
 // 4. Insert ข้อมูลจาก importLines ลงใน ReturnOrderLine
 func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
-		queryInsertLine := `
-        		INSERT INTO ReturnOrderLine (
-            		OrderNo, SKU, QTY, ReturnQTY, Price, TrackingNo, CreateBy, CreateDate
-        		) VALUES (
-            		:OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :TrackingNo, :CreateBy, :CreateDate
-        		) `
+		query := `  INSERT INTO ReturnOrderLine (
+            			OrderNo, SKU, QTY, ReturnQTY, Price, TrackingNo, CreateBy, CreateDate
+					) VALUES (
+						:OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :TrackingNo, :CreateBy, :CreateDate
+					) 
+				 `
 		// เตรียมข้อมูลทั้งหมดที่ต้องการ insert
 		var params []map[string]interface{}
 		for _, line := range req.ImportLines {
-			lineParams := map[string]interface{}{
+			params = append(params, map[string]interface{}{
 				"OrderNo":    returnOrderData.OrderNo,
 				"SKU":        line.SKU,
 				"QTY":        line.QTY,
@@ -364,50 +346,50 @@ func (repo repositoryDB) InsertReturnOrderLine(ctx context.Context, returnOrderD
 				"TrackingNo": returnOrderData.TrackingNo,
 				"CreateBy":   returnOrderData.CreateBy,
 				"CreateDate": returnOrderData.CreateDate,
-			}
-			params = append(params, lineParams)
+			})
 		}
 
-		_, err := tx.NamedExecContext(ctx, queryInsertLine, params)
+		_, err := tx.NamedExecContext(ctx, query, params)
 		if err != nil {
 			return fmt.Errorf("failed to insert into ReturnOrderLine: %w", err)
 		}
-	
+
 		return nil
 	})
 }
 
-// review
 // InsertImages ฟังก์ชันที่ใช้เพิ่มข้อมูลภาพลงในฐานข้อมูล
 func (repo repositoryDB) InsertImages(ctx context.Context, returnOrderData *response.ConfirmReturnOrderDetails, req request.ConfirmTradeReturnRequest) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
-		queryInsertImage := `
-        INSERT INTO Images (
-            OrderNo, ImageTypeID, SKU, FilePath, CreateBy, CreateDate
-        ) VALUES (
-            :OrderNo, :ImageTypeID, :SKU, :FilePath, :CreateBy, :CreateDate
-        )
-    `
-		for _, line := range req.ImportLines {
-			imageParams := map[string]interface{}{
-				"OrderNo":     returnOrderData.OrderNo,
-				"ImageTypeID": line.ImageTypeID,
-				"SKU":         line.SKU,
-				"FilePath":    line.FilePath,
-				"CreateBy":    returnOrderData.CreateBy,
-				"CreateDate":  returnOrderData.CreateDate,
+		query := `	INSERT INTO Images (
+						OrderNo, ImageTypeID, SKU, FilePath, CreateBy, CreateDate
+					) VALUES (
+						:OrderNo, :ImageTypeID, :SKU, :FilePath, :CreateBy, :CreateDate
+					)
+				`
+			// เตรียมข้อมูลทั้งหมดที่ต้องการ insert
+			var params []map[string]interface{}
+			for _, line := range req.ImportLines {
+				params = append(params, map[string]interface{}{
+					"OrderNo":     returnOrderData.OrderNo,
+					"ImageTypeID": line.ImageTypeID,
+					"SKU":         line.SKU,
+					"FilePath":    line.FilePath,
+					"CreateBy":    returnOrderData.CreateBy,
+					"CreateDate":  returnOrderData.CreateDate,
+				})
 			}
-			_, err := tx.NamedExecContext(ctx, queryInsertImage, imageParams)
+			_, err := tx.NamedExecContext(ctx, query, params)
 			if err != nil {
 				return fmt.Errorf("failed to insert into Images: %w", err)
 			}
-		}
+		
 		return nil
 	})
 }
 
 /************************** Delete Line *************************/
-// review
+
 func (repo repositoryDB) DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error {
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// ลบ BeforeReturnOrderLine ตาม OrderNo และ SKU
@@ -429,7 +411,7 @@ func (repo repositoryDB) DeleteBeforeReturnOrderLine(ctx context.Context, orderN
 }
 
 /************************** Validate *************************/
-// review
+
 // ตรวจสอบว่ามี OrderNo ใน BeforeReturnOrder หรือไม่
 func (repo repositoryDB) CheckBefOrderNoExists(ctx context.Context, orderNo string) (bool, error) {
 	var exists bool
@@ -445,7 +427,6 @@ func (repo repositoryDB) CheckBefOrderNoExists(ctx context.Context, orderNo stri
 	return exists, nil
 }
 
-// review
 // ตรวจสอบว่ามี OrderNo, TrackingNo ใน BeforeReturnOrder หรือไม่
 func (repo repositoryDB) CheckBefOrderOrTrackingExists(ctx context.Context, identifier string) (bool, error) {
 	var exists bool
@@ -461,11 +442,11 @@ func (repo repositoryDB) CheckBefOrderOrTrackingExists(ctx context.Context, iden
 	return exists, nil
 }
 
-// review
 // ตรวจสอบว่ามี sku นี้ของ OrderNo,TrackingNo ใน BeforeReturnOrderLine หรือไม่
 func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, identifier, sku string) (bool, error) {
 	query := ` SELECT 1 FROM BeforeReturnOrderLine 
                WHERE SKU = :SKU AND (OrderNo = :Identifier OR TrackingNo = :Identifier) `
+
 	stmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
 		return false, fmt.Errorf("failed to prepare statement: %w", err)
@@ -480,14 +461,15 @@ func (repo repositoryDB) CheckBefLineSKUExists(ctx context.Context, identifier, 
 	if err != nil {
 		return false, err
 	}
+
 	return true, nil
 }
 
-// review
 // ตรวจสอบว่ามี sku นี้ของ OrderNo ใน ReturnOrderLine หรือไม่
 func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, orderNo, sku string) (bool, error) {
 	query := ` SELECT 1 FROM ReturnOrderLine 
                WHERE SKU = :SKU AND OrderNo = :OrderNo `
+
 	stmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
 		return false, fmt.Errorf("failed to prepare statement: %w", err)
@@ -502,57 +484,14 @@ func (repo repositoryDB) CheckReLineSKUExists(ctx context.Context, orderNo, sku 
 	if err != nil {
 		return false, err
 	}
+
 	return true, nil
 }
 
-/************************** Get Order Head+Line *************************/
-// review
-func (repo repositoryDB) GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error) {
-	var headDetails []response.OrderHeadDetail
-	var lineDetails []response.OrderLineDetail
-
-	// Query Order Head
-	headQuery := `
-        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, CreateDate
-        FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
-        ORDER BY OrderNo
-    `
-	err := repo.db.SelectContext(ctx, &headDetails, headQuery)
-	if err != nil {
-		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
-	}
-
-	// Query Order Line
-	lineQuery := `
-        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
-        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
-        ORDER BY OrderNo
-    `
-	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery)
-	if err != nil {
-		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
-	}
-
-	// Map Order Lines to Order Heads
-	orderLineMap := make(map[string][]response.OrderLineDetail)
-	for _, line := range lineDetails {
-		orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
-	}
-
-	for i := range headDetails {
-		headDetails[i].OrderLineDetail = orderLineMap[headDetails[i].OrderNo]
-	}
-
-	return []response.OrderDetail{
-		{OrderHeadDetail: headDetails},
-	}, nil
-}
-
 /************************** Get Order Head+Line : Paginate *************************/
-// review
+
 func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit int) ([]response.OrderDetail, error) {
 	var headDetails []response.OrderHeadDetail
-	var lineDetails []response.OrderLineDetail
 
 	// Query Order Head with Pagination
 	headQuery := `
@@ -566,26 +505,57 @@ func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit i
 		return nil, fmt.Errorf("error querying OrderHeadDetail: %w", err)
 	}
 
-	// Query Order Line
-	lineQuery := `
-        SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
-        FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
-        WHERE OrderNo IN (
-            SELECT OrderNo
-            FROM Data_WebReturn.dbo.ROM_V_OrderHeadDetail
-            ORDER BY OrderNo
-            OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
-        )
-        ORDER BY OrderNo
-    `
-	err = repo.db.SelectContext(ctx, &lineDetails, lineQuery, sql.Named("offset", offset), sql.Named("limit", limit))
-	if err != nil {
-		return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+	// ถ้าไม่มี order ให้ return กลับเลย
+	if len(headDetails) == 0 {
+		return []response.OrderDetail{}, nil
+	}
+
+	// สร้าง slice ของ OrderNo เพื่อนำไปใช้ใน WHERE IN
+	var orderNos []string
+	for _, head := range headDetails {
+		orderNos = append(orderNos, head.OrderNo)
+	}
+
+	// Batch OrderNo เป็น chunks (สูงสุด 1000 ต่อชุด)
+	const chunkSize = 1000
+	var allLineDetails []response.OrderLineDetail
+
+	for i := 0; i < len(orderNos); i += chunkSize {
+		end := i + chunkSize
+		if end > len(orderNos) {
+			end = len(orderNos)
+		}
+
+		// ดึง subset ของ OrderNo
+		orderNoChunk := orderNos[i:end]
+
+		// ใช้ sqlx.In เพื่อ binding ORDER IN
+		query, args, err := sqlx.In(`
+				SELECT OrderNo, SoNo, StatusMKP, SalesStatus, SKU, ItemName, QTY, Price, CreateDate
+				FROM Data_WebReturn.dbo.ROM_V_OrderLineDetail
+				WHERE OrderNo IN (?)
+				ORDER BY OrderNo `, orderNoChunk)
+
+		if err != nil {
+			return nil, fmt.Errorf("error building OrderLineDetail query: %w", err)
+		}
+
+		// ใช้ Rebind เพื่อให้รองรับ SQL Server
+		query = repo.db.Rebind(query)
+
+		var lineDetails []response.OrderLineDetail
+		err = repo.db.SelectContext(ctx, &lineDetails, query, args...)
+		if err != nil {
+			return nil, fmt.Errorf("error querying OrderLineDetail: %w", err)
+		}
+
+		// รวมผลลัพธ์ทั้งหมด
+		allLineDetails = append(allLineDetails, lineDetails...)
 	}
 
 	// Map Order Lines to Order Heads
 	orderLineMap := make(map[string][]response.OrderLineDetail)
-	for _, line := range lineDetails {
+	for _, line := range allLineDetails {
 		orderLineMap[line.OrderNo] = append(orderLineMap[line.OrderNo], line)
 	}
 
@@ -599,7 +569,7 @@ func (repo repositoryDB) GetAllOrderDetails(ctx context.Context, offset, limit i
 }
 
 /************************** Search by SO *************************/
-// review
+
 func (repo repositoryDB) GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error) {
 	var headDetails []response.OrderHeadDetail
 	var lineDetails []response.OrderLineDetail
@@ -708,7 +678,7 @@ func (repo repositoryDB) CreateBeforeReturnOrderLine(ctx context.Context, orderN
 	return nil
 }
 
-// review
+
 func (repo repositoryDB) CreateTradeReturn(ctx context.Context, order request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	// 1. เริ่ม transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)

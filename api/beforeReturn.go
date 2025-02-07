@@ -27,7 +27,6 @@ func (app *Application) BeforeReturnRoute(apiRouter *chi.Mux) {
 		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
 
 		// get real order
-		r.Get("/get-order", app.GetAllOrderDetail)   // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ  
 		r.Get("/get-orders", app.GetAllOrderDetails) // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate                        
 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO) // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO               
 		r.Delete("/delete-line/{orderNo}/{sku}", app.DeleteBeforeReturnOrderLine) // ลบรายการคืนแต่ละรายการ
@@ -882,29 +881,6 @@ func (app *Application) UpdateDraftOrder(w http.ResponseWriter, r *http.Request)
 	fmt.Println("=====================================")
 
 	handleResponse(w, true, "⭐ Draft orders updated successfully ⭐", result, http.StatusOK)
-}
-
-// review // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ 
-// @Summary 	Get Before Return Order
-// @Description Get all Before Return Order
-// @ID 			Allget-BefReturnOrder
-// @Tags 		Before Return Order
-// @Accept 		json
-// @Produce 	json
-// @Success 	200 {object} Response{result=[]response.OrderDetail} "Get All"
-// @Failure 	400 {object} Response "Bad Request"
-// @Failure 	404 {object} Response "not found endpoint"
-// @Failure 	500 {object} Response "Internal Server Error"
-// @Router 		/before-return-order/get-order [get]
-func (app *Application) GetAllOrderDetail(w http.ResponseWriter, r *http.Request) {
-
-	result, err := app.Service.BeforeReturn.GetAllOrderDetail(r.Context())
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
 }
 
 // review // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate

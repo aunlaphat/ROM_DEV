@@ -54,8 +54,7 @@ type BeforeReturnService interface {
 	// Method สำหรับอัพเดท Draft Order
 	UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error
 
-	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อทั้งหมด
-	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
+
 	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อทั้งหมดพร้อมการแบ่งหน้า
 	GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error)
 	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อโดยใช้หมายเลข SO
@@ -118,7 +117,7 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 	defer logFinish("Completed", nil)
 	srv.logger.Info("🔎 Starting trade return line creation process 🔎", zap.String("OrderNo", orderNo))
 
-	// 1️⃣ ตรวจสอบว่ามี OrderNo
+	// ตรวจสอบว่ามี OrderNo
 	if orderNo == "" {
 		err := fmt.Errorf("❌ OrderNo is required")
 		logFinish("Failed", err)
@@ -126,7 +125,7 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 		return nil, err
 	}
 
-	// 2️⃣ ตรวจสอบ OrderNo ว่ามีอยู่ในระบบ
+	// ตรวจสอบ OrderNo ว่ามีอยู่ใน BeforeReturnOrder
 	exists, err := srv.beforeReturnRepo.CheckBefOrderNoExists(ctx, orderNo)
 	if err != nil {
 		logFinish("Failed", err)
@@ -354,30 +353,6 @@ func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToRetur
 
 	logFinish("Success", nil)
 	return nil
-}
-
-// review
-func (srv service) GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error) {
-	logFinish := srv.logger.LogAPICall(ctx, "GetAllOrderDetail")
-	defer logFinish("Completed", nil)
-	srv.logger.Info("🔎 Starting get all order detail process 🔎")
-
-	allorder, err := srv.beforeReturnRepo.GetAllOrderDetail(ctx)
-	if err != nil {
-		switch err {
-		case sql.ErrNoRows:
-			logFinish("Failed", err)
-			srv.logger.Error("no order data: %w", zap.Error(err))
-			return nil, fmt.Errorf("no order data: %w", err)
-		default:
-			logFinish("Failed", err)
-			srv.logger.Error("get order error: %w", zap.Error(err))
-			return nil, fmt.Errorf("get order error: %w", err)
-		}
-	}
-
-	logFinish("Success", nil)
-	return allorder, nil
 }
 
 // review

@@ -25,12 +25,12 @@ type ReturnOrderRepository interface {
 	CheckOrderNoExist(ctx context.Context, orderNo string) (bool, error)
 	CheckOrderNoLineExist(ctx context.Context, orderNo string) (bool, error)
 
-
 	GetCreateReturnOrder(ctx context.Context, orderNo string) (*response.CreateReturnOrder, error)
 	GetUpdateReturnOrder(ctx context.Context, orderNo string) (*response.UpdateReturnOrder, error)
 	GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error)
 	GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error)
 }
+
 // review
 func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
 	var orders []response.ReturnOrder
@@ -49,17 +49,42 @@ func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.Retu
 		return nil, fmt.Errorf("failed to fetch return orders: %w", err)
 	}
 
-	// ดึงข้อมูล ReturnOrderLine จับคู่กับ OrderNo ที่ตรงกัน
-	for i, order := range orders {
-		lines, err := repo.GetReturnOrderLineByOrderNo(ctx, order.OrderNo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch return order lines for order %s: %w", order.OrderNo, err)
+	if len(orders) == 0 {
+		return orders, nil // ถ้าไม่มีข้อมูล return ออกทันที
+	}
+
+	// **สร้าง map เพื่อลดการเรียกซ้ำ**
+	orderMap := make(map[string]*response.ReturnOrder)
+	orderNos := make([]string, 0, len(orders))
+
+	for i := range orders {
+		orderNos = append(orderNos, orders[i].OrderNo)
+		orderMap[orders[i].OrderNo] = &orders[i]
+	}
+
+	// **ใช้ Batch Processing แทนการเรียกทีละ OrderNo**
+	batchSize := 50 // ปรับค่าตามความเหมาะสม
+	for i := 0; i < len(orderNos); i += batchSize {
+		end := i + batchSize
+		if end > len(orderNos) {
+			end = len(orderNos)
 		}
-		orders[i].ReturnOrderLine = lines
+
+		batchOrderNos := orderNos[i:end]
+		for _, orderNo := range batchOrderNos {
+			lines, err := repo.GetReturnOrderLineByOrderNo(ctx, orderNo)
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch return order lines for order %s: %w", orderNo, err)
+			}
+			if order, found := orderMap[orderNo]; found {
+				order.ReturnOrderLine = lines
+			}
+		}
 	}
 
 	return orders, nil
 }
+
 // review
 func (repo repositoryDB) GetReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.ReturnOrder, error) {
 	var order response.ReturnOrder
@@ -91,6 +116,7 @@ func (repo repositoryDB) GetReturnOrderByOrderNo(ctx context.Context, orderNo st
 
 	return &order, nil
 }
+
 // review
 // Get All ReturnOrderLines
 func (repo repositoryDB) GetAllReturnOrderLines(ctx context.Context) ([]response.ReturnOrderLine, error) {
@@ -110,6 +136,7 @@ func (repo repositoryDB) GetAllReturnOrderLines(ctx context.Context) ([]response
 
 	return lines, nil
 }
+
 // review
 // Get ReturnOrderLines by OrderNo
 func (repo repositoryDB) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error) {
@@ -137,6 +164,7 @@ func (repo repositoryDB) GetReturnOrderLineByOrderNo(ctx context.Context, orderN
 
 	return lines, nil
 }
+
 // review
 func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error) {
 	var orders []response.DraftTradeDetail
@@ -163,6 +191,7 @@ func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusChec
 
 	return orders, nil
 }
+
 // review
 func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error) {
 	var orders []response.DraftTradeDetail
@@ -179,7 +208,7 @@ func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context
 	}
 
 	// ใช้เวลา 23:59:59 ของ endDate
-	end = end.Add(24 * time.Hour) 
+	end = end.Add(24 * time.Hour)
 
 	query := `
         SELECT 
@@ -211,11 +240,12 @@ func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context
 	log.Printf("Fetched %d return orders", len(orders))
 	return orders, nil
 }
+
 // review
 func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) error {
 	// เริ่มต้น Transaction
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
-		// เพิ่มข้อมูล ReturnOrder ลงฐานข้อมูล
+
 		insertReturnOrderQuery := `
             INSERT INTO ReturnOrder (
                 OrderNo, SoNo, SrNo, TrackingNo, PlatfID, ChannelID, 
@@ -227,7 +257,7 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
                 :Description, :CreateBy, GETDATE()
             )
         `
-		// ตรวจสอบว่ามีค่าตรงกันกับที่จะนำไป Query
+		// ตรวจสอบค่าพารามิเตอที่รับมาว่ามีค่าตรงกันกับตัวใดบ้างที่จะนำไป Query
 		params := map[string]interface{}{
 			"OrderNo":       req.OrderNo,
 			"SoNo":          req.SoNo,
@@ -243,34 +273,38 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 			"Description":   req.Description,
 			"CreateBy":      req.CreateBy,
 		}
+
 		if _, err := tx.NamedExecContext(ctx, insertReturnOrderQuery, params); err != nil {
 			return fmt.Errorf("failed to insert ReturnOrder: %w", err)
 		}
 
-		// เพิ่มข้อมูล ReturnOrderLine
-		insertReturnOrderLineQuery := `
-            INSERT INTO ReturnOrderLine (
-                OrderNo, SKU, QTY, ReturnQTY, Price, TrackingNo, CreateBy, CreateDate
-            ) VALUES (
-                :OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :TrackingNo, :CreateBy, GETDATE()
-            )
-        `
-		// Loop ผ่าน `ReturnOrderLine` และใส่ข้อมูลลงใน Query
-		for _, line := range req.ReturnOrderLine {
-			line.OrderNo = req.OrderNo
-			line.TrackingNo = req.TrackingNo
+		// Bulk Insert `ReturnOrderLine`
+		if len(req.ReturnOrderLine) > 0 {
+			// ใช้ `NamedExecContext` กับ `[]map[string]interface{}`
+			insertReturnOrderLineQuery := `
+						INSERT INTO ReturnOrderLine (
+							OrderNo, SKU, QTY, ReturnQTY, Price, TrackingNo, CreateBy, CreateDate
+						) VALUES (
+							:OrderNo, :SKU, :QTY, :ReturnQTY, :Price, :TrackingNo, :CreateBy, GETDATE()
+						) `
 
-			params := map[string]interface{}{
-				"OrderNo":    line.OrderNo,
-				"TrackingNo": line.TrackingNo,
-				"SKU":        line.SKU,
-				"QTY":        line.QTY,
-				"ReturnQTY":  line.ReturnQTY,
-				"Price":      line.Price,
-				"CreateBy":   req.CreateBy,
+			// เตรียม slice ของ map
+			var params []map[string]interface{}
+			for _, line := range req.ReturnOrderLine {
+				params = append(params, map[string]interface{}{
+					"OrderNo":    req.OrderNo,
+					"TrackingNo": req.TrackingNo,
+					"SKU":        line.SKU,
+					"QTY":        line.QTY,
+					"ReturnQTY":  line.ReturnQTY,
+					"Price":      line.Price,
+					"CreateBy":   req.CreateBy,
+				})
 			}
+
+			// ใช้ `NamedExecContext` เพื่อ Insert ทีเดียว
 			if _, err := tx.NamedExecContext(ctx, insertReturnOrderLineQuery, params); err != nil {
-				return fmt.Errorf("failed to insert ReturnOrderLine: %w", err)
+				return fmt.Errorf("failed to insert ReturnOrderLines: %w", err)
 			}
 		}
 
@@ -332,6 +366,7 @@ func (repo repositoryDB) GetUpdateReturnOrder(ctx context.Context, orderNo strin
 
 	return &order, nil
 }
+
 // review
 // สามารถอัปเดตข้อมูลออเดอได้ทั้งหมด แต่ข้อมูลรายการออเดอจะอัพเดตแค่ตอนเลข tracking มีการเปลี่ยนแปลง
 // หากเผลออัพเดตค่าเดิมทั้งหมดจะทำการตรวจสอบกับข้อมูลปจบ.ก่อน เพื่อให้วันเวลาอัพเดตแสดงตามจริง เฉพาะฟิลด์ที่มีการเปลี่ยนแปลงจริง
@@ -465,6 +500,7 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 		return nil
 	})
 }
+
 // review
 // ลบออเดอร์ head+line ที่สินค้าเข้าคลังมาเรียบร้อยแล้วออก
 func (repo repositoryDB) DeleteReturnOrder(ctx context.Context, orderNo string) error {
@@ -494,6 +530,7 @@ func (repo repositoryDB) DeleteReturnOrder(ctx context.Context, orderNo string) 
 		return nil
 	})
 }
+
 // review
 // Check ว่ามี OrderNo ในออเดอร์นั้นจริง
 func (repo repositoryDB) CheckOrderNoExist(ctx context.Context, orderNo string) (bool, error) {
@@ -510,8 +547,9 @@ func (repo repositoryDB) CheckOrderNoExist(ctx context.Context, orderNo string) 
 
 	return exists, nil
 }
+
 // review
-// Check ว่ามี OrderNo ในรายการออเดอร์นั้นจริง 
+// Check ว่ามี OrderNo ในรายการออเดอร์นั้นจริง
 func (repo repositoryDB) CheckOrderNoLineExist(ctx context.Context, orderNo string) (bool, error) {
 	var exists bool
 	query := `

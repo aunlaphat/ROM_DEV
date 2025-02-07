@@ -1140,41 +1140,6 @@ paths:
       summary: Delete Order line
       tags:
       - Before Return Order
-  /before-return-order/get-order:
-    get:
-      consumes:
-      - application/json
-      description: Get all Before Return Order
-      operationId: Allget-BefReturnOrder
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get All
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.OrderDetail'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: not found endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Before Return Order
-      tags:
-      - Before Return Order
   /before-return-order/get-orderbySO/{soNo}:
     get:
       consumes:
@@ -1407,42 +1372,7 @@ paths:
       summary: Get Thai District
       tags:
       - Constants
-  /constants/get-productAll:
-    get:
-      consumes:
-      - application/json
-      description: Get all product
-      operationId: get-productAll
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Product
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.ROM_V_ProductAll'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: SubDistrict not found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get ProductAll
-      tags:
-      - Constants
-  /constants/get-productAlls:
+  /constants/get-product:
     get:
       consumes:
       - application/json

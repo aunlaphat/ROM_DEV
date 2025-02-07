@@ -16,8 +16,7 @@ func (app *Application) Constants(apiRouter *chi.Mux) {
 		r.Get("/get-sub-district", app.GetThaiSubDistrict)
 		// r.Get("/get-postcode", app.GetPostCode) // รอพี่ไบรท์ดึงข้อมูล
 		r.Get("/get-warehouse", app.GetWarehouse)
-		r.Get("/get-productAll", app.GetProductAll)
-		r.Get("/get-productAlls", app.GetProductAlls)
+		r.Get("/get-product", app.GetProduct)
 		//r.Get("/get-customer", app.GetCustomer) // รอพี่ไบรท์ดึงข้อมูล
 	})
 }
@@ -126,27 +125,6 @@ func (app *Application) GetWarehouse(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// @Summary Get ProductAll
-// @Description Get all product
-// @ID get-productAll
-// @Tags Constants
-// @Accept json
-// @Produce json
-// @Success 200 {object} Response{result=[]entity.ROM_V_ProductAll} "Product"
-// @Failure 400 {object} Response "Bad Request"
-// @Failure 404 {object} Response "SubDistrict not found"
-// @Failure 500 {object} Response "Internal Server Error"
-// @Router /constants/get-productAll [get]
-func (app *Application) GetProductAll(w http.ResponseWriter, r *http.Request) {
-	result, err := app.Service.Constant.GetProductAll()
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-	handleResponse(w, true, "⭐ successfully ⭐", result, http.StatusOK)
-
-}
-
 // @Summary Get ProductAll with Pagination
 // @Description Get paginated products
 // @ID get-productAll-paginated
@@ -158,12 +136,12 @@ func (app *Application) GetProductAll(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} Response{result=[]entity.ROM_V_ProductAll, total=int} "Paginated Product List"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
-// @Router /constants/get-productAlls [get]
-func (app *Application) GetProductAlls(w http.ResponseWriter, r *http.Request) {
+// @Router /constants/get-product [get]
+func (app *Application) GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	page, limit := utils.ParsePagination(r)
 
-	result, err := app.Service.Constant.GetProductAllWithPagination(page, limit)
+	result, err := app.Service.Constant.GetProduct(page, limit)
 	if err != nil {
 		handleError(w, err)
 		return

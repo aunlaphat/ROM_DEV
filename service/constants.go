@@ -14,8 +14,7 @@ type Constants interface {
 	GetThaiSubDistrict() ([]entity.SubDistrict, error)
 	// GetPostCode() ([]entity.PostCode, error)
 	GetWarehouse() ([]entity.Warehouse, error)
-	GetProductAll() ([]entity.ROM_V_ProductAll, error)
-	GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, error)
+	GetProduct(page, limit int) ([]entity.ROM_V_ProductAll, error)
 	//GetCustomer() ([]entity.ROM_V_Customer, error)
 
 }
@@ -38,7 +37,7 @@ func (srv service) GetThaiProvince() ([]entity.Province, error) {
 }
 
 func (srv service) GetThaiDistrict() ([]entity.District, error) {
-	
+
 	getDistrict, err := srv.constant.GetThaiDistrict()
 	if err != nil {
 		switch err {
@@ -55,7 +54,7 @@ func (srv service) GetThaiDistrict() ([]entity.District, error) {
 }
 
 func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
-	
+
 	getSubDistrict, err := srv.constant.GetThaiSubDistrict()
 	if err != nil {
 		switch err {
@@ -90,7 +89,7 @@ func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 
 // review
 func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
-	
+
 	getWarehouse, err := srv.constant.GetWarehouse()
 	if err != nil {
 		switch err {
@@ -107,36 +106,17 @@ func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
 }
 
 // review
-func (srv service) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
-	
-	getProductAll, err := srv.constant.GetProductAll()
-	if err != nil {
-		switch err {
-		case sql.ErrNoRows:
-			srv.logger.Error(err)
-			return nil, fmt.Errorf("no product data: %w", err)
-		default:
-			srv.logger.Error(err)
-			return nil, fmt.Errorf("get product error: %w", err)
-		}
-	}
+func (srv service) GetProduct(page, limit int) ([]entity.ROM_V_ProductAll, error) {
 
-	return getProductAll, nil
-}
-
-// review
-func (srv service) GetProductAllWithPagination(page, limit int) ([]entity.ROM_V_ProductAll, error) {
-	
 	offset := (page - 1) * limit
 
-    products, err := srv.constant.GetProductAllWithPagination(context.Background(), offset, limit)
-    if err != nil {
-        return nil, err
-    }
+	products, err := srv.constant.GetProduct(context.Background(), offset, limit)
+	if err != nil {
+		return nil, err
+	}
 
-    return products, nil
+	return products, nil
 }
-
 
 // func (srv service) GetCustomer() ([]entity.ROM_V_Customer, error) {
 // 	getCustomer, err := srv.constant.GetCustomer()

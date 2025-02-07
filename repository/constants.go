@@ -3,18 +3,17 @@ package repository
 import (
 	entity "boilerplate-backend-go/Entity"
 	"context"
-	"time"
 	"fmt"
+	"time"
 )
 
 type Constants interface {
-	GetThaiProvince() ([]entity.Province, error) // จังหวัด
-	GetThaiDistrict() ([]entity.District, error) // เขต
+	GetThaiProvince() ([]entity.Province, error)       // จังหวัด
+	GetThaiDistrict() ([]entity.District, error)       // เขต
 	GetThaiSubDistrict() ([]entity.SubDistrict, error) // ตำบล
 	// GetPostCode() ([]entity.PostCode, error) // เลขไปรษณีย์
-	GetProductAll() ([]entity.ROM_V_ProductAll, error) 	// รายการสินค้าทั้งหมด
-	GetProductAllWithPagination(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) // รายการสินค้าแบบแบ่งรายการ
-	GetWarehouse() ([]entity.Warehouse, error) // ชื่อคลังสินค้า
+	GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) // รายการสินค้าแบบแบ่งรายการ
+	GetWarehouse() ([]entity.Warehouse, error)                                            // ชื่อคลังสินค้า
 	// GetCustomer() ([]entity.ROM_V_Customer, error) // ข้อมูลลูกค้า
 	// GetTax() ([]entity.ROM_V_Tax, error) // ข้อมูลภาษีลูกค้า
 
@@ -155,109 +154,78 @@ func (repo repositoryDB) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
 
 // review
 func (repo repositoryDB) GetWarehouse() ([]entity.Warehouse, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-    warehouses := []entity.Warehouse{}
-    query := `
+	warehouses := []entity.Warehouse{}
+	query := `
         SELECT WarehouseID, WarehouseName, Location
         FROM Warehouse
         ORDER BY WarehouseName
     `
 
-    rows, err := repo.db.QueryxContext(ctx, query)
-    if err != nil {
-        return nil, fmt.Errorf("failed to fetch warehouses: %w", err)
-    }
-    defer rows.Close()
+	rows, err := repo.db.QueryxContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch warehouses: %w", err)
+	}
+	defer rows.Close()
 
-    for rows.Next() {
-        var warehouse entity.Warehouse
-        if err := rows.StructScan(&warehouse); err != nil {
-            return nil, fmt.Errorf("failed to scan warehouse: %w", err)
-        }
-        warehouses = append(warehouses, warehouse)
-    }
+	for rows.Next() {
+		var warehouse entity.Warehouse
+		if err := rows.StructScan(&warehouse); err != nil {
+			return nil, fmt.Errorf("failed to scan warehouse: %w", err)
+		}
+		warehouses = append(warehouses, warehouse)
+	}
 
-    return warehouses, nil
+	return warehouses, nil
 }
 
 // review
-func (repo repositoryDB) GetProductAll() ([]entity.ROM_V_ProductAll, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
+func (repo repositoryDB) GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) {
 
-    products := []entity.ROM_V_ProductAll{}
-
-    query := `
-        SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
-        FROM Data_WebReturn.dbo.ROM_V_ProductAll
-        ORDER BY SKU
-    `
-
-    rows, err := repo.db.QueryxContext(ctx, query)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    for rows.Next() {
-        var product entity.ROM_V_ProductAll
-        if err := rows.StructScan(&product); err != nil {
-            return nil, err
-        }
-        products = append(products, product)
-    }
-
-    return products, nil
-
-}
-// review
-func (repo repositoryDB) GetProductAllWithPagination(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) {
-
-    query := `
+	query := `
         SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
         FROM Data_WebReturn.dbo.ROM_V_ProductAll
         ORDER BY SKU
         OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY;
     `
-    countQuery := `
+	countQuery := `
         SELECT COUNT(*) 
         FROM Data_WebReturn.dbo.ROM_V_ProductAll;
     `
 
-    var products []entity.ROM_V_ProductAll
-    total := 0
+	var products []entity.ROM_V_ProductAll
+	total := 0
 
-    // Fetch total count
-    if err := repo.db.GetContext(ctx, &total, countQuery); err != nil {
-        return nil, fmt.Errorf("failed to fetch total count: %w", err)
-    }
+	// Fetch total count
+	if err := repo.db.GetContext(ctx, &total, countQuery); err != nil {
+		return nil, fmt.Errorf("failed to fetch total count: %w", err)
+	}
 
-    // Fetch paginated data
-    rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{
-        "offset": offset,
-        "limit":  limit,
-    })
-    if err != nil {
-        return nil, fmt.Errorf("failed to fetch data: %w", err)
-    }
-    defer rows.Close()
+	// Fetch paginated data
+	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{
+		"offset": offset,
+		"limit":  limit,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch data: %w", err)
+	}
+	defer rows.Close()
 
-    for rows.Next() {
-        var product entity.ROM_V_ProductAll
-        if err := rows.StructScan(&product); err != nil {
-            return nil, fmt.Errorf("failed to scan row: %w", err)
-        }
-        products = append(products, product)
-    }
+	for rows.Next() {
+		var product entity.ROM_V_ProductAll
+		if err := rows.StructScan(&product); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		products = append(products, product)
+	}
 
-    return products, nil
+	return products, nil
 }
 
 // func (repo repositoryDB) GetCustomer() ([]entity.SubDistrict, error) {
 // 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 // 	defer cancel()
-
 
 // }
