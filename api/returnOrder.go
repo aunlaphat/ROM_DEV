@@ -14,28 +14,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth"
-	"go.uber.org/zap"
 )
 
-func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
+// ReturnOrder => ข้อมูลรับเข้าจากส่วนหน้าคลังทั้งหมด ข้อมูลสินค้าที่ถูกส่งคืนมาทั้งหมด
+func (app *Application) ReturnOrder(apiRouter *chi.Mux) {
 	apiRouter.Route("/return-order", func(r chi.Router) {
 		r.Use(jwtauth.Verifier(app.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
-		r.Get("/get-all", app.GetAllReturnOrder)                         // GET /return-order/get-all
-		r.Get("/get-all/{orderNo}", app.GetReturnOrderByOrderNo)         // GET /return-order/getbyID/{orderNo}
-		r.Get("/get-lines", app.GetAllReturnOrderLines)                  // GET /return-order/allgetline
-		r.Get("/get-lines/{orderNo}", app.GetReturnOrderLinesByReturnID) // GET /return-order/getlinebyID/{orderNo}
-		r.Post("/create", app.CreateReturnOrder)                         // POST /return-order/create
-		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)              // PATCH /return-order/update/{orderNo}
-		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)             // DELETE /return-order/delete/{orderNo}
+		r.Get("/get-all", app.GetAllReturnOrder) // แสดงข้อมูลรับเข้ารวม                  
+		r.Get("/get-all/{orderNo}", app.GetReturnOrderByOrderNo) // แสดงข้อมูลรับเข้าด้วยโดย orderNo    
+		r.Get("/get-lines", app.GetAllReturnOrderLines)  // แสดงรายการคืนของรวม
+		r.Get("/get-lines/{orderNo}", app.GetReturnOrderLineByOrderNo) // แสดงรายการคืนของโดย orderNo
+		r.Post("/create", app.CreateReturnOrder) // สร้างข้อมูลของที่ถูกส่งคืนมา
+		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)   // อัพเดทข้อมูลของที่ถูกส่งคืน
+		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)  // ลบ order ที่ทำการคืนมาออกหมด head+line
 	})
 }
 
+// review
 // @Summary 	Get Return Order
 // @Description Retrieve the details of Return Order
 // @ID 			GetAll-ReturnOrder
@@ -47,17 +47,11 @@ func (app *Application) ReturnOrders(apiRouter *chi.Mux) {
 // @Failure 	404 {object} Response "Not Found Endpoint"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/get-all [get]
-func (api *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request) {
+func (app *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request) {
 
-	result, err := api.Service.ReturnOrder.GetAllReturnOrder(r.Context())
-	// เช็คเมื่อเกิดข้อผิดพลาดขึ้น
+	result, err := app.Service.ReturnOrder.GetAllReturnOrder(r.Context())
 	if err != nil {
 		handleError(w, err)
-		return
-	}
-	// เช็คเมื่อไม่มีข้อมูลในคำสั่งซื้อ
-	if len(result) == 0 {
-		handleResponse(w, true, "No return orders found", []response.ReturnOrder{}, http.StatusOK)
 		return
 	}
 
@@ -77,6 +71,7 @@ func (api *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request
 	handleResponse(w, true, "⭐ Get Return Order successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary      Get Return Order by OrderNo
 // @Description  Get details return order by order no
 // @ID           GetAllByOrderNo-ReturnOrder
@@ -91,20 +86,10 @@ func (api *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request
 // @Router       /return-order/get-all/{orderNo} [get]
 func (app *Application) GetReturnOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	// เช็คค่าว่าง
-	if orderNo == "" {
-		handleError(w, errors.ValidationError("OrderNo is required"))
-		return
-	}
 
 	result, err := app.Service.ReturnOrder.GetReturnOrderByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
-		return
-	}
-	// เช็คเมื่อไม่มีข้อมูลในคำสั่งซื้อ
-	if len(result.ReturnOrderLine) == 0 {
-		handleResponse(w, true, "No lines found for this return order", result, http.StatusOK)
 		return
 	}
 
@@ -120,6 +105,7 @@ func (app *Application) GetReturnOrderByOrderNo(w http.ResponseWriter, r *http.R
 	handleResponse(w, true, "⭐ Get Return Order by OrderNo successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary 	Get Return Order Line
 // @Description Get all Return Order Line
 // @ID 			GetAllLines-ReturnOrderLine
@@ -148,9 +134,10 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 	handleResponse(w, true, "⭐ Get Return Order Lines successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary      Get Return Order Line by OrderNo
 // @Description  Get details of an order line by its order no
-// @ID           GetLineByID-ReturnOrder
+// @ID           GetLineByOrderNo-ReturnOrder
 // @Tags         Return Order
 // @Accept       json
 // @Produce      json
@@ -160,14 +147,10 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 // @Failure      404      {object} Response "Not Found Endpoint"
 // @Failure      500      {object} Response "Internal Server Error"
 // @Router       /return-order/get-lines/{orderNo} [get]
-func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *http.Request) {
+func (app *Application) GetReturnOrderLineByOrderNo(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	if orderNo == "" {
-		handleError(w, errors.ValidationError("OrderNo is required"))
-		return
-	}
 
-	result, err := app.Service.ReturnOrder.GetReturnOrderLinesByReturnID(r.Context(), orderNo)
+	result, err := app.Service.ReturnOrder.GetReturnOrderLineByOrderNo(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -184,6 +167,7 @@ func (app *Application) GetReturnOrderLinesByReturnID(w http.ResponseWriter, r *
 
 }
 
+// review
 // @Summary 	Create Return Order
 // @Description Create a new return order
 // @ID 			Create-ReturnOrder
@@ -217,30 +201,13 @@ func (app *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 		handleError(w, errors.BadRequestError("Invalid JSON format"))
 		return
 	}
-	// ตรวจสอบว่า ReturnOrderLine มีข้อมูลอย่างน้อย 1 รายการ
-	if len(req.ReturnOrderLine) == 0 {
-		handleError(w, errors.ValidationError("ReturnOrderLine cannot be empty"))
-		return
-	}
 
 	// Set user information from claims
 	req.CreateBy = userID
 
 	result, err := app.Service.ReturnOrder.CreateReturnOrder(r.Context(), req)
 	if err != nil {
-		app.Logger.Error("Failed to create return",
-			zap.Error(err),
-			zap.String("orderNo", req.OrderNo))
-
-		// Handle specific error cases
-		switch {
-		case strings.Contains(err.Error(), "validation failed"):
-			handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
-		case strings.Contains(err.Error(), "already exists"):
-			handleResponse(w, false, err.Error(), nil, http.StatusConflict)
-		default:
-			handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
-		}
+		handleError(w, err)
 		return
 	}
 
@@ -257,6 +224,7 @@ func (app *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 	handleResponse(w, true, "⭐ Created successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary Update Return Order
 // @Description Update an existing return order using orderNo in the path
 // @ID Update-ReturnOrder
@@ -271,12 +239,7 @@ func (app *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /return-order/update/{orderNo} [patch]
 func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request) {
-
 	orderNo := chi.URLParam(r, "orderNo")
-	if orderNo == "" {
-		handleError(w, errors.ValidationError("OrderNo is required in the path"))
-		return
-	}
 
 	// Decode JSON Payload เป็นโครงสร้าง UpdateReturnOrder
 	var req request.UpdateReturnOrder
@@ -285,7 +248,7 @@ func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// ระบุ OrderNo ที่ได้จาก URL ลงในโครงสร้างข้อมูล
+	// Set OrderNo ที่ได้จาก URL ลงในโครงสร้างข้อมูล
 	req.OrderNo = orderNo
 
 	// ดึง userID จาก JWT token
@@ -301,7 +264,6 @@ func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Step 6: เรียก Service เพื่ออัปเดตข้อมูล Return Order
 	result, err := app.Service.ReturnOrder.UpdateReturnOrder(r.Context(), req, userID)
 	if err != nil {
 		handleError(w, err)
@@ -315,6 +277,7 @@ func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 	handleResponse(w, true, "⭐ Updated successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary 	Delete Order
 // @Description Delete an order
 // @ID 			delete-ReturnOrder
@@ -328,17 +291,10 @@ func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Failure 	404 {object} Response "Order Not Found"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/delete/{orderNo} [delete]
-func (api *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request) {
-	// Step 1: ดึง OrderNo จาก URL Parameter
+func (app *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	if orderNo == "" {
-		// Step 2: ตรวจสอบว่า OrderNo ว่างหรือไม่
-		handleError(w, errors.ValidationError("OrderNo is required in the path"))
-		return
-	}
 
-	// Step 3: เรียก Service เพื่อทำการลบข้อมูล Return Order
-	err := api.Service.ReturnOrder.DeleteReturnOrder(r.Context(), orderNo)
+	err := app.Service.ReturnOrder.DeleteReturnOrder(r.Context(), orderNo)
 	if err != nil {
 		handleError(w, err)
 		return

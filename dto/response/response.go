@@ -43,10 +43,10 @@ type ReturnOrder struct {
 
 type ReturnOrderLine struct {
 	OrderNo    string     `json:"orderNo" db:"OrderNo"`
-	TrackingNo string     `json:"trackingNo" db:"TrackingNo"`
+	TrackingNo *string     `json:"trackingNo" db:"TrackingNo"`
 	SKU        string     `json:"sku" db:"SKU"`
 	ReturnQTY  int        `json:"returnQTY" db:"ReturnQTY"`
-	ActualQTY  int        `json:"actualQTY" db:"ActualQTY"`
+	ActualQTY  *int        `json:"actualQTY" db:"ActualQTY"`
 	QTY        int        `json:"qty" db:"QTY"`
 	Price      float64    `json:"price" db:"Price"`
 	CreateBy   string     `json:"createBy" db:"CreateBy"`
@@ -102,14 +102,14 @@ type DeleteReturnOrder struct {
 type DraftTradeDetail struct {
 	OrderNo       string    `json:"orderNo" db:"OrderNo" example:"ORD0001"`
 	SoNo          string    `json:"soNo" db:"SoNo" example:"SO0001"`
-	SrNo          *string    `json:"srNo" db:"SrNo" example:"SR0001"`
-	TrackingNo    *string    `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
-	ChannelID     *int       `json:"channelId" db:"ChannelID" example:"2"`
-	Reason        *string    `json:"reason" db:"Reason"`
+	SrNo          *string   `json:"srNo" db:"SrNo" example:"SR0001"`
+	TrackingNo    *string   `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	ChannelID     *int      `json:"channelId" db:"ChannelID" example:"2"`
+	Reason        *string   `json:"reason" db:"Reason"`
 	StatusCheckID int       `json:"statusCheckId" db:"StatusCheckID" example:"1"`
 	CreateBy      string    `json:"createBy" db:"CreateBy"`
 	CreateDate    time.Time `json:"createDate" db:"CreateDate"`
-} 
+}
 
 /********** OrderHead + Line data Project ***************/
 
@@ -226,6 +226,12 @@ type ConfirmReturnOrderDetails struct {
 // 	Price     float64 `json:"price" db:"Price"`
 // }
 
+type ImportOrderSummary struct {
+    OrderNo  string `json:"orderNo"`
+    SKU      string `json:"sku"`
+    Photo    string `json:"photo"`
+}
+
 type BeforeReturnOrderResponse struct {
 	OrderNo                string                          `json:"orderNo" db:"OrderNo"`
 	SoNo                   string                          `json:"soNo" db:"SoNo"`
@@ -236,8 +242,8 @@ type BeforeReturnOrderResponse struct {
 	TrackingNo             string                          `json:"trackingNo" db:"TrackingNo"`
 	Logistic               string                          `json:"logistic" db:"Logistic"`
 	WarehouseID            int                             `json:"warehouseId" db:"WarehouseID"`
-	SoStatusID             *int                            `json:"soStatusId" db:"SoStatusID"`
-	MkpStatusID            *int                            `json:"mkpStatusId" db:"MkpStatusID"`
+	SoStatus               *int                            `json:"soStatusId" db:"SoStatus"`
+	MkpStatus              *int                            `json:"mkpStatusId" db:"MkpStatus"`
 	ReturnDate             *time.Time                      `json:"returnDate" db:"ReturnDate"`
 	StatusReturnID         *int                            `json:"statusReturnId" db:"StatusReturnID"`
 	StatusConfID           *int                            `json:"statusConfId" db:"StatusConfID"`
@@ -261,8 +267,8 @@ type CreateBeforeReturnOrderResponse struct {
 	TrackingNo  string     `json:"trackingNo" db:"TrackingNo"`
 	Logistic    string     `json:"logistic" db:"Logistic"`
 	WarehouseID int        `json:"warehouseId" db:"WarehouseID"`
-	SoStatusID  *int       `json:"soStatusId" db:"SoStatusID"`
-	MkpStatusID *int       `json:"mkpStatusId" db:"MkpStatusID"`
+	SoStatus    *int       `json:"soStatusId" db:"SoStatus"`
+	MkpStatus   *int       `json:"mkpStatusId" db:"MkpStatus"`
 	ReturnDate  *time.Time `json:"returnDate" db:"ReturnDate"`
 	// CreateBy               string                          `json:"createBy" db:"CreateBy"`
 	CreateDate time.Time `json:"createDate" db:"CreateDate"`

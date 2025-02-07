@@ -11,11 +11,14 @@ import (
 
 type ImportOrderRepository interface {
 	SearchOrderORTracking(ctx context.Context, search string) (*response.ImportOrderResponse, error)
+	ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error)
 
+	// ยังไม่ใช้
 	FetchReturnDetailsBySaleOrder(ctx context.Context, soNo string) (string, error)
 	InsertImageMetadata(ctx context.Context, image request.Images) (int, error)
 }
 
+// review
 func (repo repositoryDB) SearchOrderORTracking(ctx context.Context, search string) (*response.ImportOrderResponse, error) {
 	// Query สำหรับดึงข้อมูล Order Head
 	queryHead := `
@@ -30,7 +33,7 @@ func (repo repositoryDB) SearchOrderORTracking(ctx context.Context, search strin
         FROM ROM_V_OrderLineDetail
         WHERE OrderNo = :Search OR TrackingNo = :Search
     `
-
+	
 	// ดึงข้อมูล Order Head
 	var orderHead response.ImportOrderResponse
 	nstmtHead, err := repo.db.PrepareNamed(queryHead)
@@ -70,12 +73,25 @@ func (repo repositoryDB) SearchOrderORTracking(ctx context.Context, search strin
 	return &orderHead, nil
 }
 
+// review
+func (repo repositoryDB) ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error) {
+    var exists bool
+    query := `
+        SELECT CASE WHEN EXISTS (
+            SELECT 1 FROM BeforeReturnOrderLine WHERE OrderNo = @OrderNo AND SKU = @SKU
+        ) THEN 1 ELSE 0 END
+    `
+    err := repo.db.GetContext(ctx, &exists, query, sql.Named("OrderNo", orderNo), sql.Named("SKU", sku))
+    if err != nil {
+        return false, fmt.Errorf("failed to validate SKU: %w", err)
+    }
 
+    return exists, nil
+}
 
+// ทำรอไว้ยังไม่ได้ใช้
 // FetchReturnDetailsBySaleOrder retrieves ReturnID and OrderNo from SoNo
 func (repo repositoryDB) FetchReturnDetailsBySaleOrder(ctx context.Context, soNo string) (string, error) {
-	log.Printf("Repository: Fetching OrderNo for SoNo: %s", soNo)
-
 	query := `
 		SELECT OrderNo
 		FROM ReturnOrder
@@ -86,10 +102,8 @@ func (repo repositoryDB) FetchReturnDetailsBySaleOrder(ctx context.Context, soNo
 	err := repo.db.QueryRowContext(ctx, query, sql.Named("SoNo", soNo)).Scan(&orderNo)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("Repository: No records found for SoNo: %s", soNo)
 			return "", fmt.Errorf("no records found for SoNo: %s", soNo)
 		}
-		log.Printf("Repository: Error querying database - %v", err)
 		return "", fmt.Errorf("database query error: %w", err)
 	}
 
@@ -116,7 +130,6 @@ func (repo repositoryDB) InsertImageMetadata(ctx context.Context, image request.
 	var imageID int
 	rows, err := repo.db.NamedQuery(query, params)
 	if err != nil {
-		log.Printf("Repository: Error inserting image metadata - %v", err)
 		return 0, fmt.Errorf("error inserting image metadata: %w", err)
 	}
 	defer rows.Close()
@@ -124,7 +137,6 @@ func (repo repositoryDB) InsertImageMetadata(ctx context.Context, image request.
 	if rows.Next() {
 		err = rows.Scan(&imageID)
 		if err != nil {
-			log.Printf("Error scanning inserted image ID - %v", err)
 			return 0, fmt.Errorf("error scanning inserted image ID: %w", err)
 		}
 	}

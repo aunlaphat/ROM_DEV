@@ -94,7 +94,7 @@ definitions:
         type: string
       logistic:
         type: string
-      mkpStatusID:
+      mkpStatus:
         type: integer
       orderNo:
         description: "RecID\t\t   int        `json:\"recID\" db:\"RecID\"` // (PK
@@ -106,7 +106,7 @@ definitions:
         type: string
       soNo:
         type: string
-      soStatusID:
+      soStatus:
         type: integer
       srNo:
         type: string
@@ -572,6 +572,33 @@ definitions:
       sku:
         type: string
     type: object
+  response.DraftTradeDetail:
+    properties:
+      channelId:
+        example: 2
+        type: integer
+      createBy:
+        type: string
+      createDate:
+        type: string
+      orderNo:
+        example: ORD0001
+        type: string
+      reason:
+        type: string
+      soNo:
+        example: SO0001
+        type: string
+      srNo:
+        example: SR0001
+        type: string
+      statusCheckId:
+        example: 1
+        type: integer
+      trackingNo:
+        example: 12345678TH
+        type: string
+    type: object
   response.ImageResponse:
     properties:
       filePath:
@@ -607,6 +634,15 @@ definitions:
       soNo:
         type: string
       trackingNo:
+        type: string
+    type: object
+  response.ImportOrderSummary:
+    properties:
+      orderNo:
+        type: string
+      photo:
+        type: string
+      sku:
         type: string
     type: object
   response.ListDraftConfirmOrdersResponse:
@@ -1060,16 +1096,21 @@ paths:
       summary: Create a new return order with lines
       tags:
       - Before Return Order
-  /before-return-order/delete-befodline/{recID}:
+  /before-return-order/delete-line/{orderNo}/{sku}:
     delete:
       consumes:
       - application/json
       description: Delete an order line
       operationId: delete-BeforeReturnOrderLine
       parameters:
-      - description: Rec ID
+      - description: Order No
         in: path
-        name: recID
+        name: orderNo
+        required: true
+        type: string
+      - description: SKU
+        in: path
+        name: sku
         required: true
         type: string
       produces:
@@ -1097,41 +1138,6 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Delete Order line
-      tags:
-      - Before Return Order
-  /before-return-order/get-order:
-    get:
-      consumes:
-      - application/json
-      description: Get all Before Return Order
-      operationId: Allget-BefReturnOrder
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get All
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.OrderDetail'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: not found endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Before Return Order
       tags:
       - Before Return Order
   /before-return-order/get-orderbySO/{soNo}:
@@ -1366,42 +1372,7 @@ paths:
       summary: Get Thai District
       tags:
       - Constants
-  /constants/get-productAll:
-    get:
-      consumes:
-      - application/json
-      description: Get all product
-      operationId: get-productAll
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Product
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.ROM_V_ProductAll'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: SubDistrict not found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get ProductAll
-      tags:
-      - Constants
-  /constants/get-productAlls:
+  /constants/get-product:
     get:
       consumes:
       - application/json
@@ -1798,6 +1769,48 @@ paths:
       summary: Update draft orders
       tags:
       - Draft & Confirm
+  /import-order/confirm-receipt/{identifier}:
+    post:
+      consumes:
+      - application/json
+      description: Confirm a trade return order based on the provided identifier (OrderNo
+        or TrackingNo) and input lines for ReturnOrderLine.
+      operationId: confirm-trade-return
+      parameters:
+      - description: OrderNo or TrackingNo
+        in: path
+        name: identifier
+        required: true
+        type: string
+      - description: Trade return request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ConfirmTradeReturnRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trade return order confirmed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  $ref: '#/definitions/response.ConfirmReceipt'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Confirm Receipt from Ware House
+      tags:
+      - Import Order
   /import-order/create-confirm-wh:
     post:
       consumes:
@@ -1851,9 +1864,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve the details of an order by its OrderNo or TrackingNo using
-        a single input
-      operationId: search-orderNo-or-trackingNo-single
+      description: Retrieve the details of an order by its OrderNo or TrackingNo
+      operationId: search-orderNo-or-trackingNo
       parameters:
       - description: OrderNo or TrackingNo
         in: query
@@ -1885,6 +1897,126 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Search order by OrderNo or TrackingNo
+      tags:
+      - Import Order
+  /import-order/summary/{orderNo}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of Receipt
+      operationId: GetSummary-ImportOrder
+      parameters:
+      - description: Order No
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get All
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ImportOrderSummary'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found Endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Sum detail of Import Order
+      tags:
+      - Import Order
+  /import-order/upload-photo:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a photo for a return order
+      operationId: upload-photo
+      parameters:
+      - description: Order No
+        in: formData
+        name: orderNo
+        required: true
+        type: string
+      - description: ImageTypeID (1, 2, 3)
+        in: formData
+        name: imageTypeID
+        required: true
+        type: string
+      - description: SKU (required if imageTypeID is '3')
+        in: formData
+        name: sku
+        type: string
+      - description: Photo file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Upload Photo
+      tags:
+      - Import Order
+  /import-order/validate-sku/{orderNo}/{sku}:
+    post:
+      consumes:
+      - application/json
+      description: Validate SKU
+      operationId: validate-sku
+      parameters:
+      - description: Order No
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: SKU
+        in: path
+        name: sku
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Validate SKU
       tags:
       - Import Order
   /return-order/create:
@@ -2097,7 +2229,7 @@ paths:
       consumes:
       - application/json
       description: Get details of an order line by its order no
-      operationId: GetLineByID-ReturnOrder
+      operationId: GetLineByOrderNo-ReturnOrder
       parameters:
       - description: Order No
         in: path
@@ -2430,48 +2562,6 @@ paths:
       summary: Add a new trade return line to an existing order
       tags:
       - Trade Return
-  /trade-return/confirm-receipt/{identifier}:
-    post:
-      consumes:
-      - application/json
-      description: Confirm a trade return order based on the provided identifier (OrderNo
-        or TrackingNo) and input lines for ReturnOrderLine.
-      operationId: confirm-trade-return
-      parameters:
-      - description: OrderNo or TrackingNo
-        in: path
-        name: identifier
-        required: true
-        type: string
-      - description: Trade return request details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.ConfirmTradeReturnRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Trade return order confirmed successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  $ref: '#/definitions/response.ConfirmReceipt'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Confirm Receipt from Ware House
-      tags:
-      - Trade Return
   /trade-return/confirm-return/{orderNo}:
     patch:
       consumes:
@@ -2571,7 +2661,7 @@ paths:
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/response.ReturnOrder'
+                    $ref: '#/definitions/response.DraftTradeDetail'
                   type: array
               type: object
         "400":
@@ -2602,7 +2692,7 @@ paths:
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/response.ReturnOrder'
+                    $ref: '#/definitions/response.DraftTradeDetail'
                   type: array
               type: object
         "400":
@@ -2645,7 +2735,7 @@ paths:
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/response.ReturnOrder'
+                    $ref: '#/definitions/response.DraftTradeDetail'
                   type: array
               type: object
         "400":
@@ -2688,7 +2778,7 @@ paths:
             - properties:
                 result:
                   items:
-                    $ref: '#/definitions/response.ReturnOrder'
+                    $ref: '#/definitions/response.DraftTradeDetail'
                   type: array
               type: object
         "400":

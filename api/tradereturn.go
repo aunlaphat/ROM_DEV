@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -16,6 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// TradeReturn => ส่วนการคืนของทางฝั่ง offline หาก order ค้างคลัง ต้องการเปลี่ยนรุ่นใหม่ ลูกค้าหน้าสาขาต้องการคืนของ จะทำรายการที่เทรด
 func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 	apiRouter.Post("/login", app.Login)
 
@@ -25,18 +24,17 @@ func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 		r.Use(jwtauth.Authenticator)
 
 		/******** Trade Retrun ********/
-		r.Get("/get-waiting", app.GetStatusWaitingDetail)       // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =1
-		r.Get("/get-confirm", app.GetStatusConfirmDetail)       // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =2
-		r.Get("/search-waiting", app.SearchStatusWaitingDetail) // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =1 ตามช่วงวันที่สร้าง(CreateDate)ที่เลือก วันที่เริ่มต้น-สิ้นสุด แสดงข้อมูลจำนวนตามวันที่นั้น
-		r.Get("/search-confirm", app.SearchStatusConfirmDetail) // แสดงข้อมูล ReturnOrder เฉพาะสถานะของ StatusCheckID =2 ตามช่วงวันที่สร้าง(CreateDate)ที่เลือก วันที่เริ่มต้น-สิ้นสุด แสดงข้อมูลจำนวนตามวันที่นั้น
-		r.Post("/create-trade", app.CreateTradeReturn)
-		r.Post("/add-line/{orderNo}", app.CreateTradeReturnLine)
-		r.Post("/confirm-receipt/{identifier}", app.ConfirmReceipt)
-		r.Patch("/confirm-return/{orderNo}", app.ConfirmReturn)
+		r.Get("/get-waiting", app.GetStatusWaitingDetail)       // แสดงข้อมูลของที่คืนมายังคลังแล้ว สถานะ waiting
+		r.Get("/get-confirm", app.GetStatusConfirmDetail)       // แสดงข้อมูลของที่คืนมายังคลังแล้ว สถานะ confirm
+		r.Get("/search-waiting", app.SearchStatusWaitingDetail) // แสดงข้อมูลของที่คืนมายังคลังแล้ว สถานะ waiting ตามช่วงวันที่สร้าง(CreateDate) เริ่มต้น-สิ้นสุด จะแสดงตามวันที่นั้น
+		r.Get("/search-confirm", app.SearchStatusConfirmDetail) // แสดงข้อมูลของที่คืนมายังคลังแล้ว สถานะ confirm ตามช่วงวันที่สร้าง(CreateDate) เริ่มต้น-สิ้นสุด จะแสดงตามวันที่นั้น
+		r.Post("/create-trade", app.CreateTradeReturn)			// สร้างฟอร์มทำรายการคืนของเข้าระบบ
+		r.Post("/add-line/{orderNo}", app.CreateTradeReturnLine)// สร้างรายการคืนแต่ละรายการของ order นั้นเพิ่ม
+		r.Patch("/confirm-return/{orderNo}", app.ConfirmReturn) // การยันยืนรับเข้าโดยฝั่งบัญชี จะทำการตรวจเช็คจากข้อมูล confirmReceipt + ข้อมูลในระบบ เมื่อเช็คว่าจำนวนคืนตรงกันจะถือว่าทำรายการคืนสำเร็จ
 	})
-
 }
 
+// review
 // @Summary Get Return Orders with StatusCheckID = 1
 // @Description Retrieve Return Orders with StatusCheckID = 1 (Waiting)
 // @ID Get-Waiting-ReturnOrder
@@ -47,15 +45,10 @@ func (app *Application) TradeReturnRoute(apiRouter *chi.Mux) {
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /trade-return/get-waiting [get]
-func (api *Application) GetStatusWaitingDetail(w http.ResponseWriter, r *http.Request) {
-	result, err := api.Service.ReturnOrder.GetReturnOrdersByStatus(r.Context(), 1) // StatusCheckID = 1
+func (app *Application) GetStatusWaitingDetail(w http.ResponseWriter, r *http.Request) {
+	result, err :=app.Service.ReturnOrder.GetReturnOrdersByStatus(r.Context(), 1) // StatusCheckID = 1
 	if err != nil {
 		handleError(w, err)
-		return
-	}
-
-	if len(result) == 0 {
-		handleResponse(w, true, "No return orders found with StatusCheckID = 1", []res.ReturnOrder{}, http.StatusOK)
 		return
 	}
 
@@ -69,6 +62,7 @@ func (api *Application) GetStatusWaitingDetail(w http.ResponseWriter, r *http.Re
 	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 1 (WAITING) retrieved successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary Get Return Orders with StatusCheckID = 2
 // @Description Retrieve Return Orders with StatusCheckID = 2 (Confirmed)
 // @ID Get-Confirm-ReturnOrder
@@ -79,15 +73,10 @@ func (api *Application) GetStatusWaitingDetail(w http.ResponseWriter, r *http.Re
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /trade-return/get-confirm [get]
-func (api *Application) GetStatusConfirmDetail(w http.ResponseWriter, r *http.Request) {
-	result, err := api.Service.ReturnOrder.GetReturnOrdersByStatus(r.Context(), 2) // StatusCheckID = 2
+func (app *Application) GetStatusConfirmDetail(w http.ResponseWriter, r *http.Request) {
+	result, err := app.Service.ReturnOrder.GetReturnOrdersByStatus(r.Context(), 2) // StatusCheckID = 2
 	if err != nil {
 		handleError(w, err)
-		return
-	}
-
-	if len(result) == 0 {
-		handleResponse(w, true, "No return orders found with StatusCheckID = 2", []res.ReturnOrder{}, http.StatusOK)
 		return
 	}
 
@@ -101,6 +90,7 @@ func (api *Application) GetStatusConfirmDetail(w http.ResponseWriter, r *http.Re
 	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 2 (CONFIRM) retrieved successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary Search Return Orders with StatusCheckID = 1 by Date Range
 // @Description Retrieve Return Orders with StatusCheckID = 1 (Waiting) within a specific date range
 // @ID Search-Waiting-ReturnOrder
@@ -113,21 +103,18 @@ func (api *Application) GetStatusConfirmDetail(w http.ResponseWriter, r *http.Re
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /trade-return/search-waiting [get]
-func (api *Application) SearchStatusWaitingDetail(w http.ResponseWriter, r *http.Request) {
+func (app *Application) SearchStatusWaitingDetail(w http.ResponseWriter, r *http.Request) {
+	// รับค่า startDate และ endDate จาก URL query
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
 
-	result, err := api.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(r.Context(), 1, startDate, endDate) // StatusCheckID = 1
+	result, err := app.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(r.Context(), 1, startDate, endDate) // StatusCheckID = 1
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	if len(result) == 0 {
-		handleResponse(w, true, "⚠️ No return orders found within the specified date range", []res.ReturnOrder{}, http.StatusOK)
-		return
-	}
-
+	// result debug
 	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
 	for i, order := range result {
 		fmt.Printf("\n======== Order #%d ========\n", i+1)
@@ -138,6 +125,7 @@ func (api *Application) SearchStatusWaitingDetail(w http.ResponseWriter, r *http
 	handleResponse(w, true, "⭐ Return Orders of StatusCheckID = 1 retrieved successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary Search Return Orders with StatusCheckID = 2 by Date Range
 // @Description Retrieve Return Orders with StatusCheckID = 2 (Confirmed) within a specific date range
 // @ID Search-Confirm-ReturnOrder
@@ -150,18 +138,14 @@ func (api *Application) SearchStatusWaitingDetail(w http.ResponseWriter, r *http
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /trade-return/search-confirm [get]
-func (api *Application) SearchStatusConfirmDetail(w http.ResponseWriter, r *http.Request) {
+func (app *Application) SearchStatusConfirmDetail(w http.ResponseWriter, r *http.Request) {
+	// รับค่า startDate และ endDate จาก URL query
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
 
-	result, err := api.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(r.Context(), 2, startDate, endDate) // StatusCheckID = 2
+	result, err := app.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(r.Context(), 2, startDate, endDate) // StatusCheckID = 2
 	if err != nil {
 		handleError(w, err)
-		return
-	}
-
-	if len(result) == 0 {
-		handleResponse(w, true, "⚠️ No return orders found within the specified date range", []res.ReturnOrder{}, http.StatusOK)
 		return
 	}
 
@@ -175,6 +159,7 @@ func (api *Application) SearchStatusConfirmDetail(w http.ResponseWriter, r *http
 	handleResponse(w, true, "⭐ Return Orders of StatusCheckID = 2 retrieved successfully ⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary Create a new trade return order
 // @Description Create a new trade return order with multiple order lines
 // @ID create-trade-return
@@ -188,28 +173,11 @@ func (api *Application) SearchStatusConfirmDetail(w http.ResponseWriter, r *http
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /trade-return/create-trade [post]
 func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request) {
-
 	var req request.BeforeReturnOrder
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		app.Logger.Error("Failed to decode request", zap.Error(err))
 		handleResponse(w, false, "Invalid request format", nil, http.StatusBadRequest)
-		return
-	}
-
-	// ตรวจสอบว่ามี OrderNo
-	if req.OrderNo == "" {
-		handleResponse(w, false, "⚠️ OrderNo is required", nil, http.StatusBadRequest)
-		return
-	}
-
-	existingOrder, err := app.Service.BeforeReturn.GetBeforeReturnOrderByOrderNo(r.Context(), req.OrderNo)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-	if existingOrder != nil { // แจ้งเตือนถ้ามี OrderNo อยู่แล้ว
-		handleResponse(w, false, "⚠️ Order already exists", nil, http.StatusConflict)
 		return
 	}
 
@@ -232,18 +200,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 	// Call service
 	result, err := app.Service.BeforeReturn.CreateTradeReturn(r.Context(), req)
 	if err != nil {
-		app.Logger.Error("⚠️ Failed to create trade return",
-			zap.Error(err),
-			zap.String("orderNo", req.OrderNo))
-
-		switch {
-		case strings.Contains(err.Error(), "Validation failed"):
-			handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
-		case strings.Contains(err.Error(), "Already exists"):
-			handleResponse(w, false, err.Error(), nil, http.StatusConflict)
-		default:
-			handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
-		}
+		handleError(w, err)
 		return
 	}
 
@@ -260,6 +217,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 	handleResponse(w, true, "⭐ Created trade return order successfully => Status [booking ✔️]⭐", result, http.StatusOK)
 }
 
+// review
 // @Summary Add a new trade return line to an existing order
 // @Description Add a new trade return line based on the provided order number and line details
 // @ID add-trade-return-line
@@ -274,12 +232,7 @@ func (app *Application) CreateTradeReturn(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /trade-return/add-line/{orderNo} [post]
 func (app *Application) CreateTradeReturnLine(w http.ResponseWriter, r *http.Request) {
-
 	orderNo := chi.URLParam(r, "orderNo")
-	if orderNo == "" {
-		handleError(w, fmt.Errorf("OrderNo is required"))
-		return
-	}
 
 	var req request.TradeReturnLine
 
@@ -309,18 +262,7 @@ func (app *Application) CreateTradeReturnLine(w http.ResponseWriter, r *http.Req
 	// เรียก service layer เพื่อสร้างข้อมูล
 	result, err := app.Service.BeforeReturn.CreateTradeReturnLine(r.Context(), orderNo, req)
 	if err != nil {
-		app.Logger.Error("Failed to create trade return",
-			zap.Error(err),
-			zap.String("orderNo", orderNo))
-
-		switch {
-		case strings.Contains(err.Error(), "validation failed"):
-			handleResponse(w, false, err.Error(), nil, http.StatusBadRequest)
-		case strings.Contains(err.Error(), "already exists"):
-			handleResponse(w, false, err.Error(), nil, http.StatusConflict)
-		default:
-			handleResponse(w, false, "Internal server error", nil, http.StatusInternalServerError)
-		}
+		handleError(w, err)
 		return
 	}
 
@@ -336,69 +278,7 @@ func (app *Application) CreateTradeReturnLine(w http.ResponseWriter, r *http.Req
 	handleResponse(w, true, "⭐ Created trade return line successfully ⭐", result, http.StatusCreated)
 }
 
-// ConfirmTradeReturn godoc
-// @Summary Confirm Receipt from Ware House
-// @Description Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.
-// @ID confirm-trade-return
-// @Tags Trade Return
-// @Accept json
-// @Produce json
-// @Param identifier path string true "OrderNo or TrackingNo"
-// @Param request body request.ConfirmTradeReturnRequest true "Trade return request details"
-// @Success 200 {object} api.Response{result=response.ConfirmReceipt} "Trade return order confirmed successfully"
-// @Failure 400 {object} api.Response "Bad Request"
-// @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /trade-return/confirm-receipt/{identifier} [post]
-func (app *Application) ConfirmReceipt(w http.ResponseWriter, r *http.Request) {
-	// รับค่า identifier จาก URL parameter
-	identifier := chi.URLParam(r, "identifier")
-	if identifier == "" {
-		handleError(w, fmt.Errorf("identifier (OrderNo or TrackingNo) is required"))
-		return
-	}
-
-	// แปลงข้อมูล JSON
-	var req request.ConfirmTradeReturnRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleError(w, fmt.Errorf("invalid request body: %w", err))
-		return
-	}
-
-	// กำหนดค่า identifier
-	req.Identifier = identifier
-
-	// รับข้อมูล claims จาก JWT token
-	_, claims, err := jwtauth.FromContext(r.Context())
-	if err != nil || claims == nil {
-		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
-		return
-	}
-
-	// ดึง userID จาก claims
-	userID, err := utils.GetUserIDFromClaims(claims)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	// เรียก service layer เพื่อดำเนินการ confirm
-	err = app.Service.BeforeReturn.ConfirmReceipt(r.Context(), req, userID)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	response := res.ConfirmReceipt{
-		Identifier:     req.Identifier,
-		StatusReturnID: "7 (WAITING)",
-		StatusCheckID:  "1 (WAITING)",
-		UpdateBy:       userID,
-		UpdateDate:     time.Now(),
-	}
-
-	handleResponse(w, true, "⭐ Confirmed from Ware House successfully => Status [waiting ✔️] ⭐", response, http.StatusOK)
-}
-
+// review
 // ConfirmToReturn godoc
 // @Summary Confirm Return Order to Success
 // @Description Confirm a trade return order based on the provided order number (OrderNo) and input lines for ReturnOrderLine.
@@ -411,15 +291,12 @@ func (app *Application) ConfirmReceipt(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} api.Response{result=response.ConfirmToReturnOrder} "Trade return order confirmed successfully"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /trade-return/confirm-return/{orderNo} [patch]
+// @Router /trade-return/confirm-return/{orderNo} [Patch]
 func (app *Application) ConfirmReturn(w http.ResponseWriter, r *http.Request) {
 	orderNo := chi.URLParam(r, "orderNo")
-	if orderNo == "" {
-		handleError(w, fmt.Errorf("OrderNo is required"))
-		return
-	}
 
 	var req request.ConfirmToReturnRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, fmt.Errorf("invalid request body: %w", err))
 		return
@@ -451,5 +328,6 @@ func (app *Application) ConfirmReturn(w http.ResponseWriter, r *http.Request) {
 		UpdateBy:       userID,
 		UpdateDate:     time.Now(),
 	}
+
 	handleResponse(w, true, "⭐ Confirmed to Return Order successfully => Status [success ✔️, confirm ✔️] ⭐", response, http.StatusOK)
 }

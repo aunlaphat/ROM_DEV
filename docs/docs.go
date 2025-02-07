@@ -265,7 +265,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/before-return-order/delete-befodline/{recID}": {
+        "/before-return-order/delete-line/{orderNo}/{sku}": {
             "delete": {
                 "description": "Delete an order line",
                 "consumes": [
@@ -282,8 +282,15 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Rec ID",
-                        "name": "recID",
+                        "description": "Order No",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU",
+                        "name": "sku",
                         "in": "path",
                         "required": true
                     }
@@ -315,63 +322,6 @@ const docTemplate = `{
                     },
                     "422": {
                         "description": "Validation Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/before-return-order/get-order": {
-            "get": {
-                "description": "Get all Before Return Order",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Before Return Order"
-                ],
-                "summary": "Get Before Return Order",
-                "operationId": "Allget-BefReturnOrder",
-                "responses": {
-                    "200": {
-                        "description": "Get All",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/response.OrderDetail"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "not found endpoint",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -791,64 +741,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/constants/get-productAll": {
-            "get": {
-                "description": "Get all product",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Constants"
-                ],
-                "summary": "Get ProductAll",
-                "operationId": "get-productAll",
-                "responses": {
-                    "200": {
-                        "description": "Product",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/entity.ROM_V_ProductAll"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "SubDistrict not found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/constants/get-productAlls": {
+        "/constants/get-product": {
             "get": {
                 "description": "Get paginated products",
                 "consumes": [
@@ -1487,6 +1380,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/import-order/confirm-receipt/{identifier}": {
+            "post": {
+                "description": "Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Confirm Receipt from Ware House",
+                "operationId": "confirm-trade-return",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OrderNo or TrackingNo",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Trade return request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ConfirmTradeReturnRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Trade return order confirmed successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.ConfirmReceipt"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/import-order/create-confirm-wh": {
             "post": {
                 "description": "Upload multiple images and data for a specific SoNo",
@@ -1566,7 +1525,7 @@ const docTemplate = `{
         },
         "/import-order/search": {
             "get": {
-                "description": "Retrieve the details of an order by its OrderNo or TrackingNo using a single input",
+                "description": "Retrieve the details of an order by its OrderNo or TrackingNo",
                 "consumes": [
                     "application/json"
                 ],
@@ -1577,7 +1536,7 @@ const docTemplate = `{
                     "Import Order"
                 ],
                 "summary": "Search order by OrderNo or TrackingNo",
-                "operationId": "search-orderNo-or-trackingNo-single",
+                "operationId": "search-orderNo-or-trackingNo",
                 "parameters": [
                     {
                         "type": "string",
@@ -1614,6 +1573,189 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "OrderNo or TrackingNo not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/import-order/summary/{orderNo}": {
+            "get": {
+                "description": "Retrieve the details of Receipt",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Get Sum detail of Import Order",
+                "operationId": "GetSummary-ImportOrder",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order No",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Get All",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ImportOrderSummary"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found Endpoint",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/import-order/upload-photo": {
+            "post": {
+                "description": "Upload a photo for a return order",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Upload Photo",
+                "operationId": "upload-photo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order No",
+                        "name": "orderNo",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ImageTypeID (1, 2, 3)",
+                        "name": "imageTypeID",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU (required if imageTypeID is '3')",
+                        "name": "sku",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Photo file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/import-order/validate-sku/{orderNo}/{sku}": {
+            "post": {
+                "description": "Validate SKU",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Validate SKU",
+                "operationId": "validate-sku",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order No",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU",
+                        "name": "sku",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -1975,7 +2117,7 @@ const docTemplate = `{
                     "Return Order"
                 ],
                 "summary": "Get Return Order Line by OrderNo",
-                "operationId": "GetLineByID-ReturnOrder",
+                "operationId": "GetLineByOrderNo-ReturnOrder",
                 "parameters": [
                     {
                         "type": "string",
@@ -2503,72 +2645,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/trade-return/confirm-receipt/{identifier}": {
-            "post": {
-                "description": "Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Trade Return"
-                ],
-                "summary": "Confirm Receipt from Ware House",
-                "operationId": "confirm-trade-return",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "OrderNo or TrackingNo",
-                        "name": "identifier",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Trade return request details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.ConfirmTradeReturnRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Trade return order confirmed successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "$ref": "#/definitions/response.ConfirmReceipt"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/trade-return/confirm-return/{orderNo}": {
             "patch": {
                 "description": "Confirm a trade return order based on the provided order number (OrderNo) and input lines for ReturnOrderLine.",
@@ -2728,7 +2804,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -2779,7 +2855,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -2846,7 +2922,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -2913,7 +2989,7 @@ const docTemplate = `{
                                         "result": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.ReturnOrder"
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
                                             }
                                         }
                                     }
@@ -3206,7 +3282,7 @@ const docTemplate = `{
                 "logistic": {
                     "type": "string"
                 },
-                "mkpStatusID": {
+                "mkpStatus": {
                     "type": "integer"
                 },
                 "orderNo": {
@@ -3222,7 +3298,7 @@ const docTemplate = `{
                 "soNo": {
                     "type": "string"
                 },
-                "soStatusID": {
+                "soStatus": {
                     "type": "integer"
                 },
                 "srNo": {
@@ -3902,6 +3978,44 @@ const docTemplate = `{
                 }
             }
         },
+        "response.DraftTradeDetail": {
+            "type": "object",
+            "properties": {
+                "channelId": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string",
+                    "example": "ORD0001"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string",
+                    "example": "SO0001"
+                },
+                "srNo": {
+                    "type": "string",
+                    "example": "SR0001"
+                },
+                "statusCheckId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "trackingNo": {
+                    "type": "string",
+                    "example": "12345678TH"
+                }
+            }
+        },
         "response.ImageResponse": {
             "type": "object",
             "properties": {
@@ -3955,6 +4069,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "trackingNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ImportOrderSummary": {
+            "type": "object",
+            "properties": {
+                "orderNo": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "sku": {
                     "type": "string"
                 }
             }

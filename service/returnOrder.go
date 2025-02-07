@@ -6,18 +6,16 @@ import (
 	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/utils"
 	"context"
-	"database/sql"
 	"fmt"
 
 	"go.uber.org/zap"
 )
 
-// ตัวสื่อกลางในการรับส่งกับ API และประมวลผลข้อมูลที่รับมาจาก API
 type ReturnOrderService interface {
 	GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error)
 	GetReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.ReturnOrder, error)
 	GetAllReturnOrderLines(ctx context.Context) ([]response.ReturnOrderLine, error)
-	GetReturnOrderLinesByReturnID(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error)
+	GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error)
 	CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) (*response.CreateReturnOrder, error)
 	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) (*response.UpdateReturnOrder, error)
 	DeleteReturnOrder(ctx context.Context, orderNo string) error
@@ -26,115 +24,209 @@ type ReturnOrderService interface {
 	GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error)
 }
 
+// review
 func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
+	logFinish := srv.logger.LogAPICall(ctx, "GetAllReturnOrder")
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting get return order process 🔎")
+
 	// Step 1: เรียก repository เพื่อดึงข้อมูล ReturnOrder ทั้งหมด
 	allorder, err := srv.returnOrderRepo.GetAllReturnOrder(ctx)
 	if err != nil {
-		srv.logger.Error("Error fetching all return orders", zap.Error(err))
-		// Step 2: หากเกิดข้อผิดพลาด ให้ส่ง Error กลับไปยัง API
-		return nil, errors.UnexpectedError()
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error fetching all return orders", zap.Error(err))
+		return nil, fmt.Errorf("error fetching all return orders: %w", err)
 	}
 
-	// Step 3: ส่งข้อมูล ReturnOrder ที่ได้กลับไปยัง API
+	// เช็คเมื่อไม่มีข้อมูลในคำสั่งซื้อ
+	if len(allorder) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("No return orders found")
+		return []response.ReturnOrder{}, nil
+	}
+
+	logFinish("Success", nil)
 	return allorder, nil
 }
 
+// review
 func (srv service) GetReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.ReturnOrder, error) {
+	logFinish := srv.logger.LogAPICall(ctx, "GetReturnOrderByOrderNo", zap.String("OrderNo", orderNo))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting get return order process 🔎", zap.String("OrderNo", orderNo))
+
 	// Step 1: ตรวจสอบว่า OrderNo ไม่เป็นค่าว่าง
 	if orderNo == "" {
-		return nil, errors.ValidationError("OrderNo is required")
+		err := fmt.Errorf("❗OrderNo is required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
+	}
+
+	// Step 2: ตรวจสอบว่า OrderNo มีอยู่จริงใน ReturnOrderLine
+	exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, orderNo)
+	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error checking OrderNo existence", zap.Error(err))
+		return nil, fmt.Errorf("error checking OrderNo existence: %w", err)
+	}
+	if !exists {
+		err := fmt.Errorf("⚠️ This OrderNo not found: %s", orderNo)
+		logFinish("Failed", err)
+		srv.logger.Warn("❗OrderNo not found", zap.String("OrderNo", orderNo))
+		return nil, err
 	}
 
 	// Step 2: เรียก repository เพื่อดึงข้อมูล ReturnOrder โดยใช้ OrderNo
 	idorder, err := srv.returnOrderRepo.GetReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			// Step 3: หากไม่พบข้อมูล ReturnOrder ให้ส่ง Error กลับไปยัง API
-			return nil, errors.NotFoundError("Return order not found")
-		}
-		srv.logger.Error("Error fetching ReturnOrder by ID", zap.Error(err))
-		return nil, errors.UnexpectedError()
+		logFinish("Failed", err)
+		srv.logger.Error("Error fetching ReturnOrder by OrderNo", zap.String("OrderNo", orderNo), zap.Error(err))
+		return nil, fmt.Errorf("error fetching ReturnOrder by OrderNo: %s => %w", orderNo, err)
 	}
 
-	// Step 4: ส่งข้อมูล ReturnOrder ที่ได้กลับไปยัง API
+	// เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
+	if len(idorder.ReturnOrderLine) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("No lines found for this order")
+		return idorder, nil
+	}
+
+	logFinish("Success", nil)
 	return idorder, nil
 }
 
+// review
 func (srv service) GetAllReturnOrderLines(ctx context.Context) ([]response.ReturnOrderLine, error) {
+	logFinish := srv.logger.LogAPICall(ctx, "GetAllReturnOrderLines")
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting get return order lines process 🔎")
+
 	lines, err := srv.returnOrderRepo.GetAllReturnOrderLines(ctx)
 	if err != nil {
-		srv.logger.Error("Error fetching all return order lines", zap.Error(err))
-		return nil, errors.UnexpectedError()
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error fetching all return order lines", zap.Error(err))
+		return nil, fmt.Errorf("error fetching all return order lines: %w", err)
 	}
 
+	// เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
+	if len(lines) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("No lines found")
+		return lines, nil
+	}
+
+	logFinish("Success", nil)
 	return lines, nil
 }
 
-func (srv service) GetReturnOrderLinesByReturnID(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error) {
+// review
+func (srv service) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error) {
+	logFinish := srv.logger.LogAPICall(ctx, "GetReturnOrderLineByOrderNo", zap.String("OrderNo", orderNo))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting get return order line process 🔎", zap.String("OrderNo", orderNo))
+
 	if orderNo == "" {
-		return nil, errors.ValidationError("OrderNo is required")
+		err := fmt.Errorf("❗ OrderNo is required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
 	}
 
-	lines, err := srv.returnOrderRepo.GetReturnOrderLinesByReturnID(ctx, orderNo)
+	// ตรวจสอบว่า OrderNo มีอยู่จริงใน ReturnOrderLine
+	exists, err := srv.returnOrderRepo.CheckOrderNoLineExist(ctx, orderNo)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.NotFoundError("This Return Order Line not found")
-		}
-		srv.logger.Error("Error fetching return order lines by OrderNo", zap.Error(err))
-		return nil, errors.UnexpectedError()
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error checking OrderNo existence", zap.Error(err))
+		return nil, fmt.Errorf("error checking OrderNo existence: %w", err)
+	}
+	if !exists {
+		err := fmt.Errorf("⚠️  This Return Order Line not found: %s", orderNo)
+		logFinish("Failed", err)
+		srv.logger.Warn(err.Error())
+		return nil, err
 	}
 
+	// ดึงข้อมูล ReturnOrderLines
+	lines, err := srv.returnOrderRepo.GetReturnOrderLineByOrderNo(ctx, orderNo)
+	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error fetching return order lines by OrderNo", zap.Error(err))
+		return nil, fmt.Errorf("error fetching return order lines by OrderNo: %w", err)
+	}
+
+	// เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
+	if len(lines) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("No lines found for this order number")
+		return lines, nil
+	}
+
+	logFinish("Success", nil)
 	return lines, nil
 }
 
+// review
 func (srv service) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error) {
-	srv.logger.Info("🏁 Fetching Return Orders with StatusCheckID", zap.Int("StatusCheckID", statusCheckID))
+	logFinish := srv.logger.LogAPICall(ctx, "GetReturnOrdersByStatus", zap.Int("StatusCheckID", statusCheckID))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting get return order process 🔎", zap.Int("StatusCheckID", statusCheckID))
 
 	orders, err := srv.returnOrderRepo.GetReturnOrdersByStatus(ctx, statusCheckID)
 	if err != nil {
-		srv.logger.Error("❌ Failed to fetch Return Orders",
-			zap.Int("StatusCheckID", statusCheckID),
-			zap.Error(err),
-		)
-		return nil, errors.InternalError("Failed to fetch Return Orders")
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to fetch Return Orders", zap.Error(err))
+		return nil, errors.InternalError("failed to fetch Return Orders")
 	}
 
-	srv.logger.Info("✅ Successfully fetched Return Orders",
-		zap.Int("StatusCheckID", statusCheckID),
-		zap.Int("Count", len(orders)),
-	)
+	if len(orders) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("⚠️ No order found")
+		return []response.DraftTradeDetail{}, nil
+	}
+
+	srv.logger.Info("✅ Successfully fetched Return Orders", zap.Int("StatusCheckID", statusCheckID), zap.Int("Count", len(orders)))
+	logFinish("Success", nil)
 	return orders, nil
 }
 
+// review
 func (srv service) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error) {
-	srv.logger.Info("🏁 Fetching Return Orders with StatusCheckID and Date Range",
-		zap.Int("StatusCheckID", statusCheckID),
-		zap.String("StartDate", startDate),
-		zap.String("EndDate", endDate),
-	)
+	logFinish := srv.logger.LogAPICall(ctx, "GetReturnOrdersByStatusAndDateRange", zap.String("StartDate", startDate), zap.String("EndDate", endDate))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting get return order from range date process 🔎", zap.String("StartDate", startDate), zap.String("EndDate", endDate))
 
 	orders, err := srv.returnOrderRepo.GetReturnOrdersByStatusAndDateRange(ctx, statusCheckID, startDate, endDate)
 	if err != nil {
-		srv.logger.Error("❌ Failed to fetch Return Orders",
-			zap.Int("StatusCheckID", statusCheckID),
-			zap.Error(err),
-		)
-		return nil, errors.InternalError("Failed to fetch Return Orders")
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to fetch Return Orders", zap.Int("StatusCheckID", statusCheckID), zap.Error(err))
+		return nil, fmt.Errorf("failed to fetch Return Orders: %w", err)
 	}
 
-	srv.logger.Info("✅ Successfully fetched Return Orders",
-		zap.Int("StatusCheckID", statusCheckID),
-		zap.Int("Count", len(orders)),
-	)
+	// เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
+	if len(orders) == 0 {
+		logFinish("Success", nil)
+		srv.logger.Info("⚠️ No order found within the specified date range")
+		return []response.DraftTradeDetail{}, nil
+	}
+
+	srv.logger.Info("✅ Successfully fetched Return Orders", zap.Int("StatusCheckID", statusCheckID), zap.Int("Count", len(orders)))
+	logFinish("Success", nil)
 	return orders, nil
 }
 
+// review
 func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) (*response.CreateReturnOrder, error) {
-	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "CreateReturnOrder", zap.String("OrderNo", req.OrderNo))
 	defer logFinish("Completed", nil)
-
 	srv.logger.Info("🔎 Starting return order creation process 🔎", zap.String("OrderNo", req.OrderNo))
+
+	if len(req.ReturnOrderLine) == 0 {
+		err := fmt.Errorf("❗ReturnOrderLine cannot be empty")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
+	}
 
 	// Validate request
 	if err := utils.ValidateCreateReturnOrder(req); err != nil {
@@ -146,98 +238,112 @@ func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateRetu
 	// ตรวจสอบว่า OrderNo ซ้ำหรือไม่
 	exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, req.OrderNo)
 	if err != nil {
-		srv.logger.Error("Failed to check OrderNo", zap.Error(err))
-		return nil, errors.InternalError("Failed to check OrderNo")
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to check OrderNo", zap.Error(err))
+		return nil, fmt.Errorf("failed to check OrderNo: %w", err)
 	}
 	if exists {
-		srv.logger.Error("OrderNo already exists", zap.Error(err))
-		return nil, errors.BadRequestError("OrderNo already exists")
+		logFinish("Failed", err)
+		srv.logger.Error("❗ OrderNo already exists", zap.Error(err))
+		return nil, (fmt.Errorf("❗ orderNo already exists: %s", req.OrderNo))
 	}
 
+	// บันทึกลง database
 	err = srv.returnOrderRepo.CreateReturnOrder(ctx, req)
 	if err != nil {
-		srv.logger.Error("❌ Failed to create order with lines", zap.Error(err)) // Logging ว่าการสร้าง order ล้มเหลว
-		return nil, err
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to create order with lines", zap.Error(err))
+		return nil, fmt.Errorf("failed to create order with lines: %w", err)
 	}
 
-	// ดึงข้อมูล ReturnOrder ที่สร้างขึ้นมาใหม่ไปแสดง
+	// ดึงข้อมูล order ที่สร้างสำเร็จ
 	createdOrder, err := srv.returnOrderRepo.GetCreateReturnOrder(ctx, req.OrderNo)
 	if err != nil {
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to fetch created order", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch created order: %w", err)
 	}
 
-	// Logging สำเร็จ และอัปเดต Log ว่าสำเร็จ
 	logFinish("Success", nil)
 	return createdOrder, nil
 }
 
+// review
 func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder, updateBy string) (*response.UpdateReturnOrder, error) {
 	// เริ่มต้น Logging ของ API Call
-	logFinish := srv.logger.LogAPICall(ctx, "UpdateReturnOrder", zap.String("UpdateBy", updateBy))
+	logFinish := srv.logger.LogAPICall(ctx, "UpdateReturnOrder", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", updateBy))
 	defer logFinish("Completed", nil)
-	srv.logger.Info("🔎 Starting return order update process 🔎")
+	srv.logger.Info("🔎 Starting return order update process 🔎", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", updateBy))
 
-	// Step 1: ตรวจสอบว่า OrderNo ไม่เป็นค่าว่าง
 	if req.OrderNo == "" {
-		return nil, errors.ValidationError("OrderNo is required")
+		err := fmt.Errorf("❗ OrderNo is required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
 	}
 
 	exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, req.OrderNo)
 	if err != nil {
-		srv.logger.Error("Error checking OrderNo existence", zap.Error(err))
-		return nil, errors.UnexpectedError()
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error checking OrderNo existence", zap.Error(err))
+		return nil, fmt.Errorf("error checking OrderNo existence: %w", err)
 	}
 	if !exists {
-		return nil, errors.NotFoundError("OrderNo not found")
+		logFinish("Failed", err)
+		srv.logger.Warn("❗ OrderNo not found", zap.Error(err))
+		return nil, fmt.Errorf("❗OrderNo not found: %s", req.OrderNo)
 	}
 
-	// Step 2: เรียก repository เพื่ออัปเดต ReturnOrder
 	err = srv.returnOrderRepo.UpdateReturnOrder(ctx, req, updateBy)
 	if err != nil {
-		srv.logger.Error("Error updating ReturnOrder", zap.Error(err))
-		return nil, errors.UnexpectedError()
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error updating ReturnOrder", zap.Error(err))
+		return nil, fmt.Errorf("error updating ReturnOrder: %w", err)
 	}
 
 	updatedOrder, err := srv.returnOrderRepo.GetUpdateReturnOrder(ctx, req.OrderNo) // ดึงข้อมูล order ที่อัพเดทเสร็จแล้ว
 	if err != nil {
+		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to fetch updated order", zap.Error(err)) // Logging ว่าการดึงข้อมูล order ล้มเหลว
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch updated order: %w", err)
 	}
 
 	logFinish("Success", nil)
 	return updatedOrder, nil
 }
 
+// review
 func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error {
-	// เริ่มต้น Logging ของ API Call
 	logFinish := srv.logger.LogAPICall(ctx, "DeleteReturnOrder", zap.String("OrderNo", orderNo))
 	defer logFinish("Completed", nil)
-
-	// Logging ว่าเริ่มการทำงาน
-	srv.logger.Info("🔎 Starting delete return order process 🔎", zap.String("OrderNo", orderNo),)
+	srv.logger.Info("🔎 Starting delete return order process 🔎", zap.String("OrderNo", orderNo))
 
 	if orderNo == "" {
-		return errors.ValidationError("OrderNo is required")
+		err := fmt.Errorf("❗ OrderNo are required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return err
 	}
 
-    // Step 1: ตรวจสอบการมีอยู่ของ OrderNo
-    exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, orderNo)
-    if err != nil {
-        srv.logger.Error("Error checking OrderNo existence", zap.Error(err))
-        return errors.UnexpectedError()
-    }
-    if !exists {
-        return errors.NotFoundError("OrderNo not found")
-    }
+	exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, orderNo)
+	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error checking OrderNo existence", zap.Error(err))
+		return fmt.Errorf("error checking OrderNo existence: %w", err)
+	}
+	if !exists {
+		logFinish("Failed", err)
+		srv.logger.Warn("❗ OrderNo not found", zap.Error(err))
+		return fmt.Errorf("❗OrderNo not found: %s", orderNo)
 
-    // Step 2: เรียก repository เพื่อลบ ReturnOrder
-    err = srv.returnOrderRepo.DeleteReturnOrder(ctx, orderNo)
-    if err != nil {
-        srv.logger.Error("Error deleting ReturnOrder", zap.Error(err))
-        return errors.UnexpectedError()
-    }
+	}
+
+	err = srv.returnOrderRepo.DeleteReturnOrder(ctx, orderNo)
+	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Error deleting ReturnOrder", zap.Error(err))
+		return fmt.Errorf("error deleting ReturnOrder: %w", err)
+	}
 
 	logFinish("Success", nil)
 	return nil

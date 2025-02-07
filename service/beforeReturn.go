@@ -6,6 +6,7 @@ import (
 	"boilerplate-backend-go/utils"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -53,14 +54,13 @@ type BeforeReturnService interface {
 	// Method สำหรับอัพเดท Draft Order
 	UpdateDraftOrder(ctx context.Context, orderNo string, userID string) error
 
-	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อทั้งหมด
-	GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error)
+
 	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อทั้งหมดพร้อมการแบ่งหน้า
 	GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error)
 	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อโดยใช้หมายเลข SO
 	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
-	// Method ลบรายการ BeforeReturnOrderLine โดยใช้ RecID
-	DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error
+	// Method ลบรายการ BeforeReturnOrderLine
+	DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error
 	// Method สร้างคำสั่งซื้อคืนสินค้า
 	CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error)
 	// Method สร้างรายการคืนสินค้า
@@ -69,331 +69,357 @@ type BeforeReturnService interface {
 	ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error
 	// Method ยืนยันการคืนสินค้าโดยสมบูรณ์
 	ConfirmReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error
-	// Method ตรวจสอบความถูกต้องของข้อมูลก่อนสร้างคำสั่งซื้อคืนสินค้า
-	ValidateCreate(req request.BeforeReturnOrder) error
 }
 
-func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, recID string) error {
-	if recID == "" {
-		return fmt.Errorf("RecID is required")
-	}
-
-	// ส่งไปยัง Repository Layer
-	err := srv.beforeReturnRepo.DeleteBeforeReturnOrderLine(ctx, recID)
-	if err != nil {
-		return fmt.Errorf("failed to delete before return order line: %w", err)
-	}
-
-	return nil
-}
-
-// ใช้ตรวจสอบ Create of BeforeReturnOrder
-func (srv service) ValidateCreate(req request.BeforeReturnOrder) error {
-	// 1. ตรวจสอบข้อมูลพื้นฐาน
-	if req.OrderNo == "" {
-		return fmt.Errorf("order number is required")
-	}
-	if req.SoNo == "" {
-		return fmt.Errorf("SO number is required")
-	}
-	if req.CustomerID == "" {
-		return fmt.Errorf("customer ID is required")
-	}
-
-	// 2. ตรวจสอบค่าที่ต้องมากกว่า 0
-	if req.ChannelID <= 0 {
-		return fmt.Errorf("invalid channel ID")
-	}
-	if req.WarehouseID <= 0 {
-		return fmt.Errorf("invalid warehouse ID")
-	}
-
-	// 3. ตรวจสอบ ReturnType
-	/* validReturnTypes := map[string]bool{
-		"NORMAL": true,
-		"DAMAGE": true,
-		// เพิ่ม type อื่นๆ ตามต้องการ
-	}
-	if !validReturnTypes[req.ReturnType] {
-		return fmt.Errorf("invalid return type: %s", req.ReturnType)
-	} */
-
-	// 4. ตรวจสอบ order lines
-	if len(req.BeforeReturnOrderLines) == 0 {
-		return fmt.Errorf("at least one order line is required")
-	}
-
-	for i, line := range req.BeforeReturnOrderLines {
-		if line.SKU == "" {
-			return fmt.Errorf("SKU is required for line %d", i+1)
-		}
-		if line.ItemName == "" {
-			return fmt.Errorf("ItemName is required for line %d", i+1)
-		}
-		if line.QTY <= 0 {
-			return fmt.Errorf("quantity must be greater than 0 for line %d", i+1)
-		}
-		if line.ReturnQTY < 0 {
-			return fmt.Errorf("return quantity cannot be negative for line %d", i+1)
-		}
-		if line.ReturnQTY > line.QTY {
-			return fmt.Errorf("return quantity cannot be greater than quantity for line %d", i+1)
-		}
-		if line.Price < 0 {
-			return fmt.Errorf("price cannot be negative for line %d", i+1)
-		}
-		// ตรวจสอบ AlterSKU ถ้ามี
-		if line.AlterSKU != nil && *line.AlterSKU == "" {
-			return fmt.Errorf("alter SKU cannot be empty if provided for line %d", i+1)
-		}
-	}
-
-	return nil
-}
-
+// review
 // create trade , set statusReturnID = 3 (booking)
 func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
-	srv.logger.Info("🏁 Starting order creation process", zap.String("OrderNo", req.OrderNo))
-	srv.logger.Debug("Creating order head", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo))
+	logFinish := srv.logger.LogAPICall(ctx, "CreateTradeReturn", zap.String("OrderNo", req.OrderNo))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting trade return creation process 🔎", zap.String("OrderNo", req.OrderNo))
 
 	// Validate request
-	if err := srv.ValidateCreate(req); err != nil {
-		srv.logger.Error("Invalid request", zap.Error(err))
-		return nil, fmt.Errorf("validation failed: %w", err)
+	if err := utils.ValidateCreateBeforeReturn(req); err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Validation failed", zap.String("OrderNo", req.OrderNo), zap.Error(err))
+		return nil, fmt.Errorf("❌ Validation failed: %w", err)
 	}
 
-	// ตรวจสอบว่า order มีอยู่แล้วหรือไม่
+	// check OrderNo
 	existingOrder, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
 	if err != nil {
-		srv.logger.Error("Failed to check existing order", zap.Error(err))
-		return nil, err
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to check if order already exists", zap.String("OrderNo", req.OrderNo), zap.Error(err))
+		return nil, fmt.Errorf("❌ Failed to check existing order")
 	}
 	if existingOrder != nil {
-		return nil, fmt.Errorf("order already exists: %s", req.OrderNo)
+		logFinish("Failed", err)
+		srv.logger.Warn("⚠️ Order already exists", zap.String("OrderNo", req.OrderNo))
+		return nil, fmt.Errorf("⚠️ order already exists: %s", req.OrderNo)
 	}
 
 	// สร้าง trade return order
 	createdOrder, err := srv.beforeReturnRepo.CreateTradeReturn(ctx, req)
 	if err != nil {
-		srv.logger.Error("❌ Failed to create trade return order", zap.Error(err))
-		return nil, err
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to create trade return order", zap.String("OrderNo", req.OrderNo), zap.Error(err))
+		return nil, fmt.Errorf("❌ Failed to create trade return order: %s => %w", req.OrderNo, err)
 	}
 
-	srv.logger.Info("✅ Successfully created order with lines",
-		zap.String("OrderNo", req.OrderNo))
+	logFinish("Success", nil)
 	return createdOrder, nil
 }
 
+// review
 // add line create trade
 func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) ([]response.BeforeReturnOrderLineResponse, error) {
+	logFinish := srv.logger.LogAPICall(ctx, "CreateTradeReturnLine", zap.String("OrderNo", orderNo))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting trade return line creation process 🔎", zap.String("OrderNo", orderNo))
 
-	// ตรวจสอบ OrderNo ที่สร้างว่าซ้ำกับตัวที่มีหรือไม่
+	// ตรวจสอบว่ามี OrderNo
+	if orderNo == "" {
+		err := fmt.Errorf("❌ OrderNo is required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return nil, err
+	}
+
+	// ตรวจสอบ OrderNo ว่ามีอยู่ใน BeforeReturnOrder
 	exists, err := srv.beforeReturnRepo.CheckBefOrderNoExists(ctx, orderNo)
 	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to check order existence", zap.String("OrderNo", orderNo), zap.Error(err))
 		return nil, fmt.Errorf("failed to check order existence: %w", err)
 	}
 	if !exists {
-		return nil, fmt.Errorf("order not found: %s", orderNo)
+		logFinish("Failed", err)
+		srv.logger.Warn("⚠️ Order not found", zap.String("OrderNo", orderNo))
+		return nil, fmt.Errorf("⚠️ order not found: %s", orderNo)
+	}
+
+	// Validate request
+	if err := utils.ValidateCreateBeforeReturnLine(lines.TradeReturnLine); err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Validation failed", zap.Error(err))
+		return nil, fmt.Errorf("❌ Validation failed: %w", err)
 	}
 
 	// สร้างข้อมูลใน BeforeReturnOrderLine
 	err = srv.beforeReturnRepo.CreateTradeReturnLine(ctx, orderNo, lines.TradeReturnLine)
 	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to create trade return line", zap.String("OrderNo", orderNo), zap.Error(err))
 		return nil, fmt.Errorf("❌ Failed to create trade return line: %w", err)
 	}
 
-	// สร้าง trade return order
+	// ดึงข้อมูลของ order lines ที่เพิ่งสร้างขึ้น
 	createdOrderLines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)
 	if err != nil {
-		srv.logger.Error("❌ Failed to create trade return order", zap.Error(err))
-		return nil, err
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to retrieve created order lines", zap.String("OrderNo", orderNo), zap.Error(err))
+		return nil, fmt.Errorf("❌ Failed to retrieve created order lines: %s => %w", orderNo, err)
 	}
 
-	srv.logger.Info("✅ Successfully created order lines",
-		zap.String("OrderNo", orderNo))
+	logFinish("Success", nil)
 	return createdOrderLines, nil
 }
 
+// review
+func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error{
+	logFinish := srv.logger.LogAPICall(ctx, "DeleteBeforeReturnOrderLine", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting delete process 🔎", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
+
+	if orderNo == "" {
+		err := fmt.Errorf("❗ orderNo is required")
+		logFinish("Failed", err)
+		srv.logger.Error("❌ orderNo is missing", zap.Error(err))
+		return err
+	}
+
+	if sku == "" {
+		err := fmt.Errorf("❗ sku is required")
+		logFinish("Failed", err)
+		srv.logger.Error("❌ sku is missing", zap.Error(err))
+		return err
+	}
+
+	err := srv.beforeReturnRepo.DeleteBeforeReturnOrderLine(ctx, orderNo, sku)
+	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to delete order line", zap.String("OrderNo", orderNo), zap.String("SKU", sku), zap.Error(err))
+		return fmt.Errorf("❌ failed to delete order line: %w", err)
+	}
+
+	logFinish("Success", nil)
+	return nil
+}
+
+// review
 func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
-	srv.logger.Info("🏁 Starting trade return confirmation process",
-		zap.String("Identifier", req.Identifier),
-		zap.String("UpdateBy", updateBy))
+	logFinish := srv.logger.LogAPICall(ctx, "ConfirmReceipt", zap.String("Identifier", req.Identifier))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting confirm receipt process", zap.String("Identifier", req.Identifier))
 
 	// ตรวจสอบค่าว่าง
-	if req.Identifier == "" || updateBy == "" {
-		return fmt.Errorf("identifier (OrderNo or TrackingNo) and updateBy are required")
+	if req.Identifier == "" {
+		err := fmt.Errorf("❗ identifier (OrderNo or TrackingNo) are required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return err
 	}
 
 	// ตรวจสอบว่า orderNo or trackingNo มีอยู่ในฐานข้อมูล BeforeReturnOrder หรือไม่
 	exists, err := srv.beforeReturnRepo.CheckBefOrderOrTrackingExists(ctx, req.Identifier)
 	if err != nil {
-		return fmt.Errorf("failed to check orderNo or trackingNo existence: %w", err)
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to check order existence", zap.Error(err))
+		return fmt.Errorf("❌ Failed to check orderNo or trackingNo existence: %w", err)
 	}
 	if !exists {
-		return fmt.Errorf("orderNo or trackingNo not found: %s", req.Identifier)
+		logFinish("Failed", err)
+		srv.logger.Warn("⚠️ Not found", zap.String("Identifier", req.Identifier), zap.Error(err))
+		return fmt.Errorf("⚠️ Not found: %s", req.Identifier)
 	}
 
-	// ตรวจสอบว่ามี sku ที่ Identifier เดียวกันหรือไม่ หากมีสามารถเพิ่มได้ เพราะของหน้าคลังต้องตรงกับข้อมูลที่กรอกเข้าระบบ
+	// ตรวจสอบ sku ที่เพิ่มมาว่าตรงกับใน BeforeReturn ที่กรอกเข้ามาไหม หากมีจึงจะสามารถเพิ่มได้ เพราะของหน้าคลังต้องตรงกับข้อมูลที่กรอกเข้าระบบ
 	for _, line := range req.ImportLines {
 		exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, req.Identifier, line.SKU)
 		if err != nil {
+			logFinish("Failed", err)
+			srv.logger.Error("❌ Failed to check SKU existence", zap.String("SKU", line.SKU), zap.Error(err))
 			return fmt.Errorf("failed to check SKU existence: %w", err)
 		}
 		if !exists {
+			logFinish("Failed", err)
+			srv.logger.Warn("⚠️ SKU not found", zap.String("SKU", line.SKU), zap.String("Identifier", req.Identifier), zap.Error(err))
 			return fmt.Errorf("SKU %s does not exist in BeforeReturnOrderLine for Identifier %s", line.SKU, req.Identifier)
 		}
 	}
 
 	// 1. อัปเดตสถานะใน BeforeReturnOrder
 	if err := srv.beforeReturnRepo.UpdateBefToWaiting(ctx, req, updateBy); err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to update BeforeReturnOrder", zap.Error(err))
 		return fmt.Errorf("failed to update BeforeReturnOrder: %w", err)
 	}
 
 	// 2. ดึงข้อมูลจาก BeforeReturnOrder
 	returnOrderData, err := srv.beforeReturnRepo.GetBeforeReturnOrderData(ctx, req)
 	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to fetch BeforeReturnOrder", zap.Error(err))
 		return fmt.Errorf("failed to fetch BeforeReturnOrder: %w", err)
 	}
 
-	// กำหนดค่าเริ่มต้นให้กับ StatusCheckID ให้เป็นสถานะ waiting ทันทีเมื่อกด
+	// กำหนดค่าเริ่มต้นให้กับ StatusCheckID ให้เป็นสถานะ waiting
 	returnOrderData.StatusCheckID = 1
 
 	// 3. Insert ข้อมูลลงใน ReturnOrder
 	if err := srv.beforeReturnRepo.InsertReturnOrder(ctx, returnOrderData); err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to insert into ReturnOrder", zap.Error(err))
 		return fmt.Errorf("failed to insert into ReturnOrder: %w", err)
 	}
 
 	// 4. Insert ข้อมูลจาก importLines ลงใน ReturnOrderLine + Check ว่า SKU ตรงกับใน BeforeOD ก่อนถึงเพิ่มได้
 	if err := srv.beforeReturnRepo.InsertReturnOrderLine(ctx, returnOrderData, req); err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to insert into ReturnOrderLine", zap.Error(err))
 		return fmt.Errorf("failed to insert into ReturnOrderLine: %w", err)
 	}
 
 	// 5. Insert ข้อมูลภาพลงใน Images (ไฟล์ภาพ)
 	if err := srv.beforeReturnRepo.InsertImages(ctx, returnOrderData, req); err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to insert images", zap.Error(err))
 		return fmt.Errorf("failed to insert images: %w", err)
 	}
 
-	srv.logger.Info("✅ Successfully confirmed trade return",
-		zap.String("Identifier", req.Identifier),
-		zap.String("UpdateBy", updateBy))
-
+	logFinish("Success", nil)
 	return nil
 }
 
+// review
 // check trade line from scan => confirm => success (unsuccess in process future..)
 func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error {
-	srv.logger.Info("🏁 Starting return confirmation process",
-		zap.String("OrderNo", req.OrderNo),
-		zap.String("UpdateBy", updateBy))
+	logFinish := srv.logger.LogAPICall(ctx, "ConfirmReturn", zap.String("OrderNo", req.OrderNo))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting confirm return process 🔎", zap.String("OrderNo", req.OrderNo))
 
-	// ตรวจสอบว่ามี OrderNo และ UpdateBy หรือไม่
-	if req.OrderNo == "" || updateBy == "" {
-		return fmt.Errorf("OrderNo and UpdateBy are required")
+	// ตรวจสอบว่ามี OrderNo
+	if req.OrderNo == "" {
+		err := errors.New("❌ OrderNo is required")
+		logFinish("Failed", err)
+		srv.logger.Error(err)
+		return err
 	}
 
 	// ตรวจสอบว่า OrderNo ตรงกับฐานข้อมูลใน BeforeReturn หรือไม่
 	exists, err := srv.beforeReturnRepo.CheckBefOrderNoExists(ctx, req.OrderNo)
 	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("failed to check order existence: %w", zap.Error(err))
 		return fmt.Errorf("failed to check order existence: %w", err)
 	}
 	if !exists {
+		logFinish("Failed", err)
+		srv.logger.Error("OrderNo does not exist in BeforeReturnOrder", zap.Error(err))
 		return fmt.Errorf("OrderNo does not exist in BeforeReturnOrder")
 	}
 
 	// ตรวจสอบ SKU
 	for _, line := range req.ImportLinesActual {
 		if line.SKU == "" {
+			logFinish("Failed", err)
+			srv.logger.Error("SKU is required", zap.Error(err))
 			return fmt.Errorf("SKU is required")
 		}
 		exists, err := srv.beforeReturnRepo.CheckReLineSKUExists(ctx, req.OrderNo, line.SKU)
 		if err != nil {
+			logFinish("Failed", err)
+			srv.logger.Error("failed to check SKU existence: %w", zap.Error(err))
 			return fmt.Errorf("failed to check SKU existence: %w", err)
 		}
 		if !exists {
+			logFinish("Failed", err)
+			srv.logger.Error("SKU does not exist in ReturnOrderLine for OrderNo %s", zap.Error(err))
 			return fmt.Errorf("SKU %s does not exist in ReturnOrderLine for OrderNo %s", line.SKU, req.OrderNo)
 		}
 	}
 
 	// อัปเดต BeforeReturnOrder
 	if err := srv.beforeReturnRepo.UpdateStatusToSuccess(ctx, req.OrderNo, updateBy); err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("failed to update BeforeReturnOrder: %w", zap.Error(err))
 		return fmt.Errorf("failed to update BeforeReturnOrder: %w", err)
 	}
 
 	// ดึงข้อมูล BeforeReturnOrder
 	beforeReturnOrder, err := srv.beforeReturnRepo.GetBeforeOrderDetails(ctx, req.OrderNo)
 	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("failed to fetch BeforeReturnOrder details: %w", zap.Error(err))
 		return fmt.Errorf("failed to fetch BeforeReturnOrder details: %w", err)
 	}
 
 	// อัปเดต ReturnOrder และ ReturnOrderLine
 	if err := srv.beforeReturnRepo.UpdateReturnOrderAndLines(ctx, req, beforeReturnOrder); err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("failed to update ReturnOrder and ReturnOrderLine: %w", zap.Error(err))
 		return fmt.Errorf("failed to update ReturnOrder and ReturnOrderLine: %w", err)
 	}
 
-	srv.logger.Info("✅ Successfully confirmed return",
-		zap.String("OrderNo", req.OrderNo),
-		zap.String("UpdateBy", updateBy))
+	logFinish("Success", nil)
 	return nil
 }
 
-func (srv service) GetAllOrderDetail(ctx context.Context) ([]response.OrderDetail, error) {
-	allorder, err := srv.beforeReturnRepo.GetAllOrderDetail(ctx)
-	if err != nil {
-		switch err {
-		case sql.ErrNoRows:
-			srv.logger.Error(err)
-			return nil, fmt.Errorf("no order data: %w", err)
-		default:
-			srv.logger.Error(err)
-			return nil, fmt.Errorf("get order error: %w", err)
-		}
-	}
-	return allorder, nil
-}
-
+// review
 func (srv service) GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error) {
+	logFinish := srv.logger.LogAPICall(ctx, "GetAllOrderDetails")
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting get all order detail process 🔎")
+
 	offset := (page - 1) * limit
 
 	allorder, err := srv.beforeReturnRepo.GetAllOrderDetails(ctx, offset, limit)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
-			srv.logger.Error(err)
+			logFinish("Failed", err)
+			srv.logger.Error("no order data: %w", zap.Error(err))
 			return nil, fmt.Errorf("no order data: %w", err)
 		default:
-			srv.logger.Error(err)
+			logFinish("Failed", err)
+			srv.logger.Error("get order error: %w", zap.Error(err))
 			return nil, fmt.Errorf("get order error: %w", err)
 		}
 	}
+
+	logFinish("Success", nil)
 	return allorder, nil
 }
 
+// review
 func (srv service) GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error) {
+	logFinish := srv.logger.LogAPICall(ctx, "GetOrderDetailBySO", zap.String("SoNo", soNo))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting get order detail by SO process", zap.String("SoNo", soNo))
+
 	soOrder, err := srv.beforeReturnRepo.GetOrderDetailBySO(ctx, soNo)
 	if err != nil {
+		logFinish("Failed", err)
+		srv.logger.Error("❌ Failed to fetch order", zap.Error(err))
 		return nil, err
 	}
+
+	logFinish("Success", nil)
 	return soOrder, nil
 }
 
+// review
 // Method สำหรับสร้าง Before Return Order พร้อมกับ Lines
 func (srv service) CreateBeforeReturnOrderWithLines(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
-	srv.logger.Info("🔎 Starting order creation process", zap.String("OrderNo", req.OrderNo))                  // Logging ว่าเริ่มการสร้าง order
-	srv.logger.Debug("Creating order head", zap.String("OrderNo", req.OrderNo), zap.String("SoNo", req.SoNo)) // Logging ว่ากำลังสร้าง order head
+	logFinish := srv.logger.LogAPICall(ctx, "CreateBeforeReturnOrderWithLines", zap.String("OrderNo", req.OrderNo))
+	defer logFinish("Completed", nil)
+	srv.logger.Info("🔎 Starting order creation process", zap.String("OrderNo", req.OrderNo))
 
 	err := srv.beforeReturnRepo.CreateBeforeReturnOrderWithTransaction(ctx, req) // เรียก repository เพื่อสร้าง order พร้อมกับ transaction
 	if err != nil {
+		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to create order with lines", zap.Error(err)) // Logging ว่าการสร้าง order ล้มเหลว
 		return nil, err
 	}
 
 	createdOrder, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo) // ดึงข้อมูล order ที่สร้างเสร็จแล้ว
 	if err != nil {
+		logFinish("Failed", err)
 		srv.logger.Error("❌ Failed to fetch created order", zap.Error(err)) // Logging ว่าการดึงข้อมูล order ล้มเหลว
 		return nil, err
 	}
 
-	srv.logger.Info("✅ Successfully created order with lines", zap.String("OrderNo", req.OrderNo)) // Logging ว่าการสร้าง order สำเร็จ
+	logFinish("Success", nil)
 	return createdOrder, nil
 }
 
@@ -508,7 +534,7 @@ func (srv service) CreateSaleReturn(ctx context.Context, req request.BeforeRetur
 	srv.logger.Info("🔎 Starting sale return creation process 🔎", zap.String("OrderNo", req.OrderNo))
 
 	// Validate request
-	if err := utils.ValidateCreateSaleReturn(req); err != nil {
+	if err := utils.ValidateCreateBeforeReturn(req); err != nil {
 		logFinish("Failed", err)
 		srv.logger.Error("❌ Validation failed", zap.Error(err))
 		return nil, fmt.Errorf("validation failed: %w", err)

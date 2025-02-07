@@ -13,8 +13,8 @@ type BeforeReturnOrder struct {
 	TrackingNo     string     `json:"trackingNo" db:"TrackingNo"`
 	Logistic       string     `json:"logistic" db:"Logistic"`
 	WarehouseID    int        `json:"warehouseID" db:"WarehouseID"`
-	SoStatusID     *int       `json:"soStatusID" db:"SoStatusID"`
-	MkpStatusID    *int       `json:"mkpStatusID" db:"MkpStatusID"`
+	SoStatus       *int       `json:"soStatus" db:"SoStatus"`
+	MkpStatus      *int       `json:"mkpStatus" db:"MkpStatus"`
 	ReturnDate     *time.Time `json:"returnDate" db:"ReturnDate"`
 	StatusReturnID *int       `json:"statusReturnID" db:"StatusReturnID"`
 	StatusConfID   *int       `json:"statusConfID" db:"StatusConfID"`
@@ -149,7 +149,7 @@ type TradeReturnLineRequest struct {
 	//TrackingNo string  `json:"trackingNo" db:"TrackingNo"`	// add form data BeforeReturnOrder
 	CreateBy string `json:"-" db:"CreateBy" ` // from user login
 	//CreateDate *time.Time `json:"createDate" db:"CreateDate"` // MSSQL GetDate()
-	FilePath    string `json:"filePath" db:"FilePath"` // เข้า Images
+	FilePath    string `json:"filePath" db:"FilePath"`       // เข้า Images
 	ImageTypeID int    `json:"imageTypeID" db:"ImageTypeID"` // เข้า Images
 }
 
