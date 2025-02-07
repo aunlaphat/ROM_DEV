@@ -8,6 +8,9 @@ definitions:
       success:
         type: boolean
     type: object
+  gin.H:
+    additionalProperties: {}
+    type: object
   request.LoginLark:
     properties:
       userID:
@@ -72,6 +75,27 @@ definitions:
       userName:
         type: string
     type: object
+  response.UserRole:
+    properties:
+      departmentNo:
+        type: string
+      description:
+        type: string
+      fullNameTH:
+        type: string
+      nickName:
+        type: string
+      permission:
+        type: string
+      roleID:
+        type: integer
+      roleName:
+        type: string
+      userID:
+        type: string
+      userName:
+        type: string
+    type: object
 info:
   contact: {}
   description: This is a Return Order Management Service API server.
@@ -92,7 +116,7 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: Check Authentication
       tags:
-      - Auth
+      - Authentication
   /auth/login:
     post:
       consumes:
@@ -122,7 +146,7 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: User Login
       tags:
-      - Auth
+      - Authentication
   /auth/login-lark:
     post:
       consumes:
@@ -152,7 +176,7 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: User Lark Login
       tags:
-      - Auth
+      - Authentication
   /auth/logout:
     post:
       description: Logs the user out by removing the JWT token from the cookie.
@@ -163,7 +187,7 @@ paths:
             $ref: '#/definitions/api.Response'
       summary: User Logout
       tags:
-      - Auth
+      - Authentication
   /order/search:
     get:
       consumes:
@@ -206,4 +230,31 @@ paths:
       summary: Search order by SO number or Order number
       tags:
       - Return Order MKP
+  /user/{username}:
+    get:
+      description: Get user credentials by userName
+      parameters:
+      - description: UserName
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User credentials
+          schema:
+            $ref: '#/definitions/response.UserRole'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/gin.H'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: Get User Credentials
+      tags:
+      - User
 swagger: "2.0"

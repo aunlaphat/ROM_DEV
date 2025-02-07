@@ -19,7 +19,7 @@ const docTemplate = `{
             "get": {
                 "description": "Validates if the JWT token is valid and retrieves user claims.",
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
                 "summary": "Check Authentication",
                 "responses": {
@@ -48,7 +48,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
                 "summary": "User Login",
                 "parameters": [
@@ -94,7 +94,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
                 "summary": "User Lark Login",
                 "parameters": [
@@ -134,7 +134,7 @@ const docTemplate = `{
             "post": {
                 "description": "Logs the user out by removing the JWT token from the cookie.",
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
                 "summary": "User Logout",
                 "responses": {
@@ -214,6 +214,47 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/user/{username}": {
+            "get": {
+                "description": "Get user credentials by userName",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User Credentials",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UserName",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User credentials",
+                        "schema": {
+                            "$ref": "#/definitions/response.UserRole"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -228,6 +269,10 @@ const docTemplate = `{
                     "type": "boolean"
                 }
             }
+        },
+        "gin.H": {
+            "type": "object",
+            "additionalProperties": {}
         },
         "request.LoginLark": {
             "type": "object",
@@ -316,6 +361,38 @@ const docTemplate = `{
                 },
                 "roleID": {
                     "type": "integer"
+                },
+                "userID": {
+                    "type": "string"
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.UserRole": {
+            "type": "object",
+            "properties": {
+                "departmentNo": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "fullNameTH": {
+                    "type": "string"
+                },
+                "nickName": {
+                    "type": "string"
+                },
+                "permission": {
+                    "type": "string"
+                },
+                "roleID": {
+                    "type": "integer"
+                },
+                "roleName": {
+                    "type": "string"
                 },
                 "userID": {
                     "type": "string"

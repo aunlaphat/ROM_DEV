@@ -16,6 +16,7 @@ import (
 type UserService interface {
 	Login(ctx context.Context, req request.LoginWeb) (response.User, error)
 	LoginLark(ctx context.Context, req request.LoginLark) (response.User, error)
+	GetUser(ctx context.Context, username string) (response.UserRole, error)
 }
 
 func (srv service) Login(ctx context.Context, req request.LoginWeb) (response.User, error) {
@@ -73,4 +74,34 @@ func (srv service) LoginLark(ctx context.Context, req request.LoginLark) (respon
 
 	logFinish.Info("✅ Lark login successful", zap.String("username", user.UserName))
 	return user, nil
+}
+
+func (srv service) GetUser(ctx context.Context, username string) (response.UserRole, error) {
+	logFinish := srv.logger.With(zap.String("username", username))
+	logFinish.Info("🔍 Fetching user credentials")
+
+	user, err := srv.userRepo.GetUser(ctx, username)
+	if err != nil {
+		if err.Error() == "user not found" {
+			logFinish.Warn("❌ User not found", zap.String("username", username))
+			return response.UserRole{}, fmt.Errorf("user not found")
+		}
+		logFinish.Error("❌ Failed to fetch user", zap.Error(err))
+		return response.UserRole{}, fmt.Errorf("database error")
+	}
+
+	userResponse := response.UserRole{
+		UserID:       user.UserID,
+		UserName:     user.UserName,
+		FullNameTH:   user.FullNameTH,
+		NickName:     user.NickName,
+		DepartmentNo: user.DepartmentNo,
+		RoleID:       user.RoleID,
+		RoleName:     user.RoleName,
+		Description:  user.Description,
+		Permission:   user.Permission,
+	}
+
+	logFinish.Info("✅ User credentials fetched successfully", zap.String("username", username))
+	return userResponse, nil
 }

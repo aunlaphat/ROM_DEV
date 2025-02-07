@@ -15,7 +15,6 @@ type User struct {
 	Permission   string `db:"Permission"`
 }
 
-
 type ROM_V_OrderHeadDetail struct {
 	OrderNo     string    `db:"OrderNo"`     // เลขที่ใบสั่งซื้อ
 	SoNo        string    `db:"SoNo"`        // เลขที่ใบสั่งขาย

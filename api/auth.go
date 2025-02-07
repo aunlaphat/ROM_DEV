@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// 📌 กำหนดเส้นทางสำหรับ Authentication API
 func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 	auth := apiRouter.Group("/auth")
 	auth.POST("/login", app.Login)              // Standard Login
@@ -42,7 +41,7 @@ func (app *Application) GenerateToken(user response.User) string {
 
 // @Summary User Login
 // @Description Authenticates user credentials and generates a JWT token.
-// @Tags Auth
+// @Tags Authentication
 // @Accept json
 // @Produce json
 // @Param login-request body request.LoginWeb true "User login credentials"
@@ -75,7 +74,7 @@ func (app *Application) Login(c *gin.Context) {
 
 // @Summary User Lark Login
 // @Description Authenticates user credentials from Lark and generates a JWT token.
-// @Tags Auth
+// @Tags Authentication
 // @Accept json
 // @Produce json
 // @Param login-request body request.LoginLark true "User login from Lark"
@@ -108,7 +107,7 @@ func (app *Application) LoginFromLark(c *gin.Context) {
 
 // @Summary User Logout
 // @Description Logs the user out by removing the JWT token from the cookie.
-// @Tags Auth
+// @Tags Authentication
 // @Success 200 {object} api.Response "Logout successful"
 // @Router /auth/logout [post]
 func (app *Application) Logout(c *gin.Context) {
@@ -119,7 +118,7 @@ func (app *Application) Logout(c *gin.Context) {
 
 // @Summary Check Authentication
 // @Description Validates if the JWT token is valid and retrieves user claims.
-// @Tags Auth
+// @Tags Authentication
 // @Success 200 {object} api.Response "Authenticated user details"
 // @Failure 401 {object} api.Response "Unauthorized"
 // @Router /auth [get]
@@ -132,8 +131,6 @@ func (app *Application) CheckAuthen(c *gin.Context) {
 	} else if source == "cookie" {
 		claims, _ = c.Get("jwt_claims_cookie")
 	}
-
-	//fmt.Printf("JWT Source: %s, Claims: %+v\n", source, claims)
 
 	if claims == nil {
 		handleResponse(c, false, "Unauthorized - No claims found", nil, http.StatusUnauthorized)

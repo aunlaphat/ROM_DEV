@@ -10,11 +10,14 @@ type User struct {
 	Platform     string `json:"platform" db:"Platform"`
 }
 
-type UserPermission struct {
-	UserID      string `json:"userID" db:"UserID"`
-	UserName    string `json:"userName" db:"UserName"`
-	RoleID      int    `json:"roleID" db:"RoleID"`
-	RoleName    string `json:"roleName" db:"RoleName"`
-	Description string `json:"description" db:"Description"`
-	Permission  string `json:"permission" db:"Permission"`
+type UserRole struct {
+	UserID       string `json:"userID" db:"UserID"`
+	UserName     string `json:"userName" db:"UserName"`
+	FullNameTH   string `json:"fullNameTH" db:"FullNameTH"`
+	NickName     string `json:"nickName" db:"NickName"`
+	DepartmentNo string `json:"departmentNo" db:"DepartmentNo"`
+	RoleID       int    `json:"roleID" db:"RoleID"`
+	RoleName     string `json:"roleName" db:"RoleName"`
+	Description  string `json:"description" db:"Description"`
+	Permission   string `json:"permission" db:"Permission"`
 }
