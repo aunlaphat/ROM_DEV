@@ -72,6 +72,8 @@ func (srv service) LoginLark(ctx context.Context, req request.LoginLark) (respon
 		return response.User{}, errors.UnauthorizedError("user not found in system")
 	}
 
+	user.Platform = "lark"
+
 	logFinish.Info("✅ Lark login successful", zap.String("username", user.UserName))
 	return user, nil
 }

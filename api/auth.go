@@ -24,15 +24,15 @@ func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 }
 
 // Generate JWT token from user claims
-func (app *Application) GenerateToken(user response.User) string {
+func (app *Application) GenerateToken(tokenData response.User) string {
 	claims := map[string]interface{}{
-		"userID":     user.UserID,
-		"userName":   user.UserName,
-		"roleID":     user.RoleID,
-		"fullNameTH": user.FullNameTH,
-		"nickName":   user.NickName,
-		"department": user.DepartmentNo,
-		"platform":   user.Platform,
+		"userID":     tokenData.UserID,
+		"userName":   tokenData.UserName,
+		"roleID":     tokenData.RoleID,
+		"fullNameTH": tokenData.FullNameTH,
+		"nickName":   tokenData.NickName,
+		"department": tokenData.DepartmentNo,
+		"platform":   tokenData.Platform,
 	}
 
 	_, tokenString, _ := app.TokenAuth.Encode(claims)

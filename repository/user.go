@@ -42,7 +42,7 @@ func (repo repositoryDB) GetUser(ctx context.Context, username string) (entity.U
 func (repo repositoryDB) GetUserFromLark(ctx context.Context, userID, username string) (response.User, error) {
 	var user response.User
 	query := `
-        SELECT UserID, UserName, RoleID, FullNameTH, NickName, DepartmentNo, 'lark' as Platform
+        SELECT UserID, UserName, RoleID, FullNameTH, NickName, DepartmentNo
         FROM ROM_V_UserPermission
         WHERE UserID = :userID AND UserName = :userName
     `
