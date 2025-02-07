@@ -8,6 +8,25 @@ definitions:
       success:
         type: boolean
     type: object
+  request.LoginLark:
+    properties:
+      userID:
+        example: DC65060
+        type: string
+      userName:
+        example: eknarin.ler
+        type: string
+    type: object
+  request.LoginWeb:
+    properties:
+      password:
+        description: change password lastest in 17 January 2025
+        example: EKna1234
+        type: string
+      userName:
+        example: eknarin.ler
+        type: string
+    type: object
   response.SearchOrderItem:
     properties:
       itemName:
@@ -36,12 +55,115 @@ definitions:
       statusMKP:
         type: string
     type: object
+  response.User:
+    properties:
+      departmentNo:
+        type: string
+      fullNameTH:
+        type: string
+      nickName:
+        type: string
+      platform:
+        type: string
+      roleID:
+        type: integer
+      userID:
+        type: string
+      userName:
+        type: string
+    type: object
 info:
   contact: {}
   description: This is a Return Order Management Service API server.
   title: Return Order Management Service ⭐
   version: "1.0"
 paths:
+  /auth:
+    get:
+      description: Validates if the JWT token is valid and retrieves user claims.
+      responses:
+        "200":
+          description: Authenticated user details
+          schema:
+            $ref: '#/definitions/api.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Check Authentication
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates user credentials and generates a JWT token.
+      parameters:
+      - description: User login credentials
+        in: body
+        name: login-request
+        required: true
+        schema:
+          $ref: '#/definitions/request.LoginWeb'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token
+          schema:
+            $ref: '#/definitions/response.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: User Login
+      tags:
+      - Auth
+  /auth/login-lark:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates user credentials from Lark and generates a JWT token.
+      parameters:
+      - description: User login from Lark
+        in: body
+        name: login-request
+        required: true
+        schema:
+          $ref: '#/definitions/request.LoginLark'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token
+          schema:
+            $ref: '#/definitions/response.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: User Lark Login
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Logs the user out by removing the JWT token from the cookie.
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: User Logout
+      tags:
+      - Auth
   /order/search:
     get:
       consumes:

@@ -2,6 +2,20 @@ package entity
 
 import "time"
 
+type User struct {
+	UserID       string `db:"UserID"`
+	UserName     string `db:"UserName"`
+	Password     string `db:"Password"`
+	NickName     string `db:"NickName"`
+	FullNameTH   string `db:"FullNameTH"`
+	DepartmentNo string `db:"DepartmentNo"`
+	RoleID       int    `db:"RoleID"`
+	RoleName     string `db:"RoleName"`
+	Description  string `db:"Description"`
+	Permission   string `db:"Permission"`
+}
+
+
 type ROM_V_OrderHeadDetail struct {
 	OrderNo     string    `db:"OrderNo"`     // เลขที่ใบสั่งซื้อ
 	SoNo        string    `db:"SoNo"`        // เลขที่ใบสั่งขาย

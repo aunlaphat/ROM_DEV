@@ -45,7 +45,7 @@ func Routes(router *gin.Engine, app *Application) {
 
 	// Authenticated & User Routes
 	app.AuthRoute(apiRouter)
-	app.UserRoute(apiRouter)
+	//app.UserRoute(apiRouter)
 
 	app.OrderRoute(apiRouter)
 }

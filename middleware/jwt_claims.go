@@ -5,39 +5,46 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/jwtauth"
-	"go.uber.org/zap"
 )
 
-// JWTAuthMiddleware validates JWT and extracts claims
-func JWTAuthMiddleware(tokenAuth *jwtauth.JWTAuth, logger *zap.Logger) gin.HandlerFunc {
+func JWTAuthMiddleware(tokenAuth *jwtauth.JWTAuth) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Validate and verify JWT token
-		token, err := jwtauth.VerifyRequest(tokenAuth, c.Request, jwtauth.TokenFromHeader, jwtauth.TokenFromQuery)
+		var tokenString string
+		var source string
+
+		authHeader := c.GetHeader("Authorization")
+		if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+			tokenString = authHeader[7:]
+			source = "header"
+		}
+
+		if tokenString == "" {
+			token, err := c.Cookie("jwt")
+			if err == nil {
+				tokenString = token
+				source = "cookie"
+			}
+		}
+
+		if tokenString == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized - No token provided"})
+			c.Abort()
+			return
+		}
+
+		claims, err := tokenAuth.Decode(tokenString)
 		if err != nil {
-			logger.Error("❌ Invalid JWT Token", zap.Error(err))
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized - Invalid token"})
+			c.Abort()
 			return
 		}
 
-		// Ensure token is present
-		if token == nil {
-			logger.Error("🚫 Missing JWT Token")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing token"})
-			return
+		if source == "header" {
+			c.Set("jwt_claims_header", claims)
+		} else if source == "cookie" {
+			c.Set("jwt_claims_cookie", claims)
 		}
-
-		// Extract claims from token
-		claims, _ := token.AsMap(c.Request.Context())
-
-		// Set JWT claims in the context for further use
-		c.Set("jwt_claims", claims)
-
-		/* // Extract RoleID for Role-Based Access Control
-		if roleID, ok := claims["roleID"].(float64); ok {
-			c.Set("roleID", int(roleID)) // Convert float64 to int (JWT encodes numbers as float64)
-		} else {
-			logger.Warn("⚠️ roleID not found in token claims")
-		} */
+		c.Set("jwt_source", source)
 
 		c.Next()
 	}
