@@ -20,6 +20,7 @@ func (app *Application) OrderRoute(apiRouter *gin.RouterGroup) {
 	orderAuth := order.Group("/")
 	orderAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
 	orderAuth.POST("/create", app.CreateBeforeReturnOrder)
+	orderAuth.POST("/update-sr/:orderNo", app.UpdateSrNo)
 }
 
 // 📌 **Search Order**
@@ -124,4 +125,39 @@ func (app *Application) CreateBeforeReturnOrder(c *gin.Context) {
 	)
 
 	handleResponse(c, true, "⭐ Return order created successfully ⭐", resp, http.StatusCreated)
+}
+
+// UpdateSrNo godoc
+// @Summary Update SrNo (Sale Return Number)
+// @Description Generates SrNo and updates it in the database
+// @ID update-sr-no
+// @Tags Return Order MKP
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order Number"
+// @Success 200 {object} Response{data=response.UpdateSrNoResponse}
+// @Failure 400 {object} Response
+// @Failure 500 {object} Response
+// @Router /order/update-sr/{orderNo} [post]
+func (app *Application) UpdateSrNo(c *gin.Context) {
+	orderNo := c.Param("orderNo")
+	if orderNo == "" {
+		handleResponse(c, false, "⚠️ OrderNo is required", nil, http.StatusBadRequest)
+		return
+	}
+
+	userID, exists := c.Get("UserID")
+	if !exists {
+		app.Logger.Warn("⚠️ Unauthorized - Missing UserID")
+		handleResponse(c, false, "⚠️ Unauthorized - Missing UserID", nil, http.StatusUnauthorized)
+		return
+	}
+
+	resp, err := app.Service.Order.UpdateSrNo(c.Request.Context(), orderNo, userID.(string))
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	handleResponse(c, true, "⭐ SrNo updated successfully ⭐", resp, http.StatusOK)
 }

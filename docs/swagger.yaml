@@ -202,6 +202,21 @@ definitions:
       statusMKP:
         type: string
     type: object
+  response.UpdateSrNoResponse:
+    properties:
+      orderNo:
+        type: string
+      srNo:
+        type: string
+      statusConfID:
+        type: integer
+      statusReturnID:
+        type: integer
+      updateBy:
+        type: string
+      updateDate:
+        type: string
+    type: object
   response.User:
     properties:
       departmentNo:
@@ -412,6 +427,41 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Search order by SO number or Order number
+      tags:
+      - Return Order MKP
+  /order/update-sr/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Generates SrNo and updates it in the database
+      operationId: update-sr-no
+      parameters:
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UpdateSrNoResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Update SrNo (Sale Return Number)
       tags:
       - Return Order MKP
   /user/{username}:

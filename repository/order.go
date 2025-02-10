@@ -15,6 +15,7 @@ type OrderRepository interface {
 	CreateBeforeReturnOrder(ctx context.Context, req request.CreateBeforeReturnOrder, userID string) error
 	GetBeforeReturnOrder(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
 	GetBeforeReturnOrderItems(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderItem, error)
+	UpdateSrNo(ctx context.Context, orderNo string, srNo string, userID string) (*response.UpdateSrNoResponse, error)
 }
 
 func (repo repositoryDB) SearchOrder(ctx context.Context, req request.SearchOrder) (*response.SearchOrderResponse, error) {
@@ -77,20 +78,20 @@ func (repo repositoryDB) SearchOrder(ctx context.Context, req request.SearchOrde
 }
 
 func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, req request.CreateBeforeReturnOrder, userID string) error {
-	// 🔹 เริ่ม Transaction
 	tx, err := repo.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	// ✅ ใช้ `defer` เพื่อจัดการ Rollback อัตโนมัติถ้ามี Error
 	defer func() {
-		if err != nil {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
 			tx.Rollback()
 		}
 	}()
 
-	// 🔹 Insert `BeforeReturnOrder`
 	queryHead := `
 		INSERT INTO BeforeReturnOrder 
 		(OrderNo, SoNo, ChannelID, CustomerID, Reason, SoStatus, MkpStatus, WarehouseID, ReturnDate, TrackingNo, Logistic, CreateBy, CreateDate)
@@ -115,14 +116,12 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, req reques
 		return fmt.Errorf("failed to insert BeforeReturnOrder: %w", err)
 	}
 
-	// ✅ Batch Insert `BeforeReturnOrderLine` (ไม่ต้อง Loop ใช้ NamedExecContext)
 	queryLines := `
 		INSERT INTO BeforeReturnOrderLine 
 		(OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo, AlterSKU)
 		VALUES 
 		(:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), :TrackingNo, :AlterSKU)`
 
-	// ✅ Map `req.Items` เพื่อให้ `OrderNo` ถูกต้อง
 	for i := range req.Items {
 		req.Items[i].OrderNo = req.OrderNo
 		req.Items[i].CreateBy = userID
@@ -133,7 +132,6 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, req reques
 		return fmt.Errorf("failed to execute batch insert for BeforeReturnOrderLine: %w", err)
 	}
 
-	// ✅ Commit Transaction
 	err = tx.Commit()
 	if err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
@@ -149,15 +147,14 @@ func (repo repositoryDB) GetBeforeReturnOrder(ctx context.Context, orderNo strin
 		       CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID, IsCNCreated, IsEdited
 		FROM BeforeReturnOrder WHERE OrderNo = :OrderNo`
 
-	// ✅ ใช้ NamedQueryContext() เพื่อรองรับ Named Parameters
 	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{"OrderNo": orderNo})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // 🛑 คืนค่า `nil` ถ้าไม่พบ OrderNo
+			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to retrieve order: %w", err)
 	}
-	defer rows.Close() // ✅ ปิด `rows` หลังใช้
+	defer rows.Close()
 
 	var order response.BeforeReturnOrderResponse
 	if rows.Next() {
@@ -177,11 +174,11 @@ func (repo repositoryDB) GetBeforeReturnOrderItems(ctx context.Context, orderNo 
 	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{"OrderNo": orderNo})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // 🛑 คืนค่า `nil` ถ้าไม่พบรายการสินค้า
+			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to retrieve order items: %w", err)
 	}
-	defer rows.Close() // ✅ ปิด `rows` เมื่อใช้เสร็จ
+	defer rows.Close()
 
 	var items []response.BeforeReturnOrderItem
 	for rows.Next() {
@@ -193,4 +190,47 @@ func (repo repositoryDB) GetBeforeReturnOrderItems(ctx context.Context, orderNo 
 	}
 
 	return items, nil
+}
+
+func (repo repositoryDB) UpdateSrNo(ctx context.Context, orderNo string, srNo string, userID string) (*response.UpdateSrNoResponse, error) {
+	updateQuery := `
+		UPDATE BeforeReturnOrder
+		SET SrNo = :SrNo, 
+		    UpdateBy = :UpdateBy, UpdateDate = GETDATE()
+		WHERE OrderNo = :OrderNo
+	`
+
+	_, err := repo.db.NamedExecContext(ctx, updateQuery, map[string]interface{}{
+		"SrNo":     srNo,
+		"UpdateBy": userID,
+		"OrderNo":  orderNo,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to update SrNo: %w", err)
+	}
+
+	selectQuery := `
+		SELECT OrderNo, SrNo, StatusReturnID, StatusConfID, UpdateBy, UpdateDate
+		FROM BeforeReturnOrder WHERE OrderNo = :OrderNo
+	`
+
+	rows, err := repo.db.NamedQueryContext(ctx, selectQuery, map[string]interface{}{
+		"OrderNo": orderNo,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve updated order: %w", err)
+	}
+	defer rows.Close()
+
+	var resp response.UpdateSrNoResponse
+	if rows.Next() {
+		if err := rows.StructScan(&resp); err != nil {
+			return nil, fmt.Errorf("failed to scan updated order: %w", err)
+		}
+	} else {
+		return nil, fmt.Errorf("no order found with OrderNo: %s", orderNo)
+	}
+
+	return &resp, nil
 }

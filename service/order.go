@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"go.uber.org/zap"
@@ -15,6 +16,7 @@ import (
 type OrderService interface {
 	SearchOrder(ctx context.Context, req request.SearchOrder) (*response.SearchOrderResponse, error)
 	CreateBeforeReturnOrder(ctx context.Context, req request.CreateBeforeReturnOrder, userID string) (*response.BeforeReturnOrderResponse, error)
+	UpdateSrNo(ctx context.Context, orderNo string, userID string) (*response.UpdateSrNoResponse, error)
 }
 
 func (srv service) SearchOrder(ctx context.Context, req request.SearchOrder) (*response.SearchOrderResponse, error) {
@@ -121,4 +123,73 @@ func (srv service) CreateBeforeReturnOrder(ctx context.Context, req request.Crea
 	)
 
 	return order, nil
+}
+
+func (srv service) UpdateSrNo(ctx context.Context, orderNo string, userID string) (*response.UpdateSrNoResponse, error) {
+	srv.logger.Info("🔄 Requesting SrNo from AX...",
+		zap.String("OrderNo", orderNo),
+		zap.String("RequestedBy", userID),
+	)
+
+	srNo, err := srv.GenerateSrNoFromAX(ctx, orderNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to generate SrNo", zap.Error(err))
+		return nil, fmt.Errorf("failed to generate SrNo: %w", err)
+	}
+
+	resp, err := srv.orderRepo.UpdateSrNo(ctx, orderNo, srNo, userID)
+	if err != nil {
+		srv.logger.Error("❌ Failed to update SrNo in DB", zap.Error(err))
+		return nil, fmt.Errorf("failed to update SrNo in DB: %w", err)
+	}
+
+	srv.logger.Info("✅ SrNo updated successfully",
+		zap.String("OrderNo", resp.OrderNo),
+		zap.String("SrNo", resp.SrNo),
+	)
+
+	return resp, nil
+}
+
+// 🔹 ฟังก์ชันที่จำลองการสร้าง SrNo จาก AX พร้อม Retry 3 ครั้ง
+func (srv service) GenerateSrNoFromAX(ctx context.Context, orderNo string) (string, error) {
+	maxRetries := 3 // 🔄 กำหนดจำนวนครั้งที่ retry
+	var srNo string
+	var err error
+
+	for i := 1; i <= maxRetries; i++ {
+		srNo, err = requestSrNoFromAX(orderNo) // 🔹 เรียก API ที่ AX
+		if err == nil {
+			return srNo, nil // ✅ สำเร็จ ออกจากลูป
+		}
+
+		srv.logger.Warn("⚠️ Failed to request SrNo from AX",
+			zap.String("OrderNo", orderNo),
+			zap.Int("RetryAttempt", i),
+			zap.Error(err),
+		)
+
+		// ❌ ถ้าเป็นรอบสุดท้ายของ retry ให้คืน error
+		if i == maxRetries {
+			break
+		}
+
+		// ⏳ รอ 2 วินาทีก่อน retry ใหม่
+		time.Sleep(2 * time.Second)
+	}
+
+	return "", fmt.Errorf("failed to request SrNo from AX after %d retries", maxRetries)
+}
+
+// 🔹 ฟังก์ชันจำลองการเรียก API ไปที่ AX เพื่อขอ SrNo
+func requestSrNoFromAX(orderNo string) (string, error) {
+	// 🔹 จำลองเลข SrNo (จริง ๆ ต้องเรียก API AX)
+	fakeSrNo := fmt.Sprintf("SR-%s-%d", orderNo, time.Now().Unix())
+
+	// ❌ จำลองความล้มเหลวแบบสุ่ม 5%
+	if rand.Intn(100) < 5 {
+		return "", errors.New("AX API error - SrNo request failed")
+	}
+
+	return fakeSrNo, nil
 }

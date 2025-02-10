@@ -57,3 +57,12 @@ type BeforeReturnOrderItem struct {
 	TrackingNo *string   `json:"trackingNo,omitempty" db:"TrackingNo"`
 	AlterSKU   *string   `json:"alterSKU,omitempty" db:"AlterSKU"`
 }
+
+type UpdateSrNoResponse struct {
+	OrderNo        string    `json:"orderNo" db:"OrderNo"`
+	SrNo           string    `json:"srNo" db:"SrNo"`
+	StatusReturnID *int      `json:"statusReturnID,omitempty" db:"StatusReturnID"`
+	StatusConfID   *int      `json:"statusConfID,omitempty" db:"StatusConfID"`
+	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
+}
