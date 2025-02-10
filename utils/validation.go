@@ -1,15 +1,6 @@
 package utils
 
-import (
-	"errors"
-	"fmt"
-	"strings"
-
-	req "boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/dto/response"
-)
-
-// 🛠️ ตรวจสอบว่าสถานะเป็น "ยกเลิก" หรือไม่
+/* // 🛠️ ตรวจสอบว่าสถานะเป็น "ยกเลิก" หรือไม่
 func IsStatusCanceled(statusConfID, statusReturnID *int) bool {
 	return (statusConfID != nil && *statusConfID == 3) || (statusReturnID != nil && *statusReturnID == 2)
 }
@@ -168,3 +159,4 @@ func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
 
 	return nil
 }
+*/

@@ -11,6 +11,70 @@ definitions:
   gin.H:
     additionalProperties: {}
     type: object
+  request.CreateBeforeReturnOrder:
+    properties:
+      items:
+        description: CreateBy    string                        `json:"createBy" db:"CreateBy"
+          binding:"required"`
+        items:
+          $ref: '#/definitions/request.CreateBeforeReturnOrderItem'
+        type: array
+      logistic:
+        type: string
+      mkpStatus:
+        type: string
+      orderNo:
+        type: string
+      returnDate:
+        description: Location    string                        `json:"location" db:"Location"
+          binding:"required"`
+        type: string
+      soNo:
+        type: string
+      soStatus:
+        description: SrNo        *string                       `json:"srNo,omitempty"
+          db:"SrNo"`
+        type: string
+      trackingNo:
+        type: string
+      warehouseID:
+        type: integer
+    required:
+    - logistic
+    - mkpStatus
+    - orderNo
+    - returnDate
+    - soNo
+    - soStatus
+    - trackingNo
+    - warehouseID
+    type: object
+  request.CreateBeforeReturnOrderItem:
+    properties:
+      alterSKU:
+        type: string
+      createBy:
+        type: string
+      itemName:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      returnQty:
+        type: integer
+      sku:
+        type: string
+      trackingNo:
+        type: string
+    required:
+    - createBy
+    - itemName
+    - price
+    - qty
+    - returnQty
+    - sku
+    type: object
   request.LoginLark:
     properties:
       userID:
@@ -29,6 +93,82 @@ definitions:
       userName:
         example: eknarin.ler
         type: string
+    type: object
+  response.BeforeReturnOrderItem:
+    properties:
+      alterSKU:
+        type: string
+      createBy:
+        type: string
+      createDate:
+        type: string
+      itemName:
+        type: string
+      orderNo:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      returnQty:
+        type: integer
+      sku:
+        type: string
+      trackingNo:
+        type: string
+    type: object
+  response.BeforeReturnOrderResponse:
+    properties:
+      cancelId:
+        type: integer
+      channelId:
+        type: integer
+      confirmBy:
+        type: string
+      confirmDate:
+        type: string
+      createBy:
+        type: string
+      createDate:
+        type: string
+      customerId:
+        type: string
+      isCNCreated:
+        type: boolean
+      isEdited:
+        type: boolean
+      items:
+        items:
+          $ref: '#/definitions/response.BeforeReturnOrderItem'
+        type: array
+      logistic:
+        type: string
+      mkpStatus:
+        type: string
+      orderNo:
+        type: string
+      reason:
+        type: string
+      returnDate:
+        type: string
+      soNo:
+        type: string
+      soStatus:
+        type: string
+      srNo:
+        type: string
+      statusConfId:
+        type: integer
+      statusReturnId:
+        type: integer
+      trackingNo:
+        type: string
+      updateBy:
+        type: string
+      updateDate:
+        type: string
+      warehouseId:
+        type: integer
     type: object
   response.SearchOrderItem:
     properties:
@@ -188,6 +328,42 @@ paths:
       summary: User Logout
       tags:
       - Authentication
+  /order/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new return order including order head and order lines
+      operationId: create-return-order
+      parameters:
+      - description: Return Order Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateBeforeReturnOrder'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.BeforeReturnOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Create a new return order
+      tags:
+      - Return Order MKP
   /order/search:
     get:
       consumes:
