@@ -83,16 +83,26 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, req reques
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
+	// ✅ ใช้ `defer` เพื่อจัดการ Rollback อัตโนมัติถ้ามี Error
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	// 🔹 Insert `BeforeReturnOrder`
 	queryHead := `
 		INSERT INTO BeforeReturnOrder 
-		(OrderNo, SoNo, SoStatus, MkpStatus, WarehouseID, ReturnDate, TrackingNo, Logistic, CreateBy, CreateDate)
+		(OrderNo, SoNo, ChannelID, CustomerID, Reason, SoStatus, MkpStatus, WarehouseID, ReturnDate, TrackingNo, Logistic, CreateBy, CreateDate)
 		VALUES 
-		(:OrderNo, :SoNo, :SoStatus, :MkpStatus, :WarehouseID, :ReturnDate, :TrackingNo, :Logistic, :CreateBy, GETDATE())`
+		(:OrderNo, :SoNo, :ChannelID, :CustomerID, :Reason, :SoStatus, :MkpStatus, :WarehouseID, :ReturnDate, :TrackingNo, :Logistic, :CreateBy, GETDATE())`
 
 	_, err = tx.NamedExecContext(ctx, queryHead, map[string]interface{}{
 		"OrderNo":     req.OrderNo,
 		"SoNo":        req.SoNo,
+		"ChannelID":   req.ChannelID,
+		"CustomerID":  req.CustomerID,
+		"Reason":      req.Reason,
 		"SoStatus":    req.SoStatus,
 		"MkpStatus":   req.MkpStatus,
 		"WarehouseID": req.WarehouseID,
@@ -102,38 +112,24 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, req reques
 		"CreateBy":    userID,
 	})
 	if err != nil {
-		tx.Rollback()
 		return fmt.Errorf("failed to insert BeforeReturnOrder: %w", err)
 	}
 
-	// ✅ Batch Insert `BeforeReturnOrderLine`
+	// ✅ Batch Insert `BeforeReturnOrderLine` (ไม่ต้อง Loop ใช้ NamedExecContext)
 	queryLines := `
-		INSERT INTO BeforeReturnOrderLine (OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo, AlterSKU)
-		VALUES `
+		INSERT INTO BeforeReturnOrderLine 
+		(OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo, AlterSKU)
+		VALUES 
+		(:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), :TrackingNo, :AlterSKU)`
 
-	var placeholders []string
-	var batchItems []map[string]interface{}
-
-	for _, item := range req.Items {
-		placeholders = append(placeholders, "(:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE(), :TrackingNo, :AlterSKU)")
-		batchItems = append(batchItems, map[string]interface{}{
-			"OrderNo":    req.OrderNo,
-			"SKU":        item.SKU,
-			"ItemName":   item.ItemName,
-			"QTY":        item.QTY,
-			"ReturnQTY":  item.ReturnQTY,
-			"Price":      item.Price,
-			"CreateBy":   userID,
-			"TrackingNo": item.TrackingNo,
-			"AlterSKU":   item.AlterSKU,
-		})
+	// ✅ Map `req.Items` เพื่อให้ `OrderNo` ถูกต้อง
+	for i := range req.Items {
+		req.Items[i].OrderNo = req.OrderNo
+		req.Items[i].CreateBy = userID
 	}
 
-	queryLines += strings.Join(placeholders, ",")
-
-	_, err = tx.NamedExecContext(ctx, queryLines, batchItems)
+	_, err = tx.NamedExecContext(ctx, queryLines, req.Items)
 	if err != nil {
-		tx.Rollback()
 		return fmt.Errorf("failed to execute batch insert for BeforeReturnOrderLine: %w", err)
 	}
 
@@ -148,15 +144,26 @@ func (repo repositoryDB) CreateBeforeReturnOrder(ctx context.Context, req reques
 
 func (repo repositoryDB) GetBeforeReturnOrder(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error) {
 	query := `
-		SELECT OrderNo, SoNo, SrNo, ChannelID, Reason, CustomerID, TrackingNo, Logistic, WarehouseID, 
+		SELECT OrderNo, SoNo, SrNo, ChannelID, CustomerID, Reason, TrackingNo, Logistic, WarehouseID, 
 		       SoStatus, MkpStatus, ReturnDate, StatusReturnID, StatusConfID, ConfirmBy, ConfirmDate, 
 		       CreateBy, CreateDate, UpdateBy, UpdateDate, CancelID, IsCNCreated, IsEdited
 		FROM BeforeReturnOrder WHERE OrderNo = :OrderNo`
 
-	var order response.BeforeReturnOrderResponse
-	err := repo.db.GetContext(ctx, &order, query, map[string]interface{}{"OrderNo": orderNo})
+	// ✅ ใช้ NamedQueryContext() เพื่อรองรับ Named Parameters
+	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{"OrderNo": orderNo})
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil // 🛑 คืนค่า `nil` ถ้าไม่พบ OrderNo
+		}
 		return nil, fmt.Errorf("failed to retrieve order: %w", err)
+	}
+	defer rows.Close() // ✅ ปิด `rows` หลังใช้
+
+	var order response.BeforeReturnOrderResponse
+	if rows.Next() {
+		if err := rows.StructScan(&order); err != nil {
+			return nil, fmt.Errorf("failed to scan order: %w", err)
+		}
 	}
 
 	return &order, nil
@@ -167,10 +174,22 @@ func (repo repositoryDB) GetBeforeReturnOrderItems(ctx context.Context, orderNo 
 		SELECT OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate, TrackingNo, AlterSKU
 		FROM BeforeReturnOrderLine WHERE OrderNo = :OrderNo`
 
-	var items []response.BeforeReturnOrderItem
-	err := repo.db.SelectContext(ctx, &items, query, map[string]interface{}{"OrderNo": orderNo})
+	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{"OrderNo": orderNo})
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil // 🛑 คืนค่า `nil` ถ้าไม่พบรายการสินค้า
+		}
 		return nil, fmt.Errorf("failed to retrieve order items: %w", err)
+	}
+	defer rows.Close() // ✅ ปิด `rows` เมื่อใช้เสร็จ
+
+	var items []response.BeforeReturnOrderItem
+	for rows.Next() {
+		var item response.BeforeReturnOrderItem
+		if err := rows.StructScan(&item); err != nil {
+			return nil, fmt.Errorf("failed to scan order item: %w", err)
+		}
+		items = append(items, item)
 	}
 
 	return items, nil

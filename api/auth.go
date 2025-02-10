@@ -18,7 +18,7 @@ func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 	auth.POST("/login-lark", app.LoginFromLark) // Login via Lark
 
 	// Routes requiring JWT authentication
-	auth.Use(middleware.JWTAuthMiddleware(app.TokenAuth))
+	auth.Use(middleware.JWTMiddleware(app.TokenAuth))
 	auth.GET("/", app.CheckAuthen)   // Check authentication status
 	auth.POST("/logout", app.Logout) // Logout
 }
@@ -133,7 +133,7 @@ func (app *Application) CheckAuthen(c *gin.Context) {
 	}
 
 	if claims == nil {
-		handleResponse(c, false, "Unauthorized - No claims found", nil, http.StatusUnauthorized)
+		handleResponse(c, false, "unauthorized - no claims found", nil, http.StatusUnauthorized)
 		return
 	}
 

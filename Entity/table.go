@@ -3,15 +3,15 @@ package entity
 import "time"
 
 type BeforeReturnOrder struct {
-	RecID          int        `db:"RecID"`                                  // รหัสอ้างอิงอัตโนมัติ (PK - Auto Increment)
-	OrderNo        string     `db:"OrderNo"`                                // เลขที่ใบสั่งซื้อ
-	SoNo           string     `db:"SoNo"`                                   // เลขที่ใบสั่งขาย
-	SrNo           *string    `db:"SrNo"`                                   // เลขที่ใบลดหนี้ (Nullable)
-	ChannelID      int        `db:"ChannelID"`                              // รหัสช่องทางการขาย
-	Reason         string     `db:"Reason"`                                 // เหตุผลในการคืนสินค้า
-	CustomerID     string     `db:"CustomerID"`                             // รหัสลูกค้า
-	TrackingNo     string     `db:"TrackingNo"`                             // เลขพัสดุ
-	Logistic       string     `db:"Logistic"`                               // ขนส่ง
+	RecID      int     `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ (PK - Auto Increment)
+	OrderNo    string  `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ
+	SoNo       string  `db:"SoNo"`       // เลขที่ใบสั่งขาย
+	SrNo       *string `db:"SrNo"`       // เลขที่ใบลดหนี้ (Nullable)
+	ChannelID  int     `db:"ChannelID"`  // รหัสช่องทางการขาย
+	CustomerID string  `db:"CustomerID"` // รหัสลูกค้า
+	Reason     string  `db:"Reason"`     // เหตุผลในการคืนสินค้า
+	TrackingNo string  `db:"TrackingNo"` // เลขพัสดุ
+	Logistic   string  `db:"Logistic"`   // ขนส่ง
 	//Location       string     `db:"Location"`                               // ปลายทาง
 	WarehouseID    int        `db:"WarehouseID"`                            // รหัสคลังสินค้า
 	SoStatus       string     `db:"SoStatus" default:"open order"`          // สถานะใบสั่งขาย (Default: "open order")

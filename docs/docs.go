@@ -197,6 +197,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/api.Response"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -336,18 +342,24 @@ const docTemplate = `{
         "request.CreateBeforeReturnOrder": {
             "type": "object",
             "required": [
+                "channelID",
+                "customerID",
                 "logistic",
-                "mkpStatus",
                 "orderNo",
+                "reason",
                 "returnDate",
                 "soNo",
-                "soStatus",
                 "trackingNo",
                 "warehouseID"
             ],
             "properties": {
+                "channelID": {
+                    "type": "integer"
+                },
+                "customerID": {
+                    "type": "string"
+                },
                 "items": {
-                    "description": "CreateBy    string                        ` + "`" + `json:\"createBy\" db:\"CreateBy\" binding:\"required\"` + "`" + `",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/request.CreateBeforeReturnOrderItem"
@@ -362,15 +374,16 @@ const docTemplate = `{
                 "orderNo": {
                     "type": "string"
                 },
+                "reason": {
+                    "type": "string"
+                },
                 "returnDate": {
-                    "description": "Location    string                        ` + "`" + `json:\"location\" db:\"Location\" binding:\"required\"` + "`" + `",
                     "type": "string"
                 },
                 "soNo": {
                     "type": "string"
                 },
                 "soStatus": {
-                    "description": "SrNo        *string                       ` + "`" + `json:\"srNo,omitempty\" db:\"SrNo\"` + "`" + `",
                     "type": "string"
                 },
                 "trackingNo": {
@@ -386,6 +399,7 @@ const docTemplate = `{
             "required": [
                 "createBy",
                 "itemName",
+                "orderNo",
                 "price",
                 "qty",
                 "returnQty",
@@ -399,6 +413,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "itemName": {
+                    "type": "string"
+                },
+                "orderNo": {
                     "type": "string"
                 },
                 "price": {
