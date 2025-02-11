@@ -737,22 +737,26 @@ func (repo repositoryDB) CreateTradeReturn(ctx context.Context, order request.Be
             :OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
         )
     `
-	for _, line := range order.BeforeReturnOrderLines {
+	  // เตรียมข้อมูลทั้งหมดที่ต้องการ insert
+	  var params []map[string]interface{}
+	  for _, line := range order.BeforeReturnOrderLines {
+		  lineParams := map[string]interface{}{
+			  "OrderNo":    order.OrderNo,
+			  "SKU":        line.SKU,
+			  "ItemName":   line.ItemName,
+			  "QTY":        line.QTY,
+			  "ReturnQTY":  line.ReturnQTY,
+			  "Price":      line.Price,
+			  "CreateBy":   order.CreateBy,
+			  "TrackingNo": order.TrackingNo,
+		  }
+		  params = append(params, lineParams)
+	  }
 
-		_, err = tx.NamedExecContext(ctx, queryLine, map[string]interface{}{
-			"OrderNo":    order.OrderNo,
-			"SKU":        line.SKU,
-			"ItemName":   line.ItemName,
-			"QTY":        line.QTY,
-			"ReturnQTY":  line.ReturnQTY,
-			"Price":      line.Price,
-			"CreateBy":   order.CreateBy,
-			"TrackingNo": order.TrackingNo,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create BeforeReturnOrderLine: %w", err)
-		}
-	}
+	  _, err = tx.NamedExecContext(ctx, queryLine, params)
+	  if err != nil {
+		  return nil, fmt.Errorf("failed to create BeforeReturnOrderLine: %w", err)
+	  }
 
 	// 4. Commit transaction
 	if err = tx.Commit(); err != nil {
