@@ -16,6 +16,9 @@ type OrderRepository interface {
 	GetBeforeReturnOrder(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error)
 	GetBeforeReturnOrderItems(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderItem, error)
 	UpdateSrNo(ctx context.Context, orderNo string, srNo string, userID string) (*response.UpdateSrNoResponse, error)
+	UpdateOrderStatus(ctx context.Context, orderNo string, statusReturnID int, statusConfID int, userID string) error
+	UpdateCNForOrder(ctx context.Context, orderNo string, userID string) error
+	MarkOrderAsEdited(ctx context.Context, orderNo string, userID string) error
 }
 
 func (repo repositoryDB) SearchOrder(ctx context.Context, req request.SearchOrder) (*response.SearchOrderResponse, error) {
@@ -233,4 +236,73 @@ func (repo repositoryDB) UpdateSrNo(ctx context.Context, orderNo string, srNo st
 	}
 
 	return &resp, nil
+}
+
+func (repo repositoryDB) UpdateOrderStatus(ctx context.Context, orderNo string, statusReturnID int, statusConfID int, userID string) error {
+	query := `
+		UPDATE BeforeReturnOrder
+		SET StatusReturnID = :StatusReturnID,
+		    StatusConfID = :StatusConfID,
+		    ConfirmBy = :ConfirmBy,
+		    ConfirmDate = GETDATE(),
+		    UpdateBy = :UpdateBy,
+		    UpdateDate = GETDATE()
+		WHERE OrderNo = :OrderNo
+	`
+
+	_, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{
+		"OrderNo":        orderNo,
+		"StatusReturnID": statusReturnID,
+		"StatusConfID":   statusConfID,
+		"ConfirmBy":      userID,
+		"UpdateBy":       userID,
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to update order status: %w", err)
+	}
+
+	return nil
+}
+
+func (repo repositoryDB) UpdateCNForOrder(ctx context.Context, orderNo string, userID string) error {
+	query := `
+		UPDATE BeforeReturnOrder
+		SET IsCNCreated = 1, 
+		    StatusReturnID = 1, 
+		    StatusConfID = 1, 
+		    UpdateBy = :UpdateBy, 
+		    UpdateDate = GETDATE()
+		WHERE OrderNo = :OrderNo
+	`
+
+	_, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{
+		"OrderNo":  orderNo,
+		"UpdateBy": userID,
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to update CN status for OrderNo: %w", err)
+	}
+
+	return nil
+}
+
+func (repo repositoryDB) MarkOrderAsEdited(ctx context.Context, orderNo string, userID string) error {
+	query := `
+		UPDATE BeforeReturnOrder 
+		SET IsEdited = 1, UpdateBy = :UpdateBy, UpdateDate = GETDATE()
+		WHERE OrderNo = :OrderNo
+	`
+
+	_, err := repo.db.NamedExecContext(ctx, query, map[string]interface{}{
+		"OrderNo":  orderNo,
+		"UpdateBy": userID,
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to mark order as edited: %w", err)
+	}
+
+	return nil
 }

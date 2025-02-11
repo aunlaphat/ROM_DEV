@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/jwtauth"
 )
 
-// ✅ JWT Middleware ตรวจสอบ Token และดึง `UserID`
+// ✅ JWT Middleware ตรวจสอบ Token และดึง `UserID` & `RoleID`
 func JWTMiddleware(tokenAuth *jwtauth.JWTAuth) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 🔹 ดึง Token จาก Header หรือ Cookie
@@ -37,8 +37,20 @@ func JWTMiddleware(tokenAuth *jwtauth.JWTAuth) gin.HandlerFunc {
 			return
 		}
 
-		// ✅ เซ็ต `UserID` ใน Context
+		// 🔹 ดึงค่า `RoleID` จาก Claims
+		roleID, err := getRoleIDFromClaims(claims)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			c.Abort()
+			return
+		}
+
+		// ✅ เซ็ต `UserID` และ `RoleID` ใน Context
 		c.Set("UserID", userID)
+		c.Set("RoleID", roleID)
+
+		// ✅ Debug พิมพ์ค่า UserID & RoleID ออกมา
+		fmt.Printf("🔍 Debug JWT Claims: UserID=%s, RoleID=%d\n", userID, roleID)
 
 		// ✅ เซ็ตค่า Claims ตามแหล่งที่มา
 		if source == "header" {
@@ -80,7 +92,6 @@ func parseToken(c *gin.Context, tokenAuth *jwtauth.JWTAuth, tokenString string) 
 	if err != nil {
 		return nil, errors.New("unauthorized - invalid token claims format")
 	}
-	fmt.Printf("🔍 Debug JWT Claims: %+v\n", claims) // ✅ Debug Claims
 
 	return claims, nil
 }
@@ -92,4 +103,13 @@ func getUserIDFromClaims(claims map[string]interface{}) (string, error) {
 		return "", errors.New("unauthorized - missing userID in token")
 	}
 	return userID, nil
+}
+
+// ✅ ดึงค่า `RoleID` จาก Claims
+func getRoleIDFromClaims(claims map[string]interface{}) (int, error) {
+	roleID, exists := claims["roleID"].(float64) // JSON Decode มาเป็น float64
+	if !exists {
+		return 0, errors.New("unauthorized - missing RoleID in token")
+	}
+	return int(roleID), nil
 }

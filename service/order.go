@@ -17,6 +17,8 @@ type OrderService interface {
 	SearchOrder(ctx context.Context, req request.SearchOrder) (*response.SearchOrderResponse, error)
 	CreateBeforeReturnOrder(ctx context.Context, req request.CreateBeforeReturnOrder, userID string) (*response.BeforeReturnOrderResponse, error)
 	UpdateSrNo(ctx context.Context, orderNo string, userID string) (*response.UpdateSrNoResponse, error)
+	UpdateOrderStatus(ctx context.Context, orderNo string, userID string, roleID int) (*response.UpdateOrderStatusResponse, error)
+	MarkOrderAsEdited(ctx context.Context, orderNo string, userID string) error
 }
 
 func (srv service) SearchOrder(ctx context.Context, req request.SearchOrder) (*response.SearchOrderResponse, error) {
@@ -66,21 +68,18 @@ func (srv service) CreateBeforeReturnOrder(ctx context.Context, req request.Crea
 		zap.String("CreateBy", userID),
 	)
 
-	// ✅ ตรวจสอบว่ามีสินค้าคืนหรือไม่
 	if len(req.Items) == 0 {
 		err := errors.New("ต้องมีรายการสินค้าอย่างน้อย 1 รายการ")
 		srv.logger.Warn("⚠️ No items provided", zap.Error(err))
 		return nil, err
 	}
 
-	// ✅ ตรวจสอบ `ReturnDate` ต้องไม่เป็นอดีต
 	if req.ReturnDate.Before(time.Now()) {
 		err := errors.New("วันที่คืนสินค้าต้องเป็นปัจจุบันหรืออนาคต")
 		srv.logger.Warn("⚠️ Invalid ReturnDate", zap.Error(err))
 		return nil, err
 	}
 
-	// ✅ ตั้งค่า Default `SoStatus` และ `MkpStatus`
 	if req.SoStatus == "" {
 		req.SoStatus = "open order"
 	}
@@ -88,26 +87,22 @@ func (srv service) CreateBeforeReturnOrder(ctx context.Context, req request.Crea
 		req.MkpStatus = "complete"
 	}
 
-	// ✅ กำหนด `CreateBy`
 	for i := range req.Items {
 		req.Items[i].CreateBy = userID
 	}
 
-	// 🔹 เรียกใช้ Repository Layer
 	err := srv.orderRepo.CreateBeforeReturnOrder(ctx, req, userID)
 	if err != nil {
 		srv.logger.Error("❌ Failed to create BeforeReturnOrder", zap.Error(err))
 		return nil, fmt.Errorf("failed to create return order: %w", err)
 	}
 
-	// ✅ ดึงข้อมูลที่เพิ่งสร้าง
 	order, err := srv.orderRepo.GetBeforeReturnOrder(ctx, req.OrderNo)
 	if err != nil {
 		srv.logger.Error("❌ Failed to fetch created BeforeReturnOrder", zap.Error(err))
 		return nil, fmt.Errorf("failed to retrieve created order: %w", err)
 	}
 
-	// ✅ ดึงข้อมูลรายการสินค้า
 	items, err := srv.orderRepo.GetBeforeReturnOrderItems(ctx, req.OrderNo)
 	if err != nil {
 		srv.logger.Error("❌ Failed to fetch created BeforeReturnOrderItems", zap.Error(err))
@@ -192,4 +187,140 @@ func requestSrNoFromAX(orderNo string) (string, error) {
 	}
 
 	return fakeSrNo, nil
+}
+
+func (srv service) UpdateOrderStatus(ctx context.Context, orderNo string, userID string, roleID int) (*response.UpdateOrderStatusResponse, error) {
+	srv.logger.Info("🔄 Updating Order Status...",
+		zap.String("OrderNo", orderNo),
+		zap.String("RequestedBy", userID),
+		zap.Int("RoleID", roleID),
+	)
+
+	// 🔹 ดึงข้อมูล BeforeReturnOrder
+	order, err := srv.orderRepo.GetBeforeReturnOrder(ctx, orderNo)
+	if err != nil {
+		srv.logger.Error("❌ Failed to fetch BeforeReturnOrder", zap.Error(err))
+		return nil, fmt.Errorf("failed to retrieve order: %w", err)
+	}
+
+	// ตรวจสอบสิทธิ์ตาม RoleID
+	switch roleID {
+	case 2: // 📌 **Accounting**
+		srv.logger.Info("🔹 Role: Accounting - Checking isCNCreated",
+			zap.String("OrderNo", orderNo),
+			zap.Bool("isCNCreated", order.IsCNCreated),
+		)
+
+		if !order.IsCNCreated {
+			// 🔸 ถ้ายังไม่ได้สร้าง CN ให้สร้าง CN และอัปเดตสถานะ
+			err = srv.CreateCNForOrder(ctx, orderNo, userID)
+			if err != nil {
+				srv.logger.Error("❌ Failed to create CN", zap.Error(err))
+				return nil, fmt.Errorf("failed to create CN: %w", err)
+			}
+
+			return &response.UpdateOrderStatusResponse{
+				OrderNo:        orderNo,
+				StatusReturnID: 1, // Pending
+				StatusConfID:   1, // Draft
+				ConfirmBy:      userID,
+				ConfirmDate:    time.Now(),
+			}, nil
+		}
+
+		// 🔸 ถ้า CN ถูกสร้างแล้ว ให้อัปเดตเป็น Booking/Confirm
+		err = srv.orderRepo.UpdateOrderStatus(ctx, orderNo, 3, 2, userID)
+		if err != nil {
+			srv.logger.Error("❌ Failed to update order status", zap.Error(err))
+			return nil, fmt.Errorf("failed to update order status: %w", err)
+		}
+
+		return &response.UpdateOrderStatusResponse{
+			OrderNo:        orderNo,
+			StatusReturnID: 3, // Booking
+			StatusConfID:   2, // Confirm
+			ConfirmBy:      userID,
+			ConfirmDate:    time.Now(),
+		}, nil
+
+	case 3: // 📌 **Warehouse**
+		srv.logger.Info("🔹 Role: Warehouse - Checking isEdited",
+			zap.String("OrderNo", orderNo),
+			zap.Bool("isEdited", order.IsEdited),
+		)
+
+		if order.IsEdited {
+			// 🔸 ถ้ามีการแก้ไขข้อมูลก่อนยืนยัน ให้เปลี่ยนเป็น Pending/Draft
+			err = srv.orderRepo.UpdateOrderStatus(ctx, orderNo, 1, 1, userID)
+			if err != nil {
+				srv.logger.Error("❌ Failed to update order status", zap.Error(err))
+				return nil, fmt.Errorf("failed to update order status: %w", err)
+			}
+
+			return &response.UpdateOrderStatusResponse{
+				OrderNo:        orderNo,
+				StatusReturnID: 1, // Pending
+				StatusConfID:   1, // Draft
+				ConfirmBy:      userID,
+				ConfirmDate:    time.Now(),
+			}, nil
+		}
+
+		// 🔸 ถ้าไม่มีการแก้ไข ให้เปลี่ยนเป็น Booking/Confirm
+		err = srv.orderRepo.UpdateOrderStatus(ctx, orderNo, 3, 2, userID)
+		if err != nil {
+			srv.logger.Error("❌ Failed to update order status", zap.Error(err))
+			return nil, fmt.Errorf("failed to update order status: %w", err)
+		}
+
+		return &response.UpdateOrderStatusResponse{
+			OrderNo:        orderNo,
+			StatusReturnID: 3, // Booking
+			StatusConfID:   2, // Confirm
+			ConfirmBy:      userID,
+			ConfirmDate:    time.Now(),
+		}, nil
+
+	default:
+		srv.logger.Warn("⚠️ Unauthorized role attempting to update order status", zap.Int("RoleID", roleID))
+		return nil, fmt.Errorf("unauthorized role")
+	}
+}
+
+func (srv service) CreateCNForOrder(ctx context.Context, orderNo string, userID string) error {
+	srv.logger.Info("🔄 Creating CN...",
+		zap.String("OrderNo", orderNo),
+		zap.String("RequestedBy", userID),
+	)
+
+	// process create CN here...
+
+	// 🔸 อัปเดต isCNCreated = true และเปลี่ยนสถานะเป็น Pending/Draft
+	err := srv.orderRepo.UpdateCNForOrder(ctx, orderNo, userID)
+	if err != nil {
+		srv.logger.Error("❌ Failed to update CN status", zap.Error(err))
+		return fmt.Errorf("failed to update CN status: %w", err)
+	}
+
+	srv.logger.Info("✅ CN Created Successfully",
+		zap.String("OrderNo", orderNo),
+	)
+
+	return nil
+}
+
+func (srv service) MarkOrderAsEdited(ctx context.Context, orderNo string, userID string) error {
+	srv.logger.Info("✏️ Marking order as edited...",
+		zap.String("OrderNo", orderNo),
+		zap.String("UpdatedBy", userID),
+	)
+
+	err := srv.orderRepo.MarkOrderAsEdited(ctx, orderNo, userID)
+	if err != nil {
+		srv.logger.Error("❌ Failed to mark order as edited", zap.Error(err))
+		return fmt.Errorf("failed to mark order as edited: %w", err)
+	}
+
+	srv.logger.Info("✅ Order marked as edited", zap.String("OrderNo", orderNo))
+	return nil
 }

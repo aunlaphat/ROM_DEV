@@ -205,6 +205,45 @@
                 }
             }
         },
+        "/order/mark-edited/{orderNo}": {
+            "patch": {
+                "description": "Marks the order as edited when there are modifications",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order MKP"
+                ],
+                "summary": "Mark order as edited",
+                "operationId": "mark-order-as-edited",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/order/search": {
             "get": {
                 "description": "Retrieve the details of an order by its SO number or Order number",
@@ -317,6 +356,69 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/order/update-status/{orderNo}": {
+            "post": {
+                "description": "Updates order status based on RoleID (Accounting/Warehouse)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order MKP"
+                ],
+                "summary": "Update order status for return confirmation",
+                "operationId": "update-order-status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.UpdateOrderStatusResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -667,6 +769,26 @@
                 },
                 "statusMKP": {
                     "type": "string"
+                }
+            }
+        },
+        "response.UpdateOrderStatusResponse": {
+            "type": "object",
+            "properties": {
+                "confirmBy": {
+                    "type": "string"
+                },
+                "confirmDate": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "statusConfID": {
+                    "type": "integer"
+                },
+                "statusReturnID": {
+                    "type": "integer"
                 }
             }
         },

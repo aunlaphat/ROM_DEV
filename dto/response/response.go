@@ -66,3 +66,11 @@ type UpdateSrNoResponse struct {
 	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
 	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
 }
+
+type UpdateOrderStatusResponse struct {
+	OrderNo        string    `json:"orderNo" db:"OrderNo"`
+	StatusReturnID int       `json:"statusReturnID" db:"StatusReturnID"`
+	StatusConfID   int       `json:"statusConfID" db:"StatusConfID"`
+	ConfirmBy      string    `json:"confirmBy" db:"ConfirmBy"`
+	ConfirmDate    time.Time `json:"confirmDate" db:"ConfirmDate"`
+}

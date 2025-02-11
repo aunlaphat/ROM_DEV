@@ -202,6 +202,19 @@ definitions:
       statusMKP:
         type: string
     type: object
+  response.UpdateOrderStatusResponse:
+    properties:
+      confirmBy:
+        type: string
+      confirmDate:
+        type: string
+      orderNo:
+        type: string
+      statusConfID:
+        type: integer
+      statusReturnID:
+        type: integer
+    type: object
   response.UpdateSrNoResponse:
     properties:
       orderNo:
@@ -387,6 +400,32 @@ paths:
       summary: Create a new return order
       tags:
       - Return Order MKP
+  /order/mark-edited/{orderNo}:
+    patch:
+      consumes:
+      - application/json
+      description: Marks the order as edited when there are modifications
+      operationId: mark-order-as-edited
+      parameters:
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Mark order as edited
+      tags:
+      - Return Order MKP
   /order/search:
     get:
       consumes:
@@ -462,6 +501,45 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Update SrNo (Sale Return Number)
+      tags:
+      - Return Order MKP
+  /order/update-status/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Updates order status based on RoleID (Accounting/Warehouse)
+      operationId: update-order-status
+      parameters:
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UpdateOrderStatusResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Update order status for return confirmation
       tags:
       - Return Order MKP
   /user/{username}:
