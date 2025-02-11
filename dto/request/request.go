@@ -49,7 +49,6 @@ type SearchOrder struct {
 	OrderNo string `json:"orderNo" db:"OrderNo" form:"orderNo"`
 }
 
-
 type CreateBeforeReturnOrder struct {
 	OrderNo     string                        `json:"orderNo" db:"OrderNo" binding:"required"`
 	SoNo        string                        `json:"soNo" db:"SoNo" binding:"required"`

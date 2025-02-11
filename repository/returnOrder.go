@@ -48,10 +48,6 @@ func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.Retu
 		return nil, fmt.Errorf("failed to fetch return orders: %w", err)
 	}
 
-	if len(orders) == 0 {
-		return orders, nil // ถ้าไม่มีข้อมูลจะ return ออกทันที
-	}
-
 	// *️⃣ สร้าง map
 	orderMap := make(map[string]*response.ReturnOrder)
 	orderNos := make([]string, 0, len(orders))
@@ -241,13 +237,11 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 
 		insertReturnOrderQuery := `
             INSERT INTO ReturnOrder (
-                OrderNo, SoNo, SrNo, TrackingNo, PlatfID, ChannelID, 
-                OptStatusID, AxStatusID, PlatfStatusID, Reason, StatusCheckID, 
-                Description, CreateBy, CreateDate
+                OrderNo, SoNo, SrNo, TrackingNo, PlatfID, ChannelID, OptStatusID, AxStatusID, 
+				PlatfStatusID, Reason, StatusCheckID, Description, CreateBy, CreateDate
             ) VALUES (
-                :OrderNo, :SoNo, :SrNo, :TrackingNo, :PlatfID, :ChannelID, 
-                :OptStatusID, :AxStatusID, :PlatfStatusID, :Reason, :StatusCheckID, 
-                :Description, :CreateBy, GETDATE()
+                :OrderNo, :SoNo, :SrNo, :TrackingNo, :PlatfID, :ChannelID, :OptStatusID, :AxStatusID, 
+				:PlatfStatusID, :Reason, :StatusCheckID, :Description, :CreateBy, GETDATE()
             )
         `
 		params := map[string]interface{}{
@@ -270,6 +264,7 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 			return fmt.Errorf("failed to insert ReturnOrder: %w", err)
 		}
 
+		// *️⃣ บังคับให้สร้างรายการคืน 1 คำสั่งซื้อขึ้นไป จึงจะทำการสร้างได้
 		if len(req.ReturnOrderLine) > 0 {
 			insertReturnOrderLineQuery := `
 					INSERT INTO ReturnOrderLine (
@@ -361,6 +356,7 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
 		// *️⃣ ดึงค่าปัจจุบันจากฐานข้อมูล
 		var current response.ReturnOrder
+
 		queryCurrent := `
             SELECT SrNo, TrackingNo, PlatfID, ChannelID, OptStatusID, AxStatusID, 
                    PlatfStatusID, Reason, CancelID, StatusCheckID, CheckBy, Description
@@ -384,6 +380,7 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 
 		// *️⃣ ตรวจสอบค่าที่เปลี่ยนแปลงและสร้าง SQL Update เฉพาะส่วนที่เปลี่ยนแปลง
 		updateFields := []string{}
+
 		params := map[string]interface{}{
 			"OrderNo":  req.OrderNo,
 			"UpdateBy": updateBy,	// เพิ่ม updateBy ที่รับมาจาก API
@@ -438,13 +435,9 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 			params["Description"] = req.Description
 		}
 
-		// *️⃣ หากไม่มีการเปลี่ยนแปลง ออกจากฟังก์ชัน
-		if len(updateFields) == 0 {
-			return nil
-		}
-
 		// *️⃣ เพิ่ม UpdateBy และ UpdateDate ใน SQL Query
 		updateFields = append(updateFields, "UpdateBy = :UpdateBy", "UpdateDate = GETDATE()")
+
 		updateQuery := fmt.Sprintf(`
             UPDATE ReturnOrder
             SET %s

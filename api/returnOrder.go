@@ -10,39 +10,27 @@ package api
 import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
-	"boilerplate-backend-go/utils"
-	"encoding/json"
-	"fmt"
+	"boilerplate-backend-go/middleware"
+	//"boilerplate-backend-go/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-chi/jwtauth"
+	"go.uber.org/zap"
 )
 
 // ReturnOrder => ข้อมูลรับเข้าจากส่วนหน้าคลังทั้งหมด ข้อมูลสินค้าที่ถูกส่งคืนมาทั้งหมด
 func (app *Application) ReturnOrder(apiRouter *gin.RouterGroup) {
 	api := apiRouter.Group("/return-order")
-	
-	// ใช้ JWT Middleware ของ Gin แทน Go-Chi
-	api.Use(func(c *gin.Context) {
-		_, claims, err := jwtauth.FromContext(c.Request.Context())
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-			c.Abort()
-			return
-		}
-		c.Set("claims", claims)
-		c.Next()
-	})
-
 	api.GET("/get-all", app.GetAllReturnOrder)                      // แสดงข้อมูลรับเข้ารวม                  
 	api.GET("/get-all/:orderNo", app.GetReturnOrderByOrderNo)       // แสดงข้อมูลรับเข้าด้วย orderNo    
 	api.GET("/get-lines", app.GetAllReturnOrderLines)               // แสดงรายการคืนของรวม
 	api.GET("/get-lines/:orderNo", app.GetReturnOrderLineByOrderNo) // แสดงรายการคืนของโดย orderNo
-	api.POST("/create", app.CreateReturnOrder)                      // สร้างข้อมูลของที่ถูกส่งคืนมา
-	api.PATCH("/update/:orderNo", app.UpdateReturnOrder)            // อัพเดทข้อมูลของที่ถูกส่งคืน
-	api.DELETE("/delete/:orderNo", app.DeleteReturnOrder)           // ลบ order ที่ทำการคืนมาออกหมด head+line
+	
+	apiAuth := api.Group("/")
+	apiAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
+	apiAuth.POST("/create", app.CreateReturnOrder)                      // สร้างข้อมูลของที่ถูกส่งคืนมา
+	apiAuth.PATCH("/update/:orderNo", app.UpdateReturnOrder)            // อัพเดทข้อมูลของที่ถูกส่งคืน
+	apiAuth.DELETE("/delete/:orderNo", app.DeleteReturnOrder)           // ลบ order ที่ทำการคืนมาออกหมด head+line
 }
 
 // review
@@ -61,20 +49,9 @@ func (app *Application) GetAllReturnOrder(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.GetAllReturnOrder(c.Request.Context())
 	if err != nil {
+		app.Logger.Error("Failed to get return orders", zap.Error(err))
 		handleError(c, err)
 		return
-	}
-
-	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
-	for i, order := range result {
-		fmt.Printf("\n======== Order #%d ========\n", i+1)
-		utils.PrintReturnOrderDetails(&order)
-		for j, line := range order.ReturnOrderLine {
-			fmt.Printf("\n======== Order Line #%d ========\n", j+1)
-			utils.PrintReturnOrderLineDetails(&line)
-		}
-		fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(order.ReturnOrderLine))
-		fmt.Println("=====================================")
 	}
 
 	handleResponse(c, true, "⭐ Get Return Order successfully ⭐", result, http.StatusOK)
@@ -98,18 +75,10 @@ func (app *Application) GetReturnOrderByOrderNo(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.GetReturnOrderByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
+		app.Logger.Error("Failed to get return order", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
-
-	fmt.Printf("\n📋 ========== Return Order by OrderNo Details ========== 📋\n\n")
-	utils.PrintReturnOrderDetails(result)
-	for i, line := range result.ReturnOrderLine {
-		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
-		utils.PrintReturnOrderLineDetails(&line)
-	}
-	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.ReturnOrderLine))
-	fmt.Println("=====================================")
 
 	handleResponse(c, true, "⭐ Get Return Order by OrderNo successfully ⭐", result, http.StatusOK)
 }
@@ -129,16 +98,10 @@ func (app *Application) GetReturnOrderByOrderNo(c *gin.Context) {
 func (app *Application) GetAllReturnOrderLines(c *gin.Context) {
 	result, err := app.Service.ReturnOrder.GetAllReturnOrderLines(c.Request.Context())
 	if err != nil {
+		app.Logger.Error("Failed to get return order lines", zap.Error(err))
 		handleError(c, err)
 		return
 	}
-
-	fmt.Printf("\n📋 ========== Return Order Lines (%d) ========== 📋\n", len(result))
-	for i, line := range result {
-		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
-		utils.PrintReturnOrderLineDetails(&line)
-	}
-	fmt.Println("=====================================")
 
 	handleResponse(c, true, "⭐ Get Return Order Lines successfully ⭐", result, http.StatusOK)
 }
@@ -161,16 +124,10 @@ func (app *Application) GetReturnOrderLineByOrderNo(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.GetReturnOrderLineByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
+		app.Logger.Error("Failed to get return order line", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
-
-	fmt.Printf("\n📋 ========== Return Order Line of OrderNo: %s ========== 📋\n", orderNo)
-	for i, line := range result {
-		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
-		utils.PrintReturnOrderLineDetails(&line)
-	}
-	fmt.Println("=====================================")
 
 	handleResponse(c, true, "⭐ Get Return Order Line by OrderNo successfully ⭐", result, http.StatusOK)
 
@@ -193,32 +150,25 @@ func (app *Application) CreateReturnOrder(c *gin.Context) {
 	var req request.CreateReturnOrder
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		app.Logger.Warn("Invalid request payload", zap.Error(err))
 		handleValidationError(c, err)
 		return
 	}
 
 	userID, exists := c.Get("UserID")
 	if !exists {
+		app.Logger.Warn("⚠️ Unauthorized - Missing UserID")
 		handleResponse(c, false, "⚠️ Unauthorized - Missing UserID", nil, http.StatusUnauthorized)
 		return
 	}
 
-	req.CreateBy = userID
+	req.CreateBy = userID.(string)
 	result, err := app.Service.ReturnOrder.CreateReturnOrder(c.Request.Context(), req)
 	if err != nil {
+		app.Logger.Error("Failed to create return order", zap.Error(err))
 		handleError(c, err)
 		return
 	}
-
-	fmt.Printf("\n📋 ========== Created Return Order ========== 📋\n\n")
-	utils.PrintCreateReturnOrder(result)
-	fmt.Printf("\n📋 ========== Return Order Line Details ========== 📋\n")
-	for i, line := range result.ReturnOrderLine {
-		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
-		utils.PrintReturnOrderLineDetails(&line)
-	}
-	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.ReturnOrderLine))
-	fmt.Println("=====================================")
 
 	handleResponse(c, true, "⭐ Created successfully ⭐", result, http.StatusOK)
 }
@@ -242,11 +192,10 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 	var req request.UpdateReturnOrder
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		app.Logger.Warn("Invalid request payload", zap.Error(err))
 		handleValidationError(c, err)
 		return
 	}
-
-	req.OrderNo = orderNo
 
 	// ดึง userID จาก JWT token
 	userID, exists := c.Get("UserID")
@@ -256,15 +205,13 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 		return
 	}
 
-	result, err := app.Service.ReturnOrder.UpdateReturnOrder(c.Request.Context(), req, userID)
+	req.OrderNo = orderNo
+	result, err := app.Service.ReturnOrder.UpdateReturnOrder(c.Request.Context(), req, userID.(string))
 	if err != nil {
+		app.Logger.Error("Failed to update return order", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
-
-	fmt.Printf("\n📋 ========== Updated Order ========== 📋\n")
-	utils.PrintUpdateReturnOrder(result)
-	fmt.Println("=====================================")
 
 	handleResponse(c, true, "⭐ Updated successfully ⭐", result, http.StatusOK)
 }
@@ -288,13 +235,14 @@ func (app *Application) DeleteReturnOrder(c *gin.Context) {
 
 	err := app.Service.ReturnOrder.DeleteReturnOrder(c.Request.Context(), orderNo)
 	if err != nil {
+		app.Logger.Error("Failed to delete return order", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
 
-	response := response.DeleteReturnOrder{
+	result := response.DeleteReturnOrder{
 		OrderNo: orderNo,
 	}
 
-	handleResponse(c, true, "⭐ Deleted successfully ⭐", response, http.StatusOK)
+	handleResponse(c, true, "⭐ Deleted successfully ⭐", result, http.StatusOK)
 }

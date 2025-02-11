@@ -36,3 +36,14 @@ type ROM_V_OrderLineDetail struct {
 	CreateDate  time.Time `db:"CreateDate"`  // วันที่สร้างรายการ
 	TrackingNo  string    `db:"TrackingNo"`  // เลขพัสดุ
 }
+
+/********** Constants for dropdown ***************/
+
+type ROM_V_ProductAll struct {
+	SKU       string  `db:"SKU" json:"sku"`             // รหัสสินค้า
+	NameAlias string  `db:"NAMEALIAS" json:"nameAlias"` // ชื่อย่อของสินค้า
+	Size      string  `db:"Size" json:"size"`           // ขนาดของสินค้า
+	SizeID    string  `db:"SizeID" json:"sizeID"`       // รหัสขนาดของสินค้า
+	Barcode   *string `db:"Barcode" json:"barcode"`     // บาร์โค้ดของสินค้า
+	Type      *string `db:"Type" json:"type"`           // ประเภทของสินค้า
+}

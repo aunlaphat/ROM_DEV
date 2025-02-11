@@ -46,10 +46,10 @@ func Routes(router *gin.Engine, app *Application) {
 	// Authenticated & User Routes
 	app.AuthRoute(apiRouter)
 	app.UserRoute(apiRouter)
-	// app.BeforeReturnRoute(apiRouter)
+	app.OrderRoute(apiRouter)
 	app.ReturnOrder(apiRouter)
 	// app.ImportOrderRoute(apiRouter)
 	// app.TradeReturnRoute(apiRouter)
-
-	app.OrderRoute(apiRouter)
+	// app.BeforeReturnRoute(apiRouter)
+	// app.Constants(apiRouter)
 }

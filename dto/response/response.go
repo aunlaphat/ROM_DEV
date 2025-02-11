@@ -19,32 +19,32 @@ type SearchOrderItem struct {
 	Price    float64 `db:"Price" json:"price"`
 }
 // ในฟิลมีปรับ type ข้อมูลเพิ่ม //11/02
-// type BeforeReturnOrderResponse struct {
-// 	OrderNo        string                  `json:"orderNo" db:"OrderNo"`
-// 	SoNo           string                  `json:"soNo" db:"SoNo"`
-// 	SrNo           *string                 `json:"srNo" db:"SrNo"`
-// 	ChannelID      int                     `json:"channelId" db:"ChannelID"`
-// 	Reason         string                  `json:"reason" db:"Reason"`
-// 	CustomerID     string                  `json:"customerId" db:"CustomerID"`
-// 	TrackingNo     string                  `json:"trackingNo" db:"TrackingNo"`
-// 	Logistic       string                  `json:"logistic" db:"Logistic"`
-// 	WarehouseID    int                     `json:"warehouseId" db:"WarehouseID"`
-// 	SoStatus       *string                 `json:"soStatus" db:"SoStatus"`
-// 	MkpStatus      *string                 `json:"mkpStatus" db:"MkpStatus"`
-// 	ReturnDate     *time.Time              `json:"returnDate" db:"ReturnDate"`
-// 	StatusReturnID *int                    `json:"statusReturnId" db:"StatusReturnID"`
-// 	StatusConfID   *int                    `json:"statusConfId" db:"StatusConfID"`
-// 	ConfirmBy      *string                 `json:"confirmBy" db:"ConfirmBy"`
-// 	ConfirmDate    *time.Time              `json:"confirmDate" db:"ConfirmDate"`
-// 	CreateBy       string                  `json:"createBy" db:"CreateBy"`
-// 	CreateDate     time.Time               `json:"createDate" db:"CreateDate"`
-// 	UpdateBy       *string                 `json:"updateBy" db:"UpdateBy"`
-// 	UpdateDate     *time.Time              `json:"updateDate" db:"UpdateDate"`
-// 	CancelID       *int                    `json:"cancelId" db:"CancelID"`
-// 	IsCNCreated    bool                    `json:"isCNCreated" db:"IsCNCreated"`
-// 	IsEdited       bool                    `json:"isEdited" db:"IsEdited"`
-// 	Items          []BeforeReturnOrderItem `json:"items"`
-// }
+type BeforeReturnOrderResponse struct {
+	OrderNo        string                  `json:"orderNo" db:"OrderNo"`
+	SoNo           string                  `json:"soNo" db:"SoNo"`
+	SrNo           *string                 `json:"srNo" db:"SrNo"`
+	ChannelID      int                     `json:"channelId" db:"ChannelID"`
+	Reason         string                  `json:"reason" db:"Reason"`
+	CustomerID     string                  `json:"customerId" db:"CustomerID"`
+	TrackingNo     string                  `json:"trackingNo" db:"TrackingNo"`
+	Logistic       string                  `json:"logistic" db:"Logistic"`
+	WarehouseID    int                     `json:"warehouseId" db:"WarehouseID"`
+	SoStatus       *string                 `json:"soStatus" db:"SoStatus"`
+	MkpStatus      *string                 `json:"mkpStatus" db:"MkpStatus"`
+	ReturnDate     *time.Time              `json:"returnDate" db:"ReturnDate"`
+	StatusReturnID *int                    `json:"statusReturnId" db:"StatusReturnID"`
+	StatusConfID   *int                    `json:"statusConfId" db:"StatusConfID"`
+	ConfirmBy      *string                 `json:"confirmBy" db:"ConfirmBy"`
+	ConfirmDate    *time.Time              `json:"confirmDate" db:"ConfirmDate"`
+	CreateBy       string                  `json:"createBy" db:"CreateBy"`
+	CreateDate     time.Time               `json:"createDate" db:"CreateDate"`
+	UpdateBy       *string                 `json:"updateBy" db:"UpdateBy"`
+	UpdateDate     *time.Time              `json:"updateDate" db:"UpdateDate"`
+	CancelID       *int                    `json:"cancelId" db:"CancelID"`
+	IsCNCreated    bool                    `json:"isCNCreated" db:"IsCNCreated"`
+	IsEdited       bool                    `json:"isEdited" db:"IsEdited"`
+	Items          []BeforeReturnOrderItem `json:"items"`
+}
 
 type BeforeReturnOrderItem struct {
 	OrderNo    string    `json:"orderNo" db:"OrderNo"`
@@ -57,6 +57,33 @@ type BeforeReturnOrderItem struct {
 	CreateDate time.Time `json:"createDate" db:"CreateDate"`
 	TrackingNo *string   `json:"trackingNo,omitempty" db:"TrackingNo"`
 	AlterSKU   *string   `json:"alterSKU,omitempty" db:"AlterSKU"`
+}
+
+
+/********** Return Order ***************/
+
+type ReturnOrder struct {
+	OrderNo       string     `json:"orderNo" db:"OrderNo"`
+	SoNo          string     `json:"soNo" db:"SoNo"`
+	SrNo          *string    `json:"srNo" db:"SrNo"`
+	TrackingNo    *string    `json:"trackingNo" db:"TrackingNo"`
+	PlatfID       *int       `json:"platfId" db:"PlatfID"`
+	ChannelID     *int       `json:"channelId" db:"ChannelID"`
+	OptStatusID   *int       `json:"optStatusId" db:"OptStatusID"`
+	AxStatusID    *int       `json:"axStatusId" db:"AxStatusID"`
+	PlatfStatusID *int       `json:"platfStatusId" db:"PlatfStatusID"`
+	Reason        *string    `json:"reason" db:"Reason"`
+	CreateBy      string     `json:"createBy" db:"CreateBy"`
+	CreateDate    time.Time  `json:"createDate" db:"CreateDate"`
+	UpdateBy      *string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate    *time.Time `json:"updateDate" db:"UpdateDate"`
+	CancelID      *int       `json:"cancelId" db:"CancelID"`
+	StatusCheckID *int       `json:"statusCheckId" db:"StatusCheckID"`
+	CheckBy       *string    `json:"checkBy" db:"CheckBy"`
+	CheckDate     *time.Time `json:"checkDate" db:"CheckDate"`
+	Description   *string    `json:"description" db:"Description"`
+
+	ReturnOrderLine []ReturnOrderLine `json:"ReturnOrderLine"`
 }
 
 type ReturnOrderLine struct {
@@ -250,30 +277,30 @@ type ImportOrderSummary struct {
     Photo    string `json:"photo"`
 }
 
-type BeforeReturnOrderResponse struct {
-	OrderNo                string                          `json:"orderNo" db:"OrderNo"`
-	SoNo                   string                          `json:"soNo" db:"SoNo"`
-	SrNo                   string                          `json:"srNo" db:"SrNo"`
-	ChannelID              int                             `json:"channelId" db:"ChannelID"`
-	Reason                 string                          `json:"reason" db:"Reason"`
-	CustomerID             string                          `json:"customerId" db:"CustomerID"`
-	TrackingNo             string                          `json:"trackingNo" db:"TrackingNo"`
-	Logistic               string                          `json:"logistic" db:"Logistic"`
-	WarehouseID            int                             `json:"warehouseId" db:"WarehouseID"`
-	SoStatus               *int                            `json:"soStatusId" db:"SoStatus"`
-	MkpStatus              *int                            `json:"mkpStatusId" db:"MkpStatus"`
-	ReturnDate             *time.Time                      `json:"returnDate" db:"ReturnDate"`
-	StatusReturnID         *int                            `json:"statusReturnId" db:"StatusReturnID"`
-	StatusConfID           *int                            `json:"statusConfId" db:"StatusConfID"`
-	ConfirmBy              *string                         `json:"confirmBy" db:"ConfirmBy"`
-	ConfirmDate            *time.Time                      `json:"confirmDate" db:"ConfirmDate"`
-	CreateBy               string                          `json:"createBy" db:"CreateBy"`
-	CreateDate             time.Time                       `json:"createDate" db:"CreateDate"`
-	UpdateBy               *string                         `json:"updateBy" db:"UpdateBy"`
-	UpdateDate             *time.Time                      `json:"updateDate" db:"UpdateDate"`
-	CancelID               *int                            `json:"cancelId" db:"CancelID"`
-	BeforeReturnOrderLines []BeforeReturnOrderLineResponse `json:"beforeReturnOrderLines"`
-}
+// type BeforeReturnOrderResponse struct {
+// 	OrderNo                string                          `json:"orderNo" db:"OrderNo"`
+// 	SoNo                   string                          `json:"soNo" db:"SoNo"`
+// 	SrNo                   string                          `json:"srNo" db:"SrNo"`
+// 	ChannelID              int                             `json:"channelId" db:"ChannelID"`
+// 	Reason                 string                          `json:"reason" db:"Reason"`
+// 	CustomerID             string                          `json:"customerId" db:"CustomerID"`
+// 	TrackingNo             string                          `json:"trackingNo" db:"TrackingNo"`
+// 	Logistic               string                          `json:"logistic" db:"Logistic"`
+// 	WarehouseID            int                             `json:"warehouseId" db:"WarehouseID"`
+// 	SoStatus               *int                            `json:"soStatusId" db:"SoStatus"`
+// 	MkpStatus              *int                            `json:"mkpStatusId" db:"MkpStatus"`
+// 	ReturnDate             *time.Time                      `json:"returnDate" db:"ReturnDate"`
+// 	StatusReturnID         *int                            `json:"statusReturnId" db:"StatusReturnID"`
+// 	StatusConfID           *int                            `json:"statusConfId" db:"StatusConfID"`
+// 	ConfirmBy              *string                         `json:"confirmBy" db:"ConfirmBy"`
+// 	ConfirmDate            *time.Time                      `json:"confirmDate" db:"ConfirmDate"`
+// 	CreateBy               string                          `json:"createBy" db:"CreateBy"`
+// 	CreateDate             time.Time                       `json:"createDate" db:"CreateDate"`
+// 	UpdateBy               *string                         `json:"updateBy" db:"UpdateBy"`
+// 	UpdateDate             *time.Time                      `json:"updateDate" db:"UpdateDate"`
+// 	CancelID               *int                            `json:"cancelId" db:"CancelID"`
+// 	BeforeReturnOrderLines []BeforeReturnOrderLineResponse `json:"beforeReturnOrderLines"`
+// }
 
 type CreateBeforeReturnOrderResponse struct {
 	OrderNo     string     `json:"orderNo" db:"OrderNo"`
@@ -324,4 +351,76 @@ type UpdateOrderStatusResponse struct {
 	StatusConfID   int       `json:"statusConfID" db:"StatusConfID"`
 	ConfirmBy      string    `json:"confirmBy" db:"ConfirmBy"`
 	ConfirmDate    time.Time `json:"confirmDate" db:"ConfirmDate"`
+}
+
+/********** MKP (Online) ***************/
+
+type SaleOrderResponse struct {
+	SoNo        string                  `json:"soNo" db:"SoNo"`
+	OrderNo     string                  `json:"orderNo" db:"OrderNo"`
+	StatusMKP   string                  `json:"statusMKP" db:"StatusMKP"`
+	SalesStatus string                  `json:"salesStatus" db:"SalesStatus"`
+	CreateDate  *time.Time              `json:"createDate" db:"CreateDate"`
+	OrderLines  []SaleOrderLineResponse `json:"orderLines"`
+}
+
+type SaleOrderLineResponse struct {
+	SoNo     string  `json:"soNo" db:"SoNo"`
+	OrderNo  string  `json:"orderNo" db:"OrderNo"`
+	SKU      string  `json:"sku" db:"SKU"`
+	ItemName string  `json:"itemName" db:"ItemName"`
+	QTY      int     `json:"qty" db:"QTY"`
+	Price    float64 `json:"price" db:"Price"`
+}
+
+type UpdateSaleReturnResponse struct {
+	OrderNo    string    `json:"orderNo" db:"OrderNo"`
+	SrNo       string    `json:"srNo" db:"SrNo"`
+	UpdateBy   string    `json:"updateBy" db:"UpdateBy"`
+	UpdateDate time.Time `json:"updateDate" db:"UpdateDate"`
+}
+
+type ConfirmSaleReturnResponse struct {
+	OrderNo     string    `json:"orderNo" db:"OrderNo"`
+	ConfirmBy   string    `json:"confirmBy" db:"ConfirmBy"`
+	ConfirmDate time.Time `json:"confirmDate" db:"ConfirmDate"`
+}
+
+type CancelSaleReturnResponse struct {
+	RefID        string    `json:"refId" db:"RefID"`
+	CancelStatus bool      `json:"cancelStatus" db:"CancelStatus"`
+	Remark       string    `json:"remark" db:"Remark"`
+	CancelBy     string    `json:"cancelBy" db:"CancelBy"`
+	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
+}
+
+type ListDraftConfirmOrdersResponse struct {
+	OrderNo     string    `json:"orderNo" db:"OrderNo"`
+	SoNo        string    `json:"soNo" db:"SoNo"`
+	SrNo        string    `json:"srNo" db:"SrNo"`
+	CustomerID  string    `json:"customerId" db:"CustomerID"`
+	TrackingNo  string    `json:"trackingNo" db:"TrackingNo"`
+	Logistic    string    `json:"logistic" db:"Logistic"`
+	ChannelID   int       `json:"channelId" db:"ChannelID"`
+	CreateDate  time.Time `json:"createDate" db:"CreateDate"`
+	WarehouseID int       `json:"warehouseId" db:"WarehouseID"`
+}
+
+type DraftHeadResponse struct {
+	OrderNo    string              `db:"OrderNo"`
+	SoNo       string              `db:"SoNo"`
+	SrNo       string              `db:"SrNo"`
+	OrderLines []DraftLineResponse `db:"OrderLines"`
+}
+
+type DraftLineResponse struct {
+	SKU      string  `db:"SKU"`
+	ItemName string  `db:"ItemName"`
+	QTY      int     `db:"QTY"`
+	Price    float64 `db:"Price"`
+}
+
+type CodeRResponse struct {
+	SKU       string `json:"sku" db:"SKU"`
+	NameAlias string `json:"nameAlias" db:"NameAlias"`
 }
