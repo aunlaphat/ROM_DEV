@@ -25,9 +25,15 @@ func NewLogger(serviceName, logPath string, maxSize, maxBackups, maxAge int) (*L
 	config.EncodeTime = zapcore.RFC3339TimeEncoder
 	jsonEncoder := zapcore.NewJSONEncoder(config)
 
+	// ⚡ ปรับแต่ง Console Encoder (แบบข้อความที่อ่านง่าย)
+	consoleEncoderConfig := zap.NewDevelopmentEncoderConfig()
+	consoleEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	consoleEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	consoleEncoder := zapcore.NewConsoleEncoder(consoleEncoderConfig)
+
 	core := zapcore.NewTee(
 		zapcore.NewCore(jsonEncoder, zapcore.AddSync(hook), zapcore.ErrorLevel),
-		zapcore.NewCore(jsonEncoder, zapcore.AddSync(os.Stdout), zapcore.DebugLevel),
+		zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), zapcore.DebugLevel),
 	)
 
 	logger := zap.New(
