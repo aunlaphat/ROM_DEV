@@ -1,85 +1,41 @@
 package api
 
 import (
-	"boilerplate-backend-go/dto/request"
-	"encoding/json"
+	"context"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-// UserRoute defines the routes for user operations
-func (app *Application) UserRoute(apiRouter *chi.Mux) {
-	apiRouter.Route("/user", func(r chi.Router) {
-		r.Post("/get-user", app.GetUser)
-		r.Post("/get-user-with-permission", app.GetUserWithPermission)
-	})
+func (app *Application) UserRoute(apiRouter *gin.RouterGroup) {
+	user := apiRouter.Group("/user")
+	user.GET("/:username", app.GetUser)
 }
 
-// GetUser godoc
-// @Summary Get user by userid and username
-// @Description Retrieve the details of a user by their userid and username
-// @ID get-user
+// @Summary Get User Credentials
+// @Description Get user credentials by userName
 // @Tags User
-// @Accept json
 // @Produce json
-// @Param Login body request.LoginLark true "User login credentials in JSON format"
-// @Success 200 {object} api.Response{data=response.Login} "User retrieved successfully"
-// @Failure 400 {object} api.Response "Bad Request"
-// @Failure 404 {object} api.Response "User not found"
-// @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /user/get-user [post]
-func (app *Application) GetUser(w http.ResponseWriter, r *http.Request) {
-	var req request.LoginLark
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
+// @Param username path string true "UserName"
+// @Success 200 {object} response.UserRole "User credentials"
+// @Failure 404 {object} gin.H "User not found"
+// @Failure 500 {object} gin.H "Internal server error"
+// @Router /user/{username} [get]
+func (app *Application) GetUser(c *gin.Context) {
+	username := c.Param("username")
 
-	if req.UserID == "" || req.UserName == "" {
-		http.Error(w, "Username and password are required", http.StatusBadRequest)
-		return
-	}
-
-	user, err := app.Service.User.GetUser(r.Context(), req)
+	user, err := app.Service.User.GetUser(context.Background(), username)
 	if err != nil {
-		handleError(w, err)
+		if err.Error() == "user not found" {
+			app.Logger.Warn("⚠️ User not found", zap.String("username", username))
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		}
+		app.Logger.Error("❌ Failed to get user", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
-	handleResponse(w, true, "User retrieved successfully", user, http.StatusOK)
-}
-
-// GetUserWithPermission godoc
-// @Summary Get user with permissions by username and password
-// @Description Retrieve the details of a user with permissions by their username and password
-// @ID get-user-with-permission
-// @Tags User
-// @Accept json
-// @Produce json
-// @Param Login body request.LoginLark true "User login credentials in JSON format"
-// @Success 200 {object} api.Response{data=response.UserPermission} "User with permissions retrieved successfully"
-// @Failure 400 {object} api.Response "Bad Request"
-// @Failure 404 {object} api.Response "User not found"
-// @Failure 500 {object} api.Response "Internal Server Error"
-// @Router /user/get-user-with-permission [post]
-func (app *Application) GetUserWithPermission(w http.ResponseWriter, r *http.Request) {
-	var req request.LoginLark
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	if req.UserID == "" || req.UserName == "" {
-		http.Error(w, "Username and password are required", http.StatusBadRequest)
-		return
-	}
-
-	user, err := app.Service.User.GetUserWithPermission(r.Context(), req)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	handleResponse(w, true, "User with permissions retrieved successfully", user, http.StatusOK)
+	c.JSON(http.StatusOK, user)
 }

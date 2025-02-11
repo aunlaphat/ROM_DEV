@@ -17,46 +17,20 @@ const docTemplate = `{
     "paths": {
         "/auth": {
             "get": {
-                "description": "A test endpoint to check if the user is authenticated and to demonstrate Swagger documentation.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
+                "description": "Validates if the JWT token is valid and retrieves user claims.",
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
                 "summary": "Check Authentication",
-                "operationId": "check-authentication",
                 "responses": {
                     "200": {
                         "description": "Authenticated user details",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "object",
-                                            "additionalProperties": true
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.Response"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -66,7 +40,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Handles user login requests and generates a token for the authenticated user.",
+                "description": "Authenticates user credentials and generates a JWT token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -74,13 +48,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
                 "summary": "User Login",
-                "operationId": "user-login",
                 "parameters": [
                     {
-                        "description": "User login credentials in JSON format",
+                        "description": "User login credentials",
                         "name": "login-request",
                         "in": "body",
                         "required": true,
@@ -93,19 +66,7 @@ const docTemplate = `{
                     "200": {
                         "description": "JWT token",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/response.User"
                         }
                     },
                     "400": {
@@ -125,7 +86,7 @@ const docTemplate = `{
         },
         "/auth/login-lark": {
             "post": {
-                "description": "Handles user login requests and generates a token for the authenticated user.",
+                "description": "Authenticates user credentials from Lark and generates a JWT token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -133,14 +94,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
                 "summary": "User Lark Login",
-                "operationId": "user-login-lark",
                 "parameters": [
                     {
-                        "description": "User login from lark credentials from Lark in JSON format",
-                        "name": "Login-request-lark",
+                        "description": "User login from Lark",
+                        "name": "login-request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -152,19 +112,7 @@ const docTemplate = `{
                     "200": {
                         "description": "JWT token",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/response.User"
                         }
                     },
                     "400": {
@@ -184,33 +132,14 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
-                "description": "Logs out the user by deleting the JWT token.",
+                "description": "Logs the user out by removing the JWT token from the cookie.",
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
                 "summary": "User Logout",
-                "operationId": "user-logout",
                 "responses": {
                     "200": {
                         "description": "Logout successful",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -218,9 +147,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/before-return-order/create": {
+        "/order/create": {
             "post": {
-                "description": "Create a new return order with the provided details",
+                "description": "Creates a new return order including order head and order lines",
                 "consumes": [
                     "application/json"
                 ],
@@ -228,18 +157,18 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Before Return Order"
+                    "Return Order MKP"
                 ],
-                "summary": "Create a new return order with lines",
-                "operationId": "create-before-return-order-with-lines",
+                "summary": "Create a new return order",
+                "operationId": "create-return-order",
                 "parameters": [
                     {
-                        "description": "Before return order details",
-                        "name": "body",
+                        "description": "Return Order Data",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.BeforeReturnOrder"
+                            "$ref": "#/definitions/request.CreateBeforeReturnOrder"
                         }
                     }
                 ],
@@ -247,6 +176,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
+<<<<<<< HEAD
                             "$ref": "#/definitions/api.Response"
                         }
                     },
@@ -2397,6 +2327,8 @@ const docTemplate = `{
                     "200": {
                         "description": "Sale return order created successfully",
                         "schema": {
+=======
+>>>>>>> rom-gin
                             "allOf": [
                                 {
                                     "$ref": "#/definitions/api.Response"
@@ -2418,6 +2350,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/api.Response"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -2427,9 +2365,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/sale-return/search": {
-            "get": {
-                "description": "Retrieve the details of a order by its SO number or Order number",
+        "/order/mark-edited/{orderNo}": {
+            "patch": {
+                "description": "Marks the order as edited when there are modifications",
                 "consumes": [
                     "application/json"
                 ],
@@ -2437,7 +2375,46 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Sale Return"
+                    "Return Order MKP"
+                ],
+                "summary": "Mark order as edited",
+                "operationId": "mark-order-as-edited",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/order/search": {
+            "get": {
+                "description": "Retrieve the details of an order by its SO number or Order number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order MKP"
                 ],
                 "summary": "Search order by SO number or Order number",
                 "operationId": "search-order",
@@ -2457,7 +2434,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Order retrieved successfully",
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
@@ -2467,7 +2444,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/response.SaleOrderResponse"
+                                            "$ref": "#/definitions/response.SearchOrderResponse"
                                         }
                                     }
                                 }
@@ -2481,7 +2458,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Sale order not found",
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2495,9 +2472,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/sale-return/update/{orderNo}": {
-            "patch": {
-                "description": "Update the SR number for a sale return order based on the provided details",
+        "/order/update-sr/{orderNo}": {
+            "post": {
+                "description": "Generates SrNo and updates it in the database",
                 "consumes": [
                     "application/json"
                 ],
@@ -2505,31 +2482,22 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Sale Return"
+                    "Return Order MKP"
                 ],
-                "summary": "Update the SR number for a sale return order",
-                "operationId": "update-sale-return",
+                "summary": "Update SrNo (Sale Return Number)",
+                "operationId": "update-sr-no",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Order number",
+                        "description": "Order Number",
                         "name": "orderNo",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "SR number details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.UpdateSaleReturn"
-                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "SR number updated successfully",
+                        "description": "OK",
                         "schema": {
                             "allOf": [
                                 {
@@ -2539,7 +2507,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
+                                            "$ref": "#/definitions/response.UpdateSrNoResponse"
                                         }
                                     }
                                 }
@@ -2547,19 +2515,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request - Invalid input or missing required fields",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - Missing or invalid token",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found - Order not found",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2573,6 +2529,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/order/update-status/{orderNo}": {
+            "post": {
+                "description": "Updates order status based on RoleID (Accounting/Warehouse)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order MKP"
+                ],
+                "summary": "Update order status for return confirmation",
+                "operationId": "update-order-status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.UpdateOrderStatusResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+<<<<<<< HEAD
         "/trade-return/add-line/{orderNo}": {
             "post": {
                 "description": "Add a new trade return line based on the provided order number and line details",
@@ -3018,125 +3038,44 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+=======
+        "/user/{username}": {
+            "get": {
+                "description": "Get user credentials by userName",
+>>>>>>> rom-gin
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "Get user by userid and username",
-                "operationId": "get-user",
+                "summary": "Get User Credentials",
                 "parameters": [
                     {
-                        "description": "User login credentials in JSON format",
-                        "name": "Login",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.LoginLark"
-                        }
+                        "type": "string",
+                        "description": "UserName",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "User retrieved successfully",
+                        "description": "User credentials",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.Login"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "$ref": "#/definitions/response.UserRole"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "$ref": "#/definitions/gin.H"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/user/get-user-with-permission": {
-            "post": {
-                "description": "Retrieve the details of a user with permissions by their username and password",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Get user with permissions by username and password",
-                "operationId": "get-user-with-permission",
-                "parameters": [
-                    {
-                        "description": "User login credentials in JSON format",
-                        "name": "Login",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.LoginLark"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "User with permissions retrieved successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.UserPermission"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
+                            "$ref": "#/definitions/gin.H"
                         }
                     }
                 }
@@ -3147,146 +3086,56 @@ const docTemplate = `{
         "api.Response": {
             "type": "object",
             "properties": {
+                "data": {},
                 "message": {
                     "type": "string"
                 },
-                "result": {},
                 "success": {
                     "type": "boolean"
                 }
             }
         },
-        "entity.District": {
+        "gin.H": {
             "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "nameEN": {
-                    "type": "string"
-                },
-                "nameTH": {
-                    "type": "string"
-                },
-                "provinceCode": {
-                    "type": "integer"
-                }
-            }
+            "additionalProperties": {}
         },
-        "entity.Province": {
+        "request.CreateBeforeReturnOrder": {
             "type": "object",
+            "required": [
+                "channelID",
+                "customerID",
+                "logistic",
+                "orderNo",
+                "reason",
+                "returnDate",
+                "soNo",
+                "trackingNo",
+                "warehouseID"
+            ],
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "nameEN": {
-                    "type": "string"
-                },
-                "nameTH": {
-                    "type": "string"
-                }
-            }
-        },
-        "entity.ROM_V_ProductAll": {
-            "type": "object",
-            "properties": {
-                "barcode": {
-                    "description": "บาร์โค้ดของสินค้า",
-                    "type": "string"
-                },
-                "nameAlias": {
-                    "description": "ชื่อย่อของสินค้า",
-                    "type": "string"
-                },
-                "size": {
-                    "description": "ขนาดของสินค้า",
-                    "type": "string"
-                },
-                "sizeID": {
-                    "description": "รหัสขนาดของสินค้า",
-                    "type": "string"
-                },
-                "sku": {
-                    "description": "รหัสสินค้า",
-                    "type": "string"
-                },
-                "type": {
-                    "description": "ประเภทของสินค้า",
-                    "type": "string"
-                }
-            }
-        },
-        "entity.SubDistrict": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "districtCode": {
-                    "type": "integer"
-                },
-                "nameEN": {
-                    "type": "string"
-                },
-                "nameTH": {
-                    "type": "string"
-                },
-                "zipCode": {
-                    "type": "string"
-                }
-            }
-        },
-        "entity.Warehouse": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "description": "ที่ตั้งของคลังสินค้า",
-                    "type": "string"
-                },
-                "warehouseID": {
-                    "description": "รหัสคลังสินค้า (PK - Auto Increment)",
-                    "type": "integer"
-                },
-                "warehouseName": {
-                    "description": "ชื่อคลังสินค้า",
-                    "type": "string"
-                }
-            }
-        },
-        "request.BeforeReturnOrder": {
-            "type": "object",
-            "properties": {
-                "beforeReturnOrderLines": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/request.BeforeReturnOrderLine"
-                    }
-                },
-                "cancelID": {
-                    "description": "UpdateDate   *time.Time ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + `",
-                    "type": "integer"
-                },
                 "channelID": {
                     "type": "integer"
                 },
-                "confirmBy": {
-                    "type": "string"
-                },
-                "createBy": {
-                    "description": "ConfirmDate  *time.Time ` + "`" + `json:\"confirmDate\" db:\"ConfirmDate\"` + "`" + `",
-                    "type": "string"
-                },
                 "customerID": {
                     "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.CreateBeforeReturnOrderItem"
+                    }
                 },
                 "logistic": {
                     "type": "string"
                 },
                 "mkpStatus": {
+<<<<<<< HEAD
                     "type": "integer"
+=======
+                    "type": "string"
+>>>>>>> rom-gin
                 },
                 "orderNo": {
-                    "description": "RecID\t\t   int        ` + "`" + `json:\"recID\" db:\"RecID\"` + "`" + ` // (PK - Auto Increment)",
                     "type": "string"
                 },
                 "reason": {
@@ -3299,22 +3148,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "soStatus": {
+<<<<<<< HEAD
                     "type": "integer"
                 },
                 "srNo": {
+=======
+>>>>>>> rom-gin
                     "type": "string"
-                },
-                "statusConfID": {
-                    "type": "integer"
-                },
-                "statusReturnID": {
-                    "type": "integer"
                 },
                 "trackingNo": {
-                    "type": "string"
-                },
-                "updateBy": {
-                    "description": "CreateDate  *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + `",
                     "type": "string"
                 },
                 "warehouseID": {
@@ -3322,8 +3164,17 @@ const docTemplate = `{
                 }
             }
         },
-        "request.BeforeReturnOrderLine": {
+        "request.CreateBeforeReturnOrderItem": {
             "type": "object",
+            "required": [
+                "createBy",
+                "itemName",
+                "orderNo",
+                "price",
+                "qty",
+                "returnQty",
+                "sku"
+            ],
             "properties": {
                 "alterSKU": {
                     "type": "string"
@@ -3335,7 +3186,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "orderNo": {
-                    "description": "RecID\t\t  int        ` + "`" + `json:\"recID\" db:\"RecID\"` + "`" + ` // (PK - Auto Increment)",
                     "type": "string"
                 },
                 "price": {
@@ -3351,153 +3201,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "trackingNo": {
-                    "description": "UpdateDate *time.Time ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + `",
                     "type": "string"
-                },
-                "updateBy": {
-                    "description": "CreateDate *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + `",
-                    "type": "string"
-                }
-            }
-        },
-        "request.CancelSaleReturn": {
-            "type": "object",
-            "properties": {
-                "remark": {
-                    "description": "OrderNo      string ` + "`" + `json:\"orderNo\" db:\"OrderNo\"` + "`" + `\nCancelStatus bool   ` + "`" + `json:\"cancelStatus\" db:\"CancelStatus\"` + "`" + `",
-                    "type": "string"
-                }
-            }
-        },
-        "request.CodeR": {
-            "type": "object",
-            "properties": {
-                "createBy": {
-                    "type": "string"
-                },
-                "itemName": {
-                    "type": "string"
-                },
-                "orderNo": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "qty": {
-                    "type": "integer"
-                },
-                "returnQty": {
-                    "type": "integer"
-                },
-                "sku": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.ConfirmToReturnRequest": {
-            "type": "object",
-            "properties": {
-                "importLinesActual": {
-                    "description": "รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/request.ImportLinesActual"
-                    }
-                },
-                "updateToReturn": {
-                    "description": "เลข sr สุ่มจาก ax",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/request.UpdateToReturn"
-                    }
-                }
-            }
-        },
-        "request.ConfirmTradeReturnRequest": {
-            "type": "object",
-            "properties": {
-                "importLines": {
-                    "description": "รายการสินค้า",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/request.TradeReturnLineRequest"
-                    }
-                }
-            }
-        },
-        "request.CreateReturnOrder": {
-            "type": "object",
-            "properties": {
-                "ReturnOrderLine": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/request.ReturnOrderLine"
-                    }
-                },
-                "axStatusId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "channelId": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "description": {
-                    "type": "string",
-                    "example": ""
-                },
-                "optStatusId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "orderNo": {
-                    "type": "string",
-                    "example": "ORD0001"
-                },
-                "platfId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "platfStatusId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "reason": {
-                    "type": "string"
-                },
-                "soNo": {
-                    "type": "string",
-                    "example": "SO0001"
-                },
-                "srNo": {
-                    "type": "string",
-                    "example": "SR0001"
-                },
-                "statusCheckId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "trackingNo": {
-                    "type": "string",
-                    "example": "12345678TH"
-                }
-            }
-        },
-        "request.ImportLinesActual": {
-            "type": "object",
-            "properties": {
-                "actualQty": {
-                    "type": "integer"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "sku": {
-                    "type": "string"
-                },
-                "statusDelete": {
-                    "type": "boolean"
                 }
             }
         },
@@ -3528,162 +3232,15 @@ const docTemplate = `{
                 }
             }
         },
-        "request.OrderLines": {
+        "response.BeforeReturnOrderItem": {
             "type": "object",
             "properties": {
-                "itemName": {
+                "alterSKU": {
                     "type": "string"
                 },
-                "price": {
-                    "type": "number"
-                },
-                "qty": {
-                    "type": "integer"
-                },
-                "returnQty": {
-                    "type": "integer"
-                },
-                "sku": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.ReturnOrderLine": {
-            "type": "object",
-            "properties": {
-                "price": {
-                    "type": "number",
-                    "example": 199.99
-                },
-                "qty": {
-                    "type": "integer",
-                    "example": 5
-                },
-                "returnQTY": {
-                    "type": "integer",
-                    "example": 5
-                },
-                "sku": {
-                    "type": "string",
-                    "example": "SKU12345"
-                }
-            }
-        },
-        "request.TradeReturnLine": {
-            "type": "object",
-            "properties": {
-                "tradeReturnLine": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/request.OrderLines"
-                    }
-                }
-            }
-        },
-        "request.TradeReturnLineRequest": {
-            "type": "object",
-            "properties": {
-                "filePath": {
-                    "description": "CreateDate *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
+                "createBy": {
                     "type": "string"
                 },
-                "imageTypeID": {
-                    "description": "เข้า Images",
-                    "type": "integer"
-                },
-                "itemName": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "qty": {
-                    "type": "integer"
-                },
-                "returnQty": {
-                    "type": "integer"
-                },
-                "sku": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.UpdateReturnOrder": {
-            "type": "object",
-            "properties": {
-                "axStatusId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "cancelId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "channelId": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "checkBy": {
-                    "type": "string",
-                    "example": "dev03"
-                },
-                "description": {
-                    "type": "string",
-                    "example": ""
-                },
-                "optStatusId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "platfId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "platfStatusId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "reason": {
-                    "type": "string",
-                    "example": "CHANGE PRODUCTS"
-                },
-                "srNo": {
-                    "type": "string",
-                    "example": "SR0001"
-                },
-                "statusCheckId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "trackingNo": {
-                    "type": "string",
-                    "example": "12345678TH"
-                }
-            }
-        },
-        "request.UpdateSaleReturn": {
-            "type": "object",
-            "required": [
-                "srNo"
-            ],
-            "properties": {
-                "srNo": {
-                    "type": "string",
-                    "example": "SR-TEST-123456"
-                }
-            }
-        },
-        "request.UpdateToReturn": {
-            "type": "object",
-            "properties": {
-                "srNo": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.BeforeReturnOrderLineResponse": {
-            "type": "object",
-            "properties": {
                 "createDate": {
                     "type": "string"
                 },
@@ -3713,12 +3270,6 @@ const docTemplate = `{
         "response.BeforeReturnOrderResponse": {
             "type": "object",
             "properties": {
-                "beforeReturnOrderLines": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.BeforeReturnOrderLineResponse"
-                    }
-                },
                 "cancelId": {
                     "type": "integer"
                 },
@@ -3740,11 +3291,23 @@ const docTemplate = `{
                 "customerId": {
                     "type": "string"
                 },
+                "isCNCreated": {
+                    "type": "boolean"
+                },
+                "isEdited": {
+                    "type": "boolean"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.BeforeReturnOrderItem"
+                    }
+                },
                 "logistic": {
                     "type": "string"
                 },
-                "mkpStatusId": {
-                    "type": "integer"
+                "mkpStatus": {
+                    "type": "string"
                 },
                 "orderNo": {
                     "type": "string"
@@ -3758,8 +3321,8 @@ const docTemplate = `{
                 "soNo": {
                     "type": "string"
                 },
-                "soStatusId": {
-                    "type": "integer"
+                "soStatus": {
+                    "type": "string"
                 },
                 "srNo": {
                     "type": "string"
@@ -3784,58 +3347,50 @@ const docTemplate = `{
                 }
             }
         },
-        "response.CancelSaleReturnResponse": {
+        "response.SearchOrderItem": {
             "type": "object",
             "properties": {
-                "cancelBy": {
+                "itemName": {
                     "type": "string"
                 },
-                "cancelDate": {
-                    "type": "string"
+                "price": {
+                    "type": "number"
                 },
-                "cancelStatus": {
-                    "type": "boolean"
-                },
-                "refId": {
-                    "type": "string"
-                },
-                "remark": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.CodeRResponse": {
-            "type": "object",
-            "properties": {
-                "nameAlias": {
-                    "type": "string"
+                "qty": {
+                    "type": "integer"
                 },
                 "sku": {
                     "type": "string"
                 }
             }
         },
-        "response.ConfirmReceipt": {
+        "response.SearchOrderResponse": {
             "type": "object",
             "properties": {
-                "identifier": {
+                "createDate": {
                     "type": "string"
                 },
-                "statusCheckID": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.SearchOrderItem"
+                    }
+                },
+                "orderNo": {
                     "type": "string"
                 },
-                "statusReturnID": {
+                "salesStatus": {
                     "type": "string"
                 },
-                "updateBy": {
+                "soNo": {
                     "type": "string"
                 },
-                "updateDate": {
+                "statusMKP": {
                     "type": "string"
                 }
             }
         },
-        "response.ConfirmSaleReturnResponse": {
+        "response.UpdateOrderStatusResponse": {
             "type": "object",
             "properties": {
                 "confirmBy": {
@@ -3846,20 +3401,29 @@ const docTemplate = `{
                 },
                 "orderNo": {
                     "type": "string"
+                },
+                "statusConfID": {
+                    "type": "integer"
+                },
+                "statusReturnID": {
+                    "type": "integer"
                 }
             }
         },
-        "response.ConfirmToReturnOrder": {
+        "response.UpdateSrNoResponse": {
             "type": "object",
             "properties": {
                 "orderNo": {
                     "type": "string"
                 },
-                "statusCheckID": {
+                "srNo": {
                     "type": "string"
                 },
+                "statusConfID": {
+                    "type": "integer"
+                },
                 "statusReturnID": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "updateBy": {
                     "type": "string"
@@ -3869,26 +3433,13 @@ const docTemplate = `{
                 }
             }
         },
-        "response.CreateReturnOrder": {
+        "response.User": {
             "type": "object",
             "properties": {
-                "ReturnOrderLine": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.ReturnOrderLine"
-                    }
-                },
-                "axStatusId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "channelId": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "createBy": {
+                "departmentNo": {
                     "type": "string"
                 },
+<<<<<<< HEAD
                 "createDate": {
                     "type": "string"
                 },
@@ -4126,312 +3677,29 @@ const docTemplate = `{
                     "type": "string",
                     "example": "G07"
                 },
+=======
+>>>>>>> rom-gin
                 "fullNameTH": {
-                    "type": "string",
-                    "example": "Firstname Lastname"
+                    "type": "string"
                 },
                 "nickName": {
-                    "type": "string",
-                    "example": "Nickname"
+                    "type": "string"
                 },
                 "platform": {
-                    "type": "string",
-                    "example": "Platform"
+                    "type": "string"
                 },
                 "roleID": {
-                    "type": "integer",
-                    "example": 0
+                    "type": "integer"
                 },
                 "userID": {
-                    "type": "string",
-                    "example": "DC-XXXXX"
+                    "type": "string"
                 },
                 "userName": {
-                    "type": "string",
-                    "example": "userName"
-                }
-            }
-        },
-        "response.OrderDetail": {
-            "type": "object",
-            "properties": {
-                "OrderHeadDetail": {
-                    "description": "json =\u003e OrderHeadDetail[ OrderLineDetail[ {},{},..] ]",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.OrderHeadDetail"
-                    }
-                }
-            }
-        },
-        "response.OrderHeadDetail": {
-            "type": "object",
-            "properties": {
-                "OrderLineDetail": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.OrderLineDetail"
-                    }
-                },
-                "orderNo": {
-                    "description": "เลขที่ใบสั่งซื้อ",
-                    "type": "string"
-                },
-                "salesStatus": {
-                    "description": "สถานะการขาย",
-                    "type": "string"
-                },
-                "soNo": {
-                    "description": "เลขที่ใบสั่งขาย",
-                    "type": "string"
-                },
-                "statusMKP": {
-                    "description": "สถานะในตลาด",
                     "type": "string"
                 }
             }
         },
-        "response.OrderLineDetail": {
-            "type": "object",
-            "properties": {
-                "itemName": {
-                    "description": "ชื่อสินค้า",
-                    "type": "string"
-                },
-                "price": {
-                    "description": "ราคาต่อหน่วย",
-                    "type": "number"
-                },
-                "qty": {
-                    "description": "จำนวนสินค้า",
-                    "type": "integer"
-                },
-                "sku": {
-                    "description": "รหัสสินค้า",
-                    "type": "string"
-                }
-            }
-        },
-        "response.ReturnOrder": {
-            "type": "object",
-            "properties": {
-                "ReturnOrderLine": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.ReturnOrderLine"
-                    }
-                },
-                "axStatusId": {
-                    "type": "integer"
-                },
-                "cancelId": {
-                    "type": "integer"
-                },
-                "channelId": {
-                    "type": "integer"
-                },
-                "checkBy": {
-                    "type": "string"
-                },
-                "checkDate": {
-                    "type": "string"
-                },
-                "createBy": {
-                    "type": "string"
-                },
-                "createDate": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "optStatusId": {
-                    "type": "integer"
-                },
-                "orderNo": {
-                    "type": "string"
-                },
-                "platfId": {
-                    "type": "integer"
-                },
-                "platfStatusId": {
-                    "type": "integer"
-                },
-                "reason": {
-                    "type": "string"
-                },
-                "soNo": {
-                    "type": "string"
-                },
-                "srNo": {
-                    "type": "string"
-                },
-                "statusCheckId": {
-                    "type": "integer"
-                },
-                "trackingNo": {
-                    "type": "string"
-                },
-                "updateBy": {
-                    "type": "string"
-                },
-                "updateDate": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.ReturnOrderLine": {
-            "type": "object",
-            "properties": {
-                "actualQTY": {
-                    "type": "integer"
-                },
-                "alterSKU": {
-                    "type": "string"
-                },
-                "createBy": {
-                    "type": "string"
-                },
-                "createDate": {
-                    "type": "string"
-                },
-                "orderNo": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "qty": {
-                    "type": "integer"
-                },
-                "returnQTY": {
-                    "type": "integer"
-                },
-                "sku": {
-                    "type": "string"
-                },
-                "trackingNo": {
-                    "type": "string"
-                },
-                "updateBy": {
-                    "type": "string"
-                },
-                "updateDate": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.SaleOrderLineResponse": {
-            "type": "object",
-            "properties": {
-                "itemName": {
-                    "type": "string"
-                },
-                "orderNo": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "qty": {
-                    "type": "integer"
-                },
-                "sku": {
-                    "type": "string"
-                },
-                "soNo": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.SaleOrderResponse": {
-            "type": "object",
-            "properties": {
-                "createDate": {
-                    "type": "string"
-                },
-                "orderLines": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/response.SaleOrderLineResponse"
-                    }
-                },
-                "orderNo": {
-                    "type": "string"
-                },
-                "salesStatus": {
-                    "type": "string"
-                },
-                "soNo": {
-                    "type": "string"
-                },
-                "statusMKP": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.UpdateReturnOrder": {
-            "type": "object",
-            "properties": {
-                "axStatusId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "cancelId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "channelId": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "checkBy": {
-                    "type": "string",
-                    "example": "dev03"
-                },
-                "checkDate": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string",
-                    "example": ""
-                },
-                "optStatusId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "platfId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "platfStatusId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "reason": {
-                    "type": "string"
-                },
-                "srNo": {
-                    "type": "string",
-                    "example": "SR0001"
-                },
-                "statusCheckId": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "trackingNo": {
-                    "type": "string",
-                    "example": "12345678TH"
-                },
-                "updateBy": {
-                    "type": "string"
-                },
-                "updateDate": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.UserPermission": {
+        "response.UserRole": {
             "type": "object",
             "properties": {
                 "departmentNo": {
@@ -4444,9 +3712,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "nickName": {
-                    "type": "string"
-                },
-                "password": {
                     "type": "string"
                 },
                 "permission": {
@@ -4475,7 +3740,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
-	Title:            "Return Order Management Service API ⭐",
+	Title:            "Return Order Management Service ⭐",
 	Description:      "This is a Return Order Management Service API server.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

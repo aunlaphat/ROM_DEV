@@ -39,7 +39,7 @@ func PrintOrderLineDetails(line *res.BeforeReturnOrderLineResponse) {
 	fmt.Printf("📅 CreateDate: %v\n", line.CreateDate.Format("2006-01-02 15:04:05"))
 }
 
-func PrintSaleOrderDetails(order *res.SaleOrderResponse) {
+func PrintSaleOrderDetails(order *res.SearchOrderResponse) {
 	fmt.Printf("🧾 OrderNo: %s\n", order.OrderNo)
 	fmt.Printf("🛒 SoNo: %s\n", order.SoNo)
 	fmt.Printf("📊 StatusMKP: %s\n", order.StatusMKP)
@@ -47,9 +47,9 @@ func PrintSaleOrderDetails(order *res.SaleOrderResponse) {
 	fmt.Printf("📅 CreateDate: %v\n", order.CreateDate.Format("2006-01-02 15:04:05"))
 }
 
-func PrintSaleOrderLineDetails(line *res.SaleOrderLineResponse) {
-	fmt.Printf("🛒 SoNo: %s\n", line.SoNo)
-	fmt.Printf("🧾 OrderNo: %s\n", line.OrderNo)
+func PrintSaleOrderLineDetails(line *res.SearchOrderLineResponse) {
+	//fmt.Printf("🛒 SoNo: %s\n", line.SoNo)
+	//fmt.Printf("🧾 OrderNo: %s\n", line.OrderNo)
 	fmt.Printf("🔖 SKU: %s\n", line.SKU)
 	fmt.Printf("🏷️  ItemName: %s\n", line.ItemName)
 	fmt.Printf("📱 QTY: %d\n", line.QTY)
@@ -203,3 +203,4 @@ func convertDate(t *time.Time) string {
 	}
 	return ""
 }
+

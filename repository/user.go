@@ -1,92 +1,69 @@
 package repository
 
 import (
-	response "boilerplate-backend-go/dto/response"
+	entity "boilerplate-backend-go/Entity"
+	"boilerplate-backend-go/dto/response"
 	"context"
 	"fmt"
 )
 
 type UserRepository interface {
-	GetUser(ctx context.Context, username, password string) (response.Login, error)
-	GetUserFromLark(ctx context.Context, userID, username string) (response.Login, error)
-	GetUserWithPermission(ctx context.Context, userid, username string) (response.UserPermission, error)
+	GetUser(ctx context.Context, username string) (entity.User, error)
+	GetUserFromLark(ctx context.Context, userID, username string) (response.User, error)
 }
 
-func (repo repositoryDB) GetUser(ctx context.Context, username, password string) (response.Login, error) {
-	var user response.Login
+func (repo repositoryDB) GetUser(ctx context.Context, username string) (entity.User, error) {
+	var user entity.User
 	query := `
-        SELECT UserID, UserName, RoleID, FullNameTH, NickName, DepartmentNo, 'web' as Platform
+        SELECT UserID, UserName, Password, NickName, FullNameTH, DepartmentNo, RoleID, RoleName, Description, Permission
         FROM ROM_V_UserPermission
-        WHERE UserName = :username AND Password = :password
+        WHERE UserName = :username
     `
-	params := map[string]interface{}{
-		"username": username,
-		"password": password,
-	}
 
-	nstmt, err := repo.db.PrepareNamed(query)
-	if err != nil {
-		return response.Login{}, fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer nstmt.Close()
+	params := map[string]interface{}{"username": username}
 
-	err = nstmt.GetContext(ctx, &user, params)
+	stmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
-		return response.Login{}, fmt.Errorf("failed to get user: %w", err)
+		return entity.User{}, fmt.Errorf("failed to prepare query: %w", err)
+	}
+	defer stmt.Close()
+
+	err = stmt.GetContext(ctx, &user, params)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return entity.User{}, fmt.Errorf("user not found")
+		}
+		return entity.User{}, fmt.Errorf("failed to get user: %w", err)
 	}
 
 	return user, nil
 }
 
-func (repo repositoryDB) GetUserFromLark(ctx context.Context, userid, username string) (response.Login, error) {
-	var user response.Login
-	user.UserName = username
+func (repo repositoryDB) GetUserFromLark(ctx context.Context, userID, username string) (response.User, error) {
+	var user response.User
 	query := `
-        SELECT UserID, UserName, RoleID, FullNameTH, NickName, DepartmentNo, 'lark' as Platform
+        SELECT UserID, UserName, RoleID, FullNameTH, NickName, DepartmentNo
         FROM ROM_V_UserPermission
         WHERE UserID = :userID AND UserName = :userName
     `
 	params := map[string]interface{}{
-		"userID":   userid,
+		"userID":   userID,
 		"userName": username,
 	}
 
-	nstmt, err := repo.db.PrepareNamed(query)
+	rows, err := repo.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return response.Login{}, fmt.Errorf("failed to prepare statement: %w", err)
+		return response.User{}, fmt.Errorf("failed to get user from Lark: %w", err)
 	}
-	defer nstmt.Close()
+	defer rows.Close()
 
-	err = nstmt.GetContext(ctx, &user, params)
-	if err != nil {
-		return response.Login{}, fmt.Errorf("failed to get user: %w", err)
-	}
-
-	return user, nil
-}
-
-func (repo repositoryDB) GetUserWithPermission(ctx context.Context, userid, username string) (response.UserPermission, error) {
-	var user response.UserPermission
-	query := `
-        SELECT UserID, UserName, RoleID, FullNameTH, NickName, DepartmentNo, RoleName, Description, Permission 
-        FROM ROM_V_UserPermission
-        WHERE UserID = :userid AND UserName = :username
-    `
-	params := map[string]interface{}{
-		"userid":   userid,
-		"username": username,
+	if rows.Next() {
+		err = rows.StructScan(&user)
+		if err != nil {
+			return response.User{}, fmt.Errorf("failed to scan user from Lark: %w", err)
+		}
+		return user, nil
 	}
 
-	nstmt, err := repo.db.PrepareNamed(query)
-	if err != nil {
-		return response.UserPermission{}, fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer nstmt.Close()
-
-	err = nstmt.GetContext(ctx, &user, params)
-	if err != nil {
-		return response.UserPermission{}, fmt.Errorf("failed to get user: %w", err)
-	}
-
-	return user, nil
+	return response.User{}, fmt.Errorf("user not found in Lark")
 }
