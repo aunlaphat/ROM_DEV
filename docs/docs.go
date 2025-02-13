@@ -147,6 +147,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/order/cancel": {
+            "post": {
+                "description": "Cancels an order by updating its status and recording the cancellation reason",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order MKP"
+                ],
+                "summary": "Cancel an existing return order",
+                "operationId": "cancel-order",
+                "parameters": [
+                    {
+                        "description": "Cancel Order Data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CancelOrder"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.CancelOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/order/create": {
             "post": {
                 "description": "Creates a new return order including order head and order lines",
@@ -498,6 +563,20 @@ const docTemplate = `{
             "type": "object",
             "additionalProperties": {}
         },
+        "request.CancelOrder": {
+            "type": "object",
+            "properties": {
+                "cancelReason": {
+                    "type": "string"
+                },
+                "refID": {
+                    "type": "string"
+                },
+                "sourceTable": {
+                    "type": "string"
+                }
+            }
+        },
         "request.CreateBeforeReturnOrder": {
             "type": "object",
             "required": [
@@ -733,6 +812,26 @@ const docTemplate = `{
                 },
                 "warehouseId": {
                     "type": "integer"
+                }
+            }
+        },
+        "response.CancelOrderResponse": {
+            "type": "object",
+            "properties": {
+                "cancelBy": {
+                    "type": "string"
+                },
+                "cancelDate": {
+                    "type": "string"
+                },
+                "cancelReason": {
+                    "type": "string"
+                },
+                "refID": {
+                    "type": "string"
+                },
+                "sourceTable": {
+                    "type": "string"
                 }
             }
         },

@@ -19,6 +19,8 @@ type OrderRepository interface {
 	UpdateOrderStatus(ctx context.Context, orderNo string, statusReturnID int, statusConfID int, userID string) error
 	UpdateCNForOrder(ctx context.Context, orderNo string, userID string) error
 	MarkOrderAsEdited(ctx context.Context, orderNo string, userID string) error
+	CancelOrder(ctx context.Context, req request.CancelOrder, userID string) (int, error)
+	GetOrderStatus(ctx context.Context, refID, sourceTable string) (int, error)
 }
 
 func (repo repositoryDB) SearchOrder(ctx context.Context, req request.SearchOrder) (*response.SearchOrderResponse, error) {
@@ -305,4 +307,110 @@ func (repo repositoryDB) MarkOrderAsEdited(ctx context.Context, orderNo string, 
 	}
 
 	return nil
+}
+
+func (repo repositoryDB) CancelOrder(ctx context.Context, req request.CancelOrder, userID string) (int, error) {
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// ✅ ตรวจสอบ SourceTable ว่าถูกต้องหรือไม่
+	if req.SourceTable != "BeforeReturnOrder" && req.SourceTable != "ReturnOrder" {
+		return 0, fmt.Errorf("invalid SourceTable: %s", req.SourceTable)
+	}
+
+	// ✅ `INSERT` ลง `CancelStatus` และดึง `CancelID`
+	queryCancel := `
+		INSERT INTO CancelStatus (RefID, SourceTable, CancelReason, CancelBy, CancelDate)
+		OUTPUT INSERTED.CancelID
+		VALUES (:RefID, :SourceTable, :CancelReason, :CancelBy, GETDATE())`
+
+	var cancelID int
+	stmt, err := tx.PrepareNamedContext(ctx, queryCancel)
+	if err != nil {
+		tx.Rollback()
+		return 0, fmt.Errorf("failed to prepare cancel status query: %w", err)
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRowxContext(ctx, map[string]interface{}{
+		"RefID":        req.RefID,
+		"SourceTable":  req.SourceTable,
+		"CancelReason": req.CancelReason,
+		"CancelBy":     userID,
+	}).Scan(&cancelID)
+
+	if err != nil {
+		tx.Rollback()
+		return 0, fmt.Errorf("failed to insert cancel status: %w", err)
+	}
+
+	// ✅ อัปเดต `BeforeReturnOrder` หรือ `ReturnOrder`
+	updateQuery := fmt.Sprintf(`
+		UPDATE %s
+		SET CancelID = :CancelID,
+		    StatusReturnID = 2, 
+		    StatusConfID = 3, 
+		    UpdateBy = :UpdateBy,
+		    UpdateDate = GETDATE()
+		WHERE %s = :RefID`,
+		req.SourceTable,
+		map[string]string{"BeforeReturnOrder": "OrderNo", "ReturnOrder": "ReturnID"}[req.SourceTable])
+
+	res, err := tx.NamedExecContext(ctx, updateQuery, map[string]interface{}{
+		"CancelID": cancelID,
+		"UpdateBy": userID,
+		"RefID":    req.RefID,
+	})
+	if err != nil {
+		tx.Rollback()
+		return 0, fmt.Errorf("failed to update order status: %w", err)
+	}
+
+	// ✅ ตรวจสอบว่ามีแถวถูกอัปเดตหรือไม่
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		tx.Rollback()
+		return 0, fmt.Errorf("no rows updated for RefID: %s", req.RefID)
+	}
+
+	// ✅ Commit Transaction
+	err = tx.Commit()
+	if err != nil {
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return cancelID, nil
+}
+
+func (repo repositoryDB) GetOrderStatus(ctx context.Context, refID, sourceTable string) (int, error) {
+	if sourceTable != "BeforeReturnOrder" && sourceTable != "ReturnOrder" {
+		return 0, fmt.Errorf("invalid SourceTable: %s", sourceTable)
+	}
+
+	orderIDField := map[string]string{
+		"BeforeReturnOrder": "OrderNo",
+		"ReturnOrder":       "ReturnID",
+	}[sourceTable]
+
+	query := fmt.Sprintf("SELECT StatusReturnID FROM %s WHERE %s = :RefID", sourceTable, orderIDField)
+
+	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{"RefID": refID})
+	if err != nil {
+		return 0, fmt.Errorf("failed to retrieve order status: %w", err)
+	}
+	defer rows.Close()
+
+	var statusReturnID int
+	if rows.Next() {
+		if err := rows.Scan(&statusReturnID); err != nil {
+			return 0, fmt.Errorf("failed to scan order status: %w", err)
+		}
+	} else {
+		return 0, fmt.Errorf("order not found for RefID: %s", refID)
+	}
+
+	return statusReturnID, nil
 }

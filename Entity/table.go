@@ -55,8 +55,8 @@ type Warehouse struct {
 type CancelStatus struct {
 	CancelID     int       `db:"CancelID"`     // รหัสการยกเลิก (PK - Auto Increment)
 	RefID        string    `db:"RefID"`        // เลขที่ใบสั่งซื้อ (FK -> RecID(BeforeReturnOrder) || RuturnID(ReturnOrder))
-	CancelStatus bool      `db:"CancelStatus"` // สถานะการยกเลิก
-	Remark       string    `db:"Remark"`       // เหตุผลในการยกเลิก
+	SourceTable  string    `db:"SourceTable"`  // ตารางที่ส่งข้อมูล (BeforeReturnOrder || ReturnOrder)
+	CancelReason string    `db:"CancelReason"` // เหตุผลการยกเลิกคคืนสินค้า
 	CancelBy     string    `db:"CancelBy"`     // ผู้ยกเลิก
 	CancelDate   time.Time `db:"CancelDate"`   // วันที่ยกเลิก
 }

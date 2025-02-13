@@ -74,3 +74,11 @@ type UpdateOrderStatusResponse struct {
 	ConfirmBy      string    `json:"confirmBy" db:"ConfirmBy"`
 	ConfirmDate    time.Time `json:"confirmDate" db:"ConfirmDate"`
 }
+
+type CancelOrderResponse struct {
+	RefID        string    `json:"refID" db:"RefID"`
+	SourceTable  string    `json:"sourceTable" db:"SourceTable"`
+	CancelReason string    `json:"cancelReason" db:"CancelReason"`
+	CancelBy     string    `json:"cancelBy" db:"CancelBy"`
+	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
+}

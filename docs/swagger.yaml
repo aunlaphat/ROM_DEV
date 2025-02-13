@@ -11,6 +11,15 @@ definitions:
   gin.H:
     additionalProperties: {}
     type: object
+  request.CancelOrder:
+    properties:
+      cancelReason:
+        type: string
+      refID:
+        type: string
+      sourceTable:
+        type: string
+    type: object
   request.CreateBeforeReturnOrder:
     properties:
       channelID:
@@ -173,6 +182,19 @@ definitions:
         type: string
       warehouseId:
         type: integer
+    type: object
+  response.CancelOrderResponse:
+    properties:
+      cancelBy:
+        type: string
+      cancelDate:
+        type: string
+      cancelReason:
+        type: string
+      refID:
+        type: string
+      sourceTable:
+        type: string
     type: object
   response.SearchOrderItem:
     properties:
@@ -360,6 +382,47 @@ paths:
       summary: User Logout
       tags:
       - Authentication
+  /order/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels an order by updating its status and recording the cancellation
+        reason
+      operationId: cancel-order
+      parameters:
+      - description: Cancel Order Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CancelOrder'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.CancelOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Cancel an existing return order
+      tags:
+      - Return Order MKP
   /order/create:
     post:
       consumes:

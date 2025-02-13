@@ -22,6 +22,7 @@ func (app *Application) OrderRoute(apiRouter *gin.RouterGroup) {
 	orderAuth.POST("/create", app.CreateBeforeReturnOrder)
 	orderAuth.POST("/update-sr/:orderNo", app.UpdateSrNo)
 	orderAuth.POST("/update-status/:orderNo", app.UpdateOrderStatus)
+	orderAuth.POST("cancel", app.CancelOrder)
 
 	// Frontend อัปเดต IsEdited = true เมื่อมีการแก้ไขข้อมูล (เช่น เปลี่ยน QTY, ลบรายการ, หรือเพิ่มสินค้าใหม่)
 	orderAuth.PATCH("/mark-edited/:orderNo", app.MarkOrderAsEdited)
@@ -232,4 +233,56 @@ func (app *Application) MarkOrderAsEdited(c *gin.Context) {
 	}
 
 	handleResponse(c, true, "⭐ Order marked as edited ⭐", nil, http.StatusOK)
+}
+
+// CancelOrder godoc
+// @Summary Cancel an existing return order
+// @Description Cancels an order by updating its status and recording the cancellation reason
+// @ID cancel-order
+// @Tags Return Order MKP
+// @Accept json
+// @Produce json
+// @Param request body request.CancelOrder true "Cancel Order Data"
+// @Success 200 {object} Response{data=response.CancelOrderResponse}
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response "Unauthorized"
+// @Failure 500 {object} Response
+// @Router /order/cancel [post]
+func (app *Application) CancelOrder(c *gin.Context) {
+	var req request.CancelOrder
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleValidationError(c, err)
+		return
+	}
+
+	userID, exists := c.Get("UserID")
+	if !exists {
+		app.Logger.Warn("⚠️ Unauthorized - Missing UserID")
+		handleResponse(c, false, "⚠️ Unauthorized - Missing UserID", nil, http.StatusUnauthorized)
+		return
+	}
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		app.Logger.Warn("❌ Invalid UserID format in token", zap.Any("UserID", userID))
+		handleResponse(c, false, "❌ Unauthorized - Invalid UserID format", nil, http.StatusUnauthorized)
+		return
+	}
+
+	app.Logger.Info("🛑 Canceling Order...",
+		zap.String("RefID", req.RefID),
+		zap.String("SourceTable", req.SourceTable),
+		zap.String("CancelReason", req.CancelReason),
+		zap.String("CanceledBy", userIDStr),
+	)
+
+	resp, err := app.Service.Order.CancelOrder(c.Request.Context(), req, userIDStr)
+	if err != nil {
+		app.Logger.Error("❌ Failed to cancel order", zap.Error(err))
+		handleError(c, err)
+		return
+	}
+
+	handleResponse(c, true, "⭐ Order canceled successfully ⭐", resp, http.StatusOK)
 }
