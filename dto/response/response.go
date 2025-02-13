@@ -82,3 +82,30 @@ type CancelOrderResponse struct {
 	CancelBy     string    `json:"cancelBy" db:"CancelBy"`
 	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
 }
+
+type OrderHeadResponse struct {
+	OrderNo     string    `json:"orderNo" db:"OrderNo"`
+	SoNo        string    `json:"soNo" db:"SoNo"`
+	SrNo        string    `json:"srNo" db:"SrNo"`
+	CustomerID  string    `json:"customerId" db:"CustomerID"`
+	TrackingNo  string    `json:"trackingNo" db:"TrackingNo"`
+	Logistic    string    `json:"logistic" db:"Logistic"`
+	ChannelID   int       `json:"channelId" db:"ChannelID"`
+	CreateDate  time.Time `json:"createDate" db:"CreateDate"`
+	WarehouseID int       `json:"warehouseId" db:"WarehouseID"`
+}
+
+type DraftConfirmResponse struct {
+	OrderNo string             `json:"orderNo" db:"OrderNo"`
+	SoNo    string             `json:"soNo" db:"SoNo"`
+	SrNo    string             `json:"srNo" db:"SrNo"`
+	Items   []DraftConfirmItem `json:"items"`
+}
+
+type DraftConfirmItem struct {
+	OrderNo  string  `json:"orderNo" db:"OrderNo"`
+	SKU      string  `json:"sku" db:"SKU"`
+	ItemName string  `json:"itemName" db:"ItemName"`
+	QTY      int     `json:"qty" db:"QTY"`
+	Price    float64 `json:"price" db:"Price"`
+}

@@ -20,7 +20,7 @@ type OrderRepository interface {
 	UpdateCNForOrder(ctx context.Context, orderNo string, userID string) error
 	MarkOrderAsEdited(ctx context.Context, orderNo string, userID string) error
 	CancelOrder(ctx context.Context, req request.CancelOrder, userID string) (int, error)
-	GetOrderStatus(ctx context.Context, refID, sourceTable string) (int, error)
+	GetReturnOrderStatus(ctx context.Context, refID, sourceTable string) (int, error)
 }
 
 func (repo repositoryDB) SearchOrder(ctx context.Context, req request.SearchOrder) (*response.SearchOrderResponse, error) {
@@ -316,12 +316,6 @@ func (repo repositoryDB) CancelOrder(ctx context.Context, req request.CancelOrde
 	}
 	defer tx.Rollback()
 
-	// ✅ ตรวจสอบ SourceTable ว่าถูกต้องหรือไม่
-	if req.SourceTable != "BeforeReturnOrder" && req.SourceTable != "ReturnOrder" {
-		return 0, fmt.Errorf("invalid SourceTable: %s", req.SourceTable)
-	}
-
-	// ✅ `INSERT` ลง `CancelStatus` และดึง `CancelID`
 	queryCancel := `
 		INSERT INTO CancelStatus (RefID, SourceTable, CancelReason, CancelBy, CancelDate)
 		OUTPUT INSERTED.CancelID
@@ -347,7 +341,6 @@ func (repo repositoryDB) CancelOrder(ctx context.Context, req request.CancelOrde
 		return 0, fmt.Errorf("failed to insert cancel status: %w", err)
 	}
 
-	// ✅ อัปเดต `BeforeReturnOrder` หรือ `ReturnOrder`
 	updateQuery := fmt.Sprintf(`
 		UPDATE %s
 		SET CancelID = :CancelID,
@@ -369,14 +362,12 @@ func (repo repositoryDB) CancelOrder(ctx context.Context, req request.CancelOrde
 		return 0, fmt.Errorf("failed to update order status: %w", err)
 	}
 
-	// ✅ ตรวจสอบว่ามีแถวถูกอัปเดตหรือไม่
 	rowsAffected, _ := res.RowsAffected()
 	if rowsAffected == 0 {
 		tx.Rollback()
 		return 0, fmt.Errorf("no rows updated for RefID: %s", req.RefID)
 	}
 
-	// ✅ Commit Transaction
 	err = tx.Commit()
 	if err != nil {
 		return 0, fmt.Errorf("failed to commit transaction: %w", err)
@@ -385,7 +376,7 @@ func (repo repositoryDB) CancelOrder(ctx context.Context, req request.CancelOrde
 	return cancelID, nil
 }
 
-func (repo repositoryDB) GetOrderStatus(ctx context.Context, refID, sourceTable string) (int, error) {
+func (repo repositoryDB) GetReturnOrderStatus(ctx context.Context, refID, sourceTable string) (int, error) {
 	if sourceTable != "BeforeReturnOrder" && sourceTable != "ReturnOrder" {
 		return 0, fmt.Errorf("invalid SourceTable: %s", sourceTable)
 	}

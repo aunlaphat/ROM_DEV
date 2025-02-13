@@ -204,7 +204,7 @@ func (srv service) UpdateOrderStatus(ctx context.Context, orderNo string, userID
 		return nil, fmt.Errorf("failed to retrieve order: %w", err)
 	}
 
-	// ตรวจสอบสิทธิ์ตาม RoleID
+	// ✅ ตรวจสอบสิทธิ์ของผู้ใช้
 	switch roleID {
 	case 2: // 📌 **Accounting**
 		srv.logger.Info("🔹 Role: Accounting - Checking isCNCreated",
@@ -282,9 +282,25 @@ func (srv service) UpdateOrderStatus(ctx context.Context, orderNo string, userID
 			ConfirmDate:    time.Now(),
 		}, nil
 
-	default:
-		srv.logger.Warn("⚠️ Unauthorized role attempting to update order status", zap.Int("RoleID", roleID))
-		return nil, fmt.Errorf("unauthorized role")
+	default: // 📌 **Role อื่น ๆ** → Default เป็น Pending/Draft
+		srv.logger.Warn("⚠️ Unrecognized Role - Assigning Default Pending/Draft",
+			zap.String("OrderNo", orderNo),
+			zap.Int("RoleID", roleID),
+		)
+
+		err = srv.orderRepo.UpdateOrderStatus(ctx, orderNo, 1, 1, userID)
+		if err != nil {
+			srv.logger.Error("❌ Failed to update order status for unrecognized role", zap.Error(err))
+			return nil, fmt.Errorf("failed to update order status: %w", err)
+		}
+
+		return &response.UpdateOrderStatusResponse{
+			OrderNo:        orderNo,
+			StatusReturnID: 1, // Pending
+			StatusConfID:   1, // Draft
+			ConfirmBy:      userID,
+			ConfirmDate:    time.Now(),
+		}, nil
 	}
 }
 
@@ -334,14 +350,12 @@ func (srv service) CancelOrder(ctx context.Context, req request.CancelOrder, use
 		zap.String("RequestedBy", userID),
 	)
 
-	// ✅ ตรวจสอบ SourceTable ว่าถูกต้องหรือไม่
 	if req.SourceTable != "BeforeReturnOrder" && req.SourceTable != "ReturnOrder" {
 		srv.logger.Warn("⚠️ Invalid SourceTable", zap.String("SourceTable", req.SourceTable))
 		return nil, fmt.Errorf("invalid SourceTable: %s", req.SourceTable)
 	}
 
-	// ✅ ตรวจสอบสถานะก่อนยกเลิก
-	statusReturnID, err := srv.orderRepo.GetOrderStatus(ctx, req.RefID, req.SourceTable)
+	statusReturnID, err := srv.orderRepo.GetReturnOrderStatus(ctx, req.RefID, req.SourceTable)
 	if err != nil {
 		srv.logger.Error("❌ Failed to retrieve order status",
 			zap.String("RefID", req.RefID),
@@ -357,7 +371,6 @@ func (srv service) CancelOrder(ctx context.Context, req request.CancelOrder, use
 		StatusSuccess   = 6 // สำเร็จ
 	)
 
-	// ✅ ตรวจสอบว่าคำสั่งสามารถยกเลิกได้หรือไม่
 	if statusReturnID == StatusCancel || statusReturnID == StatusUnsuccess || statusReturnID == StatusSuccess {
 		srv.logger.Warn("⚠️ Order cannot be canceled due to current status",
 			zap.String("RefID", req.RefID),
@@ -366,7 +379,6 @@ func (srv service) CancelOrder(ctx context.Context, req request.CancelOrder, use
 		return nil, fmt.Errorf("order cannot be canceled due to current status: %d", statusReturnID)
 	}
 
-	// ✅ ดำเนินการยกเลิกคำสั่ง
 	cancelID, err := srv.orderRepo.CancelOrder(ctx, req, userID)
 	if err != nil {
 		srv.logger.Error("❌ Failed to cancel order",
@@ -377,8 +389,7 @@ func (srv service) CancelOrder(ctx context.Context, req request.CancelOrder, use
 		return nil, fmt.Errorf("failed to cancel order RefID %s: %w", req.RefID, err)
 	}
 
-	// ✅ ดึง `CancelDate` จากฐานข้อมูล
-	cancelDate := time.Now() // ⚠️ แนะนำให้ดึงจากฐานข้อมูลแทน `time.Now()`
+	cancelDate := time.Now() // ควรจะดึงเวลาจริงๆ ใน db แต่ทำแบบนี้ไว้ก่อน
 
 	srv.logger.Info("✅ Order canceled successfully",
 		zap.Int("CancelID", cancelID),

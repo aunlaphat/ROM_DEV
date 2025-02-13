@@ -39,3 +39,10 @@ type CancelOrder struct {
 	SourceTable  string `json:"sourceTable" db:"SourceTable"`
 	CancelReason string `json:"cancelReason" db:"CancelReason"`
 }
+
+type AddItem struct {
+	SKU      string  `json:"sku" db:"SKU" binding:"required"`
+	ItemName string  `json:"itemName" db:"ItemName" binding:"required"`
+	QTY      int     `json:"qty" db:"QTY" binding:"required"`
+	Price    float64 `json:"price" db:"Price" binding:"required"`
+}
