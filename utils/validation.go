@@ -1,5 +1,11 @@
 package utils
 
+import (
+	req "boilerplate-backend-go/dto/request"
+	"fmt"
+	"strings"
+)
+
 /* // 🛠️ ตรวจสอบว่าสถานะเป็น "ยกเลิก" หรือไม่
 func IsStatusCanceled(statusConfID, statusReturnID *int) bool {
 	return (statusConfID != nil && *statusConfID == 3) || (statusReturnID != nil && *statusReturnID == 2)
@@ -271,3 +277,58 @@ func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
 	return nil
 }
 */
+
+func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
+	var validate []string
+
+	// 1. ตรวจสอบข้อมูลพื้นฐาน
+	if req.OrderNo == "" {
+		validate = append(validate, "order number is required")
+	}
+	if req.SoNo == "" {
+		validate = append(validate, "SO number is required")
+	}
+
+	// 2. ตรวจสอบค่าที่ต้องมากกว่า 0
+	if *req.ChannelID <= 0 {
+		validate = append(validate, "invalid channel ID")
+	}
+
+	// 4. ตรวจสอบ order lines
+	if len(req.ReturnOrderLine) == 0 {
+		validate = append(validate, "at least one order line is required")
+	}
+
+	// 🔹 ตรวจสอบค่าภายใน order lines
+	for i, line := range req.ReturnOrderLine {
+		if line.SKU == "" {
+			validate = append(validate, fmt.Sprintf("SKU is required for line %d", i+1))
+		}
+		if *line.QTY <= 0 {
+			validate = append(validate, fmt.Sprintf("quantity must be greater than 0 for line %d", i+1))
+		}
+		if line.ReturnQTY < 0 {
+			validate = append(validate, fmt.Sprintf("return quantity cannot be negative for line %d", i+1))
+		}
+		if line.ReturnQTY > *line.QTY {
+			validate = append(validate, fmt.Sprintf("return quantity cannot be greater than quantity for line %d", i+1))
+		}
+		if line.Price < 0 {
+			validate = append(validate, fmt.Sprintf("price cannot be negative for line %d", i+1))
+		}
+	}
+
+	// หากพบข้อผิดพลาด ให้ส่งคืนข้อผิดพลาดทั้งหมด
+	if len(validate) > 0 {
+		formattedErrors := make([]string, len(validate))
+
+		for i, err := range validate {
+			formattedErrors[i] = fmt.Sprintf("{%s}", err)
+		}
+
+		errorMsg := strings.Join(formattedErrors, ", ") 
+		return fmt.Errorf("%s", errorMsg)
+	}
+	
+	return nil
+}

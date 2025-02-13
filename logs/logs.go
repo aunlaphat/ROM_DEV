@@ -27,8 +27,8 @@ func NewLogger(serviceName, logPath string, maxSize, maxBackups, maxAge int) (*L
 
 	// ⚡ ปรับแต่ง Console Encoder (แบบข้อความที่อ่านง่าย)
 	consoleEncoderConfig := zap.NewDevelopmentEncoderConfig()
-	consoleEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	consoleEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	consoleEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder // แสดงเวลาแบบ "2025-02-11T16:47:14"
+	consoleEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // สีระดับ Log (INFO, WARN, ERROR)
 	consoleEncoder := zapcore.NewConsoleEncoder(consoleEncoderConfig)
 
 	core := zapcore.NewTee(

@@ -1,4 +1,4 @@
- package api
+package api
 
 // import (
 // 	"boilerplate-backend-go/dto/request"
@@ -37,7 +37,6 @@
 // 	})
 // }
 
-// // review
 // // SearchOrderORTracking godoc
 // // @Summary 	Search order by OrderNo or TrackingNo
 // // @Description Retrieve the details of an order by its OrderNo or TrackingNo
@@ -90,7 +89,7 @@
 // 	handleResponse(w, true, "⭐ Found Orders retrieved successfully ⭐", result, http.StatusOK)
 // }
 
-// // review
+//
 // // UploadPhotoHandler godoc
 // // @Summary Upload Photo
 // // @Description Upload a photo for a return order
@@ -139,7 +138,7 @@
 // 	handleResponse(w, true, "File uploaded successfully", nil, http.StatusOK)
 // }
 
-// // review
+//
 // // @Summary 	Get Sum detail of Import Order
 // // @Description Retrieve the details of Receipt
 // // @ID 			GetSummary-ImportOrder
@@ -165,7 +164,7 @@
 // 	handleResponse(w, true, "Summary retrieved successfully", summary, http.StatusOK)
 // }
 
-// // review
+//
 // // ValidateSKU godoc
 // // @Summary 	Validate SKU
 // // @Description Validate SKU
@@ -198,7 +197,7 @@
 // 	handleResponse(w, true, "SKU is valid", nil, http.StatusOK)
 // }
 
-// // review
+//
 // // ConfirmReceipt godoc
 // // @Summary 	Confirm Receipt from Ware House
 // // @Description Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.

@@ -1,4 +1,4 @@
- package api
+package api
 
 // import (
 // 	"boilerplate-backend-go/dto/request"
@@ -34,7 +34,7 @@
 // 	})
 // }
 
-// // review
+//
 // // @Summary Get Return Orders with StatusCheckID = 1
 // // @Description Retrieve Return Orders with StatusCheckID = 1 (Waiting)
 // // @ID Get-Waiting-ReturnOrder
@@ -62,7 +62,7 @@
 // 	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 1 (WAITING) retrieved successfully ⭐", result, http.StatusOK)
 // }
 
-// // review
+//
 // // @Summary Get Return Orders with StatusCheckID = 2
 // // @Description Retrieve Return Orders with StatusCheckID = 2 (Confirmed)
 // // @ID Get-Confirm-ReturnOrder
@@ -90,7 +90,7 @@
 // 	handleResponse(w, true, "⭐ Return Orders with StatusCheckID = 2 (CONFIRM) retrieved successfully ⭐", result, http.StatusOK)
 // }
 
-// // review
+//
 // // @Summary Search Return Orders with StatusCheckID = 1 by Date Range
 // // @Description Retrieve Return Orders with StatusCheckID = 1 (Waiting) within a specific date range
 // // @ID Search-Waiting-ReturnOrder
@@ -125,7 +125,7 @@
 // 	handleResponse(w, true, "⭐ Return Orders of StatusCheckID = 1 retrieved successfully ⭐", result, http.StatusOK)
 // }
 
-// // review
+//
 // // @Summary Search Return Orders with StatusCheckID = 2 by Date Range
 // // @Description Retrieve Return Orders with StatusCheckID = 2 (Confirmed) within a specific date range
 // // @ID Search-Confirm-ReturnOrder
@@ -159,7 +159,7 @@
 // 	handleResponse(w, true, "⭐ Return Orders of StatusCheckID = 2 retrieved successfully ⭐", result, http.StatusOK)
 // }
 
-// // review
+//
 // // @Summary Create a new trade return order
 // // @Description Create a new trade return order with multiple order lines
 // // @ID create-trade-return
@@ -217,7 +217,7 @@
 // 	handleResponse(w, true, "⭐ Created trade return order successfully => Status [booking ✔️]⭐", result, http.StatusOK)
 // }
 
-// // review
+//
 // // @Summary Add a new trade return line to an existing order
 // // @Description Add a new trade return line based on the provided order number and line details
 // // @ID add-trade-return-line
@@ -278,7 +278,7 @@
 // 	handleResponse(w, true, "⭐ Created trade return line successfully ⭐", result, http.StatusCreated)
 // }
 
-// // review
+//
 // // ConfirmToReturn godoc
 // // @Summary Confirm Return Order to Success
 // // @Description Confirm a trade return order based on the provided order number (OrderNo) and input lines for ReturnOrderLine.

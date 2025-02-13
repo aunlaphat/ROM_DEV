@@ -1,4 +1,4 @@
- package repository
+package repository
 
 // import (
 // 	entity "boilerplate-backend-go/Entity"
@@ -152,7 +152,7 @@
 // // 	return postCodes, nil
 // // }
 
-// // review
+//
 // func (repo repositoryDB) GetWarehouse() ([]entity.Warehouse, error) {
 // 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 // 	defer cancel()
@@ -181,7 +181,7 @@
 // 	return warehouses, nil
 // }
 
-// // review
+//
 // func (repo repositoryDB) GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) {
 
 // 	query := `
@@ -191,7 +191,7 @@
 //         OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY;
 //     `
 // 	countQuery := `
-//         SELECT COUNT(*) 
+//         SELECT COUNT(*)
 //         FROM Data_WebReturn.dbo.ROM_V_ProductAll;
 //     `
 

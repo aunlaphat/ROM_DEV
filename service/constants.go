@@ -1,4 +1,4 @@
- package service
+package service
 
 // import (
 // 	entity "boilerplate-backend-go/Entity"
@@ -87,7 +87,7 @@
 // // 	return getPostCode, nil
 // // }
 
-// // review
+//
 // func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
 
 // 	getWarehouse, err := srv.constant.GetWarehouse()
@@ -105,7 +105,7 @@
 // 	return getWarehouse, nil
 // }
 
-// // review
+//
 // func (srv service) GetProduct(page, limit int) ([]entity.ROM_V_ProductAll, error) {
 
 // 	offset := (page - 1) * limit

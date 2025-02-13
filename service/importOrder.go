@@ -1,4 +1,4 @@
- package service
+package service
 
 // import (
 // 	"boilerplate-backend-go/dto/request"
@@ -19,7 +19,7 @@
 
 // type ImportOrderService interface {
 // 	SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
-// 	UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error 
+// 	UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error
 // 	GetSummaryImportOrder(ctx context.Context, orderNo string) ([]response.ImportOrderSummary, error)
 // 	ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error)
 
@@ -30,7 +30,7 @@
 // 	SaveImage(file *multipart.FileHeader) (string, error)
 // }
 
-// // review
+//
 // func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error) {
 // 	logFinish := srv.logger.LogAPICall(ctx, "SearchOrderORTracking", zap.String("Search", search))
 // 	defer logFinish("Completed", nil)
@@ -76,7 +76,7 @@
 //     mu        sync.Mutex
 // )
 
-// // review
+//
 // func (srv service) UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error {
 //     logFinish := srv.logger.LogAPICall(ctx, "UploadPhoto", zap.String("OrderNo", orderNo), zap.String("ImageTypeID", imageTypeID), zap.String("SKU", sku), zap.String("Filename", filename))
 //     defer logFinish("Completed", nil)
@@ -121,7 +121,7 @@
 //     return nil
 // }
 
-// // review
+//
 // func (srv service) GetSummaryImportOrder(ctx context.Context, orderNo string) ([]response.ImportOrderSummary, error) {
 //     logFinish := srv.logger.LogAPICall(ctx, "GetSummaryImportOrder", zap.String("OrderNo", orderNo))
 //     defer logFinish("Completed", nil)
@@ -139,7 +139,7 @@
 //     return summary, nil
 // }
 
-// // review
+//
 // func (srv service) ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error) {
 // 	logFinish := srv.logger.LogAPICall(ctx, "ValidateSKU", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
 // 	defer logFinish("Completed", nil)

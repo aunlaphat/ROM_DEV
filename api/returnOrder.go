@@ -1,39 +1,30 @@
 package api
 
-// ตัวกลางของ http request ที่คอยรับส่งข้อมูลไปมา
-// รับมาในรูป request ส่งออกในรูป response
-// ส่งคำขอไปยัง service เพื่อขอให้ดึงข้อมูลที่ต้องการออกมา แต่ service จะทำการ validation ก่อนเพื่อตรวจข้อผิดพลาดก่อนจะดึง query ออกมาจาก repo ให้
-// api handle error about res req send error to client ex. 400 500 401
-// service handle error about business logic/ relation data send error to api
-// ตรวจสอบส่วนหน้า ส่วนที่รับมาจาก client เช่น input ที่ถูกป้อนเข้ามา
-
 import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/middleware"
-	//"boilerplate-backend-go/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-// ReturnOrder => ข้อมูลรับเข้าจากส่วนหน้าคลังทั้งหมด ข้อมูลสินค้าที่ถูกส่งคืนมาทั้งหมด
+// *️⃣ ReturnOrder => ข้อมูลรับเข้าจากส่วนหน้าคลังทั้งหมด ข้อมูลสินค้าที่ถูกส่งคืนมาทั้งหมด
 func (app *Application) ReturnOrder(apiRouter *gin.RouterGroup) {
 	api := apiRouter.Group("/return-order")
-	api.GET("/get-all", app.GetAllReturnOrder)                      // แสดงข้อมูลรับเข้ารวม                  
-	api.GET("/get-all/:orderNo", app.GetReturnOrderByOrderNo)       // แสดงข้อมูลรับเข้าด้วย orderNo    
+	api.GET("/get-all", app.GetAllReturnOrder)                      // แสดงข้อมูลรับเข้ารวม
+	api.GET("/get-all/:orderNo", app.GetReturnOrderByOrderNo)       // แสดงข้อมูลรับเข้าด้วย orderNo
 	api.GET("/get-lines", app.GetAllReturnOrderLines)               // แสดงรายการคืนของรวม
 	api.GET("/get-lines/:orderNo", app.GetReturnOrderLineByOrderNo) // แสดงรายการคืนของโดย orderNo
-	
+
 	apiAuth := api.Group("/")
 	apiAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
-	apiAuth.POST("/create", app.CreateReturnOrder)                      // สร้างข้อมูลของที่ถูกส่งคืนมา
-	apiAuth.PATCH("/update/:orderNo", app.UpdateReturnOrder)            // อัพเดทข้อมูลของที่ถูกส่งคืน
-	apiAuth.DELETE("/delete/:orderNo", app.DeleteReturnOrder)           // ลบ order ที่ทำการคืนมาออกหมด head+line
+	apiAuth.POST("/create", app.CreateReturnOrder)            // สร้างข้อมูลของที่ถูกส่งคืนมา
+	apiAuth.PATCH("/update/:orderNo", app.UpdateReturnOrder)  // อัพเดทข้อมูลของที่ถูกส่งคืน
+	apiAuth.DELETE("/delete/:orderNo", app.DeleteReturnOrder) // ลบ order ที่ทำการคืนมาออกหมด head+line
 }
 
-// review
 // @Summary 	Get Return Order
 // @Description Retrieve the details of Return Order
 // @ID 			GetAll-ReturnOrder
@@ -49,15 +40,14 @@ func (app *Application) GetAllReturnOrder(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.GetAllReturnOrder(c.Request.Context())
 	if err != nil {
-		app.Logger.Error("Failed to get return orders", zap.Error(err))
+		app.Logger.Error("[ Failed to get return orders ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
 
-	handleResponse(c, true, "⭐ Get Return Order successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Get Return Order successfully ]", result, http.StatusOK)
 }
 
-// review
 // @Summary      Get Return Order by OrderNo
 // @Description  Get details return order by order no
 // @ID           GetAllByOrderNo-ReturnOrder
@@ -75,15 +65,14 @@ func (app *Application) GetReturnOrderByOrderNo(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.GetReturnOrderByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
-		app.Logger.Error("Failed to get return order", zap.String("orderNo", orderNo), zap.Error(err))
+		app.Logger.Error("[ Failed to get return order ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
 
-	handleResponse(c, true, "⭐ Get Return Order by OrderNo successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Get Return Order by OrderNo successfully ]", result, http.StatusOK)
 }
 
-// review
 // @Summary 	Get Return Order Line
 // @Description Get all Return Order Line
 // @ID 			GetAllLines-ReturnOrderLine
@@ -98,15 +87,14 @@ func (app *Application) GetReturnOrderByOrderNo(c *gin.Context) {
 func (app *Application) GetAllReturnOrderLines(c *gin.Context) {
 	result, err := app.Service.ReturnOrder.GetAllReturnOrderLines(c.Request.Context())
 	if err != nil {
-		app.Logger.Error("Failed to get return order lines", zap.Error(err))
+		app.Logger.Error("[ Failed to get return order lines ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
 
-	handleResponse(c, true, "⭐ Get Return Order Lines successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Get Return Order Lines successfully ]", result, http.StatusOK)
 }
 
-// review
 // @Summary      Get Return Order Line by OrderNo
 // @Description  Get details of an order line by its order no
 // @ID           GetLineByOrderNo-ReturnOrder
@@ -124,16 +112,15 @@ func (app *Application) GetReturnOrderLineByOrderNo(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.GetReturnOrderLineByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
-		app.Logger.Error("Failed to get return order line", zap.String("orderNo", orderNo), zap.Error(err))
+		app.Logger.Error("[ Failed to get return order line ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
 
-	handleResponse(c, true, "⭐ Get Return Order Line by OrderNo successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Get Return Order Line by OrderNo successfully ]", result, http.StatusOK)
 
 }
 
-// review
 // @Summary 	Create Return Order
 // @Description Create a new return order
 // @ID 			Create-ReturnOrder
@@ -150,30 +137,30 @@ func (app *Application) CreateReturnOrder(c *gin.Context) {
 	var req request.CreateReturnOrder
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		app.Logger.Warn("Invalid request payload", zap.Error(err))
+		app.Logger.Warn("[ Invalid request payload ]", zap.Error(err))
 		handleValidationError(c, err)
 		return
 	}
 
+	// *️⃣ ดึง userID จาก JWT token
 	userID, exists := c.Get("UserID")
 	if !exists {
-		app.Logger.Warn("⚠️ Unauthorized - Missing UserID")
-		handleResponse(c, false, "⚠️ Unauthorized - Missing UserID", nil, http.StatusUnauthorized)
+		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
+		handleResponse(c, false, "[ Unauthorized - Missing UserID ]", nil, http.StatusUnauthorized)
 		return
 	}
 
 	req.CreateBy = userID.(string)
 	result, err := app.Service.ReturnOrder.CreateReturnOrder(c.Request.Context(), req)
 	if err != nil {
-		app.Logger.Error("Failed to create return order", zap.Error(err))
+		app.Logger.Error("[ Failed to create return order ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
 
-	handleResponse(c, true, "⭐ Created successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Created successfully ]", result, http.StatusOK)
 }
 
-// review
 // @Summary Update Return Order
 // @Description Update an existing return order using orderNo in the path
 // @ID Update-ReturnOrder
@@ -192,31 +179,37 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 	var req request.UpdateReturnOrder
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		app.Logger.Warn("Invalid request payload", zap.Error(err))
+		app.Logger.Warn("[ Invalid request payload ]", zap.Error(err))
 		handleValidationError(c, err)
 		return
 	}
 
-	// ดึง userID จาก JWT token
+	// *️⃣ ดึง userID จาก JWT token
 	userID, exists := c.Get("UserID")
 	if !exists {
-		app.Logger.Warn("⚠️ Unauthorized - Missing UserID")
-		handleResponse(c, false, "⚠️ Unauthorized - Missing UserID", nil, http.StatusUnauthorized)
+		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
+		handleResponse(c, false, "[ Unauthorized - Missing UserID ]", nil, http.StatusUnauthorized)
 		return
 	}
 
 	req.OrderNo = orderNo
-	result, err := app.Service.ReturnOrder.UpdateReturnOrder(c.Request.Context(), req, userID.(string))
+
+	// *️⃣ ตรวจสอบ nil ก่อนใช้ UpdateBy
+	if req.UpdateBy == nil {
+		req.UpdateBy = new(string)
+	}
+	*req.UpdateBy = userID.(string)
+
+	result, err := app.Service.ReturnOrder.UpdateReturnOrder(c.Request.Context(), req)
 	if err != nil {
-		app.Logger.Error("Failed to update return order", zap.String("orderNo", orderNo), zap.Error(err))
+		app.Logger.Error("[ Failed to update return order ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
 
-	handleResponse(c, true, "⭐ Updated successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Updated successfully ]", result, http.StatusOK)
 }
 
-// review
 // @Summary 	Delete Order
 // @Description Delete an order
 // @ID 			delete-ReturnOrder
@@ -235,7 +228,7 @@ func (app *Application) DeleteReturnOrder(c *gin.Context) {
 
 	err := app.Service.ReturnOrder.DeleteReturnOrder(c.Request.Context(), orderNo)
 	if err != nil {
-		app.Logger.Error("Failed to delete return order", zap.String("orderNo", orderNo), zap.Error(err))
+		app.Logger.Error("[ Failed to delete return order ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -244,5 +237,5 @@ func (app *Application) DeleteReturnOrder(c *gin.Context) {
 		OrderNo: orderNo,
 	}
 
-	handleResponse(c, true, "⭐ Deleted successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Deleted successfully ]", result, http.StatusOK)
 }

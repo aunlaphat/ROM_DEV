@@ -1,4 +1,4 @@
- package repository
+package repository
 
 // import (
 // 	"boilerplate-backend-go/dto/request"
@@ -18,7 +18,7 @@
 // 	InsertImageMetadata(ctx context.Context, image request.Images) (int, error)
 // }
 
-// // review
+//
 // func (repo repositoryDB) SearchOrderORTracking(ctx context.Context, search string) (*response.ImportOrderResponse, error) {
 // 	// Query สำหรับดึงข้อมูล Order Head
 // 	queryHead := `
@@ -33,7 +33,7 @@
 //         FROM ROM_V_OrderLineDetail
 //         WHERE OrderNo = :Search OR TrackingNo = :Search
 //     `
-	
+
 // 	// ดึงข้อมูล Order Head
 // 	var orderHead response.ImportOrderResponse
 // 	nstmtHead, err := repo.db.PrepareNamed(queryHead)
@@ -73,7 +73,7 @@
 // 	return &orderHead, nil
 // }
 
-// // review
+//
 // func (repo repositoryDB) ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error) {
 //     var exists bool
 //     query := `

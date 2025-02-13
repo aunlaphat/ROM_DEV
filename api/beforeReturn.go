@@ -1,4 +1,4 @@
- package api
+package api
 
 // import (
 // 	"boilerplate-backend-go/dto/request"
@@ -27,8 +27,8 @@
 // 		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
 
 // 		// get real order
-// 		r.Get("/get-orders", app.GetAllOrderDetails) // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate                        
-// 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO) // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO               
+// 		r.Get("/get-orders", app.GetAllOrderDetails) // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
+// 		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO) // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO
 // 		r.Delete("/delete-line/{orderNo}/{sku}", app.DeleteBeforeReturnOrderLine) // ลบรายการคืนแต่ละรายการ
 // 	})
 
@@ -883,7 +883,7 @@
 // 	handleResponse(w, true, "⭐ Draft orders updated successfully ⭐", result, http.StatusOK)
 // }
 
-// // review // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
+//  // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
 // // @Summary 	Get Paginated Before Return Order
 // // @Description Get all Before Return Order with pagination
 // // @ID 			Get-BefReturnOrder-Paginated
@@ -910,7 +910,7 @@
 // 	handleResponse(w, true, "⭐ Orders retrieved successfully ⭐", result, http.StatusOK)
 // }
 
-// // review // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO
+//  // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO
 // // @Summary      Get Before Return Order by SO
 // // @Description  Get details of an order by its SO number
 // // @ID           GetBySO-BefReturnOrder
@@ -939,7 +939,7 @@
 // 	handleResponse(w, true, "⭐ Orders retrieved by SO successfully ⭐", result, http.StatusOK)
 // }
 
-// // review // ลบรายการคืนแต่ละรายการ
+//  // ลบรายการคืนแต่ละรายการ
 // // @Summary 	Delete Order line
 // // @Description Delete an order line
 // // @ID 			delete-BeforeReturnOrderLine
