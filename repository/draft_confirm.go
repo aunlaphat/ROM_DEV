@@ -25,21 +25,18 @@ func (repo repositoryDB) GetOrders(ctx context.Context, statusConfID int, startD
 		ORDER BY CreateDate DESC
 	`
 
-	// ✅ ใช้ Named Parameters แบบ struct
 	params := map[string]interface{}{
 		"statusConfID": statusConfID,
 		"startDate":    startDate,
 		"endDate":      endDate,
 	}
 
-	// ✅ ใช้ `NamedQueryContext` สำหรับ Named Parameters
 	rows, err := repo.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch orders: %w", err)
 	}
 	defer rows.Close()
 
-	// ✅ อ่านข้อมูลจาก `rows`
 	for rows.Next() {
 		var order response.OrderHeadResponse
 		if err := rows.StructScan(&order); err != nil {
@@ -52,7 +49,6 @@ func (repo repositoryDB) GetOrders(ctx context.Context, statusConfID int, startD
 }
 
 func (repo repositoryDB) GetOrderWithItems(ctx context.Context, orderNo string, statusConfID int) (*response.DraftConfirmResponse, error) {
-	// ✅ ดึงข้อมูลคำสั่งคืนสินค้า (HEAD)
 	queryHead := `
 		SELECT OrderNo, SoNo, SrNo
 		FROM BeforeReturnOrder 
@@ -64,7 +60,6 @@ func (repo repositoryDB) GetOrderWithItems(ctx context.Context, orderNo string, 
 		"statusConfID": statusConfID,
 	}
 
-	// ✅ ใช้ NamedQueryContext() เพื่อรองรับ Named Parameters
 	rows, err := repo.db.NamedQueryContext(ctx, queryHead, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch order: %w", err)
@@ -80,14 +75,12 @@ func (repo repositoryDB) GetOrderWithItems(ctx context.Context, orderNo string, 
 		return nil, fmt.Errorf("order not found")
 	}
 
-	// ✅ ดึงข้อมูลรายการสินค้า (LINE)
 	queryLine := `
 		SELECT OrderNo, SKU, ItemName, QTY, Price
 		FROM BeforeReturnOrderLine 
 		WHERE OrderNo = :orderNo
 	`
 
-	// ✅ ใช้ NamedQueryContext() แทน SelectContext()
 	itemRows, err := repo.db.NamedQueryContext(ctx, queryLine, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch order items: %w", err)
@@ -103,7 +96,6 @@ func (repo repositoryDB) GetOrderWithItems(ctx context.Context, orderNo string, 
 		items = append(items, item)
 	}
 
-	// ✅ รวมข้อมูล HEAD + LINE
 	order.Items = items
 
 	return &order, nil
@@ -127,7 +119,6 @@ func (repo repositoryDB) ListCodeR(ctx context.Context) ([]response.ListCodeRRes
 	return codeRList, nil
 }
 
-// ✅ เพิ่มสินค้าเข้า Draft Order พร้อม `CreateBy` และ `CreateDate`
 func (repo repositoryDB) AddItemToDraftOrder(ctx context.Context, req request.AddItem, userID string) ([]response.AddItemResponse, error) {
 	query := `
         INSERT INTO BeforeReturnOrderLine (OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, CreateDate)
@@ -135,7 +126,6 @@ func (repo repositoryDB) AddItemToDraftOrder(ctx context.Context, req request.Ad
         VALUES (:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, GETDATE())
     `
 
-	// ✅ ใช้ NamedQueryContext แทน SelectContext สำหรับ OUTPUT
 	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{
 		"OrderNo":   req.OrderNo,
 		"SKU":       req.SKU,
@@ -143,14 +133,13 @@ func (repo repositoryDB) AddItemToDraftOrder(ctx context.Context, req request.Ad
 		"QTY":       req.QTY,
 		"ReturnQTY": req.ReturnQTY,
 		"Price":     req.Price,
-		"CreateBy":  userID, // ✅ ใช้ UserID จาก JWT
+		"CreateBy":  userID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert item: %w", err)
 	}
 	defer rows.Close()
 
-	// ✅ ดึงข้อมูลที่ถูก INSERT กลับมา
 	var results []response.AddItemResponse
 	for rows.Next() {
 		var item response.AddItemResponse
@@ -163,7 +152,6 @@ func (repo repositoryDB) AddItemToDraftOrder(ctx context.Context, req request.Ad
 	return results, nil
 }
 
-// ✅ ลบสินค้าออกจาก Draft Order
 func (repo repositoryDB) RemoveItemFromDraftOrder(ctx context.Context, orderNo string, sku string) (int64, error) {
 	query := `
         DELETE FROM BeforeReturnOrderLine
@@ -178,7 +166,6 @@ func (repo repositoryDB) RemoveItemFromDraftOrder(ctx context.Context, orderNo s
 		return 0, fmt.Errorf("failed to delete item: %w", err)
 	}
 
-	// ✅ ตรวจสอบจำนวนแถวที่ถูกลบ
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get affected rows: %w", err)

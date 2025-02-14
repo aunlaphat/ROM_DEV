@@ -48,7 +48,6 @@ func (srv service) GetOrderWithItems(ctx context.Context, orderNo string, status
 		return nil, fmt.Errorf("failed to fetch order: %w", err)
 	}
 
-	// ✅ ถ้าไม่มีสินค้า คืนค่า `items: []` แทน `null`
 	if order.Items == nil {
 		order.Items = []response.DraftConfirmItem{}
 	}
@@ -73,7 +72,6 @@ func (srv service) ListCodeR(ctx context.Context) ([]response.ListCodeRResponse,
 	return codeRList, nil
 }
 
-// ✅ เพิ่มสินค้าเข้า Draft Order
 func (srv service) AddItemToDraftOrder(ctx context.Context, req request.AddItem, userID string) ([]response.AddItemResponse, error) {
 	srv.logger.Info("➕ Adding Item to Draft Order",
 		zap.String("OrderNo", req.OrderNo),
@@ -83,12 +81,10 @@ func (srv service) AddItemToDraftOrder(ctx context.Context, req request.AddItem,
 		zap.String("CreatedBy", userID),
 	)
 
-	// ✅ ตั้งค่า `ReturnQTY` = `QTY` ถ้าไม่ได้ส่งมา
 	if req.ReturnQTY == 0 {
 		req.ReturnQTY = req.QTY
 	}
 
-	// ✅ ส่งไปที่ Repository Layer
 	results, err := srv.draftConfirmRepo.AddItemToDraftOrder(ctx, req, userID)
 	if err != nil {
 		srv.logger.Error("❌ Failed to add item to draft order", zap.String("OrderNo", req.OrderNo), zap.Error(err))
@@ -99,21 +95,18 @@ func (srv service) AddItemToDraftOrder(ctx context.Context, req request.AddItem,
 	return results, nil
 }
 
-// ✅ ลบสินค้าออกจาก Draft Order
 func (srv service) RemoveItemFromDraftOrder(ctx context.Context, orderNo, sku string) error {
 	srv.logger.Info("❌ Removing Item from Draft Order",
 		zap.String("OrderNo", orderNo),
 		zap.String("SKU", sku),
 	)
 
-	// ✅ เรียกใช้งาน Repository
 	rowsAffected, err := srv.draftConfirmRepo.RemoveItemFromDraftOrder(ctx, orderNo, sku)
 	if err != nil {
 		srv.logger.Error("❌ Failed to remove item", zap.String("OrderNo", orderNo), zap.Error(err))
 		return fmt.Errorf("failed to remove item: %w", err)
 	}
 
-	// ✅ ตรวจสอบว่ามีแถวที่ถูกลบหรือไม่
 	if rowsAffected == 0 {
 		srv.logger.Warn("⚠️ No item found to delete", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
 		return fmt.Errorf("no item found to delete")
@@ -123,14 +116,12 @@ func (srv service) RemoveItemFromDraftOrder(ctx context.Context, orderNo, sku st
 	return nil
 }
 
-// ✅ อัปเดต Draft Order เป็น Confirm
 func (srv service) ConfirmDraftOrder(ctx context.Context, orderNo string, userID string) (*response.UpdateOrderStatusResponse, error) {
 	srv.logger.Info("🔄 Confirming Draft Order",
 		zap.String("OrderNo", orderNo),
 		zap.String("UpdatedBy", userID),
 	)
 
-	// ✅ ตรวจสอบว่ามี Order และอยู่ในสถานะ Draft หรือไม่
 	order, err := srv.draftConfirmRepo.GetOrderWithItems(ctx, orderNo, 1) // 1 = Draft
 	if err != nil {
 		srv.logger.Error("❌ Failed to fetch order", zap.String("OrderNo", orderNo), zap.Error(err))
@@ -141,14 +132,12 @@ func (srv service) ConfirmDraftOrder(ctx context.Context, orderNo string, userID
 		return nil, fmt.Errorf("cannot confirm order without items")
 	}
 
-	// ✅ อัปเดตสถานะจาก Draft → Confirm โดยเรียก `UpdateOrderStatus` จาก `orderRepo`
 	err = srv.orderRepo.UpdateOrderStatus(ctx, orderNo, 3, 2, userID) // 3 = Booking, 2 = Confirm
 	if err != nil {
 		srv.logger.Error("❌ Failed to update order status", zap.String("OrderNo", orderNo), zap.Error(err))
 		return nil, fmt.Errorf("failed to update order status: %w", err)
 	}
 
-	// ✅ Return ค่าโดยไม่ต้อง Query DB อีกรอบ
 	srv.logger.Info("✅ Draft Order confirmed", zap.String("OrderNo", orderNo))
 
 	return &response.UpdateOrderStatusResponse{

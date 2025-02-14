@@ -12,24 +12,14 @@ import (
 
 func (app *Application) DraftConfirmRoute(apiRouter *gin.RouterGroup) {
 	draft := apiRouter.Group("/draft-confirm")
+	draft.GET("/list-codeR", app.ListCodeR)
 
-	// ✅ ไม่ต้องใช้ JWT (Public API)
-	draft.GET("/list-codeR", app.ListCodeR) // ดึงข้อมูล CodeR
-
-	// ✅ ใช้ JWT Middleware (ต้อง Auth)
 	draft.Use(middleware.JWTMiddleware(app.TokenAuth))
 
-	// ✅ ดึงรายการ Draft & Confirm Orders
 	draft.GET("/orders", app.GetOrders)
-
-	// ✅ ดึงรายละเอียดออเดอร์ + รายการสินค้า
 	draft.GET("/order/details", app.GetOrderWithItems)
-
-	// ✅ จัดการสินค้าใน Draft Order
-	draft.POST("/add-item/:orderNo", app.AddItemToDraftOrder)                // เพิ่มสินค้าเข้า Draft Order
-	draft.DELETE("/remove-item/:orderNo/:sku", app.RemoveItemFromDraftOrder) // ลบสินค้าออกจาก Draft Order
-
-	// ✅ อัปเดตสถานะจาก Draft → Confirm
+	draft.POST("/add-item/:orderNo", app.AddItemToDraftOrder)
+	draft.DELETE("/remove-item/:orderNo/:sku", app.RemoveItemFromDraftOrder)
 	draft.PATCH("/update-status/:orderNo", app.ConfirmDraftOrder)
 }
 
@@ -79,7 +69,6 @@ func (app *Application) GetOrders(c *gin.Context) {
 // @Failure 404 {object} Response
 // @Router /draft-confirm/order/details [get]
 func (app *Application) GetOrderWithItems(c *gin.Context) {
-	// ✅ รับค่า `statusConfID` และ `orderNo` ผ่าน Query Parameter
 	statusConfID, err := strconv.Atoi(c.Query("statusConfID"))
 	if err != nil || (statusConfID != 1 && statusConfID != 2) {
 		handleResponse(c, false, "⚠️ Invalid statusConfID (must be 1 or 2)", nil, http.StatusBadRequest)
@@ -139,11 +128,9 @@ func (app *Application) AddItemToDraftOrder(c *gin.Context) {
 		return
 	}
 
-	// ✅ ดึง `UserID` จาก JWT Middleware
 	userID := c.MustGet("UserID").(string)
-	req.OrderNo = c.Param("orderNo") // ✅ ใช้ `OrderNo` จาก Path Parameter
+	req.OrderNo = c.Param("orderNo")
 
-	// ✅ ส่งไปที่ Service Layer
 	results, err := app.Service.DraftConfirm.AddItemToDraftOrder(c.Request.Context(), req, userID)
 	if err != nil {
 		handleError(c, err)
@@ -192,14 +179,13 @@ func (app *Application) RemoveItemFromDraftOrder(c *gin.Context) {
 // @Router /draft-confirm/update-status/{orderNo} [patch]
 func (app *Application) ConfirmDraftOrder(c *gin.Context) {
 	orderNo := c.Param("orderNo")
-	userID := c.MustGet("UserID").(string) // ✅ ดึง UserID จาก JWT Middleware
+	userID := c.MustGet("UserID").(string)
 
 	app.Logger.Info("📦 Request to Confirm Draft Order",
 		zap.String("OrderNo", orderNo),
 		zap.String("UserID", userID),
 	)
 
-	// ✅ เรียก Service เพื่อเปลี่ยนสถานะจาก Draft → Confirm
 	updateResponse, err := app.Service.DraftConfirm.ConfirmDraftOrder(c.Request.Context(), orderNo, userID)
 	if err != nil {
 		app.Logger.Error("❌ Failed to confirm draft order", zap.Error(err))
