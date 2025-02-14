@@ -147,7 +147,179 @@ const docTemplate = `{
                 }
             }
         },
-        "/draft-confirm": {
+        "/draft-confirm/add-item/{orderNo}": {
+            "post": {
+                "description": "Adds an item to an existing draft order",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm MKP"
+                ],
+                "summary": "Add Item to Draft Order",
+                "operationId": "add-item-to-draft",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Item Data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.AddItem"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.AddItemResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/list-codeR": {
+            "get": {
+                "description": "Retrieves a list of CodeR (SKU starting with 'R')",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm MKP"
+                ],
+                "summary": "Get List of CodeR",
+                "operationId": "get-list-codeR",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ListCodeRResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/order/details": {
+            "get": {
+                "description": "Retrieves details of an order including items",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm MKP"
+                ],
+                "summary": "Get Order Details with Items",
+                "operationId": "get-order-with-items",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "StatusConfID (1 = Draft, 2 = Confirm)",
+                        "name": "statusConfID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.DraftConfirmResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/orders": {
             "get": {
                 "description": "Retrieves all orders filtered by StatusConfID and Date Range",
                 "consumes": [
@@ -213,54 +385,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/draft-confirm/add-item/{orderNo}": {
-            "post": {
-                "description": "Adds an item to an existing draft order",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Draft \u0026 Confirm MKP"
-                ],
-                "summary": "Add Item to Draft Order",
-                "operationId": "add-item-to-draft",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Order Number",
-                        "name": "orderNo",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Item Data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.AddItem"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/draft-confirm/remove-item/{orderNo}/{sku}": {
             "delete": {
                 "description": "Removes an item from a draft order",
@@ -307,9 +431,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/draft-confirm/{orderNo}": {
-            "get": {
-                "description": "Retrieves details of an order including items",
+        "/draft-confirm/update-status/{orderNo}": {
+            "patch": {
+                "description": "Updates a draft order to confirm status",
                 "consumes": [
                     "application/json"
                 ],
@@ -319,8 +443,8 @@ const docTemplate = `{
                 "tags": [
                     "Draft \u0026 Confirm MKP"
                 ],
-                "summary": "Get Order Details (Draft \u0026 Confirm)",
-                "operationId": "get-order-with-items",
+                "summary": "Confirm Draft Order",
+                "operationId": "confirm-draft-order",
                 "parameters": [
                     {
                         "type": "string",
@@ -342,15 +466,27 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/response.DraftConfirmResponse"
+                                            "$ref": "#/definitions/response.UpdateOrderStatusResponse"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -715,45 +851,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/update-status/{orderNo}": {
-            "post": {
-                "description": "Updates a draft order to confirm status",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Draft \u0026 Confirm MKP"
-                ],
-                "summary": "Confirm Draft Order",
-                "operationId": "confirm-draft-order",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Order Number",
-                        "name": "orderNo",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/user/{username}": {
             "get": {
                 "description": "Get user credentials by userName",
@@ -815,20 +912,20 @@ const docTemplate = `{
         },
         "request.AddItem": {
             "type": "object",
-            "required": [
-                "itemName",
-                "price",
-                "qty",
-                "sku"
-            ],
             "properties": {
                 "itemName": {
+                    "type": "string"
+                },
+                "orderNo": {
                     "type": "string"
                 },
                 "price": {
                     "type": "number"
                 },
                 "qty": {
+                    "type": "integer"
+                },
+                "returnQTY": {
                     "type": "integer"
                 },
                 "sku": {
@@ -970,6 +1067,35 @@ const docTemplate = `{
                 "userName": {
                     "type": "string",
                     "example": "eknarin.ler"
+                }
+            }
+        },
+        "response.AddItemResponse": {
+            "type": "object",
+            "properties": {
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "itemName": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
                 }
             }
         },
@@ -1144,6 +1270,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "srNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ListCodeRResponse": {
+            "type": "object",
+            "properties": {
+                "nameAlias": {
+                    "type": "string"
+                },
+                "sku": {
                     "type": "string"
                 }
             }

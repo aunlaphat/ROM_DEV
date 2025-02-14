@@ -109,3 +109,19 @@ type DraftConfirmItem struct {
 	QTY      int     `json:"qty" db:"QTY"`
 	Price    float64 `json:"price" db:"Price"`
 }
+
+type ListCodeRResponse struct {
+	SKU       string `json:"sku" db:"SKU"`
+	NAMEALIAS string `json:"nameAlias" db:"NAMEALIAS"`
+}
+
+type AddItemResponse struct {
+	OrderNo    string    `json:"orderNo" db:"OrderNo"`
+	SKU        string    `json:"sku" db:"SKU"`
+	ItemName   string    `json:"itemName" db:"ItemName"`
+	QTY        int       `json:"qty" db:"QTY"`
+	ReturnQTY  int       `json:"returnQty" db:"ReturnQTY"`
+	Price      float64   `json:"price" db:"Price"`
+	CreateBy   string    `json:"createBy" db:"CreateBy"`
+	CreateDate time.Time `json:"createDate" db:"CreateDate"`
+}
