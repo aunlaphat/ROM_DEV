@@ -1,6 +1,8 @@
 package api
 
 import (
+	Errors "boilerplate-backend-go/errors"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -8,7 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// ✅ ฟังก์ชันจัดการ Error สำหรับ Validation (เช่น JSON Bind)
+// *️⃣ ฟังก์ชันจัดการ Error สำหรับ Validation (เช่น JSON Bind)
 func handleValidationError(c *gin.Context, err error) {
 	var errorMessages []string
 
@@ -27,9 +29,23 @@ func handleValidationError(c *gin.Context, err error) {
 	handleResponse(c, false, "⚠️ Invalid request body", errorMessages, http.StatusBadRequest)
 }
 
-// ✅ ฟังก์ชันจัดการ Error ทั่วไป
+// *️⃣ ฟังก์ชันจัดการ Error ทั่วไป
 func handleError(c *gin.Context, err error) {
-	if err != nil {
-		handleResponse(c, false, "🔥 Internal server error", err.Error(), http.StatusInternalServerError)
+	if err == nil {
+		return
 	}
+
+	// 🔹 เช็กว่า error เป็นสเตตัสอื่นที่ไม่ใช่ 500 หรือไม่
+	var appErr *Errors.AppError
+	if errors.As(err, &appErr) {
+		handleResponse(c, false, appErr.Message, nil, appErr.Code)
+		return
+	}
+
+	// 🔹 หากไม่ใช่สเตตัสอื่น จะรีเทิน 500 ออกมา
+	handleResponse(c, false, "🔥 Internal server error", err.Error(), http.StatusInternalServerError)
+
+	// if err != nil {
+	// 	handleResponse(c, false, "🔥 Internal server error", err.Error(), http.StatusInternalServerError)
+	// }
 }

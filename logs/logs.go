@@ -41,7 +41,8 @@ func NewLogger(serviceName, logPath string, maxSize, maxBackups, maxAge int) (*L
 		zap.Fields(zap.String("service", serviceName)),
 		zap.AddCaller(),
 		zap.AddCallerSkip(1),
-		zap.AddStacktrace(zap.ErrorLevel),
+		// zap.AddStacktrace(zap.ErrorLevel),
+		zap.AddStacktrace(zap.FatalLevel), // ✅ Stack Trace เฉพาะ Fatal or Panic
 	)
 
 	close := func() {

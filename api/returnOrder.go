@@ -40,7 +40,6 @@ func (app *Application) GetAllReturnOrder(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.GetAllReturnOrder(c.Request.Context())
 	if err != nil {
-		app.Logger.Error("[ Failed to get return orders ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -65,7 +64,6 @@ func (app *Application) GetReturnOrderByOrderNo(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.GetReturnOrderByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
-		app.Logger.Error("[ Failed to get return order ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -87,7 +85,6 @@ func (app *Application) GetReturnOrderByOrderNo(c *gin.Context) {
 func (app *Application) GetAllReturnOrderLines(c *gin.Context) {
 	result, err := app.Service.ReturnOrder.GetAllReturnOrderLines(c.Request.Context())
 	if err != nil {
-		app.Logger.Error("[ Failed to get return order lines ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -112,7 +109,6 @@ func (app *Application) GetReturnOrderLineByOrderNo(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.GetReturnOrderLineByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
-		app.Logger.Error("[ Failed to get return order line ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -136,6 +132,7 @@ func (app *Application) GetReturnOrderLineByOrderNo(c *gin.Context) {
 func (app *Application) CreateReturnOrder(c *gin.Context) {
 	var req request.CreateReturnOrder
 
+	// *️⃣ ดึง Request JSON
 	if err := c.ShouldBindJSON(&req); err != nil {
 		app.Logger.Warn("[ Invalid request payload ]", zap.Error(err))
 		handleValidationError(c, err)
@@ -153,7 +150,6 @@ func (app *Application) CreateReturnOrder(c *gin.Context) {
 	req.CreateBy = userID.(string)
 	result, err := app.Service.ReturnOrder.CreateReturnOrder(c.Request.Context(), req)
 	if err != nil {
-		app.Logger.Error("[ Failed to create return order ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -178,6 +174,7 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 	orderNo := c.Param("orderNo")
 	var req request.UpdateReturnOrder
 
+	// *️⃣ ดึง Request JSON
 	if err := c.ShouldBindJSON(&req); err != nil {
 		app.Logger.Warn("[ Invalid request payload ]", zap.Error(err))
 		handleValidationError(c, err)
@@ -202,7 +199,6 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.UpdateReturnOrder(c.Request.Context(), req)
 	if err != nil {
-		app.Logger.Error("[ Failed to update return order ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -228,7 +224,6 @@ func (app *Application) DeleteReturnOrder(c *gin.Context) {
 
 	err := app.Service.ReturnOrder.DeleteReturnOrder(c.Request.Context(), orderNo)
 	if err != nil {
-		app.Logger.Error("[ Failed to delete return order ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}

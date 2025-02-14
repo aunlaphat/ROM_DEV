@@ -6,7 +6,6 @@ import (
 	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/utils"
 	"context"
-	"fmt"
 
 	"go.uber.org/zap"
 )
@@ -22,6 +21,8 @@ type ReturnOrderService interface {
 
 	GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error)
 	GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error)
+
+	CheckOrderNoExist(ctx context.Context, orderNo string) error
 }
 
 func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
@@ -30,13 +31,13 @@ func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrde
 	allorder, err := srv.returnOrderRepo.GetAllReturnOrder(ctx)
 	if err != nil {
 		srv.logger.Error("[ Error fetching all return orders ]", zap.Error(err))
-		return nil, fmt.Errorf("[ error fetching all return orders: %w ]", err)
+		return nil, errors.InternalError("Failed to fetch all return orders: %v", err)
 	}
 
 	// *️⃣ เช็คเมื่อไม่มีข้อมูลออเดอร์
 	if len(allorder) == 0 {
-		srv.logger.Info("[ No return orders found ]")
-		return []response.ReturnOrder{}, nil
+		srv.logger.Info("[ No orders found ]")
+		return allorder, nil // return empty slice
 	}
 
 	srv.logger.Info("[ Fetched all return orders ]", zap.Int("Total amount of data", len(allorder)))
@@ -48,27 +49,20 @@ func (srv service) GetReturnOrderByOrderNo(ctx context.Context, orderNo string) 
 
 	// *️⃣ ตรวจสอบว่า OrderNo ไม่เป็นค่าว่าง
 	if orderNo == "" {
-		err := fmt.Errorf("[ orderNo is required ]")
-		srv.logger.Error("[ Invalid input ]", zap.Error(err))
-		return nil, err
+		srv.logger.Warn("[ OrderNo is required ]")
+		return nil, errors.ValidationError("[ OrderNo is required ]")
 	}
 
-	// *️⃣ ตรวจสอบว่า OrderNo มีอยู่จริงใน ReturnOrderLine
-	exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, orderNo)
+	// *️⃣ ตรวจสอบ OrderNo
+	err := srv.CheckOrderNoExist(ctx, orderNo)
 	if err != nil {
-		srv.logger.Error("[ Error checking OrderNo existence ]", zap.Error(err))
-		return nil, fmt.Errorf("[ error checking OrderNo existence: %w ]", err)
-	}
-	if !exists {
-		err := fmt.Errorf("[ This OrderNo not found: %s ]", orderNo)
-		srv.logger.Warn("[ OrderNo not found ]", zap.String("OrderNo", orderNo))
 		return nil, err
 	}
 
 	idorder, err := srv.returnOrderRepo.GetReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
 		srv.logger.Error("[ Error fetching ReturnOrder by OrderNo ]", zap.String("OrderNo", orderNo), zap.Error(err))
-		return nil, fmt.Errorf("[ error fetching ReturnOrder by OrderNo %s: %w ]", orderNo, err)
+		return nil, errors.InternalError("[ Error fetching ReturnOrder by OrderNo %s: %v ]", orderNo, err)
 	}
 
 	// *️⃣ เช็คเมื่อไม่มีข้อมูลรายการส่งคืนในคำสั่งซื้อ
@@ -87,7 +81,7 @@ func (srv service) GetAllReturnOrderLines(ctx context.Context) ([]response.Retur
 	lines, err := srv.returnOrderRepo.GetAllReturnOrderLines(ctx)
 	if err != nil {
 		srv.logger.Error("[ Error fetching all return order lines ]", zap.Error(err))
-		return nil, fmt.Errorf("[ error fetching all return order lines: %w ]", err)
+		return nil, errors.InternalError("[ Error fetching all return order lines: %v ]", err)
 	}
 
 	// *️⃣ เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
@@ -104,20 +98,13 @@ func (srv service) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo stri
 	srv.logger.Info("[ Starting get return order line process ]", zap.String("OrderNo", orderNo))
 
 	if orderNo == "" {
-		err := fmt.Errorf("[ orderNo is required ]")
-		srv.logger.Error("[ Invalid input ]", zap.Error(err))
-		return nil, err
+		srv.logger.Warn("[ OrderNo is required ]")
+		return nil, errors.ValidationError("[ OrderNo is required ]")
 	}
 
 	// *️⃣ ตรวจสอบว่า OrderNo มีอยู่ใน ReturnOrderLine
-	exists, err := srv.returnOrderRepo.CheckOrderNoLineExist(ctx, orderNo)
+	err := srv.CheckOrderNoExist(ctx, orderNo)
 	if err != nil {
-		srv.logger.Error("[ Error checking OrderNo existence ]", zap.Error(err))
-		return nil, fmt.Errorf("[ error checking OrderNo existence: %w ]", err)
-	}
-	if !exists {
-		err := fmt.Errorf("[ This Return Order Line not found: %s ]", orderNo)
-		srv.logger.Warn(err.Error())
 		return nil, err
 	}
 
@@ -125,7 +112,7 @@ func (srv service) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo stri
 	lines, err := srv.returnOrderRepo.GetReturnOrderLineByOrderNo(ctx, orderNo)
 	if err != nil {
 		srv.logger.Error("[ Error fetching return order lines by OrderNo ]", zap.Error(err))
-		return nil, fmt.Errorf("[ error fetching return order lines by OrderNo: %w ]", err)
+		return nil, errors.InternalError("[ Error fetching return order lines by OrderNo %s: %v ]", orderNo, err)
 	}
 
 	// *️⃣ เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
@@ -144,12 +131,12 @@ func (srv service) GetReturnOrdersByStatus(ctx context.Context, statusCheckID in
 	orders, err := srv.returnOrderRepo.GetReturnOrdersByStatus(ctx, statusCheckID)
 	if err != nil {
 		srv.logger.Error("[ Failed to fetch Return Orders ]", zap.Error(err))
-		return nil, errors.InternalError("[ failed to fetch Return Orders ]")
+		return nil, errors.InternalError("[ Failed to fetch Return Orders %v ]", err)
 	}
 
 	if len(orders) == 0 {
 		srv.logger.Info("[ No order found ]")
-		return []response.DraftTradeDetail{}, nil
+		return orders, nil
 	}
 
 	srv.logger.Info("[ Successfully fetched Return Orders ]", zap.Int("StatusCheckID", statusCheckID), zap.Int("Total amount of data", len(orders)))
@@ -162,13 +149,13 @@ func (srv service) GetReturnOrdersByStatusAndDateRange(ctx context.Context, stat
 	orders, err := srv.returnOrderRepo.GetReturnOrdersByStatusAndDateRange(ctx, statusCheckID, startDate, endDate)
 	if err != nil {
 		srv.logger.Error("[ Failed to fetch Return Orders ]", zap.Int("StatusCheckID", statusCheckID), zap.Error(err))
-		return nil, fmt.Errorf("[ failed to fetch Return Orders: %w ]", err)
+		return nil, errors.InternalError("[ failed to fetch Return Orders: %v ]", err)
 	}
 
 	// *️⃣ เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
 	if len(orders) == 0 {
 		srv.logger.Info("[ No order found within the specified date range ]")
-		return []response.DraftTradeDetail{}, nil
+		return orders, nil
 	}
 
 	srv.logger.Info("[ Successfully fetched Return Orders ]", zap.String("StartDate", startDate), zap.String("EndDate", endDate), zap.Int("Total amount of data", len(orders)))
@@ -180,40 +167,38 @@ func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateRetu
 
 	// *️⃣ ตรวจสอบว่า ReturnOrderLine ต้องไม่เป็นค่าว่าง (มีอย่างน้อย 1 รายการ) จึงจะสามารถสร้างการคืนของได้
 	if len(req.ReturnOrderLine) == 0 {
-		err := fmt.Errorf("[ ReturnOrderLine cannot be empty ]")
-		srv.logger.Error("[ Invalid input ]", zap.Error(err))
-		return nil, err
+		srv.logger.Warn("[ ReturnOrderLine can't empty must be > 0 line ]")
+		return nil, errors.ValidationError("[ ReturnOrderLine can't empty must be > 0 line ]")
 	}
 
 	// *️⃣ Validate request ที่ส่งมา
 	if err := utils.ValidateCreateReturnOrder(req); err != nil {
-		srv.logger.Error("[ Invalid return order request ]", zap.Error(err))
-		return nil, fmt.Errorf("[ Validation failed: %w ]", err)
+		srv.logger.Warn("[ Validation failed ]", zap.Error(err))
+		return nil, errors.ValidationError("[ Validation failed: %v ]", err)
 	}
 
-	// *️⃣ ตรวจสอบว่า OrderNo ซ้ำหรือไม่
+	// *️⃣ ตรวจสอบว่า OrderNo สร้างซ้ำหรือไม่
 	exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, req.OrderNo)
 	if err != nil {
-
-		srv.logger.Error("[ Failed to check OrderNo ]", zap.Error(err))
-		return nil, fmt.Errorf("[ failed to check OrderNo: %w ]", err)
+		srv.logger.Error("[ Error checking OrderNo existence ]", zap.Error(err)) // db มีปัญหา
+		return nil, errors.InternalError("[ Error checking OrderNo existence: %v ]", err)
 	}
 	if exists {
-		srv.logger.Error("[ OrderNo already exists ]", zap.Error(err))
-		return nil, (fmt.Errorf("[ orderNo already exists: %s ]", req.OrderNo))
+		srv.logger.Warn("[ OrderNo already exists ]", zap.String("OrderNo", req.OrderNo))
+		return nil, errors.ValidationError("[ OrderNo %s already exists ]", req.OrderNo)
 	}
 
 	err = srv.returnOrderRepo.CreateReturnOrder(ctx, req)
 	if err != nil {
 		srv.logger.Error("[ Failed to create order with lines ]", zap.Error(err))
-		return nil, fmt.Errorf("[ failed to create order with lines: %w ]", err)
+		return nil, errors.InternalError("[ Failed to create order with lines: %v ]", err)
 	}
 
 	// *️⃣ ดึงข้อมูล order ที่สร้างสำเร็จไปแสดง
 	createdOrder, err := srv.returnOrderRepo.GetCreateReturnOrder(ctx, req.OrderNo)
 	if err != nil {
 		srv.logger.Error("[ Failed to fetch created order ]", zap.Error(err))
-		return nil, fmt.Errorf("[ failed to fetch created order: %w ]", err)
+		return nil, errors.InternalError("[ Failed to fetch created order: %v ]", err)
 	}
 
 	srv.logger.Info("[ Return order created successfully ]", zap.String("OrderNo", req.OrderNo), zap.String("CreateBy", req.CreateBy))
@@ -224,32 +209,27 @@ func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateRetu
 	srv.logger.Info("[ Starting return order update process ]", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", *req.UpdateBy))
 
 	if req.OrderNo == "" {
-		err := fmt.Errorf("[ OrderNo is required ]")
-		srv.logger.Error("[ Invalid OrderNo ]", zap.Error(err))
-		return nil, err
+		srv.logger.Warn("[ OrderNo is required ]")
+		return nil, errors.ValidationError("[ OrderNo is required ]")
 	}
 
-	exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, req.OrderNo)
+	// *️⃣ ตรวจสอบ OrderNo
+	err := srv.CheckOrderNoExist(ctx, req.OrderNo)
 	if err != nil {
-		srv.logger.Error("[ Error checking OrderNo existence ]", zap.Error(err))
-		return nil, fmt.Errorf("[ error checking OrderNo existence: %w ]", err)
-	}
-	if !exists {
-		srv.logger.Warn("[ OrderNo not found ]", zap.String("OrderNo", req.OrderNo))
-		return nil, fmt.Errorf("[ OrderNo not found: %s ]", req.OrderNo)
+		return nil, err
 	}
 
 	err = srv.returnOrderRepo.UpdateReturnOrder(ctx, req)
 	if err != nil {
 		srv.logger.Error("[ Error updating ReturnOrder ]", zap.Error(err))
-		return nil, fmt.Errorf("[ error updating ReturnOrder: %w ]", err)
+		return nil, errors.InternalError("[ Error updating ReturnOrder: %v ]", err)
 	}
 
 	// *️⃣ ดึงข้อมูล order ที่อัพเดทเสร็จแล้ว
 	updatedOrder, err := srv.returnOrderRepo.GetUpdateReturnOrder(ctx, req.OrderNo)
 	if err != nil {
 		srv.logger.Error("[ Failed to fetch updated order ]", zap.Error(err))
-		return nil, fmt.Errorf("[ failed to fetch updated order: %w ]", err)
+		return nil, errors.InternalError("[ Failed to fetch updated order: %v ]", err)
 	}
 
 	srv.logger.Info("[ Return order updated successfully ]", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", *req.UpdateBy))
@@ -260,28 +240,40 @@ func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error 
 	srv.logger.Info("[ Starting delete return order process ]", zap.String("OrderNo", orderNo))
 
 	if orderNo == "" {
-		err := fmt.Errorf("[ OrderNo are required ]")
-		srv.logger.Error("[ Invalid OrderNo ]", zap.Error(err))
-		return err
+		srv.logger.Warn("[ OrderNo is required ]")
+		return errors.ValidationError("[ OrderNo is required ]")
 	}
 
-	exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, orderNo)
+	// *️⃣ ตรวจสอบ OrderNo
+	err := srv.CheckOrderNoExist(ctx, orderNo)
 	if err != nil {
-		srv.logger.Error("[ Error checking OrderNo existence ]", zap.Error(err))
-		return fmt.Errorf("[ error checking OrderNo existence: %w ]", err)
-	}
-	if !exists {
-		srv.logger.Warn("[ OrderNo not found ]", zap.String("OrderNo", orderNo))
-		return fmt.Errorf("[ OrderNo not found: %s ]", orderNo)
-
+		return err
 	}
 
 	err = srv.returnOrderRepo.DeleteReturnOrder(ctx, orderNo)
 	if err != nil {
 		srv.logger.Error("[ Error deleting ReturnOrder ]", zap.Error(err))
-		return fmt.Errorf("[ error deleting ReturnOrder: %w ]", err)
+		return errors.InternalError("Failed to delete ReturnOrder: %v", err)
 	}
 
 	srv.logger.Info("[ Return order deleted successfully ]", zap.String("OrderNo", orderNo))
+	return nil
+}
+
+// *️⃣ เช็คถ้า OrderNo มีในระบบ ทำงานต่อไปได้
+func (srv service) CheckOrderNoExist(ctx context.Context, orderNo string) error {
+	// *️⃣ ตรวจสอบ OrderNo ในฐานข้อมูล
+	exists, err := srv.returnOrderRepo.CheckOrderNoExist(ctx, orderNo)
+	if err != nil {
+		srv.logger.Error("[ Error checking OrderNo existence ]", zap.Error(err)) // db มีปัญหา
+		return errors.InternalError("[ Error checking OrderNo existence: %v ]", err)
+	}
+
+	// *️⃣ ตรวจเมื่อไม่พบ OrderNo
+	if !exists {
+		srv.logger.Warn("[ OrderNo not found ]", zap.String("OrderNo", orderNo))
+		return errors.NotFoundError("[ This OrderNo not found: %s ]", orderNo)
+	}
+
 	return nil
 }
