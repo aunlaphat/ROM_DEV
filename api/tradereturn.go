@@ -83,8 +83,10 @@ func (app *Application) GetStatusConfirmDetail(c *gin.Context) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router  /trade-return/search-waiting [get]
 func (app *Application) SearchStatusWaitingDetail(c *gin.Context) {
-	startDate := c.URL.Query().Get("startDate")
-	endDate := c.URL.Query().Get("endDate")
+	startDate := c.DefaultQuery("startDate", "") // ใช้ DefaultQuery เพื่อหลีกเลี่ยงกรณีที่ไม่มี query parameter
+	endDate := c.DefaultQuery("endDate", "")     // ใช้ DefaultQuery เพื่อหลีกเลี่ยงกรณีที่ไม่มี query parameter
+	// startDate := c.URL.Query().Get("startDate")
+	// endDate := c.URL.Query().Get("endDate")
 
 	result, err := app.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(c.Request.Context(), 1, startDate, endDate) // StatusCheckID = 1
 	if err != nil {
@@ -108,8 +110,10 @@ func (app *Application) SearchStatusWaitingDetail(c *gin.Context) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router  /trade-return/search-confirm [get]
 func (app *Application) SearchStatusConfirmDetail(c *gin.Context) {
-	startDate := c.URL.Query().Get("startDate")
-	endDate := c.URL.Query().Get("endDate")
+	startDate := c.DefaultQuery("startDate", "") // ใช้ DefaultQuery เพื่อหลีกเลี่ยงกรณีที่ไม่มี query parameter
+	endDate := c.DefaultQuery("endDate", "")     // ใช้ DefaultQuery เพื่อหลีกเลี่ยงกรณีที่ไม่มี query parameter
+	// startDate := c.URL.Query().Get("startDate")
+	// endDate := c.URL.Query().Get("endDate")
 
 	result, err := app.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(c.Request.Context(), 2, startDate, endDate) // StatusCheckID = 2
 	if err != nil {
@@ -168,7 +172,7 @@ func (app *Application) CreateTradeReturn(c *gin.Context) {
 // @Produce json
 // @Param   orderNo path string true "Order number"
 // @Param   body body request.TradeReturnLine true "Trade Return Line Details"
-// @Success 201 {object} api.Response{result=response.BeforeReturnOrderLineResponse} "Trade return line created successfully"
+// @Success 201 {object} api.Response{result=response.BeforeReturnOrderItem} "Trade return line created successfully"
 // @Failure 400 {object} api.Response "Bad Request - Invalid input or missing required fields"
 // @Failure 404 {object} api.Response "Not Found - Order not found"
 // @Failure 500 {object} api.Response "Internal Server Error"
@@ -192,11 +196,11 @@ func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 		return
 	}
 
-	req.CreateBy = userID.(string)
-	// // Set CreateBy จาก claims
-	// for i := range req.TradeReturnLine {
-	// 	req.TradeReturnLine[i].CreateBy = userID
-	// }
+	//req.CreateBy = userID.(string)
+	// Set CreateBy จาก claims
+	for i := range req.TradeReturnLine {
+		req.TradeReturnLine[i].CreateBy = userID.(string)
+	}
 
 	result, err := app.Service.BeforeReturn.CreateTradeReturnLine(c.Request.Context(), orderNo, req)
 	if err != nil {
@@ -240,14 +244,7 @@ func (app *Application) ConfirmReturn(c *gin.Context) {
 	}
 
 	req.OrderNo = orderNo
-
-	// *️⃣ ตรวจสอบ nil ก่อนใช้ UpdateBy
-	if req.UpdateBy == nil {
-		req.UpdateBy = new(string)
-	}
-	*req.UpdateBy = userID.(string)
-
-	err := app.Service.BeforeReturn.ConfirmReturn(c.Request.Context(), req); 
+	err := app.Service.BeforeReturn.ConfirmReturn(c.Request.Context(), req, userID.(string)); 
 	if err != nil {
 		handleError(c, err)
 		return
@@ -257,7 +254,7 @@ func (app *Application) ConfirmReturn(c *gin.Context) {
 		OrderNo:        req.OrderNo,
 		StatusReturnID: "6 (success)",
 		StatusCheckID:  "2 (CONFIRM)",
-		UpdateBy:       req.UpdateBy,
+		UpdateBy:       userID.(string),
 		UpdateDate:     time.Now(),
 	}
 

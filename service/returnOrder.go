@@ -149,7 +149,7 @@ func (srv service) GetReturnOrdersByStatusAndDateRange(ctx context.Context, stat
 	orders, err := srv.returnOrderRepo.GetReturnOrdersByStatusAndDateRange(ctx, statusCheckID, startDate, endDate)
 	if err != nil {
 		srv.logger.Error("[ Failed to fetch Return Orders ]", zap.Int("StatusCheckID", statusCheckID), zap.Error(err))
-		return nil, errors.InternalError("[ failed to fetch Return Orders: %v ]", err)
+		return nil, errors.InternalError("[ Failed to fetch Return Orders: %v ]", err)
 	}
 
 	// *️⃣ เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ

@@ -6,11 +6,11 @@ type BeforeReturnOrder struct {
 	//RecID		   int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
 	OrderNo        string     `json:"orderNo" db:"OrderNo"`
 	SoNo           string     `json:"soNo" db:"SoNo"`
-	SrNo           string     `json:"srNo" db:"SrNo"`
+	SrNo           *string    `json:"srNo" db:"SrNo"`
 	ChannelID      int        `json:"channelID" db:"ChannelID"`
 	Reason         string     `json:"reason" db:"Reason"`
 	CustomerID     string     `json:"customerID" db:"CustomerID"`
-	TrackingNo     string     `json:"trackingNo" db:"TrackingNo"`
+	TrackingNo     *string    `json:"trackingNo" db:"TrackingNo"`
 	Logistic       string     `json:"logistic" db:"Logistic"`
 	WarehouseID    int        `json:"warehouseID" db:"WarehouseID"`
 	SoStatus       *int       `json:"soStatus" db:"SoStatus"`
@@ -170,6 +170,7 @@ type ReturnOrderLine struct {
 type ConfirmTradeReturnRequest struct {
 	Identifier  string                   `json:"-" `          // mean => OrderNo หรือ TrackingNo
 	ImportLines []TradeReturnLineRequest `json:"importLines"` // รายการสินค้า
+	UpdateBy    *string                  `json:"-" db:"UpdateBy"`
 }
 
 type TradeReturnLineRequest struct {
@@ -220,6 +221,7 @@ type ConfirmToReturnRequest struct {
 	OrderNo           string              `json:"-"`
 	UpdateToReturn    []UpdateToReturn    `json:"updateToReturn"`    // เลข sr สุ่มจาก ax
 	ImportLinesActual []ImportLinesActual `json:"importLinesActual"` // รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี
+	UpdateBy          *string             `json:"-" db:"UpdateBy"`
 }
 
 type UpdateToReturn struct {
