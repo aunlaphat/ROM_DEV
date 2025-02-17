@@ -100,7 +100,7 @@ func parseToken(c *gin.Context, tokenAuth *jwtauth.JWTAuth, tokenString string) 
 func getUserIDFromClaims(claims map[string]interface{}) (string, error) {
 	userID, exists := claims["userID"].(string)
 	if !exists {
-		return "", errors.New("unauthorized - missing userID in token")
+		return "", errors.New("unauthorized - missing UserID in token")
 	}
 	return userID, nil
 }

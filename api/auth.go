@@ -24,7 +24,7 @@ func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 }
 
 // Generate JWT token from user claims
-func (app *Application) GenerateToken(tokenData response.User) string {
+func (app *Application) GenerateToken(tokenData response.Login) string {
 	claims := map[string]interface{}{
 		"userID":     tokenData.UserID,
 		"userName":   tokenData.UserName,
@@ -45,7 +45,7 @@ func (app *Application) GenerateToken(tokenData response.User) string {
 // @Accept json
 // @Produce json
 // @Param login-request body request.LoginWeb true "User login credentials"
-// @Success 200 {object} response.User "JWT token"
+// @Success 200 {object} response.Login "JWT token"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /auth/login [post]
@@ -57,7 +57,7 @@ func (app *Application) Login(c *gin.Context) {
 	}
 
 	ctx := context.Background()
-	user, err := app.Service.User.Login(ctx, req)
+	user, err := app.Service.Auth.Login(ctx, req)
 	if err != nil {
 		app.Logger.Warn("⚠️ Login failed", zap.String("username", req.UserName), zap.Error(err))
 		handleResponse(c, false, "Invalid username or password", nil, http.StatusUnauthorized)
@@ -78,7 +78,7 @@ func (app *Application) Login(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param login-request body request.LoginLark true "User login from Lark"
-// @Success 200 {object} response.User "JWT token"
+// @Success 200 {object} response.Login "JWT token"
 // @Failure 400 {object} api.Response "Bad Request"
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /auth/login-lark [post]
@@ -90,7 +90,7 @@ func (app *Application) LoginFromLark(c *gin.Context) {
 	}
 
 	ctx := context.Background()
-	user, err := app.Service.User.LoginLark(ctx, req)
+	user, err := app.Service.Auth.LoginLark(ctx, req)
 	if err != nil {
 		app.Logger.Warn("⚠️ Login from Lark failed", zap.String("username", req.UserName), zap.String("userID", req.UserID), zap.Error(err))
 		handleResponse(c, false, "User not found", nil, http.StatusUnauthorized)

@@ -61,14 +61,27 @@ type CancelStatus struct {
 	CancelDate   time.Time `db:"CancelDate"`   // วันที่ยกเลิก
 }
 
-type ROM_V_UserPermission struct {
-	UserID       string `json:"userID,omitempty" db:"UserID"`           // รหัสผู้ใช้
-	UserName     string `json:"userName,omitempty" db:"Username"`       // ชื่อผู้ใช้
-	NickName     string `json:"nickName,omitempty" db:"NickName"`       // ชื่อเล่น
-	FullNameTH   string `json:"fullNameTH,omitempty" db:"FullNameTH"`   // ชื่อเต็มภาษาไทย
-	DepartmentNo string `json:"department,omitempty" db:"DepartmentNo"` // รหัสแผนก
-	RoleID       int    `json:"roleID,omitempty" db:"RoleID"`           // รหัสบทบาท
-	RoleName     string `json:"roleName,omitempty" db:"RoleName"`       // ชื่อบทบาท
-	Description  string `json:"description,omitempty" db:"Description"` // คำอธิบาย
-	Permission   string `json:"permission,omitempty" db:"Permission"`   // สิทธิ์การเข้าถึง
+type Role struct {
+	RoleID      int    `db:"RoleID"`      // รหัสสิทธิ์ (PK - Auto Increment)
+	RoleName    string `db:"RoleName"`    // ชื่อสิทธิ์
+	Description string `db:"Description"` // รายละเอียดสิทธิ์
+}
+
+type UserRole struct {
+	UserID    string     `db:"UserID"`    // รหัสผู้ใช้
+	RoleID    int        `db:"RoleID"`    // รหัส Role
+	CreatedBy *string    `db:"CreatedBy"` // ผู้สร้าง
+	CreatedAt time.Time  `db:"CreatedAt"` // เวลาสร้าง
+	UpdatedBy *string    `db:"UpdatedBy"` // ผู้แก้ไขล่าสุด (nullable)
+	UpdatedAt *time.Time `db:"UpdatedAt"` // เวลาที่อัปเดตล่าสุด (nullable)
+}
+
+type UserStatus struct {
+	UserID        string     `db:"UserID"`        // รหัสผู้ใช้
+	IsActive      bool       `db:"IsActive"`      // สถานะบัญชี (1 = ใช้งาน, 0 = ปิดการใช้งาน)
+	Password      string     `db:"Password"`      // รหัสผ่านของผู้ใช้ (SHA-256 Hash)
+	LastLoginAt   *time.Time `db:"LastLoginAt"`   // เวลาล็อกอินล่าสุด
+	UpdatedBy     string     `db:"UpdatedBy"`     // ผู้แก้ไขล่าสุด
+	UpdatedAt     *time.Time `db:"UpdatedAt"`     // เวลาแก้ไขล่าสุด
+	DeactivatedAt *time.Time `db:"DeactivatedAt"` // เวลาที่ทำ Soft Delete
 }

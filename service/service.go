@@ -14,6 +14,7 @@ type service struct {
 	draftConfirmRepo repository.DraftConfirmRepository
 }
 type AllOfService struct {
+	Auth         AuthService
 	User         UserService
 	Order        OrderService
 	DraftConfirm DraftConfirmService
@@ -28,6 +29,7 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		draftConfirmRepo: repo,
 	}
 	return AllOfService{
+		Auth:         srv,
 		User:         srv,
 		Order:        srv,
 		DraftConfirm: srv,

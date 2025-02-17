@@ -66,7 +66,7 @@ const docTemplate = `{
                     "200": {
                         "description": "JWT token",
                         "schema": {
-                            "$ref": "#/definitions/response.User"
+                            "$ref": "#/definitions/response.Login"
                         }
                     },
                     "400": {
@@ -112,7 +112,7 @@ const docTemplate = `{
                     "200": {
                         "description": "JWT token",
                         "schema": {
-                            "$ref": "#/definitions/response.User"
+                            "$ref": "#/definitions/response.Login"
                         }
                     },
                     "400": {
@@ -494,6 +494,321 @@ const docTemplate = `{
                 }
             }
         },
+        "/manage-users": {
+            "get": {
+                "description": "Retrieve user data filtered by isActive, with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Get list of users",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Filter by Active Status (true/false)",
+                        "name": "isActive",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.UserResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/manage-users/add": {
+            "post": {
+                "description": "Add a user with role and warehouse assignment",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Add a new user",
+                "parameters": [
+                    {
+                        "description": "User details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.AddUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.AddUserResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/manage-users/delete/{userID}": {
+            "delete": {
+                "description": "Remove user from the system but keep data in the database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Delete a user (Soft Delete)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/manage-users/edit/{userID}": {
+            "patch": {
+                "description": "Update role and warehouse of a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Edit user details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated user details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.EditUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.EditUserResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/manage-users/reset-password": {
+            "post": {
+                "description": "Change user password to a new value",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Reset user password",
+                "parameters": [
+                    {
+                        "description": "New password request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.ResetPasswordResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/manage-users/{userID}": {
+            "get": {
+                "description": "Retrieve details of a specific user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Get user details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.UserResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/order/cancel": {
             "post": {
                 "description": "Cancels an order by updating its status and recording the cancellation reason",
@@ -850,47 +1165,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/user/{username}": {
-            "get": {
-                "description": "Get user credentials by userName",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Get User Credentials",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "UserName",
-                        "name": "username",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "User credentials",
-                        "schema": {
-                            "$ref": "#/definitions/response.UserRole"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/gin.H"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/gin.H"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -905,10 +1179,6 @@ const docTemplate = `{
                     "type": "boolean"
                 }
             }
-        },
-        "gin.H": {
-            "type": "object",
-            "additionalProperties": {}
         },
         "request.AddItem": {
             "type": "object",
@@ -929,6 +1199,27 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.AddUserRequest": {
+            "type": "object",
+            "required": [
+                "roleID",
+                "userID"
+            ],
+            "properties": {
+                "roleID": {
+                    "type": "integer"
+                },
+                "roleName": {
+                    "type": "string"
+                },
+                "userID": {
+                    "type": "string"
+                },
+                "warehouse": {
                     "type": "string"
                 }
             }
@@ -1043,6 +1334,29 @@ const docTemplate = `{
                 }
             }
         },
+        "request.EditUserRequest": {
+            "type": "object",
+            "required": [
+                "roleID"
+            ],
+            "properties": {
+                "oldRole": {
+                    "type": "string"
+                },
+                "oldWarehouse": {
+                    "type": "string"
+                },
+                "roleID": {
+                    "type": "integer"
+                },
+                "roleName": {
+                    "type": "string"
+                },
+                "warehouse": {
+                    "type": "string"
+                }
+            }
+        },
         "request.LoginLark": {
             "type": "object",
             "properties": {
@@ -1067,6 +1381,22 @@ const docTemplate = `{
                 "userName": {
                     "type": "string",
                     "example": "eknarin.ler"
+                }
+            }
+        },
+        "request.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "newPassword",
+                "userID"
+            ],
+            "properties": {
+                "newPassword": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "userID": {
+                    "type": "string"
                 }
             }
         },
@@ -1095,6 +1425,31 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.AddUserResponse": {
+            "type": "object",
+            "properties": {
+                "createdBy": {
+                    "description": "ผู้ที่ทำการเพิ่มบัญชี",
+                    "type": "string"
+                },
+                "roleID": {
+                    "description": "รหัสบทบาทที่กำหนด",
+                    "type": "integer"
+                },
+                "roleName": {
+                    "description": "ชื่อบทบาทที่กำหนด",
+                    "type": "string"
+                },
+                "userID": {
+                    "description": "รหัสผู้ใช้ที่เพิ่ม",
+                    "type": "string"
+                },
+                "warehouse": {
+                    "description": "คลังสินค้าที่สังกัด",
                     "type": "string"
                 }
             }
@@ -1274,6 +1629,35 @@ const docTemplate = `{
                 }
             }
         },
+        "response.EditUserResponse": {
+            "type": "object",
+            "properties": {
+                "newRole": {
+                    "description": "บทบาทใหม่หลังแก้ไข",
+                    "type": "string"
+                },
+                "newWarehouse": {
+                    "description": "คลังใหม่หลังแก้ไข",
+                    "type": "string"
+                },
+                "oldRole": {
+                    "description": "บทบาทเดิมก่อนแก้ไข",
+                    "type": "string"
+                },
+                "oldWarehouse": {
+                    "description": "คลังเดิมก่อนแก้ไข",
+                    "type": "string"
+                },
+                "updatedBy": {
+                    "description": "ผู้ที่ทำการแก้ไข",
+                    "type": "string"
+                },
+                "userID": {
+                    "description": "รหัสผู้ใช้",
+                    "type": "string"
+                }
+            }
+        },
         "response.ListCodeRResponse": {
             "type": "object",
             "properties": {
@@ -1281,6 +1665,32 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.Login": {
+            "type": "object",
+            "properties": {
+                "departmentNo": {
+                    "type": "string"
+                },
+                "fullNameTH": {
+                    "type": "string"
+                },
+                "nickName": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "roleID": {
+                    "type": "integer"
+                },
+                "userID": {
+                    "type": "string"
+                },
+                "userName": {
                     "type": "string"
                 }
             }
@@ -1314,6 +1724,23 @@ const docTemplate = `{
                 },
                 "warehouseId": {
                     "type": "integer"
+                }
+            }
+        },
+        "response.ResetPasswordResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "ข้อความแจ้งเตือน",
+                    "type": "string"
+                },
+                "updatedBy": {
+                    "description": "ผู้ที่ทำการรีเซ็ตรหัสผ่าน",
+                    "type": "string"
+                },
+                "userID": {
+                    "description": "รหัสผู้ใช้ที่รีเซ็ตรหัสผ่าน",
+                    "type": "string"
                 }
             }
         },
@@ -1403,60 +1830,51 @@ const docTemplate = `{
                 }
             }
         },
-        "response.User": {
+        "response.UserResponse": {
             "type": "object",
             "properties": {
+                "createdAt": {
+                    "description": "วันที่สร้างบัญชี (Optional)",
+                    "type": "string"
+                },
                 "departmentNo": {
-                    "type": "string"
-                },
-                "fullNameTH": {
-                    "type": "string"
-                },
-                "nickName": {
-                    "type": "string"
-                },
-                "platform": {
-                    "type": "string"
-                },
-                "roleID": {
-                    "type": "integer"
-                },
-                "userID": {
-                    "type": "string"
-                },
-                "userName": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.UserRole": {
-            "type": "object",
-            "properties": {
-                "departmentNo": {
+                    "description": "แผนกที่สังกัด",
                     "type": "string"
                 },
                 "description": {
+                    "description": "คำอธิบายบทบาท",
                     "type": "string"
                 },
                 "fullNameTH": {
+                    "description": "ชื่อเต็มภาษาไทย",
+                    "type": "string"
+                },
+                "lastLoginAt": {
+                    "description": "วันที่เข้าสู่ระบบล่าสุด (Optional)",
                     "type": "string"
                 },
                 "nickName": {
+                    "description": "ชื่อเล่น",
                     "type": "string"
                 },
                 "permission": {
+                    "description": "สิทธิ์ของผู้ใช้",
                     "type": "string"
                 },
                 "roleID": {
+                    "description": "รหัสบทบาท",
                     "type": "integer"
                 },
                 "roleName": {
+                    "description": "ชื่อบทบาท",
                     "type": "string"
                 },
                 "userID": {
+                    "description": "รหัสผู้ใช้",
                     "type": "string"
                 },
                 "userName": {
+                    "description": "ชื่อบัญชีผู้ใช้",
                     "type": "string"
                 }
             }

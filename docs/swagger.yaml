@@ -8,9 +8,6 @@ definitions:
       success:
         type: boolean
     type: object
-  gin.H:
-    additionalProperties: {}
-    type: object
   request.AddItem:
     properties:
       itemName:
@@ -25,6 +22,20 @@ definitions:
         type: integer
       sku:
         type: string
+    type: object
+  request.AddUserRequest:
+    properties:
+      roleID:
+        type: integer
+      roleName:
+        type: string
+      userID:
+        type: string
+      warehouse:
+        type: string
+    required:
+    - roleID
+    - userID
     type: object
   request.CancelOrder:
     properties:
@@ -103,6 +114,21 @@ definitions:
     - returnQty
     - sku
     type: object
+  request.EditUserRequest:
+    properties:
+      oldRole:
+        type: string
+      oldWarehouse:
+        type: string
+      roleID:
+        type: integer
+      roleName:
+        type: string
+      warehouse:
+        type: string
+    required:
+    - roleID
+    type: object
   request.LoginLark:
     properties:
       userID:
@@ -122,6 +148,17 @@ definitions:
         example: eknarin.ler
         type: string
     type: object
+  request.ResetPasswordRequest:
+    properties:
+      newPassword:
+        minLength: 8
+        type: string
+      userID:
+        type: string
+    required:
+    - newPassword
+    - userID
+    type: object
   response.AddItemResponse:
     properties:
       createBy:
@@ -139,6 +176,24 @@ definitions:
       returnQty:
         type: integer
       sku:
+        type: string
+    type: object
+  response.AddUserResponse:
+    properties:
+      createdBy:
+        description: ผู้ที่ทำการเพิ่มบัญชี
+        type: string
+      roleID:
+        description: รหัสบทบาทที่กำหนด
+        type: integer
+      roleName:
+        description: ชื่อบทบาทที่กำหนด
+        type: string
+      userID:
+        description: รหัสผู้ใช้ที่เพิ่ม
+        type: string
+      warehouse:
+        description: คลังสินค้าที่สังกัด
         type: string
     type: object
   response.BeforeReturnOrderItem:
@@ -256,11 +311,49 @@ definitions:
       srNo:
         type: string
     type: object
+  response.EditUserResponse:
+    properties:
+      newRole:
+        description: บทบาทใหม่หลังแก้ไข
+        type: string
+      newWarehouse:
+        description: คลังใหม่หลังแก้ไข
+        type: string
+      oldRole:
+        description: บทบาทเดิมก่อนแก้ไข
+        type: string
+      oldWarehouse:
+        description: คลังเดิมก่อนแก้ไข
+        type: string
+      updatedBy:
+        description: ผู้ที่ทำการแก้ไข
+        type: string
+      userID:
+        description: รหัสผู้ใช้
+        type: string
+    type: object
   response.ListCodeRResponse:
     properties:
       nameAlias:
         type: string
       sku:
+        type: string
+    type: object
+  response.Login:
+    properties:
+      departmentNo:
+        type: string
+      fullNameTH:
+        type: string
+      nickName:
+        type: string
+      platform:
+        type: string
+      roleID:
+        type: integer
+      userID:
+        type: string
+      userName:
         type: string
     type: object
   response.OrderHeadResponse:
@@ -283,6 +376,18 @@ definitions:
         type: string
       warehouseId:
         type: integer
+    type: object
+  response.ResetPasswordResponse:
+    properties:
+      message:
+        description: ข้อความแจ้งเตือน
+        type: string
+      updatedBy:
+        description: ผู้ที่ทำการรีเซ็ตรหัสผ่าน
+        type: string
+      userID:
+        description: รหัสผู้ใช้ที่รีเซ็ตรหัสผ่าน
+        type: string
     type: object
   response.SearchOrderItem:
     properties:
@@ -340,42 +445,40 @@ definitions:
       updateDate:
         type: string
     type: object
-  response.User:
+  response.UserResponse:
     properties:
+      createdAt:
+        description: วันที่สร้างบัญชี (Optional)
+        type: string
       departmentNo:
-        type: string
-      fullNameTH:
-        type: string
-      nickName:
-        type: string
-      platform:
-        type: string
-      roleID:
-        type: integer
-      userID:
-        type: string
-      userName:
-        type: string
-    type: object
-  response.UserRole:
-    properties:
-      departmentNo:
+        description: แผนกที่สังกัด
         type: string
       description:
+        description: คำอธิบายบทบาท
         type: string
       fullNameTH:
+        description: ชื่อเต็มภาษาไทย
+        type: string
+      lastLoginAt:
+        description: วันที่เข้าสู่ระบบล่าสุด (Optional)
         type: string
       nickName:
+        description: ชื่อเล่น
         type: string
       permission:
+        description: สิทธิ์ของผู้ใช้
         type: string
       roleID:
+        description: รหัสบทบาท
         type: integer
       roleName:
+        description: ชื่อบทบาท
         type: string
       userID:
+        description: รหัสผู้ใช้
         type: string
       userName:
+        description: ชื่อบัญชีผู้ใช้
         type: string
     type: object
 info:
@@ -417,7 +520,7 @@ paths:
         "200":
           description: JWT token
           schema:
-            $ref: '#/definitions/response.User'
+            $ref: '#/definitions/response.Login'
         "400":
           description: Bad Request
           schema:
@@ -447,7 +550,7 @@ paths:
         "200":
           description: JWT token
           schema:
-            $ref: '#/definitions/response.User'
+            $ref: '#/definitions/response.Login'
         "400":
           description: Bad Request
           schema:
@@ -687,6 +790,198 @@ paths:
       summary: Confirm Draft Order
       tags:
       - Draft & Confirm MKP
+  /manage-users:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve user data filtered by isActive, with pagination
+      parameters:
+      - description: Filter by Active Status (true/false)
+        in: query
+        name: isActive
+        type: boolean
+      - description: Limit (default 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.UserResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get list of users
+      tags:
+      - User Management
+  /manage-users/{userID}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve details of a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get user details
+      tags:
+      - User Management
+  /manage-users/add:
+    post:
+      consumes:
+      - application/json
+      description: Add a user with role and warehouse assignment
+      parameters:
+      - description: User details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AddUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AddUserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Add a new user
+      tags:
+      - User Management
+  /manage-users/delete/{userID}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove user from the system but keep data in the database
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Delete a user (Soft Delete)
+      tags:
+      - User Management
+  /manage-users/edit/{userID}:
+    patch:
+      consumes:
+      - application/json
+      description: Update role and warehouse of a user
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Updated user details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.EditUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.EditUserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Edit user details
+      tags:
+      - User Management
+  /manage-users/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Change user password to a new value
+      parameters:
+      - description: New password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.ResetPasswordResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Reset user password
+      tags:
+      - User Management
   /order/cancel:
     post:
       consumes:
@@ -910,31 +1205,4 @@ paths:
       summary: Update order status for return confirmation
       tags:
       - Return Order MKP
-  /user/{username}:
-    get:
-      description: Get user credentials by userName
-      parameters:
-      - description: UserName
-        in: path
-        name: username
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User credentials
-          schema:
-            $ref: '#/definitions/response.UserRole'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/gin.H'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/gin.H'
-      summary: Get User Credentials
-      tags:
-      - User
 swagger: "2.0"
