@@ -12,17 +12,17 @@ type service struct {
 	userRepo  repository.UserRepository
 	orderRepo repository.OrderRepository
 	returnOrderRepo  repository.ReturnOrderRepository
-	// importOrderRepo  repository.ImportOrderRepository
+	importOrderRepo  repository.ImportOrderRepository
 	beforeReturnRepo repository.BeforeReturnRepository
-	// constant         repository.Constants
+	constant         repository.Constants
 }
 type AllOfService struct {
 	User  UserService
 	Order OrderService
 	ReturnOrder  ReturnOrderService
-	// ImportOrder  ImportOrderService
+	ImportOrder  ImportOrderService
 	BeforeReturn BeforeReturnService
-	// Constant     Constants
+	Constant     Constants
 }
 
 func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
@@ -32,16 +32,16 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		userRepo:  repo,
 		orderRepo: repo,
 		returnOrderRepo:  repo,
-		// importOrderRepo:  repo,
+		importOrderRepo:  repo,
 		beforeReturnRepo: repo,
-		// constant:         repo,
+		constant:         repo,
 	}
 	return AllOfService{
 		User:  srv,
 		Order: srv,
 		ReturnOrder:  srv,
-		// ImportOrder:  srv,
+		ImportOrder:  srv,
 		BeforeReturn: srv,
-		// Constant:     srv,
+		Constant:     srv,
 	}
 }

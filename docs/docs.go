@@ -915,6 +915,445 @@ const docTemplate = `{
                 }
             }
         },
+        "/trade-return/add-line/{orderNo}": {
+            "post": {
+                "description": "Add a new trade return line based on the provided order number and line details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Add a new trade return line to an existing order",
+                "operationId": "add-trade-return-line",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Trade Return Line Details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.TradeReturnLine"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Trade return line created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderItem"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid input or missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Order not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/trade-return/confirm-return/{orderNo}": {
+            "patch": {
+                "description": "Confirm a trade return order based on the provided order number (OrderNo) and input lines for ReturnOrderLine.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Confirm Return Order to Success",
+                "operationId": "confirm-to-return",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OrderNo",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated trade return request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ConfirmToReturnRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Trade return order confirmed successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.ConfirmToReturnOrder"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/trade-return/create-trade": {
+            "post": {
+                "description": "Create a new trade return order with multiple order lines",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Create a new trade return order",
+                "operationId": "create-trade-return",
+                "parameters": [
+                    {
+                        "description": "Trade Return Detail",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.BeforeReturnOrder"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Trade return created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.BeforeReturnOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid input or missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Order not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/trade-return/get-confirm": {
+            "get": {
+                "description": "Retrieve Return Orders with StatusCheckID = 2 (Confirmed)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Get Return Orders with StatusCheckID = 2",
+                "operationId": "Get-Confirm-ReturnOrder",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/trade-return/get-waiting": {
+            "get": {
+                "description": "Retrieve Return Orders with StatusCheckID = 1 (Waiting)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Get Return Orders with StatusCheckID = 1",
+                "operationId": "Get-Waiting-ReturnOrder",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/trade-return/search-confirm": {
+            "get": {
+                "description": "Retrieve Return Orders with StatusCheckID = 2 (Confirmed) within a specific date range",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Search Return Orders with StatusCheckID = 2 by Date Range",
+                "operationId": "Search-Confirm-ReturnOrder",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start Date (YYYY-MM-DD)",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End Date (YYYY-MM-DD)",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/trade-return/search-waiting": {
+            "get": {
+                "description": "Retrieve Return Orders with StatusCheckID = 1 (Waiting) within a specific date range",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Trade Return"
+                ],
+                "summary": "Search Return Orders with StatusCheckID = 1 by Date Range",
+                "operationId": "Search-Waiting-ReturnOrder",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start Date (YYYY-MM-DD)",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End Date (YYYY-MM-DD)",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.DraftTradeDetail"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/user/{username}": {
             "get": {
                 "description": "Get user credentials by userName",
@@ -973,6 +1412,151 @@ const docTemplate = `{
         "gin.H": {
             "type": "object",
             "additionalProperties": {}
+        },
+        "request.BeforeReturnOrder": {
+            "type": "object",
+            "properties": {
+                "beforeReturnOrderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.BeforeReturnOrderLine"
+                    }
+                },
+                "cancelID": {
+                    "description": "UpdateDate   *time.Time ` + "`" + `json:\"updateDate\" db:\"UpdateDate\"` + "`" + `",
+                    "type": "integer"
+                },
+                "channelID": {
+                    "type": "integer"
+                },
+                "confirmBy": {
+                    "type": "string"
+                },
+                "createBy": {
+                    "description": "ConfirmDate  *time.Time ` + "`" + `json:\"confirmDate\" db:\"ConfirmDate\"` + "`" + `",
+                    "type": "string"
+                },
+                "customerID": {
+                    "type": "string"
+                },
+                "logistic": {
+                    "type": "string"
+                },
+                "mkpStatus": {
+                    "type": "integer"
+                },
+                "orderNo": {
+                    "description": "RecID\t\t   int        ` + "`" + `json:\"recID\" db:\"RecID\"` + "`" + ` // (PK - Auto Increment)",
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "returnDate": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "soStatus": {
+                    "type": "integer"
+                },
+                "srNo": {
+                    "type": "string"
+                },
+                "statusConfID": {
+                    "type": "integer"
+                },
+                "statusReturnID": {
+                    "type": "integer"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "description": "CreateDate  *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + `",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "type": "integer"
+                }
+            }
+        },
+        "request.BeforeReturnOrderLine": {
+            "type": "object",
+            "properties": {
+                "alterSKU": {
+                    "description": "รหัสสินค้าทดแทน (ถ้ามี)",
+                    "type": "string"
+                },
+                "createBy": {
+                    "description": "ผู้สร้างรายการ",
+                    "type": "string"
+                },
+                "createDate": {
+                    "description": "วันที่สร้างรายการ",
+                    "type": "string"
+                },
+                "itemName": {
+                    "description": "ชื่อสินค้า",
+                    "type": "string"
+                },
+                "orderNo": {
+                    "description": "เลขที่ใบสั่งซื้อ (FK -\u003e BeforeReturnOrder)",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "ราคาต่อหน่วย",
+                    "type": "number"
+                },
+                "qty": {
+                    "description": "จำนวนสินค้าที่ซื้อ",
+                    "type": "integer"
+                },
+                "recID": {
+                    "description": "รหัสอ้างอิงอัตโนมัติ (PK - Auto Increment)",
+                    "type": "integer"
+                },
+                "returnQTY": {
+                    "description": "จำนวนที่ต้องการคืน",
+                    "type": "integer"
+                },
+                "sku": {
+                    "description": "รหัสสินค้า",
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "description": "เลขพัสดุ (ถ้ามีกรณีส่งสินค้าคนละพัสดุ)",
+                    "type": "string"
+                },
+                "updateBy": {
+                    "description": "ผู้แก้ไขล่าสุด",
+                    "type": "string"
+                },
+                "updateDate": {
+                    "description": "วันที่แก้ไขล่าสุด",
+                    "type": "string"
+                }
+            }
+        },
+        "request.ConfirmToReturnRequest": {
+            "type": "object",
+            "properties": {
+                "importLinesActual": {
+                    "description": "รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.ImportLinesActual"
+                    }
+                },
+                "updateToReturn": {
+                    "description": "เลข sr สุ่มจาก ax",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.UpdateToReturn"
+                    }
+                }
+            }
         },
         "request.CreateBeforeReturnOrder": {
             "type": "object",
@@ -1128,6 +1712,23 @@ const docTemplate = `{
                 }
             }
         },
+        "request.ImportLinesActual": {
+            "type": "object",
+            "properties": {
+                "actualQty": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "statusDelete": {
+                    "type": "boolean"
+                }
+            }
+        },
         "request.LoginLark": {
             "type": "object",
             "properties": {
@@ -1155,6 +1756,26 @@ const docTemplate = `{
                 }
             }
         },
+        "request.OrderLines": {
+            "type": "object",
+            "properties": {
+                "itemName": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
         "request.ReturnOrderLine": {
             "type": "object",
             "properties": {
@@ -1173,6 +1794,17 @@ const docTemplate = `{
                 "sku": {
                     "type": "string",
                     "example": "SKU12345"
+                }
+            }
+        },
+        "request.TradeReturnLine": {
+            "type": "object",
+            "properties": {
+                "tradeReturnLine": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.OrderLines"
+                    }
                 }
             }
         },
@@ -1226,6 +1858,14 @@ const docTemplate = `{
                 "trackingNo": {
                     "type": "string",
                     "example": "12345678TH"
+                }
+            }
+        },
+        "request.UpdateToReturn": {
+            "type": "object",
+            "properties": {
+                "srNo": {
+                    "type": "string"
                 }
             }
         },
@@ -1344,6 +1984,26 @@ const docTemplate = `{
                 }
             }
         },
+        "response.ConfirmToReturnOrder": {
+            "type": "object",
+            "properties": {
+                "orderNo": {
+                    "type": "string"
+                },
+                "statusCheckID": {
+                    "type": "string"
+                },
+                "statusReturnID": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "type": "string"
+                },
+                "updateDate": {
+                    "type": "string"
+                }
+            }
+        },
         "response.CreateReturnOrder": {
             "type": "object",
             "properties": {
@@ -1413,6 +2073,44 @@ const docTemplate = `{
             "properties": {
                 "orderNo": {
                     "type": "string"
+                }
+            }
+        },
+        "response.DraftTradeDetail": {
+            "type": "object",
+            "properties": {
+                "channelId": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string",
+                    "example": "ORD0001"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string",
+                    "example": "SO0001"
+                },
+                "srNo": {
+                    "type": "string",
+                    "example": "SR0001"
+                },
+                "statusCheckId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "trackingNo": {
+                    "type": "string",
+                    "example": "12345678TH"
                 }
             }
         },
