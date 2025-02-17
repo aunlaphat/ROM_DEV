@@ -28,14 +28,14 @@ func handleValidationError(c *gin.Context, err error) {
 	// 🔹 ส่ง Response กลับไปพร้อมรายละเอียด Error
 	handleResponse(c, false, "⚠️ Invalid request body", errorMessages, http.StatusBadRequest)
 }
-
+// review
 // *️⃣ ฟังก์ชันจัดการ Error ทั่วไป
 func handleError(c *gin.Context, err error) {
 	if err == nil {
 		return
 	}
 
-	// 🔹 เช็กว่า error เป็นสเตตัสอื่นที่ไม่ใช่ 500 หรือไม่
+	// 🔹 error สเตตัสอื่นที่ไม่ใช่ 500
 	var appErr *Errors.AppError
 	if errors.As(err, &appErr) {
 		handleResponse(c, false, appErr.Message, nil, appErr.Code)

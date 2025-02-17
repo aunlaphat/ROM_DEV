@@ -14,41 +14,42 @@ type AppError struct {
 func (e *AppError) Error() string {
 	return e.Message
 }
-
+// review
 func NotFoundError(format string, a ...interface{}) error {
 	return &AppError{
 		Code:    http.StatusNotFound,
-		Message: fmt.Sprintf(format, a...), // ✅ ใช้ fmt.Sprintf ภายในฟังก์ชัน
+		Message: fmt.Sprintf(format, a...), 
 	}
 }
+// review
 func UnexpectedError() error {
 	return &AppError{
 		Code:    http.StatusInternalServerError,
 		Message: "unexpected error",
 	}
 }
-
+// review
 func ValidationError(format string, a ...interface{}) error {
 	return &AppError{
 		Code:    http.StatusUnprocessableEntity,
 		Message: fmt.Sprintf(format, a...),
 	}
 }
-
+// review
 func UnauthorizedError(format string, a ...interface{}) error {
 	return &AppError{
 		Code:    http.StatusUnauthorized,
 		Message: fmt.Sprintf(format, a...),
 	}
 }
-
+// review
 func BadRequestError(format string, a ...interface{}) error {
 	return &AppError{
 		Code:    http.StatusBadRequest,
 		Message: fmt.Sprintf(format, a...),
 	}
 }
-
+// review
 func InternalError(format string, a ...interface{}) error {
 	return &AppError{
 		Code:    http.StatusInternalServerError,

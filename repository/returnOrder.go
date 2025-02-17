@@ -107,7 +107,7 @@ func (repo repositoryDB) GetReturnOrderByOrderNo(ctx context.Context, orderNo st
 
 	err = repo.db.GetContext(ctx, &order, query, args...)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) { // เมื่อไม่มีแถวที่ตรงกับเงื่อนไขในคิวรี่
 			return nil, nil 
 		}
 		return nil, fmt.Errorf("[ database error querying ReturnOrder by OrderNo %s: %w ]", orderNo, err)
@@ -295,8 +295,8 @@ func (repo repositoryDB) GetCreateReturnOrder(ctx context.Context, orderNo strin
 				 `
 	err := repo.db.GetContext(ctx, &order, queryHead, sql.Named("OrderNo", orderNo))
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, sql.ErrNoRows
+		if errors.Is(err, sql.ErrNoRows) { // เมื่อไม่มีแถวที่ตรงกับเงื่อนไขในคิวรี่
+			return nil, nil 
 		}
 		return nil, fmt.Errorf("[ database error querying ReturnOrder by OrderNo %s: %w ]", orderNo, err)
 	}
@@ -324,10 +324,10 @@ func (repo repositoryDB) GetUpdateReturnOrder(ctx context.Context, orderNo strin
 			 `
 	err := repo.db.GetContext(ctx, &order, query, sql.Named("OrderNo", orderNo))
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, sql.ErrNoRows
+		if errors.Is(err, sql.ErrNoRows) { // เมื่อไม่มีแถวที่ตรงกับเงื่อนไขในคิวรี่
+			return nil, nil 
 		}
-		return nil, fmt.Errorf("[ database error querying ReturnOrder by OrderNo: %w ]", err)
+		return nil, fmt.Errorf("[ database error querying ReturnOrder by OrderNo %s: %w ]", orderNo, err)
 	}
 
 	return &order, nil
@@ -355,7 +355,7 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 		query := tx.Rebind(namedQuery)
 
 		if err := tx.GetContext(ctx, &current, query, args...); err != nil {
-			if err == sql.ErrNoRows {
+			if errors.Is(err, sql.ErrNoRows) {
 				return fmt.Errorf("[ OrderNo not found: %w ]", err)
 			}
 			return fmt.Errorf("[ failed to fetch current data: %w ]", err)

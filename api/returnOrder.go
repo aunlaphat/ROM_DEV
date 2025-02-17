@@ -1,8 +1,8 @@
 package api
 
 import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
+	"boilerplate-backend-go/dto/request"
+	"boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/middleware"
 	"net/http"
 
@@ -37,7 +37,6 @@ func (app *Application) ReturnOrder(apiRouter *gin.RouterGroup) {
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/get-all [get]
 func (app *Application) GetAllReturnOrder(c *gin.Context) {
-
 	result, err := app.Service.ReturnOrder.GetAllReturnOrder(c.Request.Context())
 	if err != nil {
 		handleError(c, err)
