@@ -1,2 +1,0 @@
-Rec = Record
-Ref = Reference

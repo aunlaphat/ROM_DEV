@@ -29,34 +29,66 @@ type BeforeReturnOrder struct {
 }
 
 type BeforeReturnOrderLine struct {
-	//RecID		  int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
-	OrderNo   string  `json:"orderNo" db:"OrderNo"`
-	SKU       string  `json:"sku" db:"SKU"`
-	ItemName  string  `json:"itemName" db:"ItemName"`
-	QTY       int     `json:"qty" db:"QTY"`
-	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
-	Price     float64 `json:"price" db:"Price"`
-	CreateBy  string  `json:"createBy" db:"CreateBy"`
-	//CreateDate *time.Time `json:"createDate" db:"CreateDate"`
-	UpdateBy *string `json:"updateBy" db:"UpdateBy"`
-	//UpdateDate *time.Time `json:"updateDate" db:"UpdateDate"`
-	TrackingNo *string `json:"trackingNo" db:"TrackingNo"`
-	AlterSKU   *string `json:"alterSKU" db:"AlterSKU"`
+	RecID      int        `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ (PK - Auto Increment)
+	OrderNo    string     `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ (FK -> BeforeReturnOrder)
+	SKU        string     `db:"SKU"`        // รหัสสินค้า
+	ItemName   string     `db:"ItemName"`   // ชื่อสินค้า
+	QTY        int        `db:"QTY"`        // จำนวนสินค้าที่ซื้อ
+	ReturnQTY  int        `db:"ReturnQTY"`  // จำนวนที่ต้องการคืน
+	Price      float64    `db:"Price"`      // ราคาต่อหน่วย
+	CreateBy   string     `db:"CreateBy"`   // ผู้สร้างรายการ
+	CreateDate time.Time  `db:"CreateDate"` // วันที่สร้างรายการ
+	AlterSKU   *string    `db:"AlterSKU"`   // รหัสสินค้าทดแทน (ถ้ามี)
+	UpdateBy   *string    `db:"UpdateBy"`   // ผู้แก้ไขล่าสุด
+	UpdateDate *time.Time `db:"UpdateDate"` // วันที่แก้ไขล่าสุด
+	TrackingNo *string    `db:"TrackingNo"` // เลขพัสดุ (ถ้ามีกรณีส่งสินค้าคนละพัสดุ)
+}
+
+type SearchOrder struct {
+	SoNo    string `json:"soNo" db:"SoNo" form:"soNo"`
+	OrderNo string `json:"orderNo" db:"OrderNo" form:"orderNo"`
+}
+
+type CreateBeforeReturnOrder struct {
+	OrderNo     string                        `json:"orderNo" db:"OrderNo" binding:"required"`
+	SoNo        string                        `json:"soNo" db:"SoNo" binding:"required"`
+	ChannelID   int                           `json:"channelID" db:"ChannelID" binding:"required"`
+	CustomerID  string                        `json:"customerID" db:"CustomerID" binding:"required"`
+	Reason      string                        `json:"reason" db:"Reason" binding:"required"`
+	SoStatus    string                        `json:"soStatus,omitempty" db:"SoStatus"`
+	MkpStatus   string                        `json:"mkpStatus,omitempty" db:"MkpStatus"`
+	WarehouseID int                           `json:"warehouseID" db:"WarehouseID" binding:"required"`
+	ReturnDate  time.Time                     `json:"returnDate" db:"ReturnDate" binding:"required"`
+	TrackingNo  string                        `json:"trackingNo" db:"TrackingNo" binding:"required"`
+	Logistic    string                        `json:"logistic" db:"Logistic" binding:"required"`
+	Items       []CreateBeforeReturnOrderItem `json:"items"`
+}
+
+type CreateBeforeReturnOrderItem struct {
+	OrderNo    string  `json:"orderNo" db:"OrderNo" binding:"required"`
+	SKU        string  `json:"sku" db:"SKU" binding:"required"`
+	ItemName   string  `json:"itemName" db:"ItemName" binding:"required"`
+	QTY        int     `json:"qty" db:"QTY" binding:"required"`
+	ReturnQTY  int     `json:"returnQty" db:"ReturnQTY" binding:"required"`
+	Price      float64 `json:"price" db:"Price" binding:"required"`
+	CreateBy   string  `json:"createBy" db:"CreateBy" binding:"required"`
+	TrackingNo *string `json:"trackingNo,omitempty" db:"TrackingNo"`
+	AlterSKU   *string `json:"alterSKU,omitempty" db:"AlterSKU"`
 }
 
 type UpdateSaleReturn struct {
-	SrNo string `json:"srNo" validate:"required" example:"SR-TEST-123456"`
+	OrderNo string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
+	SrNo    string `json:"srNo" db:"SrNo" example:"SR-TEST-123456"`
 }
 
 type CancelSaleReturn struct {
-	//OrderNo      string `json:"orderNo" db:"OrderNo"`
-	//CancelStatus bool   `json:"cancelStatus" db:"CancelStatus"`
-	Remark string `json:"remark" db:"Remark"`
+	OrderNo string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
+	Remark  string `json:"remark" db:"Remark" example:"cancel order"`
 }
 
 // Draft & Confirm MKP
 
-type CodeR struct {
+type AddCodeR struct {
 	OrderNo   string  `json:"orderNo" db:"OrderNo"`
 	SKU       string  `json:"sku" db:"SKU"`
 	ItemName  string  `json:"itemName" db:"ItemName"`

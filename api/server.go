@@ -10,18 +10,28 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-// Server relate define
 func (app *Application) Serve() error {
+	router := gin.New()
+
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+
+	Routes(router, app)
+
+	serverPort := fmt.Sprintf(":%d", utils.AppConfig.ServerPort)
+
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", utils.AppConfig.ServerPort),
-		Handler:      app.routes(),
+		Addr:         serverPort,
+		Handler:      router,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
-	//Grateful shutdown support
+
 	shutdownError := make(chan error)
 
 	go func() {
@@ -29,14 +39,14 @@ func (app *Application) Serve() error {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		s := <-quit
 
-		app.Logger.Info(fmt.Sprintf("Shutting down server with signal:%s", s.String()))
+		app.Logger.Info(fmt.Sprintf("Shutting down server with signal: %s", s.String()))
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		shutdownError <- srv.Shutdown(ctx)
 	}()
 
-	app.Logger.Info(fmt.Sprintf("Starting server at port :%d", utils.AppConfig.ServerPort))
+	app.Logger.Info(fmt.Sprintf("Starting server at port: %d", utils.AppConfig.ServerPort))
 
 	err := srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
@@ -48,7 +58,7 @@ func (app *Application) Serve() error {
 		return err
 	}
 
-	app.Logger.Info(fmt.Sprintf("stop server at port :%d", utils.AppConfig.ServerPort))
+	app.Logger.Info(fmt.Sprintf("Server stopped at port: %d", utils.AppConfig.ServerPort))
 
 	return nil
 }

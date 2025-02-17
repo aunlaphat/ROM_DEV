@@ -11,49 +11,48 @@ type AppError struct {
 	Message string
 }
 
-func (e AppError) Error() string {
+func (e *AppError) Error() string {
 	return e.Message
 }
 
-func NotFoundError(message string) error {
-	return AppError{
+func NotFoundError(format string, a ...interface{}) error {
+	return &AppError{
 		Code:    http.StatusNotFound,
-		Message: fmt.Sprintf("%v : not found", message),
+		Message: fmt.Sprintf(format, a...), // ✅ ใช้ fmt.Sprintf ภายในฟังก์ชัน
 	}
 }
-
 func UnexpectedError() error {
-	return AppError{
+	return &AppError{
 		Code:    http.StatusInternalServerError,
 		Message: "unexpected error",
 	}
 }
 
-func ValidationError(message string) error {
-	return AppError{
+func ValidationError(format string, a ...interface{}) error {
+	return &AppError{
 		Code:    http.StatusUnprocessableEntity,
-		Message: message,
+		Message: fmt.Sprintf(format, a...),
 	}
 }
 
-func UnauthorizedError(message string) error {
-	return AppError{
+func UnauthorizedError(format string, a ...interface{}) error {
+	return &AppError{
 		Code:    http.StatusUnauthorized,
-		Message: message,
+		Message: fmt.Sprintf(format, a...),
 	}
 }
 
-func BadRequestError(message string) error {
-	return AppError{
+func BadRequestError(format string, a ...interface{}) error {
+	return &AppError{
 		Code:    http.StatusBadRequest,
-		Message: message,
+		Message: fmt.Sprintf(format, a...),
 	}
 }
 
-func InternalError(message string) error {
-	return AppError{
+func InternalError(format string, a ...interface{}) error {
+	return &AppError{
 		Code:    http.StatusInternalServerError,
-		Message: message,
+		Message: fmt.Sprintf(format, a...),
 	}
 }
 
@@ -68,3 +67,60 @@ func ErrorHandler(next http.Handler) http.Handler {
 	})
 }
 
+// อันเก่า
+// func (e AppError) Error() string {
+// 	return e.Message
+// }
+
+// func NotFoundError(message string) error {
+// 	return AppError{
+// 		Code:    http.StatusNotFound,
+// 		Message: fmt.Sprintf("%v not found", message),
+// 	}
+// }
+
+// func UnexpectedError() error {
+// 	return AppError{
+// 		Code:    http.StatusInternalServerError,
+// 		Message: "unexpected error",
+// 	}
+// }
+
+// func ValidationError(message string) error {
+// 	return AppError{
+// 		Code:    http.StatusUnprocessableEntity,
+// 		Message: message,
+// 	}
+// }
+
+// func UnauthorizedError(message string) error {
+// 	return AppError{
+// 		Code:    http.StatusUnauthorized,
+// 		Message: message,
+// 	}
+// }
+
+// func BadRequestError(message string) error {
+// 	return AppError{
+// 		Code:    http.StatusBadRequest,
+// 		Message: message,
+// 	}
+// }
+
+// func InternalError(message string) error {
+// 	return AppError{
+// 		Code:    http.StatusInternalServerError,
+// 		Message: message,
+// 	}
+// }
+
+// func ErrorHandler(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		defer func() {
+// 			if rec := recover(); rec != nil {
+// 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+// 			}
+// 		}()
+// 		next.ServeHTTP(w, r)
+// 	})
+// }

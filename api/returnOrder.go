@@ -1,41 +1,30 @@
 package api
 
-// ตัวกลางของ http request ที่คอยรับส่งข้อมูลไปมา
-// รับมาในรูป request ส่งออกในรูป response
-// ส่งคำขอไปยัง service เพื่อขอให้ดึงข้อมูลที่ต้องการออกมา แต่ service จะทำการ validation ก่อนเพื่อตรวจข้อผิดพลาดก่อนจะดึง query ออกมาจาก repo ให้
-// api handle error about res req send error to client ex. 400 500 401
-// service handle error about business logic/ relation data send error to api
-// ตรวจสอบส่วนหน้า ส่วนที่รับมาจาก client เช่น input ที่ถูกป้อนเข้ามา
 import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
-	"boilerplate-backend-go/utils"
-	"encoding/json"
-	"fmt"
+	"boilerplate-backend-go/middleware"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth"
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-// ReturnOrder => ข้อมูลรับเข้าจากส่วนหน้าคลังทั้งหมด ข้อมูลสินค้าที่ถูกส่งคืนมาทั้งหมด
-func (app *Application) ReturnOrder(apiRouter *chi.Mux) {
-	apiRouter.Route("/return-order", func(r chi.Router) {
-		r.Use(jwtauth.Verifier(app.TokenAuth))
-		r.Use(jwtauth.Authenticator)
+// *️⃣ ReturnOrder => ข้อมูลรับเข้าจากส่วนหน้าคลังทั้งหมด ข้อมูลสินค้าที่ถูกส่งคืนมาทั้งหมด
+func (app *Application) ReturnOrder(apiRouter *gin.RouterGroup) {
+	api := apiRouter.Group("/return-order")
+	api.GET("/get-all", app.GetAllReturnOrder)                      // แสดงข้อมูลรับเข้ารวม
+	api.GET("/get-all/:orderNo", app.GetReturnOrderByOrderNo)       // แสดงข้อมูลรับเข้าด้วย orderNo
+	api.GET("/get-lines", app.GetAllReturnOrderLines)               // แสดงรายการคืนของรวม
+	api.GET("/get-lines/:orderNo", app.GetReturnOrderLineByOrderNo) // แสดงรายการคืนของโดย orderNo
 
-		r.Get("/get-all", app.GetAllReturnOrder) // แสดงข้อมูลรับเข้ารวม                  
-		r.Get("/get-all/{orderNo}", app.GetReturnOrderByOrderNo) // แสดงข้อมูลรับเข้าด้วยโดย orderNo    
-		r.Get("/get-lines", app.GetAllReturnOrderLines)  // แสดงรายการคืนของรวม
-		r.Get("/get-lines/{orderNo}", app.GetReturnOrderLineByOrderNo) // แสดงรายการคืนของโดย orderNo
-		r.Post("/create", app.CreateReturnOrder) // สร้างข้อมูลของที่ถูกส่งคืนมา
-		r.Patch("/update/{orderNo}", app.UpdateReturnOrder)   // อัพเดทข้อมูลของที่ถูกส่งคืน
-		r.Delete("/delete/{orderNo}", app.DeleteReturnOrder)  // ลบ order ที่ทำการคืนมาออกหมด head+line
-	})
+	apiAuth := api.Group("/")
+	apiAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
+	apiAuth.POST("/create", app.CreateReturnOrder)            // สร้างข้อมูลของที่ถูกส่งคืนมา
+	apiAuth.PATCH("/update/:orderNo", app.UpdateReturnOrder)  // อัพเดทข้อมูลของที่ถูกส่งคืน
+	apiAuth.DELETE("/delete/:orderNo", app.DeleteReturnOrder) // ลบ order ที่ทำการคืนมาออกหมด head+line
 }
 
-// review
 // @Summary 	Get Return Order
 // @Description Retrieve the details of Return Order
 // @ID 			GetAll-ReturnOrder
@@ -47,31 +36,17 @@ func (app *Application) ReturnOrder(apiRouter *chi.Mux) {
 // @Failure 	404 {object} Response "Not Found Endpoint"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/get-all [get]
-func (app *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request) {
+func (app *Application) GetAllReturnOrder(c *gin.Context) {
 
-	result, err := app.Service.ReturnOrder.GetAllReturnOrder(r.Context())
+	result, err := app.Service.ReturnOrder.GetAllReturnOrder(c.Request.Context())
 	if err != nil {
-		handleError(w, err)
+		handleError(c, err)
 		return
 	}
 
-	fmt.Printf("\n📋 ========== All Return Orders (%d) ========== 📋\n", len(result))
-	for i, order := range result {
-		fmt.Printf("\n======== Order #%d ========\n", i+1)
-		utils.PrintReturnOrderDetails(&order)
-		for j, line := range order.ReturnOrderLine {
-			fmt.Printf("\n======== Order Line #%d ========\n", j+1)
-			utils.PrintReturnOrderLineDetails(&line)
-		}
-		fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(order.ReturnOrderLine))
-		fmt.Println("=====================================")
-	}
-
-	// ส่งข้อมูลกลับไปยัง Client
-	handleResponse(w, true, "⭐ Get Return Order successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Get Return Order successfully ]", result, http.StatusOK)
 }
 
-// review
 // @Summary      Get Return Order by OrderNo
 // @Description  Get details return order by order no
 // @ID           GetAllByOrderNo-ReturnOrder
@@ -84,28 +59,18 @@ func (app *Application) GetAllReturnOrder(w http.ResponseWriter, r *http.Request
 // @Failure      404      {object} Response "Not Found Endpoint"
 // @Failure      500      {object} Response "Internal Server Error"
 // @Router       /return-order/get-all/{orderNo} [get]
-func (app *Application) GetReturnOrderByOrderNo(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
+func (app *Application) GetReturnOrderByOrderNo(c *gin.Context) {
+	orderNo := c.Param("orderNo")
 
-	result, err := app.Service.ReturnOrder.GetReturnOrderByOrderNo(r.Context(), orderNo)
+	result, err := app.Service.ReturnOrder.GetReturnOrderByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
-		handleError(w, err)
+		handleError(c, err)
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Return Order by OrderNo Details ========== 📋\n\n")
-	utils.PrintReturnOrderDetails(result)
-	for i, line := range result.ReturnOrderLine {
-		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
-		utils.PrintReturnOrderLineDetails(&line)
-	}
-	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.ReturnOrderLine))
-	fmt.Println("=====================================")
-
-	handleResponse(w, true, "⭐ Get Return Order by OrderNo successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Get Return Order by OrderNo successfully ]", result, http.StatusOK)
 }
 
-// review
 // @Summary 	Get Return Order Line
 // @Description Get all Return Order Line
 // @ID 			GetAllLines-ReturnOrderLine
@@ -117,24 +82,16 @@ func (app *Application) GetReturnOrderByOrderNo(w http.ResponseWriter, r *http.R
 // @Failure 	404 {object} Response "Not Found Endpoint"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/get-lines [get]
-func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Request) {
-	result, err := app.Service.ReturnOrder.GetAllReturnOrderLines(r.Context())
+func (app *Application) GetAllReturnOrderLines(c *gin.Context) {
+	result, err := app.Service.ReturnOrder.GetAllReturnOrderLines(c.Request.Context())
 	if err != nil {
-		handleError(w, err)
+		handleError(c, err)
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Return Order Lines (%d) ========== 📋\n", len(result))
-	for i, line := range result {
-		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
-		utils.PrintReturnOrderLineDetails(&line)
-	}
-	fmt.Println("=====================================")
-
-	handleResponse(w, true, "⭐ Get Return Order Lines successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Get Return Order Lines successfully ]", result, http.StatusOK)
 }
 
-// review
 // @Summary      Get Return Order Line by OrderNo
 // @Description  Get details of an order line by its order no
 // @ID           GetLineByOrderNo-ReturnOrder
@@ -147,27 +104,19 @@ func (app *Application) GetAllReturnOrderLines(w http.ResponseWriter, r *http.Re
 // @Failure      404      {object} Response "Not Found Endpoint"
 // @Failure      500      {object} Response "Internal Server Error"
 // @Router       /return-order/get-lines/{orderNo} [get]
-func (app *Application) GetReturnOrderLineByOrderNo(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
+func (app *Application) GetReturnOrderLineByOrderNo(c *gin.Context) {
+	orderNo := c.Param("orderNo")
 
-	result, err := app.Service.ReturnOrder.GetReturnOrderLineByOrderNo(r.Context(), orderNo)
+	result, err := app.Service.ReturnOrder.GetReturnOrderLineByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
-		handleError(w, err)
+		handleError(c, err)
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Return Order Line of OrderNo: %s ========== 📋\n", orderNo)
-	for i, line := range result {
-		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
-		utils.PrintReturnOrderLineDetails(&line)
-	}
-	fmt.Println("=====================================")
-
-	handleResponse(w, true, "⭐ Get Return Order Line by OrderNo successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Get Return Order Line by OrderNo successfully ]", result, http.StatusOK)
 
 }
 
-// review
 // @Summary 	Create Return Order
 // @Description Create a new return order
 // @ID 			Create-ReturnOrder
@@ -180,51 +129,34 @@ func (app *Application) GetReturnOrderLineByOrderNo(w http.ResponseWriter, r *ht
 // @Failure 	400 {object} Response "Bad Request"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/create [post]
-func (app *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request) {
-	// 1. Authentication check
-	_, claims, err := jwtauth.FromContext(r.Context())
-	if err != nil || claims == nil {
-		handleResponse(w, false, "🚷 Unauthorized access", nil, http.StatusUnauthorized)
-		return
-	}
-
-	userID, err := utils.GetUserIDFromClaims(claims)
-	if err != nil {
-		handleResponse(w, false, err.Error(), nil, http.StatusUnauthorized)
-		return
-	}
-
-	// Step 1: Decode JSON Payload เป็นโครงสร้าง CreateReturnOrder
+func (app *Application) CreateReturnOrder(c *gin.Context) {
 	var req request.CreateReturnOrder
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		// พบข้อผิดพลาดในการ Decode ให้ส่งข้อผิดพลาดไปยัง Client
-		handleError(w, errors.BadRequestError("Invalid JSON format"))
+
+	// *️⃣ ดึง Request JSON
+	if err := c.ShouldBindJSON(&req); err != nil {
+		app.Logger.Warn("[ Invalid request payload ]", zap.Error(err))
+		handleValidationError(c, err)
 		return
 	}
 
-	// Set user information from claims
-	req.CreateBy = userID
+	// *️⃣ ดึง userID จาก JWT token
+	userID, exists := c.Get("UserID")
+	if !exists {
+		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
+		handleResponse(c, false, "[ Unauthorized - Missing UserID ]", nil, http.StatusUnauthorized)
+		return
+	}
 
-	result, err := app.Service.ReturnOrder.CreateReturnOrder(r.Context(), req)
+	req.CreateBy = userID.(string)
+	result, err := app.Service.ReturnOrder.CreateReturnOrder(c.Request.Context(), req)
 	if err != nil {
-		handleError(w, err)
+		handleError(c, err)
 		return
 	}
 
-	fmt.Printf("\n📋 ========== Created Return Order ========== 📋\n\n")
-	utils.PrintCreateReturnOrder(result)
-	fmt.Printf("\n📋 ========== Return Order Line Details ========== 📋\n")
-	for i, line := range result.ReturnOrderLine {
-		fmt.Printf("\n======== Order Line #%d ========\n", i+1)
-		utils.PrintReturnOrderLineDetails(&line)
-	}
-	fmt.Printf("\n✳️  Total lines: %d ✳️\n", len(result.ReturnOrderLine))
-	fmt.Println("=====================================")
-
-	handleResponse(w, true, "⭐ Created successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Created successfully ]", result, http.StatusOK)
 }
 
-// review
 // @Summary Update Return Order
 // @Description Update an existing return order using orderNo in the path
 // @ID Update-ReturnOrder
@@ -238,46 +170,42 @@ func (app *Application) CreateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Failure 404 {object} Response "Order Not Found"
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /return-order/update/{orderNo} [patch]
-func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
-
-	// Decode JSON Payload เป็นโครงสร้าง UpdateReturnOrder
+func (app *Application) UpdateReturnOrder(c *gin.Context) {
+	orderNo := c.Param("orderNo")
 	var req request.UpdateReturnOrder
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleError(w, errors.BadRequestError("Invalid JSON format"))
+
+	// *️⃣ ดึง Request JSON
+	if err := c.ShouldBindJSON(&req); err != nil {
+		app.Logger.Warn("[ Invalid request payload ]", zap.Error(err))
+		handleValidationError(c, err)
 		return
 	}
 
-	// Set OrderNo ที่ได้จาก URL ลงในโครงสร้างข้อมูล
+	// *️⃣ ดึง userID จาก JWT token
+	userID, exists := c.Get("UserID")
+	if !exists {
+		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
+		handleResponse(c, false, "[ Unauthorized - Missing UserID ]", nil, http.StatusUnauthorized)
+		return
+	}
+
 	req.OrderNo = orderNo
 
-	// ดึง userID จาก JWT token
-	_, claims, err := jwtauth.FromContext(r.Context())
-	if err != nil || claims == nil {
-		handleError(w, fmt.Errorf("unauthorized: missing or invalid token"))
-		return
+	// *️⃣ ตรวจสอบ nil ก่อนใช้ UpdateBy
+	if req.UpdateBy == nil {
+		req.UpdateBy = new(string)
 	}
+	*req.UpdateBy = userID.(string)
 
-	userID, err := utils.GetUserIDFromClaims(claims)
+	result, err := app.Service.ReturnOrder.UpdateReturnOrder(c.Request.Context(), req)
 	if err != nil {
-		handleError(w, err)
+		handleError(c, err)
 		return
 	}
 
-	result, err := app.Service.ReturnOrder.UpdateReturnOrder(r.Context(), req, userID)
-	if err != nil {
-		handleError(w, err)
-		return
-	}
-
-	fmt.Printf("\n📋 ========== Updated Order ========== 📋\n")
-	utils.PrintUpdateReturnOrder(result)
-	fmt.Println("=====================================")
-
-	handleResponse(w, true, "⭐ Updated successfully ⭐", result, http.StatusOK)
+	handleResponse(c, true, "[ Updated successfully ]", result, http.StatusOK)
 }
 
-// review
 // @Summary 	Delete Order
 // @Description Delete an order
 // @ID 			delete-ReturnOrder
@@ -291,18 +219,18 @@ func (app *Application) UpdateReturnOrder(w http.ResponseWriter, r *http.Request
 // @Failure 	404 {object} Response "Order Not Found"
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/delete/{orderNo} [delete]
-func (app *Application) DeleteReturnOrder(w http.ResponseWriter, r *http.Request) {
-	orderNo := chi.URLParam(r, "orderNo")
+func (app *Application) DeleteReturnOrder(c *gin.Context) {
+	orderNo := c.Param("orderNo")
 
-	err := app.Service.ReturnOrder.DeleteReturnOrder(r.Context(), orderNo)
+	err := app.Service.ReturnOrder.DeleteReturnOrder(c.Request.Context(), orderNo)
 	if err != nil {
-		handleError(w, err)
+		handleError(c, err)
 		return
 	}
 
-	response := response.DeleteReturnOrder{
+	result := response.DeleteReturnOrder{
 		OrderNo: orderNo,
 	}
 
-	handleResponse(w, true, "⭐ Deleted successfully ⭐", response, http.StatusOK)
+	handleResponse(c, true, "[ Deleted successfully ]", result, http.StatusOK)
 }
