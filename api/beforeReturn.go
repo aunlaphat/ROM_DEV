@@ -21,11 +21,11 @@ func (app *Application) BeforeReturnRoute(apiRouter *gin.RouterGroup) {
 	api := apiRouter.Group("/before-return-order")
 		// get real order
 		api.GET("/get-orders", app.GetAllOrderDetails) // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
-		api.GET("/get-orderbySO/{soNo}", app.GetOrderDetailBySO) // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO
+		api.GET("/get-orderbySO/:soNo", app.GetOrderDetailBySO) // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO
 	
 	apiAuth := api.Group("/")
 		apiAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
-		apiAuth.DELETE("/delete-line/{orderNo}/{sku}", app.DeleteBeforeReturnOrderLine) // ลบรายการคืนแต่ละรายการ
+		apiAuth.DELETE("/delete-line/:orderNo/:sku", app.DeleteBeforeReturnOrderLine) // ลบรายการคืนแต่ละรายการ
 	/*
 	apiRouter.Route("/before-return-order", func(r chi.Router) {
 		r.Get("/list-orders", app.ListBeforeReturnOrders)
@@ -903,7 +903,7 @@ func (app *Application) UpdateDraftOrder(c *gin.Context) {
 // @Accept 		json
 // @Produce 	json
 // @Param       page  query int false "Page number" default(1)
-// @Param       limit query int false "Page size" default(10)
+// @Param       limit query int false "Page size" default(4)
 // @Success 	200 {object} Response{result=[]response.OrderDetail} "Get Paginated Orders"
 // @Failure 	400 {object} Response "Bad Request"
 // @Failure 	404 {object} Response "Not Found"
@@ -911,7 +911,7 @@ func (app *Application) UpdateDraftOrder(c *gin.Context) {
 // @Router 		/before-return-order/get-orders [get]
 func (app *Application) GetAllOrderDetails(c *gin.Context) {
 
-	page, limit := utils.ParsePagination(c)
+	page, limit := utils.ParsePagination(c.Request)
 
 	result, err := app.Service.BeforeReturn.GetAllOrderDetails(c.Request.Context(), page, limit)
 	if err != nil {

@@ -18,7 +18,7 @@ type Constants interface {
 	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)
 	GetProduct(ctx context.Context, page, limit int) ([]entity.ROM_V_ProductAll, error)
 	//GetCustomer(ctx context.Context) ([]entity.ROM_V_Customer, error)
-    SearchProduct(ctx context.Context, keyword string, limit int) ([]entity.ROM_V_ProductAll, error)
+    SearchProduct(ctx context.Context, keyword string) ([]entity.ROM_V_ProductAll, error)
 }
 
 func (srv service) GetThaiProvince(ctx context.Context) ([]entity.Province, error) {
@@ -115,8 +115,14 @@ func (srv service) GetProduct(ctx context.Context, page, limit int) ([]entity.RO
 // 	return getCustomer, nil
 // }
 
-func (srv service) SearchProduct(ctx context.Context, keyword string, limit int) ([]entity.ROM_V_ProductAll, error) {
-	getProducts, err := srv.constant.SearchProduct(ctx, keyword, limit)
+func (srv service) SearchProduct(ctx context.Context, keyword string) ([]entity.ROM_V_ProductAll, error) {
+    
+	if keyword == "" {
+        srv.logger.Warn("[ keyword is required ]")
+		return nil, errors.ValidationError("[ keyword is required ]")
+	}
+
+    getProducts, err := srv.constant.SearchProduct(ctx, keyword)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			srv.logger.Warn("[  data not found ]", zap.Error(err))

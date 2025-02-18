@@ -652,6 +652,48 @@ definitions:
       sku:
         type: string
     type: object
+  response.OrderDetail:
+    properties:
+      OrderHeadDetail:
+        description: json => OrderHeadDetail[ OrderLineDetail[ {},{},..] ]
+        items:
+          $ref: '#/definitions/response.OrderHeadDetail'
+        type: array
+    type: object
+  response.OrderHeadDetail:
+    properties:
+      OrderLineDetail:
+        items:
+          $ref: '#/definitions/response.OrderLineDetail'
+        type: array
+      orderNo:
+        description: เลขที่ใบสั่งซื้อ
+        type: string
+      salesStatus:
+        description: สถานะการขาย
+        type: string
+      soNo:
+        description: เลขที่ใบสั่งขาย
+        type: string
+      statusMKP:
+        description: สถานะในตลาด
+        type: string
+    type: object
+  response.OrderLineDetail:
+    properties:
+      itemName:
+        description: ชื่อสินค้า
+        type: string
+      price:
+        description: ราคาต่อหน่วย
+        type: number
+      qty:
+        description: จำนวนสินค้า
+        type: integer
+      sku:
+        description: รหัสสินค้า
+        type: string
+    type: object
   response.ReturnOrder:
     properties:
       ReturnOrderLine:
@@ -952,6 +994,137 @@ paths:
       summary: User Logout
       tags:
       - Authentication
+  /before-return-order/delete-line/{orderNo}/{sku}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an order line
+      operationId: delete-BeforeReturnOrderLine
+      parameters:
+      - description: Order No
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: SKU
+        in: path
+        name: sku
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Before ReturnOrderLine Deleted
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  type: string
+              type: object
+        "404":
+          description: Order Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "422":
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Delete Order line
+      tags:
+      - Before Return Order
+  /before-return-order/get-orderbySO/{soNo}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of an order by its SO number
+      operationId: GetBySO-BefReturnOrder
+      parameters:
+      - description: soNo
+        in: path
+        name: soNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get by SO
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.OrderDetail'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Before Return Order by SO
+      tags:
+      - Before Return Order
+  /before-return-order/get-orders:
+    get:
+      consumes:
+      - application/json
+      description: Get all Before Return Order with pagination
+      operationId: Get-BefReturnOrder-Paginated
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 4
+        description: Page size
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get Paginated Orders
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.OrderDetail'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Paginated Before Return Order
+      tags:
+      - Before Return Order
   /constants/get-district:
     get:
       consumes:
@@ -993,6 +1166,19 @@ paths:
       - application/json
       description: Get paginated products
       operationId: get-productAll-paginated
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 4
+        description: Limit per page
+        in: query
+        name: limit
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -1123,6 +1309,43 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get Warehouse
+      tags:
+      - Constants
+  /constants/search-product:
+    get:
+      consumes:
+      - application/json
+      description: Search for products by name or SKU with a limit
+      operationId: search-product
+      parameters:
+      - description: Search keyword
+        in: query
+        name: keyword
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search Results
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ROM_V_ProductAll'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search Product by Keyword
       tags:
       - Constants
   /import-order/confirm-receipt/{identifier}:

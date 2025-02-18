@@ -12,9 +12,9 @@ type Constants interface {
 	GetThaiSubDistrict(ctx context.Context) ([]entity.SubDistrict, error) // ตำบล
 	// GetPostCode(ctx context.Context) ([]entity.PostCode, error) // เลขไปรษณีย์
 	GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) // รายการสินค้าแบบแบ่งรายการ
-	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)                                            // ชื่อคลังสินค้า
+	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)                         // ชื่อคลังสินค้า
 	// GetCustomer(ctx context.Context) ([]entity.ROM_V_Customer, error) // ข้อมูลลูกค้า
-	SearchProduct(ctx context.Context, keyword string, limit int) ([]entity.ROM_V_ProductAll, error)
+	SearchProduct(ctx context.Context, keyword string) ([]entity.ROM_V_ProductAll, error)
 }
 
 func (repo repositoryDB) GetThaiProvince(ctx context.Context) ([]entity.Province, error) {
@@ -131,7 +131,6 @@ func (repo repositoryDB) GetThaiSubDistrict(ctx context.Context) ([]entity.SubDi
 // 	return postCodes, nil
 // }
 
-
 func (repo repositoryDB) GetWarehouse(ctx context.Context) ([]entity.Warehouse, error) {
 	warehouses := []entity.Warehouse{}
 
@@ -198,27 +197,53 @@ func (repo repositoryDB) GetProduct(ctx context.Context, offset, limit int) ([]e
 
 // func (repo repositoryDB) GetCustomer(ctx context.Context) ([]entity.SubDistrict, error) {
 
-
 // }
 
-func (repo repositoryDB) SearchProduct(ctx context.Context, keyword string, limit int) ([]entity.ROM_V_ProductAll, error) {
-	query := `SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
-			  FROM Data_WebReturn.dbo.ROM_V_ProductAll
-			  WHERE NAMEALIAS LIKE @keyword OR SKU LIKE @keyword
-			  ORDER BY SKU
-			  FETCH NEXT @limit ROWS ONLY;`
-
+func (repo repositoryDB) SearchProduct(ctx context.Context, keyword string) ([]entity.ROM_V_ProductAll, error) {
+	// *️⃣ จำนวนข้อมูลที่ต้องการดึงในแต่ละ batch
+	const chunkSize = 1000
 	var products []entity.ROM_V_ProductAll
+	offset := 0
 
-	// Execute Query
-	err := repo.db.SelectContext(ctx, &products, query, map[string]interface{}{
-		"keyword": "%" + keyword + "%", // ใช้ LIKE สำหรับค้นหา
-		"limit":   limit,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch data: %w", err)
+	// ✅ เพิ่ม `%` เข้าไปใน Go ก่อนใช้กับ SQL
+	searchParam := "%" + keyword + "%"
+
+	for {
+		query := `SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
+				  FROM Data_WebReturn.dbo.ROM_V_ProductAll
+				  WHERE NAMEALIAS LIKE :Keyword 
+				     OR SKU LIKE :Keyword
+				  ORDER BY SKU
+				  OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY;`
+
+		var productBatch []entity.ROM_V_ProductAll
+		nstmt, err := repo.db.PrepareNamed(query)
+		if err != nil {
+			return nil, fmt.Errorf("failed to prepare statement: %w", err)
+		}
+		defer nstmt.Close()
+
+		// *️⃣ ดึงข้อมูลจาก View ในแต่ละ batch
+		err = nstmt.SelectContext(ctx, &productBatch, map[string]interface{}{
+			"Keyword": searchParam,
+			"Limit":   chunkSize,
+			"Offset":  offset,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch product data: %w", err)
+		}
+
+		// *️⃣ ถ้าไม่มีข้อมูลให้หยุดการดึงข้อมูล
+		if len(productBatch) == 0 {
+			break
+		}
+
+		// *️⃣ เพิ่ม batch เข้าไปในผลลัพธ์
+		products = append(products, productBatch...)
+
+		// *️⃣ เพิ่ม offset เพื่อดึง batch ถัดไป
+		offset += chunkSize
 	}
 
 	return products, nil
 }
-
