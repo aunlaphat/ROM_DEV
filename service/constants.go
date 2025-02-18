@@ -18,7 +18,7 @@ type Constants interface {
 	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)
 	GetProduct(ctx context.Context, page, limit int) ([]entity.ROM_V_ProductAll, error)
 	//GetCustomer(ctx context.Context) ([]entity.ROM_V_Customer, error)
-
+    SearchProduct(ctx context.Context, keyword string, limit int) ([]entity.ROM_V_ProductAll, error)
 }
 
 func (srv service) GetThaiProvince(ctx context.Context) ([]entity.Province, error) {
@@ -89,12 +89,17 @@ func (srv service) GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)
 func (srv service) GetProduct(ctx context.Context, page, limit int) ([]entity.ROM_V_ProductAll, error) {
     offset := (page - 1) * limit
 
-    products, err := srv.constant.GetProduct(ctx, offset, limit)
+    getProducts, err := srv.constant.GetProduct(ctx, offset, limit)
     if err != nil {
-        return nil, err
+        if err == sql.ErrNoRows {
+            srv.logger.Warn("[  data not found ]", zap.Error(err))
+            return nil, errors.ValidationError("[ no product data: %v ]", err)
+        }
+        srv.logger.Error("[  get product error ]", zap.Error(err))
+        return nil, errors.InternalError("[ get product error: %v ]", err)
     }
 
-    return products, nil
+    return getProducts, nil
 }
 
 // func (srv service) GetCustomer(ctx context.Context) ([]entity.ROM_V_Customer, error) {
@@ -109,3 +114,17 @@ func (srv service) GetProduct(ctx context.Context, page, limit int) ([]entity.RO
 // 	}
 // 	return getCustomer, nil
 // }
+
+func (srv service) SearchProduct(ctx context.Context, keyword string, limit int) ([]entity.ROM_V_ProductAll, error) {
+	getProducts, err := srv.constant.SearchProduct(ctx, keyword, limit)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			srv.logger.Warn("[  data not found ]", zap.Error(err))
+			return nil, errors.ValidationError("[ no product data: %v ]", err)
+		}
+		srv.logger.Error("[  search product error ]", zap.Error(err))
+		return nil, errors.InternalError("[ search product error: %v ]", err)
+	}
+
+	return getProducts, nil
+}

@@ -316,18 +316,6 @@ func (srv service) GetAllOrderDetails(ctx context.Context, page, limit int) ([]r
 		srv.logger.Error("[ Failed to fetch order ]", zap.Error(err))
 		return nil, errors.InternalError("[ Failed to fetch order: %v ]", err)
 	}
-	// if err != nil {
-	// 	switch err {
-	// 	case sql.ErrNoRows:
-
-	// 		srv.logger.Error("[ no order data: %w", zap.Error(err))
-	// 		return nil, fmt.Errorf("[ no order data: %w", err)
-	// 	default:
-
-	// 		srv.logger.Error("[ get order error: %w", zap.Error(err))
-	// 		return nil, fmt.Errorf("[ get order error: %w", err)
-	// 	}
-	// }
 
 	srv.logger.Info("[ Successfully fetched Order Details ]", zap.Int("Total amount of data", len(allorder)))
 	return allorder, nil

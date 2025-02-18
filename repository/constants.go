@@ -14,7 +14,7 @@ type Constants interface {
 	GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) // รายการสินค้าแบบแบ่งรายการ
 	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)                                            // ชื่อคลังสินค้า
 	// GetCustomer(ctx context.Context) ([]entity.ROM_V_Customer, error) // ข้อมูลลูกค้า
-	// GetTax(ctx context.Context) ([]entity.ROM_V_Tax, error) // ข้อมูลภาษีลูกค้า
+	SearchProduct(ctx context.Context, keyword string, limit int) ([]entity.ROM_V_ProductAll, error)
 }
 
 func (repo repositoryDB) GetThaiProvince(ctx context.Context) ([]entity.Province, error) {
@@ -200,3 +200,25 @@ func (repo repositoryDB) GetProduct(ctx context.Context, offset, limit int) ([]e
 
 
 // }
+
+func (repo repositoryDB) SearchProduct(ctx context.Context, keyword string, limit int) ([]entity.ROM_V_ProductAll, error) {
+	query := `SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
+			  FROM Data_WebReturn.dbo.ROM_V_ProductAll
+			  WHERE NAMEALIAS LIKE @keyword OR SKU LIKE @keyword
+			  ORDER BY SKU
+			  FETCH NEXT @limit ROWS ONLY;`
+
+	var products []entity.ROM_V_ProductAll
+
+	// Execute Query
+	err := repo.db.SelectContext(ctx, &products, query, map[string]interface{}{
+		"keyword": "%" + keyword + "%", // ใช้ LIKE สำหรับค้นหา
+		"limit":   limit,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch data: %w", err)
+	}
+
+	return products, nil
+}
+

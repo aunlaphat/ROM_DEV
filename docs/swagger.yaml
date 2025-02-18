@@ -993,19 +993,6 @@ paths:
       - application/json
       description: Get paginated products
       operationId: get-productAll-paginated
-      parameters:
-      - default: 1
-        description: Page number
-        in: query
-        name: page
-        required: true
-        type: integer
-      - default: 10
-        description: Limit per page
-        in: query
-        name: limit
-        required: true
-        type: integer
       produces:
       - application/json
       responses:

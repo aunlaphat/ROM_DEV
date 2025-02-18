@@ -218,24 +218,6 @@ const docTemplate = `{
                 ],
                 "summary": "Get ProductAll with Pagination",
                 "operationId": "get-productAll-paginated",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "default": 10,
-                        "description": "Limit per page",
-                        "name": "limit",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Paginated Product List",

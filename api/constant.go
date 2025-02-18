@@ -18,6 +18,7 @@ func (app *Application) Constants(apiRouter *gin.RouterGroup) {
 		api.GET("/get-warehouse", app.GetWarehouse)
 		api.GET("/get-product", app.GetProduct)
 		//api.GET("/get-customer", app.GetCustomer) // รอพี่ไบรท์ดึงข้อมูล
+		api.GET("/search-product", app.SearchProduct)
 
 }
 
@@ -136,7 +137,7 @@ func (app *Application) GetWarehouse(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param page query int true "Page number" default(1)
-// @Param limit query int true "Limit per page" default(10)
+// @Param limit query int true "Limit per page" default(4)
 // @Success 200 {object} Response{result=[]entity.ROM_V_ProductAll, total=int} "Paginated Product List"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal Server Error"
@@ -174,3 +175,31 @@ func (app *Application) GetProduct(c *gin.Context) {
 // 		handleResponse(c, true, "[ Get Customer successfully ]", result, http.StatusOK)
 
 // }
+
+// @Summary Search Product by Keyword
+// @Description Search for products by name or SKU with a limit
+// @ID search-product
+// @Tags Constants
+// @Accept json
+// @Produce json
+// @Param keyword query string true "Search keyword"
+// @Param limit query int true "Limit per page" default(10)
+// @Success 200 {object} Response{result=[]entity.ROM_V_ProductAll} "Search Results"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 500 {object} Response "Internal Server Error"
+// @Router /constants/search-product [get]
+func (app *Application) SearchProduct(c *gin.Context) {
+	keyword := c.Query("keyword")
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // Default limit
+	}
+
+	result, err := app.Service.Constant.SearchProduct(c.Request.Context(), keyword, limit)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	handleResponse(c, true, "[ Search Product successfully ]", result, http.StatusOK)
+}
