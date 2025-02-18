@@ -2,23 +2,83 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
+	"boilerplate-backend-go/dto/request"
 	"boilerplate-backend-go/entity"
 	"boilerplate-backend-go/errors"
 )
 
 type UserRepository interface {
+	Login(ctx context.Context, userName string) (entity.ROM_V_UserDetail, error)
+	LoginLark(ctx context.Context, userID, userName string) (entity.ROM_V_UserDetail, error)
 	GetUser(ctx context.Context, userID string) (entity.ROM_V_UserDetail, error)
-	GetUsers(ctx context.Context, isActive *bool, limit, offset int) ([]entity.ROM_V_UserDetail, error)
+	GetUsers(ctx context.Context, isActive bool, limit, offset int) ([]entity.ROM_V_UserDetail, error)
+	CheckUserExistsInERP(ctx context.Context, userID string) (bool, error)
 	CheckUserExists(ctx context.Context, userID string) (bool, error)
-	AddUser(ctx context.Context, userID string, roleID int, warehouseID string, adminID string) error
-	EditUser(ctx context.Context, userID string, newRoleID int, adminID string) error
+	AddUser(ctx context.Context, req request.AddUserRequest, adminID string) error
+	EditUser(ctx context.Context, req request.EditUserRequest, adminID string) error
 	DeleteUser(ctx context.Context, userID, adminID string) error
-	GetCurrentPassword(ctx context.Context, userID string) (string, error)
-	UpdateUserPassword(ctx context.Context, userID, hashedPassword, adminID string) error
+	GetCurrentPassword(ctx context.Context, userName string) (string, error)
+	//UpdateUserPassword(ctx context.Context, req request.ResetPasswordRequest, adminID string) error
 }
 
-// ✅ 1️⃣ GetUser - ดึงข้อมูลผู้ใช้จาก View `ROM_V_UserDetail`
+// ✅ **1️⃣ Login - ตรวจสอบข้อมูล User**
+func (repo repositoryDB) Login(ctx context.Context, userName string) (entity.ROM_V_UserDetail, error) {
+	var user entity.ROM_V_UserDetail
+	query := `
+        SELECT UserID, Password, UserName, NickName, FullNameTH, DepartmentNo, RoleID
+        FROM ROM_V_UserDetail
+        WHERE UserName = :userName
+    `
+	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{
+		"userName": userName,
+	})
+	if err != nil {
+		return entity.ROM_V_UserDetail{}, fmt.Errorf("failed to execute login query: %w", err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.StructScan(&user)
+		if err != nil {
+			return entity.ROM_V_UserDetail{}, fmt.Errorf("failed to scan user: %w", err)
+		}
+		return user, nil
+	}
+	return entity.ROM_V_UserDetail{}, errors.NotFoundError("user not found")
+}
+
+func (repo repositoryDB) LoginLark(ctx context.Context, userID, userName string) (entity.ROM_V_UserDetail, error) {
+	var user entity.ROM_V_UserDetail
+	query := `
+        SELECT UserID, Password, UserName, NickName, FullNameTH, DepartmentNo, RoleID
+        FROM ROM_V_UserDetail
+        WHERE UserID = :userID AND UserName = :userName
+    `
+	params := map[string]interface{}{
+		"userID":   userID,
+		"userName": userName,
+	}
+
+	rows, err := repo.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
+		return entity.ROM_V_UserDetail{}, fmt.Errorf("failed to get user from Lark: %w", err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.StructScan(&user)
+		if err != nil {
+			return entity.ROM_V_UserDetail{}, fmt.Errorf("failed to scan user from Lark: %w", err)
+		}
+		return user, nil
+	}
+
+	return entity.ROM_V_UserDetail{}, fmt.Errorf("user not found in Lark")
+}
+
+// ✅ **2️⃣ GetUser - ดึงข้อมูลผู้ใช้จาก View**
 func (repo repositoryDB) GetUser(ctx context.Context, userID string) (entity.ROM_V_UserDetail, error) {
 	var user entity.ROM_V_UserDetail
 	query := `
@@ -26,21 +86,34 @@ func (repo repositoryDB) GetUser(ctx context.Context, userID string) (entity.ROM
         FROM ROM_V_UserDetail
         WHERE UserID = :userID
     `
+
 	params := map[string]interface{}{"userID": userID}
 
-	err := repo.db.GetContext(ctx, &user, query, params)
+	rows, err := repo.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return entity.ROM_V_UserDetail{}, errors.NotFoundError("user not found")
+		return entity.ROM_V_UserDetail{}, fmt.Errorf("query failed: %w", err)
 	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.StructScan(&user)
+		if err != nil {
+			return entity.ROM_V_UserDetail{}, fmt.Errorf("failed to scan user: %w", err)
+		}
+	} else {
+		return entity.ROM_V_UserDetail{}, errors.NotFoundError("user not found in database")
+	}
+
 	return user, nil
 }
 
-// ✅ 2️⃣ GetUsers - ดึงรายชื่อผู้ใช้ทั้งหมด พร้อมฟิลเตอร์ `isActive`
-func (repo repositoryDB) GetUsers(ctx context.Context, isActive *bool, limit, offset int) ([]entity.ROM_V_UserDetail, error) {
+// ✅ **3️⃣ GetUsers - ดึงรายชื่อผู้ใช้ทั้งหมด**
+func (repo repositoryDB) GetUsers(ctx context.Context, isActive bool, limit, offset int) ([]entity.ROM_V_UserDetail, error) {
+	var users []entity.ROM_V_UserDetail
 	query := `
 		SELECT UserID, UserName, NickName, FullNameTH, DepartmentNo, RoleID, RoleName, Description, IsActive
 		FROM ROM_V_UserDetail
-		WHERE (:isActive IS NULL OR IsActive = :isActive)
+		WHERE IsActive = :isActive
 		ORDER BY UserID
 		OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
 	`
@@ -50,81 +123,197 @@ func (repo repositoryDB) GetUsers(ctx context.Context, isActive *bool, limit, of
 		"offset":   offset,
 	}
 
-	var users []entity.ROM_V_UserDetail
-	err := repo.db.SelectContext(ctx, &users, query, params)
+	rows, err := repo.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch users: %w", err)
 	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var user entity.ROM_V_UserDetail
+		if err := rows.StructScan(&user); err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+		users = append(users, user)
+	}
+
 	return users, nil
 }
 
-// ✅ 3️⃣ CheckUserExists - ตรวจสอบว่าผู้ใช้มีอยู่หรือไม่
-func (repo repositoryDB) CheckUserExists(ctx context.Context, userID string) (bool, error) {
-	var exists bool
-	query := `SELECT COUNT(1) FROM ROM_V_User WHERE UserID = :userID`
-	params := map[string]interface{}{"userID": userID}
-
-	err := repo.db.GetContext(ctx, &exists, query, params)
+// ✅ **4️⃣ CheckUserExists - ตรวจสอบว่าผู้ใช้มีอยู่หรือไม่**
+// 🔍 ตรวจสอบว่าผู้ใช้มีอยู่ใน ERP หรือไม่
+func (repo repositoryDB) CheckUserExistsInERP(ctx context.Context, userID string) (bool, error) {
+	query := `SELECT COUNT(1) AS Count FROM ROM_V_User WHERE UserID = :userID`
+	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{"userID": userID})
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to execute query: %w", err)
 	}
-	return exists, nil
+	defer rows.Close()
+
+	var count int
+	if rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return false, fmt.Errorf("failed to scan count: %w", err)
+		}
+	}
+
+	return count > 0, nil
 }
 
-// ✅ 4️⃣ AddUser - เพิ่มผู้ใช้ใหม่ (กำหนด Role)
-func (repo repositoryDB) AddUser(ctx context.Context, user entity.UserRole, adminID string) error {
-	query := `
-		INSERT INTO UserRole (UserID, RoleID, CreatedBy, CreatedAt)
-		VALUES (:userID, :roleID, :adminID, GETDATE())
+// 🔍 ตรวจสอบว่าผู้ใช้มีอยู่ในระบบเว็บของเราหรือไม่
+func (repo repositoryDB) CheckUserExists(ctx context.Context, userID string) (bool, error) {
+	query := `SELECT COUNT(1) AS Count FROM UserRole WHERE UserID = :userID`
+
+	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{"userID": userID})
+	if err != nil {
+		return false, fmt.Errorf("failed to execute query: %w", err)
+	}
+	defer rows.Close()
+
+	var count int
+	if rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return false, fmt.Errorf("failed to scan count: %w", err)
+		}
+	}
+
+	return count > 0, nil
+}
+
+// ✅ **5️⃣ AddUser - เพิ่มผู้ใช้ใหม่**
+func (repo repositoryDB) AddUser(ctx context.Context, req request.AddUserRequest, adminID string) error {
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		} else if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 🔹 Step 1: Insert into UserRole
+	queryUserRole := `
+		INSERT INTO UserRole (UserID, RoleID, WarehouseID, CreatedBy, CreatedAt)
+		VALUES (:userID, :roleID, :warehouseID, :createdBy, GETDATE())
 	`
-	params := map[string]interface{}{
-		"userID":  user.UserID,
-		"roleID":  user.RoleID,
-		"adminID": adminID,
+	_, err = tx.NamedExecContext(ctx, queryUserRole, map[string]interface{}{
+		"userID":      req.UserID,
+		"roleID":      req.RoleID,
+		"warehouseID": req.WarehouseID,
+		"createdBy":   adminID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to insert into UserRole: %w", err)
 	}
 
-	_, err := repo.db.NamedExecContext(ctx, query, params)
-	return err
-}
-
-// ✅ 5️⃣ EditUser - อัปเดตข้อมูล Role ของผู้ใช้
-func (repo repositoryDB) EditUser(ctx context.Context, userID string, updatedUser entity.UserRole, adminID string) error {
-	query := `
-		UPDATE UserRole
-		SET RoleID = :roleID, UpdatedBy = :adminID, UpdatedAt = GETDATE()
-		WHERE UserID = :userID
+	// 🔹 Step 2: Insert into UserStatus (Default: Active)
+	queryUserStatus := `
+		INSERT INTO UserStatus (UserID, IsActive, CreatedBy, CreatedAt)
+		VALUES (:userID, 1, :createdBy, GETDATE())
 	`
-	params := map[string]interface{}{
-		"userID":  userID,
-		"roleID":  updatedUser.RoleID,
-		"adminID": adminID,
+	_, err = tx.NamedExecContext(ctx, queryUserStatus, map[string]interface{}{
+		"userID":    req.UserID,
+		"createdBy": adminID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to insert into UserStatus: %w", err)
 	}
 
-	_, err := repo.db.NamedExecContext(ctx, query, params)
-	return err
+	// 🔹 Step 3: Commit transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
-// ✅ 6️⃣ DeleteUser - ปรับ `IsActive = 0` (Soft Delete)
+// ✅ **6️⃣ EditUser - แก้ไข Role และ Warehouse ของผู้ใช้**
+func (repo repositoryDB) EditUser(ctx context.Context, req request.EditUserRequest, adminID string) error {
+	tx, err := repo.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		} else if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 🟢 **Step 1: ตรวจสอบว่าผู้ใช้มีอยู่ในระบบ**
+	exists, err := repo.CheckUserExists(ctx, req.UserID)
+	if err != nil {
+		return fmt.Errorf("failed to check user existence: %w", err)
+	}
+	if !exists {
+		return errors.NotFoundError("user not found")
+	}
+
+	// 🟢 **Step 2: สร้าง Dynamic Query เฉพาะค่าที่ถูกส่งมา**
+	query := `UPDATE UserRole SET UpdatedBy = :updatedBy, UpdatedAt = GETDATE()`
+	params := map[string]interface{}{
+		"userID":    req.UserID,
+		"updatedBy": adminID,
+	}
+
+	if req.RoleID != nil {
+		query += `, RoleID = :roleID`
+		params["roleID"] = *req.RoleID
+	}
+
+	if req.WarehouseID != nil {
+		query += `, WarehouseID = :warehouseID`
+		params["warehouseID"] = *req.WarehouseID
+	}
+
+	query += ` WHERE UserID = :userID`
+
+	// 🟢 **Step 3: Execute SQL**
+	_, err = tx.NamedExecContext(ctx, query, params)
+	if err != nil {
+		return fmt.Errorf("failed to update UserRole: %w", err)
+	}
+
+	// 🟢 **Step 4: Commit transaction**
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// ✅ **7️⃣ DeleteUser - ปิดการใช้งานบัญชี (Soft Delete)**
 func (repo repositoryDB) DeleteUser(ctx context.Context, userID, adminID string) error {
 	query := `
 		UPDATE UserStatus
-		SET IsActive = 0, UpdatedBy = :adminID, UpdatedAt = GETDATE()
+		SET IsActive = 0, UpdatedBy = :updatedBy, UpdatedAt = GETDATE()
 		WHERE UserID = :userID
 	`
 	params := map[string]interface{}{
-		"userID":  userID,
-		"adminID": adminID,
+		"userID":    userID,
+		"updatedBy": adminID,
 	}
 
 	_, err := repo.db.NamedExecContext(ctx, query, params)
 	return err
 }
 
-// ✅ 7️⃣ GetCurrentPassword - ดึงรหัสผ่านปัจจุบันของ User
-func (repo repositoryDB) GetCurrentPassword(ctx context.Context, userID string) (string, error) {
+// ✅ **8️⃣ GetCurrentPassword - ดึงรหัสผ่านปัจจุบันของ User**
+func (repo repositoryDB) GetCurrentPassword(ctx context.Context, userName string) (string, error) {
 	var currentPassword string
-	query := `SELECT Password FROM UserStatus WHERE UserID = :userID`
-	params := map[string]interface{}{"userID": userID}
+	query := `SELECT Password FROM ROM_V_User WHERE UserName = :userName`
+	params := map[string]interface{}{"userName": userName}
 
 	err := repo.db.GetContext(ctx, &currentPassword, query, params)
 	if err != nil {
@@ -133,19 +322,19 @@ func (repo repositoryDB) GetCurrentPassword(ctx context.Context, userID string) 
 	return currentPassword, nil
 }
 
-// ✅ 8️⃣ UpdateUserPassword - อัปเดตรหัสผ่านผู้ใช้
-func (repo repositoryDB) UpdateUserPassword(ctx context.Context, userID, hashedPassword, adminID string) error {
+/* // ✅ **9️⃣ UpdateUserPassword - อัปเดตรหัสผ่านของ User**
+func (repo repositoryDB) UpdateUserPassword(ctx context.Context, req request.ResetPasswordRequest, adminID string) error {
 	query := `
 		UPDATE UserStatus
 		SET Password = :hashedPassword, UpdatedBy = :adminID, UpdatedAt = GETDATE()
 		WHERE UserID = :userID
 	`
 	params := map[string]interface{}{
-		"userID":         userID,
-		"hashedPassword": hashedPassword,
+		"userID":         req.UserID,
+		"hashedPassword": req.NewPassword,
 		"adminID":        adminID,
 	}
 
 	_, err := repo.db.NamedExecContext(ctx, query, params)
 	return err
-}
+} */

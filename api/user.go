@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ✅ **ตั้งค่า API Route**
 func (app *Application) UserRoute(apiRouter *gin.RouterGroup) {
 	users := apiRouter.Group("/manage-users")
 
@@ -20,9 +21,9 @@ func (app *Application) UserRoute(apiRouter *gin.RouterGroup) {
 	users.POST("/add", app.AddUser)
 	users.PATCH("/edit/:userID", app.EditUser)
 	users.DELETE("/delete/:userID", app.DeleteUser)
-	users.POST("/reset-password", app.ResetPassword)
 }
 
+// ✅ **1️⃣ GetUser - ดึงข้อมูลผู้ใช้**
 // @Summary Get user details
 // @Description Retrieve details of a specific user
 // @Tags User Management
@@ -44,6 +45,7 @@ func (app *Application) GetUser(c *gin.Context) {
 	handleResponse(c, true, "⭐ User retrieved successfully ⭐", user, http.StatusOK)
 }
 
+// ✅ **2️⃣ GetUsers - ดึงรายชื่อผู้ใช้ทั้งหมด**
 // @Summary Get list of users
 // @Description Retrieve user data filtered by isActive, with pagination
 // @Tags User Management
@@ -56,17 +58,16 @@ func (app *Application) GetUser(c *gin.Context) {
 // @Failure 400 {object} Response
 // @Router /manage-users [get]
 func (app *Application) GetUsers(c *gin.Context) {
-	isActiveQuery := c.Query("isActive") // รับค่า isActive จาก Query Parameter
+	isActiveQuery := c.Query("isActive")
 
-	// 🔹 ตรวจสอบค่า isActive (สามารถเป็น "true", "false" หรือว่าง)
-	var isActive *bool
+	var isActive bool
 	if isActiveQuery != "" {
 		parsedBool, err := strconv.ParseBool(isActiveQuery)
 		if err != nil {
 			handleResponse(c, false, "⚠️ Invalid isActive parameter (must be true/false)", nil, http.StatusBadRequest)
 			return
 		}
-		isActive = &parsedBool
+		isActive = parsedBool
 	}
 
 	limit, err := strconv.Atoi(c.DefaultQuery("limit", "100"))
@@ -90,8 +91,9 @@ func (app *Application) GetUsers(c *gin.Context) {
 	handleResponse(c, true, "⭐ Users retrieved successfully ⭐", users, http.StatusOK)
 }
 
+// ✅ **3️⃣ AddUser - เพิ่มผู้ใช้ใหม่**
 // @Summary Add a new user
-// @Description Add a user with role and warehouse assignment
+// @Description Add a user with role assignment
 // @Tags User Management
 // @Accept json
 // @Produce json
@@ -107,8 +109,9 @@ func (app *Application) AddUser(c *gin.Context) {
 	}
 
 	adminID := c.MustGet("UserID").(string)
+	adminRoleID := c.MustGet("RoleID").(int)
 
-	newUser, err := app.Service.User.AddUser(c.Request.Context(), req, adminID)
+	newUser, err := app.Service.User.AddUser(c.Request.Context(), req, adminID, adminRoleID)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -117,6 +120,7 @@ func (app *Application) AddUser(c *gin.Context) {
 	handleResponse(c, true, "⭐ User added successfully ⭐", newUser, http.StatusCreated)
 }
 
+// ✅ **4️⃣ EditUser - แก้ไขข้อมูลผู้ใช้**
 // @Summary Edit user details
 // @Description Update role and warehouse of a user
 // @Tags User Management
@@ -128,24 +132,36 @@ func (app *Application) AddUser(c *gin.Context) {
 // @Failure 400 {object} Response
 // @Router /manage-users/edit/{userID} [patch]
 func (app *Application) EditUser(c *gin.Context) {
+	userID := c.Param("userID") // ดึง `userID` จาก Path Parameter
+
 	var req request.EditUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handleValidationError(c, err)
 		return
 	}
 
-	userID := c.Param("userID")
-	adminID := c.MustGet("UserID").(string)
+	// 🟢 ตรวจสอบว่า `userID` ที่รับจาก API ต้องตรงกับ `req.UserID` (กันข้อผิดพลาดจาก frontend)
+	if req.UserID != "" && req.UserID != userID {
+		handleResponse(c, false, "⚠️ User ID in request body does not match path parameter", nil, http.StatusBadRequest)
+		return
+	}
 
-	updatedUser, err := app.Service.User.EditUser(c.Request.Context(), userID, req, adminID)
+	// 🔹 ดึงข้อมูลผู้ใช้ที่ส่งคำขอแก้ไข
+	adminID := c.MustGet("UserID").(string)
+	adminRoleID := c.MustGet("RoleID").(int)
+
+	// 🟢 **เรียกใช้ Service Layer**
+	updatedUser, err := app.Service.User.EditUser(c.Request.Context(), req, adminID, adminRoleID)
 	if err != nil {
 		handleError(c, err)
 		return
 	}
 
+	// ✅ **Response หากแก้ไขสำเร็จ**
 	handleResponse(c, true, "⭐ User edited successfully ⭐", updatedUser, http.StatusOK)
 }
 
+// ✅ **5️⃣ DeleteUser - ลบผู้ใช้ (Soft Delete)**
 // @Summary Delete a user (Soft Delete)
 // @Description Remove user from the system but keep data in the database
 // @Tags User Management
@@ -158,39 +174,13 @@ func (app *Application) EditUser(c *gin.Context) {
 func (app *Application) DeleteUser(c *gin.Context) {
 	userID := c.Param("userID")
 	adminID := c.MustGet("UserID").(string)
+	adminRoleID := c.MustGet("RoleID").(int)
 
-	err := app.Service.User.DeleteUser(c.Request.Context(), userID, adminID)
+	err := app.Service.User.DeleteUser(c.Request.Context(), userID, adminID, adminRoleID)
 	if err != nil {
 		handleError(c, err)
 		return
 	}
 
 	handleResponse(c, true, "⭐ User deleted successfully ⭐", nil, http.StatusOK)
-}
-
-// @Summary Reset user password
-// @Description Change user password to a new value
-// @Tags User Management
-// @Accept json
-// @Produce json
-// @Param request body request.ResetPasswordRequest true "New password request"
-// @Success 200 {object} Response{data=response.ResetPasswordResponse}
-// @Failure 400 {object} Response
-// @Router /manage-users/reset-password [post]
-func (app *Application) ResetPassword(c *gin.Context) {
-	var req request.ResetPasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		handleValidationError(c, err)
-		return
-	}
-
-	adminID := c.MustGet("UserID").(string)
-
-	resetResp, err := app.Service.User.ResetPassword(c.Request.Context(), req, adminID)
-	if err != nil {
-		handleError(c, err)
-		return
-	}
-
-	handleResponse(c, true, "⭐ Password reset successfully ⭐", resetResp, http.StatusOK)
 }

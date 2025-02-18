@@ -16,7 +16,6 @@ type AuthService interface {
 	LoginLark(ctx context.Context, req request.LoginLark) (response.Login, error)
 }
 
-// ✅ 1️⃣ Login (เข้าสู่ระบบ)
 func (srv service) Login(ctx context.Context, req request.LoginWeb) (response.Login, error) {
 	srv.logger.Info("🔑 Attempting login", zap.String("username", req.UserName))
 
@@ -25,31 +24,33 @@ func (srv service) Login(ctx context.Context, req request.LoginWeb) (response.Lo
 		return response.Login{}, errors.ValidationError("username or password must not be empty")
 	}
 
-	hashedPassword := utils.HashPassword(req.Password)
-
-	user, err := srv.userRepo.GetUser(ctx, req.UserName)
+	// ✅ ดึงข้อมูล User พร้อม Role และ Password
+	user, err := srv.userRepo.Login(ctx, req.UserName)
 	if err != nil {
-		srv.logger.Warn("❌ User not found", zap.String("username", req.UserName))
+		srv.logger.Warn("❌ User not found", zap.String("username", req.UserName), zap.Error(err))
 		return response.Login{}, errors.UnauthorizedError("invalid username or password")
 	}
 
+	// ✅ ตรวจสอบรหัสผ่าน
+	hashedPassword := utils.HashPassword(req.Password)
 	if hashedPassword != user.Password {
 		srv.logger.Warn("❌ Invalid password", zap.String("username", req.UserName))
 		return response.Login{}, errors.UnauthorizedError("invalid username or password")
 	}
 
-	userResponse := response.Login{
+	// ✅ สร้าง Response
+	loginResponse := response.Login{
 		UserID:       user.UserID,
 		UserName:     user.UserName,
-		RoleID:       user.RoleID,
 		FullNameTH:   user.FullNameTH,
 		NickName:     user.NickName,
+		RoleID:       user.RoleID,
 		DepartmentNo: user.DepartmentNo,
 		Platform:     "web",
 	}
 
 	srv.logger.Info("✅ Login successful", zap.String("username", req.UserName))
-	return userResponse, nil
+	return loginResponse, nil
 }
 
 func (srv service) LoginLark(ctx context.Context, req request.LoginLark) (response.Login, error) {
@@ -61,14 +62,22 @@ func (srv service) LoginLark(ctx context.Context, req request.LoginLark) (respon
 		return response.Login{}, errors.ValidationError("username or userID must not be null")
 	}
 
-	user, err := srv.userRepo.GetUserFromLark(ctx, req.UserID, req.UserName)
+	user, err := srv.userRepo.LoginLark(ctx, req.UserID, req.UserName)
 	if err != nil {
 		logFinish.Warn("⚠️ User not found in Lark", zap.String("username", req.UserName), zap.String("userID", req.UserID), zap.Error(err))
 		return response.Login{}, errors.UnauthorizedError("user not found in system")
 	}
 
-	user.Platform = "lark"
+	loginResponse := response.Login{
+		UserID:       user.UserID,
+		UserName:     user.UserName,
+		FullNameTH:   user.FullNameTH,
+		NickName:     user.NickName,
+		RoleID:       user.RoleID,
+		DepartmentNo: user.DepartmentNo,
+		Platform:     "lark",
+	}
 
 	logFinish.Info("✅ Lark login successful", zap.String("username", user.UserName))
-	return user, nil
+	return loginResponse, nil
 }

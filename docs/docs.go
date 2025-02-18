@@ -560,7 +560,7 @@ const docTemplate = `{
         },
         "/manage-users/add": {
             "post": {
-                "description": "Add a user with role and warehouse assignment",
+                "description": "Add a user with role assignment",
                 "consumes": [
                     "application/json"
                 ],
@@ -692,58 +692,6 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/response.EditUserResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/manage-users/reset-password": {
-            "post": {
-                "description": "Change user password to a new value",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User Management"
-                ],
-                "summary": "Reset user password",
-                "parameters": [
-                    {
-                        "description": "New password request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.ResetPasswordRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/response.ResetPasswordResponse"
                                         }
                                     }
                                 }
@@ -1207,19 +1155,20 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "roleID",
-                "userID"
+                "userID",
+                "warehouseID"
             ],
             "properties": {
                 "roleID": {
+                    "description": "รหัส Role",
                     "type": "integer"
                 },
-                "roleName": {
-                    "type": "string"
-                },
                 "userID": {
+                    "description": "รหัสผู้ใช้",
                     "type": "string"
                 },
-                "warehouse": {
+                "warehouseID": {
+                    "description": "คลังสินค้า",
                     "type": "string"
                 }
             }
@@ -1337,22 +1286,19 @@ const docTemplate = `{
         "request.EditUserRequest": {
             "type": "object",
             "required": [
-                "roleID"
+                "userID"
             ],
             "properties": {
-                "oldRole": {
-                    "type": "string"
-                },
-                "oldWarehouse": {
-                    "type": "string"
-                },
                 "roleID": {
+                    "description": "รหัส Role ใหม่",
                     "type": "integer"
                 },
-                "roleName": {
+                "userID": {
+                    "description": "รหัสผู้ใช้ที่ต้องการแก้ไข",
                     "type": "string"
                 },
-                "warehouse": {
+                "warehouseID": {
+                    "description": "คลังสินค้าใหม่",
                     "type": "string"
                 }
             }
@@ -1381,22 +1327,6 @@ const docTemplate = `{
                 "userName": {
                     "type": "string",
                     "example": "eknarin.ler"
-                }
-            }
-        },
-        "request.ResetPasswordRequest": {
-            "type": "object",
-            "required": [
-                "newPassword",
-                "userID"
-            ],
-            "properties": {
-                "newPassword": {
-                    "type": "string",
-                    "minLength": 8
-                },
-                "userID": {
-                    "type": "string"
                 }
             }
         },
@@ -1433,23 +1363,19 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "createdBy": {
-                    "description": "ผู้ที่ทำการเพิ่มบัญชี",
+                    "description": "ผู้สร้าง",
                     "type": "string"
                 },
                 "roleID": {
-                    "description": "รหัสบทบาทที่กำหนด",
+                    "description": "รหัส Role ที่เพิ่มให้",
                     "type": "integer"
                 },
-                "roleName": {
-                    "description": "ชื่อบทบาทที่กำหนด",
-                    "type": "string"
-                },
                 "userID": {
-                    "description": "รหัสผู้ใช้ที่เพิ่ม",
+                    "description": "รหัสพนักงานที่เพิ่ม",
                     "type": "string"
                 },
-                "warehouse": {
-                    "description": "คลังสินค้าที่สังกัด",
+                "warehouseID": {
+                    "description": "รหัสคลังสินค้า",
                     "type": "string"
                 }
             }
@@ -1632,20 +1558,32 @@ const docTemplate = `{
         "response.EditUserResponse": {
             "type": "object",
             "properties": {
-                "newRole": {
-                    "description": "บทบาทใหม่หลังแก้ไข",
+                "newRoleID": {
+                    "description": "Role ID ใหม่ (nullable)",
+                    "type": "integer"
+                },
+                "newRoleName": {
+                    "description": "ชื่อ Role ใหม่ (nullable)",
                     "type": "string"
                 },
-                "newWarehouse": {
-                    "description": "คลังใหม่หลังแก้ไข",
+                "newWarehouseID": {
+                    "description": "รหัสคลังสินค้าใหม่ (nullable)",
                     "type": "string"
                 },
-                "oldRole": {
-                    "description": "บทบาทเดิมก่อนแก้ไข",
+                "oldRoleID": {
+                    "description": "Role ID เดิม",
+                    "type": "integer"
+                },
+                "oldRoleName": {
+                    "description": "ชื่อ Role เดิม",
                     "type": "string"
                 },
-                "oldWarehouse": {
-                    "description": "คลังเดิมก่อนแก้ไข",
+                "oldWarehouseID": {
+                    "description": "รหัสคลังสินค้าเดิม",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "description": "เวลาที่อัปเดตล่าสุด",
                     "type": "string"
                 },
                 "updatedBy": {
@@ -1653,7 +1591,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "userID": {
-                    "description": "รหัสผู้ใช้",
+                    "description": "รหัสพนักงานที่แก้ไข",
                     "type": "string"
                 }
             }
@@ -1724,23 +1662,6 @@ const docTemplate = `{
                 },
                 "warehouseId": {
                     "type": "integer"
-                }
-            }
-        },
-        "response.ResetPasswordResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "description": "ข้อความแจ้งเตือน",
-                    "type": "string"
-                },
-                "updatedBy": {
-                    "description": "ผู้ที่ทำการรีเซ็ตรหัสผ่าน",
-                    "type": "string"
-                },
-                "userID": {
-                    "description": "รหัสผู้ใช้ที่รีเซ็ตรหัสผ่าน",
-                    "type": "string"
                 }
             }
         },
@@ -1834,31 +1755,31 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "createdAt": {
-                    "description": "วันที่สร้างบัญชี (Optional)",
+                    "description": "เวลาสร้างบัญชี",
                     "type": "string"
                 },
                 "departmentNo": {
-                    "description": "แผนกที่สังกัด",
+                    "description": "รหัสแผนก",
                     "type": "string"
                 },
                 "description": {
-                    "description": "คำอธิบายบทบาท",
+                    "description": "คำอธิบาย Role",
                     "type": "string"
                 },
                 "fullNameTH": {
                     "description": "ชื่อเต็มภาษาไทย",
                     "type": "string"
                 },
+                "isActive": {
+                    "description": "สถานะบัญชี (Active/Inactive)",
+                    "type": "boolean"
+                },
                 "lastLoginAt": {
-                    "description": "วันที่เข้าสู่ระบบล่าสุด (Optional)",
+                    "description": "เวลาล็อกอินล่าสุด (optional)",
                     "type": "string"
                 },
                 "nickName": {
                     "description": "ชื่อเล่น",
-                    "type": "string"
-                },
-                "permission": {
-                    "description": "สิทธิ์ของผู้ใช้",
                     "type": "string"
                 },
                 "roleID": {
@@ -1869,12 +1790,16 @@ const docTemplate = `{
                     "description": "ชื่อบทบาท",
                     "type": "string"
                 },
+                "updatedAt": {
+                    "description": "เวลาล่าสุดที่มีการอัปเดต (optional)",
+                    "type": "string"
+                },
                 "userID": {
-                    "description": "รหัสผู้ใช้",
+                    "description": "รหัสพนักงาน",
                     "type": "string"
                 },
                 "userName": {
-                    "description": "ชื่อบัญชีผู้ใช้",
+                    "description": "ชื่อผู้ใช้",
                     "type": "string"
                 }
             }

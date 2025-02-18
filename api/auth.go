@@ -36,6 +36,8 @@ func (app *Application) GenerateToken(tokenData response.Login) string {
 	}
 
 	_, tokenString, _ := app.TokenAuth.Encode(claims)
+	app.Logger.Info("🔑 Generated JWT token", zap.String("token", tokenString))
+	app.Logger.Info(" Claims", zap.Any("claims", claims))
 	return tokenString
 }
 
@@ -136,7 +138,7 @@ func (app *Application) CheckAuthen(c *gin.Context) {
 		handleResponse(c, false, "unauthorized - no claims found", nil, http.StatusUnauthorized)
 		return
 	}
-
+	app.Logger.Info("✅ User authenticated", zap.Any("claims", claims))
 	handleResponse(c, true, "User authenticated", gin.H{
 		"source": source,
 		"claims": claims,

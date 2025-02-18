@@ -68,19 +68,21 @@ type Role struct {
 }
 
 type UserRole struct {
-	UserID    string     `db:"UserID"`    // รหัสผู้ใช้
-	RoleID    int        `db:"RoleID"`    // รหัส Role
-	CreatedBy *string    `db:"CreatedBy"` // ผู้สร้าง
-	CreatedAt time.Time  `db:"CreatedAt"` // เวลาสร้าง
-	UpdatedBy *string    `db:"UpdatedBy"` // ผู้แก้ไขล่าสุด (nullable)
-	UpdatedAt *time.Time `db:"UpdatedAt"` // เวลาที่อัปเดตล่าสุด (nullable)
+	UserID      string     `db:"UserID"`      // รหัสผู้ใช้
+	RoleID      int        `db:"RoleID"`      // รหัส Role
+	WarehouseID int        `db:"WarehouseID"` // รหัสคลังสินค้า (MMT, RBN)
+	CreatedBy   *string    `db:"CreatedBy"`   // ผู้สร้าง
+	CreatedAt   time.Time  `db:"CreatedAt"`   // เวลาสร้าง
+	UpdatedBy   *string    `db:"UpdatedBy"`   // ผู้แก้ไขล่าสุด (nullable)
+	UpdatedAt   *time.Time `db:"UpdatedAt"`   // เวลาที่อัปเดตล่าสุด (nullable)
 }
 
 type UserStatus struct {
 	UserID        string     `db:"UserID"`        // รหัสผู้ใช้
 	IsActive      bool       `db:"IsActive"`      // สถานะบัญชี (1 = ใช้งาน, 0 = ปิดการใช้งาน)
-	Password      string     `db:"Password"`      // รหัสผ่านของผู้ใช้ (SHA-256 Hash)
 	LastLoginAt   *time.Time `db:"LastLoginAt"`   // เวลาล็อกอินล่าสุด
+	CreatedBy     string     `db:"CreatedBy"`     // ผู้สร้าง
+	CreatedAt     time.Time  `db:"CreatedAt"`     // เวลาสร้าง
 	UpdatedBy     string     `db:"UpdatedBy"`     // ผู้แก้ไขล่าสุด
 	UpdatedAt     *time.Time `db:"UpdatedAt"`     // เวลาแก้ไขล่าสุด
 	DeactivatedAt *time.Time `db:"DeactivatedAt"` // เวลาที่ทำ Soft Delete

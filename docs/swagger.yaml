@@ -26,16 +26,18 @@ definitions:
   request.AddUserRequest:
     properties:
       roleID:
+        description: รหัส Role
         type: integer
-      roleName:
-        type: string
       userID:
+        description: รหัสผู้ใช้
         type: string
-      warehouse:
+      warehouseID:
+        description: คลังสินค้า
         type: string
     required:
     - roleID
     - userID
+    - warehouseID
     type: object
   request.CancelOrder:
     properties:
@@ -116,18 +118,17 @@ definitions:
     type: object
   request.EditUserRequest:
     properties:
-      oldRole:
-        type: string
-      oldWarehouse:
-        type: string
       roleID:
+        description: รหัส Role ใหม่
         type: integer
-      roleName:
+      userID:
+        description: รหัสผู้ใช้ที่ต้องการแก้ไข
         type: string
-      warehouse:
+      warehouseID:
+        description: คลังสินค้าใหม่
         type: string
     required:
-    - roleID
+    - userID
     type: object
   request.LoginLark:
     properties:
@@ -147,17 +148,6 @@ definitions:
       userName:
         example: eknarin.ler
         type: string
-    type: object
-  request.ResetPasswordRequest:
-    properties:
-      newPassword:
-        minLength: 8
-        type: string
-      userID:
-        type: string
-    required:
-    - newPassword
-    - userID
     type: object
   response.AddItemResponse:
     properties:
@@ -181,19 +171,16 @@ definitions:
   response.AddUserResponse:
     properties:
       createdBy:
-        description: ผู้ที่ทำการเพิ่มบัญชี
+        description: ผู้สร้าง
         type: string
       roleID:
-        description: รหัสบทบาทที่กำหนด
+        description: รหัส Role ที่เพิ่มให้
         type: integer
-      roleName:
-        description: ชื่อบทบาทที่กำหนด
-        type: string
       userID:
-        description: รหัสผู้ใช้ที่เพิ่ม
+        description: รหัสพนักงานที่เพิ่ม
         type: string
-      warehouse:
-        description: คลังสินค้าที่สังกัด
+      warehouseID:
+        description: รหัสคลังสินค้า
         type: string
     type: object
   response.BeforeReturnOrderItem:
@@ -313,23 +300,32 @@ definitions:
     type: object
   response.EditUserResponse:
     properties:
-      newRole:
-        description: บทบาทใหม่หลังแก้ไข
+      newRoleID:
+        description: Role ID ใหม่ (nullable)
+        type: integer
+      newRoleName:
+        description: ชื่อ Role ใหม่ (nullable)
         type: string
-      newWarehouse:
-        description: คลังใหม่หลังแก้ไข
+      newWarehouseID:
+        description: รหัสคลังสินค้าใหม่ (nullable)
         type: string
-      oldRole:
-        description: บทบาทเดิมก่อนแก้ไข
+      oldRoleID:
+        description: Role ID เดิม
+        type: integer
+      oldRoleName:
+        description: ชื่อ Role เดิม
         type: string
-      oldWarehouse:
-        description: คลังเดิมก่อนแก้ไข
+      oldWarehouseID:
+        description: รหัสคลังสินค้าเดิม
+        type: string
+      updatedAt:
+        description: เวลาที่อัปเดตล่าสุด
         type: string
       updatedBy:
         description: ผู้ที่ทำการแก้ไข
         type: string
       userID:
-        description: รหัสผู้ใช้
+        description: รหัสพนักงานที่แก้ไข
         type: string
     type: object
   response.ListCodeRResponse:
@@ -376,18 +372,6 @@ definitions:
         type: string
       warehouseId:
         type: integer
-    type: object
-  response.ResetPasswordResponse:
-    properties:
-      message:
-        description: ข้อความแจ้งเตือน
-        type: string
-      updatedBy:
-        description: ผู้ที่ทำการรีเซ็ตรหัสผ่าน
-        type: string
-      userID:
-        description: รหัสผู้ใช้ที่รีเซ็ตรหัสผ่าน
-        type: string
     type: object
   response.SearchOrderItem:
     properties:
@@ -448,25 +432,25 @@ definitions:
   response.UserResponse:
     properties:
       createdAt:
-        description: วันที่สร้างบัญชี (Optional)
+        description: เวลาสร้างบัญชี
         type: string
       departmentNo:
-        description: แผนกที่สังกัด
+        description: รหัสแผนก
         type: string
       description:
-        description: คำอธิบายบทบาท
+        description: คำอธิบาย Role
         type: string
       fullNameTH:
         description: ชื่อเต็มภาษาไทย
         type: string
+      isActive:
+        description: สถานะบัญชี (Active/Inactive)
+        type: boolean
       lastLoginAt:
-        description: วันที่เข้าสู่ระบบล่าสุด (Optional)
+        description: เวลาล็อกอินล่าสุด (optional)
         type: string
       nickName:
         description: ชื่อเล่น
-        type: string
-      permission:
-        description: สิทธิ์ของผู้ใช้
         type: string
       roleID:
         description: รหัสบทบาท
@@ -474,11 +458,14 @@ definitions:
       roleName:
         description: ชื่อบทบาท
         type: string
+      updatedAt:
+        description: เวลาล่าสุดที่มีการอัปเดต (optional)
+        type: string
       userID:
-        description: รหัสผู้ใช้
+        description: รหัสพนักงาน
         type: string
       userName:
-        description: ชื่อบัญชีผู้ใช้
+        description: ชื่อผู้ใช้
         type: string
     type: object
 info:
@@ -863,7 +850,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Add a user with role and warehouse assignment
+      description: Add a user with role assignment
       parameters:
       - description: User details
         in: body
@@ -949,37 +936,6 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Edit user details
-      tags:
-      - User Management
-  /manage-users/reset-password:
-    post:
-      consumes:
-      - application/json
-      description: Change user password to a new value
-      parameters:
-      - description: New password request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.ResetPasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/response.ResetPasswordResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Reset user password
       tags:
       - User Management
   /order/cancel:
