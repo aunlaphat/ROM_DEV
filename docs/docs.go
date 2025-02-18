@@ -147,6 +147,695 @@ const docTemplate = `{
                 }
             }
         },
+        "/constants/get-district": {
+            "get": {
+                "description": "Get all Thai District.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get Thai District",
+                "operationId": "get-district",
+                "responses": {
+                    "200": {
+                        "description": "District",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.District"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "District not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/constants/get-product": {
+            "get": {
+                "description": "Get paginated products",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get ProductAll with Pagination",
+                "operationId": "get-productAll-paginated",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Limit per page",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated Product List",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        " total": {
+                                            "type": "integer"
+                                        },
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.ROM_V_ProductAll"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/constants/get-province": {
+            "get": {
+                "description": "Get all Thai Province.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get Thai Province",
+                "operationId": "get-province",
+                "responses": {
+                    "200": {
+                        "description": "Province",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.Province"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Province not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/constants/get-sub-district": {
+            "get": {
+                "description": "Get all Thai SubDistrict.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get Thai SubDistrict",
+                "operationId": "get-sub-district",
+                "responses": {
+                    "200": {
+                        "description": "SubDistrict",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.SubDistrict"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "SubDistrict not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/constants/get-warehouse": {
+            "get": {
+                "description": "Get Warehouse",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get Warehouse",
+                "operationId": "get-warehouse",
+                "responses": {
+                    "200": {
+                        "description": "Warehouse",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.Warehouse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "SubDistrict not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/import-order/confirm-receipt/{identifier}": {
+            "post": {
+                "description": "Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Confirm Receipt from Ware House",
+                "operationId": "confirm-trade-return",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OrderNo or TrackingNo",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Trade return request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ConfirmTradeReturnRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Trade return order confirmed successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.ConfirmReceipt"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/import-order/create-confirm-wh": {
+            "post": {
+                "description": "Upload multiple images and data for a specific SoNo",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Import order",
+                "operationId": "Import-Order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sale Order Number",
+                        "name": "soNo",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Type of the image (1, 2, or 3)",
+                        "name": "imageTypeID",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU (Optional)",
+                        "name": "skus",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Files to upload",
+                        "name": "files",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.ImageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/import-order/search": {
+            "get": {
+                "description": "Retrieve the details of an order by its OrderNo or TrackingNo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Search order by OrderNo or TrackingNo",
+                "operationId": "search-orderNo-or-trackingNo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OrderNo or TrackingNo",
+                        "name": "search",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.ImportOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "OrderNo or TrackingNo not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/import-order/summary/{orderNo}": {
+            "get": {
+                "description": "Retrieve the details of Receipt",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Get Sum detail of Import Order",
+                "operationId": "GetSummary-ImportOrder",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order No",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Get All",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ImportOrderSummary"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found Endpoint",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/import-order/upload-photo": {
+            "post": {
+                "description": "Upload a photo for a return order",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Upload Photo",
+                "operationId": "upload-photo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order No",
+                        "name": "orderNo",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ImageTypeID (1, 2, 3)",
+                        "name": "imageTypeID",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU (required if imageTypeID is '3')",
+                        "name": "sku",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Photo file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/import-order/validate-sku/{orderNo}/{sku}": {
+            "post": {
+                "description": "Validate SKU",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Validate SKU",
+                "operationId": "validate-sku",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order No",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU",
+                        "name": "sku",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/order/create": {
             "post": {
                 "description": "Creates a new return order including order head and order lines",
@@ -1409,6 +2098,103 @@ const docTemplate = `{
                 }
             }
         },
+        "entity.District": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "nameEN": {
+                    "type": "string"
+                },
+                "nameTH": {
+                    "type": "string"
+                },
+                "provinceCode": {
+                    "type": "integer"
+                }
+            }
+        },
+        "entity.Province": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "nameEN": {
+                    "type": "string"
+                },
+                "nameTH": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.ROM_V_ProductAll": {
+            "type": "object",
+            "properties": {
+                "barcode": {
+                    "description": "บาร์โค้ดของสินค้า",
+                    "type": "string"
+                },
+                "nameAlias": {
+                    "description": "ชื่อย่อของสินค้า",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "ขนาดของสินค้า",
+                    "type": "string"
+                },
+                "sizeID": {
+                    "description": "รหัสขนาดของสินค้า",
+                    "type": "string"
+                },
+                "sku": {
+                    "description": "รหัสสินค้า",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "ประเภทของสินค้า",
+                    "type": "string"
+                }
+            }
+        },
+        "entity.SubDistrict": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "districtCode": {
+                    "type": "integer"
+                },
+                "nameEN": {
+                    "type": "string"
+                },
+                "nameTH": {
+                    "type": "string"
+                },
+                "zipCode": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.Warehouse": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "description": "ที่ตั้งของคลังสินค้า",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "description": "รหัสคลังสินค้า (PK - Auto Increment)",
+                    "type": "integer"
+                },
+                "warehouseName": {
+                    "description": "ชื่อคลังสินค้า",
+                    "type": "string"
+                }
+            }
+        },
         "gin.H": {
             "type": "object",
             "additionalProperties": {}
@@ -1554,6 +2340,18 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/request.UpdateToReturn"
+                    }
+                }
+            }
+        },
+        "request.ConfirmTradeReturnRequest": {
+            "type": "object",
+            "properties": {
+                "importLines": {
+                    "description": "รายการสินค้า",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/request.TradeReturnLineRequest"
                     }
                 }
             }
@@ -1808,6 +2606,32 @@ const docTemplate = `{
                 }
             }
         },
+        "request.TradeReturnLineRequest": {
+            "type": "object",
+            "properties": {
+                "filePath": {
+                    "description": "CreateDate *time.Time ` + "`" + `json:\"createDate\" db:\"CreateDate\"` + "`" + ` // MSSQL GetDate()",
+                    "type": "string"
+                },
+                "imageTypeID": {
+                    "description": "เข้า Images",
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "description": "ItemName  string  ` + "`" + `json:\"itemName\" db:\"ItemName\"` + "`" + `",
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
         "request.UpdateReturnOrder": {
             "type": "object",
             "properties": {
@@ -1984,6 +2808,26 @@ const docTemplate = `{
                 }
             }
         },
+        "response.ConfirmReceipt": {
+            "type": "object",
+            "properties": {
+                "identifier": {
+                    "type": "string"
+                },
+                "statusCheckID": {
+                    "type": "string"
+                },
+                "statusReturnID": {
+                    "type": "string"
+                },
+                "updateBy": {
+                    "type": "string"
+                },
+                "updateDate": {
+                    "type": "string"
+                }
+            }
+        },
         "response.ConfirmToReturnOrder": {
             "type": "object",
             "properties": {
@@ -2111,6 +2955,77 @@ const docTemplate = `{
                 "trackingNo": {
                     "type": "string",
                     "example": "12345678TH"
+                }
+            }
+        },
+        "response.ImageResponse": {
+            "type": "object",
+            "properties": {
+                "filePath": {
+                    "type": "string"
+                },
+                "imageID": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.ImportOrderLineResponse": {
+            "type": "object",
+            "properties": {
+                "itemName": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ImportOrderResponse": {
+            "type": "object",
+            "properties": {
+                "createDate": {
+                    "type": "string"
+                },
+                "orderLines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.ImportOrderLineResponse"
+                    }
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ImportOrderSummary": {
+            "type": "object",
+            "properties": {
+                "orderNo": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "sku": {
+                    "type": "string"
                 }
             }
         },
@@ -2409,9 +3324,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "nickName": {
-                    "type": "string"
-                },
-                "permission": {
                     "type": "string"
                 },
                 "roleID": {

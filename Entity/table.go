@@ -96,7 +96,7 @@ type ROM_V_UserPermission struct {
 	RoleID       int    `json:"roleID,omitempty" db:"RoleID"`           // รหัสบทบาท
 	RoleName     string `json:"roleName,omitempty" db:"RoleName"`       // ชื่อบทบาท
 	Description  string `json:"description,omitempty" db:"Description"` // คำอธิบาย
-	Permission   string `json:"permission,omitempty" db:"Permission"`   // สิทธิ์การเข้าถึง
+	// Permission   string `json:"permission,omitempty" db:"Permission"`   // สิทธิ์การเข้าถึง
 }
 
 

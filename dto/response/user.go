@@ -19,5 +19,5 @@ type UserRole struct {
 	RoleID       int    `json:"roleID" db:"RoleID"`
 	RoleName     string `json:"roleName" db:"RoleName"`
 	Description  string `json:"description" db:"Description"`
-	Permission   string `json:"permission" db:"Permission"`
+	// Permission   string `json:"permission" db:"Permission"`
 }

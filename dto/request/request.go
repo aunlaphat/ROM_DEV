@@ -175,7 +175,7 @@ type ConfirmTradeReturnRequest struct {
 
 type TradeReturnLineRequest struct {
 	SKU       string  `json:"sku" db:"SKU"`
-	ItemName  string  `json:"itemName" db:"ItemName"`
+	// ItemName  string  `json:"itemName" db:"ItemName"`
 	QTY       int     `json:"qty" db:"QTY"`
 	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
 	Price     float64 `json:"price" db:"Price"`

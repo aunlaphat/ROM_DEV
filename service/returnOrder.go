@@ -31,7 +31,7 @@ func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrde
 	allorder, err := srv.returnOrderRepo.GetAllReturnOrder(ctx)
 	if err != nil {
 		srv.logger.Error("[ Error fetching all return orders ]", zap.Error(err))
-		return nil, errors.InternalError("Failed to fetch all return orders: %v", err)
+		return nil, errors.InternalError("[ Failed to fetch all return orders: %v ]", err)
 	}
 
 	// *️⃣ เช็คเมื่อไม่มีข้อมูลออเดอร์

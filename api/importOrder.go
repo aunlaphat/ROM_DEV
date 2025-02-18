@@ -5,16 +5,14 @@ import (
 	res "boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/middleware"
-	"boilerplate-backend-go/utils"
-	"encoding/json"
-	"fmt"
+	// "boilerplate-backend-go/utils"
+	// "encoding/json"
 	"time"
 
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-chi/jwtauth"
 	"go.uber.org/zap"
 )
 
@@ -53,17 +51,11 @@ func (app *Application) SearchOrderORTracking(c *gin.Context) {
 
 	result, err := app.Service.ImportOrder.SearchOrderORTracking(c.Request.Context(), search)
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		if err.Error() == "❌ Search input is required (OrderNo or TrackingNo)" {
-			statusCode = http.StatusBadRequest
-		} else if err.Error() == "❗ No OrderNo or TrackingNo order found" {
-			statusCode = http.StatusNotFound
-		}
-		handleResponse(c, false, err.Error(), nil, statusCode)
+		handleError(c, err)
 		return
 	}
 
-	handleResponse(c, true, "[ Found Orders retrieved successfully [", result, http.StatusOK)
+	handleResponse(c, true, "[ Found Orders retrieved successfully ]", result, http.StatusOK)
 }
 
 // UploadPhotoHandler godoc
@@ -82,32 +74,29 @@ func (app *Application) SearchOrderORTracking(c *gin.Context) {
 // @Failure 500 {object} api.Response
 // @Router  /import-order/upload-photo [post]
 func (app *Application) UploadPhotoHandler(c *gin.Context) {
-	orderNo := c.FormValue("orderNo")
-	imageTypeID := c.FormValue("imageTypeID")
-	sku := c.FormValue("sku")
+	orderNo := c.PostForm("orderNo")
+	imageTypeID := c.PostForm("imageTypeID")
+	sku := c.PostForm("sku")
 
-	if orderNo == "" || imageTypeID == "" {
-		handleResponse(c, false, "OrderNo and ImageTypeID are required", nil, http.StatusBadRequest)
-		return
-	}
-
-	if imageTypeID == "3" && sku == "" {
-		handleResponse(c, false, "SKU is required for 3 imageTypeID", nil, http.StatusBadRequest)
-		return
-	}
-
-	file, header, err := c.FormFile("file")
+	header, err := c.FormFile("file") 
 	if err != nil {
 		app.Logger.Error("[ Failed to get file from request ]", zap.Error(err))
 		handleResponse(c, false, "[ Failed to get file from request ]", nil, http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+
+	// เปิดไฟล์เพื่ออ่านข้อมูล
+	file, err := header.Open()
+	if err != nil {
+		app.Logger.Error("[ Failed to open file ]", zap.Error(err))
+		handleResponse(c, false, "[ Failed to open file ]", nil, http.StatusInternalServerError)
+		return
+	}
+	defer file.Close() // ปิดไฟล์เมื่อใช้งานเสร็จ
 
 	err = app.Service.ImportOrder.UploadPhotoHandler(c.Request.Context(), orderNo, imageTypeID, sku, file, header.Filename)
 	if err != nil {
-		app.Logger.Error("[ Failed to upload photo ]", zap.Error(err))
-		handleResponse(c, false, "[ Failed to upload photo ]", nil, http.StatusInternalServerError)
+		handleError(c, err)
 		return
 	}
 
@@ -131,7 +120,7 @@ func (app *Application) GetSummaryImportOrder(c *gin.Context) {
 
 	summary, err := app.Service.ImportOrder.GetSummaryImportOrder(c.Request.Context(), orderNo)
 	if err != nil {
-		handleResponse(c, false, "[ Failed to get summary ]", nil, http.StatusInternalServerError)
+		handleError(c, err)
 		return
 	}
 
@@ -152,21 +141,16 @@ func (app *Application) GetSummaryImportOrder(c *gin.Context) {
 // @Failure 500 {object} api.Response
 // @Router /import-order/validate-sku/{orderNo}/{sku} [post]
 func (app *Application) ValidateSKU(c *gin.Context) {
-	orderNo :=c.Param("orderNo")
+	orderNo := c.Param("orderNo")
 	sku := c.Param("sku")
 
-	valid, err := app.Service.ImportOrder.ValidateSKU(c.Request.Context(), orderNo, sku)
+	err := app.Service.ImportOrder.ValidateSKU(c.Request.Context(), orderNo, sku)
 	if err != nil {
-		handleResponse(c, false, "[ Failed to validate SKU ]", nil, http.StatusInternalServerError)
+		handleError(c, err)
 		return
 	}
 
-	if !valid {
-		handleResponse(c, false, "[ SKU not found in Order ]", nil, http.StatusNotFound)
-		return
-	}
-
-	handleResponse(c, true, "[ SKU is valid ]", nil, http.StatusOK)
+	handleResponse(c, true, "[ Both match: Confirm Receipt ]", nil, http.StatusOK)
 }
 
 // ConfirmReceipt godoc
@@ -183,7 +167,6 @@ func (app *Application) ValidateSKU(c *gin.Context) {
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /import-order/confirm-receipt/{identifier} [post]
 func (app *Application) ConfirmReceipt(c *gin.Context) {
-	// รับค่า identifier จาก URL parameter
 	identifier := c.Param("identifier")
 
 	var req request.ConfirmTradeReturnRequest
@@ -200,7 +183,6 @@ func (app *Application) ConfirmReceipt(c *gin.Context) {
 		return
 	}
 
-	// กำหนดค่า identifier
 	req.Identifier = identifier
 	err := app.Service.BeforeReturn.ConfirmReceipt(c.Request.Context(), req, userID.(string))
 	if err != nil {
@@ -236,30 +218,29 @@ func (app *Application) ConfirmReceipt(c *gin.Context) {
 // @Failure 500 {object} api.Response "Internal Server Error"
 // @Router /import-order/create-confirm-wh [post]
 func (app *Application) ConfirmFromWH(c *gin.Context) {
-	// ✅ Parse Form Data
-	if err := c.ParseMultipartForm(10 << 20); err != nil {
+	// *️⃣ Parse Form Data
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
 		handleError(c, errors.ValidationError("Unable to parse form data"))
 		return
 	}
 
-	// ✅ รับค่าจาก Form
-	soNo := c.FormValue("soNo")
-	imageTypeID, err := strconv.Atoi(c.FormValue("imageTypeID"))
+	// *️⃣ รับค่าจาก Form
+	soNo := c.PostForm("soNo")
+	imageTypeID, err := strconv.Atoi(c.PostForm("imageTypeID"))
 	if err != nil {
 		handleError(c, errors.ValidationError("Invalid Image Type ID"))
 		return
 	}
 
-	skus := c.FormValue("skus")
-	files := c.MultipartForm.File["files"]
+	skus := c.PostForm("skus")
+	files := c.Request.MultipartForm.File["files"]
 
-	// ✅ เรียก Service เพื่อประมวลผล
+	// *️⃣ เรียก Service เพื่อประมวลผล
 	result, err := app.Service.ImportOrder.ConfirmFromWH(c.Request.Context(), soNo, imageTypeID, skus, files)
 	if err != nil {
 		handleError(c, err)
 		return
 	}
 
-	// ✅ ส่ง Response กลับไป
 	handleResponse(c, true, "[ Data Insert successful ]", result, http.StatusOK)
 }

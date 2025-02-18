@@ -33,7 +33,7 @@ func (app *Application) Constants(apiRouter *gin.RouterGroup) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /constants/get-province [get]
 func (app *Application) GetThaiProvince(c *gin.Context) {
-	result, err := app.Service.Constant.GetThaiProvince()
+	result, err := app.Service.Constant.GetThaiProvince(c.Request.Context())
 	if err != nil {
 		handleError(c, err)
 		return
@@ -54,7 +54,7 @@ func (app *Application) GetThaiProvince(c *gin.Context) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /constants/get-district [get]
 func (app *Application) GetThaiDistrict(c *gin.Context) {
-	result, err := app.Service.Constant.GetThaiDistrict()
+	result, err := app.Service.Constant.GetThaiDistrict(c.Request.Context())
 	if err != nil {
 		handleError(c, err)
 		return
@@ -76,7 +76,7 @@ func (app *Application) GetThaiDistrict(c *gin.Context) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /constants/get-sub-district [get]
 func (app *Application) GetThaiSubDistrict(c *gin.Context) {
-	result, err := app.Service.Constant.GetThaiSubDistrict()
+	result, err := app.Service.Constant.GetThaiSubDistrict(c.Request.Context())
 	if err != nil {
 		handleError(c, err)
 		return
@@ -98,9 +98,9 @@ func (app *Application) GetThaiSubDistrict(c *gin.Context) {
 // // @Failure 500 {object} Response "Internal Server Error"
 // // @Router /constants/get-sub-district [get]
 // func (app *Application) GetPostCode(c *gin.Context) {
-// 	result, err := app.Service.Constant.GetPostCode()
+// 	result, err := app.Service.Constant.GetPostCode(c.Request.Context())
 // 	if err != nil {
-// 		HandleError(c, err)
+// 		handleError(c, err)
 // 		return
 // 	}
 // 		handleResponse(c, true, "[ Get PostCode successfully ]", result, http.StatusOK)
@@ -119,7 +119,7 @@ func (app *Application) GetThaiSubDistrict(c *gin.Context) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router /constants/get-warehouse [get]
 func (app *Application) GetWarehouse(c *gin.Context) {
-	result, err := app.Service.Constant.GetWarehouse()
+	result, err := app.Service.Constant.GetWarehouse(c.Request.Context())
 	if err != nil {
 		handleError(c, err)
 		return
@@ -145,7 +145,7 @@ func (app *Application) GetProduct(c *gin.Context) {
 
 	page, limit := utils.ParsePagination(c.Request)
 
-	result, err := app.Service.Constant.GetProduct(page, limit)
+	result, err := app.Service.Constant.GetProduct(c.Request.Context(), page, limit)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -166,9 +166,9 @@ func (app *Application) GetProduct(c *gin.Context) {
 // // @Failure 500 {object} Response "Internal Server Error"
 // // @Router /constants/get-customer [get]
 // func (app *Application) GetCustomer(c *gin.Context) {
-// 	result, err := app.Service.Constant.GetThaiSubDistrict()
+// 	result, err := app.Service.Constant.GetThaiSubDistrict(c.Request.Context())
 // 	if err != nil {
-// 		HandleError(c, err)
+// 		handleError(c, err)
 // 		return
 // 	}
 // 		handleResponse(c, true, "[ Get Customer successfully ]", result, http.StatusOK)

@@ -241,7 +241,7 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 		return  errors.InternalError("[ Failed to insert images: %v ]", err)
 	}
 
-	srv.logger.Info("[ Confirm Receipt successfully ]", zap.String("UpdateBy", *req.UpdateBy))
+	srv.logger.Info("[ Confirm Receipt successfully ]", zap.String("UpdateBy", updateBy))
 	return nil
 }
 
@@ -302,7 +302,7 @@ func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToRetur
 		return  errors.InternalError("[ Failed to fetch updated ReturnOrder and ReturnOrderLine: %v ]", err)
 	}
 
-	srv.logger.Info("[ Confirm Return successfully ]", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", *req.UpdateBy))
+	srv.logger.Info("[ Confirm Return successfully ]", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", updateBy))
 	return nil
 }
 

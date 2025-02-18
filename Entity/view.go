@@ -6,13 +6,13 @@ type User struct {
 	UserID       string `db:"UserID"`
 	UserName     string `db:"UserName"`
 	Password     string `db:"Password"`
-	NickName     string `db:"NickName"`
-	FullNameTH   string `db:"FullNameTH"`
+	NickName     *string `db:"NickName"`
+	FullNameTH   *string `db:"FullNameTH"`
 	DepartmentNo string `db:"DepartmentNo"`
-	RoleID       int    `db:"RoleID"`
-	RoleName     string `db:"RoleName"`
-	Description  string `db:"Description"`
-	Permission   string `db:"Permission"`
+	RoleID       *int    `db:"RoleID"`
+	RoleName     *string `db:"RoleName"`
+	Description  *string `db:"Description"`
+	// Permission   string `db:"Permission"`
 }
 
 type ROM_V_OrderHeadDetail struct {
@@ -46,4 +46,29 @@ type ROM_V_ProductAll struct {
 	SizeID    string  `db:"SizeID" json:"sizeID"`       // รหัสขนาดของสินค้า
 	Barcode   *string `db:"Barcode" json:"barcode"`     // บาร์โค้ดของสินค้า
 	Type      *string `db:"Type" json:"type"`           // ประเภทของสินค้า
+}
+
+type District struct {
+	Code         int    `db:"Code" json:"code"`
+	ProvinceCode int    `db:"ProvinceCode" json:"provinceCode"`
+	NameEN       string `db:"NameEN" json:"nameEN"`
+	NameTH       string `db:"NameTH" json:"nameTH"`
+}
+
+type SubDistrict struct {
+	Code         int    `db:"Code" json:"code"`
+	DistrictCode int    `db:"DistrictCode" json:"districtCode"`
+	ZipCode      string `db:"ZipCode" json:"zipCode"`
+	NameTH       string `db:"NameTH" json:"nameTH"`
+	NameEN       string `db:"NameEN" json:"nameEN"`
+}
+
+type Province struct {
+	Code   int    `db:"Code" json:"code"`
+	NameTH string `db:"NameTH" json:"nameTH"`
+	NameEN string `db:"NameEN" json:"nameEN"`
+}
+
+type PostCode struct {
+
 }
