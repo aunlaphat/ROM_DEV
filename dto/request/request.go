@@ -6,11 +6,11 @@ type BeforeReturnOrder struct {
 	//RecID		   int        `json:"recID" db:"RecID"` // (PK - Auto Increment)
 	OrderNo        string     `json:"orderNo" db:"OrderNo"`
 	SoNo           string     `json:"soNo" db:"SoNo"`
-	SrNo           string     `json:"srNo" db:"SrNo"`
+	SrNo           *string    `json:"srNo" db:"SrNo"`
 	ChannelID      int        `json:"channelID" db:"ChannelID"`
 	Reason         string     `json:"reason" db:"Reason"`
 	CustomerID     string     `json:"customerID" db:"CustomerID"`
-	TrackingNo     string     `json:"trackingNo" db:"TrackingNo"`
+	TrackingNo     *string    `json:"trackingNo" db:"TrackingNo"`
 	Logistic       string     `json:"logistic" db:"Logistic"`
 	WarehouseID    int        `json:"warehouseID" db:"WarehouseID"`
 	SoStatus       *int       `json:"soStatus" db:"SoStatus"`
@@ -170,11 +170,12 @@ type ReturnOrderLine struct {
 type ConfirmTradeReturnRequest struct {
 	Identifier  string                   `json:"-" `          // mean => OrderNo หรือ TrackingNo
 	ImportLines []TradeReturnLineRequest `json:"importLines"` // รายการสินค้า
+	UpdateBy    *string                  `json:"-" db:"UpdateBy"`
 }
 
 type TradeReturnLineRequest struct {
 	SKU       string  `json:"sku" db:"SKU"`
-	ItemName  string  `json:"itemName" db:"ItemName"`
+	// ItemName  string  `json:"itemName" db:"ItemName"`
 	QTY       int     `json:"qty" db:"QTY"`
 	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
 	Price     float64 `json:"price" db:"Price"`
@@ -220,6 +221,7 @@ type ConfirmToReturnRequest struct {
 	OrderNo           string              `json:"-"`
 	UpdateToReturn    []UpdateToReturn    `json:"updateToReturn"`    // เลข sr สุ่มจาก ax
 	ImportLinesActual []ImportLinesActual `json:"importLinesActual"` // รายการสินค้าที่ผ่านการเช็คแล้วจากบัญชี
+	UpdateBy          *string             `json:"-" db:"UpdateBy"`
 }
 
 type UpdateToReturn struct {
@@ -231,4 +233,27 @@ type ImportLinesActual struct {
 	ActualQTY    int     `json:"actualQty" db:"ActualQTY"`
 	Price        float64 `json:"price" db:"Price"`
 	StatusDelete bool    `json:"statusDelete" db:"StatusDelete"`
+}
+
+
+type OrderHeadDetail struct {
+	OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
+	SoNo        string    `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
+	StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
+	SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
+	CreateDate  time.Time `db:"CreateDate" json:"-"`            // วันที่สร้างรายการ
+
+	OrderLineDetail []OrderLineDetail `json:"OrderLineDetail"`
+}
+
+type OrderLineDetail struct {
+	OrderNo     string    `db:"OrderNo" json:"-"`         // เลขที่ใบสั่งซื้อ
+	SoNo        string    `db:"SoNo" json:"-"`            // เลขที่ใบสั่งขาย
+	StatusMKP   string    `db:"StatusMKP" json:"-"`       // สถานะ Market Place
+	SalesStatus string    `db:"SalesStatus" json:"-"`     // สถานะการขาย
+	SKU         string    `db:"SKU" json:"sku"`           // รหัสสินค้า
+	ItemName    string    `db:"ItemName" json:"itemName"` // ชื่อสินค้า
+	QTY         int       `db:"QTY" json:"qty"`           // จำนวนสินค้า
+	Price       float64   `db:"Price" json:"price"`       // ราคาต่อหน่วย
+	CreateDate  time.Time `db:"CreateDate" json:"-"`      // วันที่สร้างรายการ
 }

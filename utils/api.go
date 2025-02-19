@@ -9,7 +9,7 @@ import (
 func ParsePagination(r *http.Request) (int, int) {
 	query := r.URL.Query()
 	page := ParseInt(query.Get("page"), 1)    // Default page = 1
-	limit := ParseInt(query.Get("limit"), 10) // Default limit = 10
+	limit := ParseInt(query.Get("limit"), 4) // Default limit = 4
 	return page, limit
 }
 

@@ -130,7 +130,6 @@ func ValidateCreateBeforeReturnLine(lines []req.OrderLines) error {
 	return nil
 }
 
-
 func ValidateUpdateSaleReturn(orderNo string, srNo string, updateBy string) error {
 	if orderNo == "" {
 		return fmt.Errorf("order number is required")
@@ -152,47 +151,6 @@ func ValidateUpdateSaleReturn(orderNo string, srNo string, updateBy string) erro
 	// 🔹 ตรวจสอบ Price ต้องไม่เป็นค่าลบ
 	if line.Price < 0 {
 		return fmt.Errorf("price cannot be negative for line %d", index)
-	}
-
-	return nil
-}
-
-func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
-	// 1. ตรวจสอบข้อมูลพื้นฐาน
-	if req.OrderNo == "" {
-		return fmt.Errorf("⚠️ order number is required")
-	}
-	if req.SoNo == "" {
-		return fmt.Errorf("⚠️ SO number is required")
-	}
-
-	// 2. ตรวจสอบค่าที่ต้องมากกว่า 0
-	if *req.ChannelID <= 0 {
-		return fmt.Errorf("⚠️ invalid channel ID")
-	}
-
-	// 4. ตรวจสอบ order lines
-	if len(req.ReturnOrderLine) == 0 {
-		return fmt.Errorf("⚠️ at least one order line is required")
-	}
-
-	// 🔹 ตรวจสอบค่าภายใน order lines
-	for i, line := range req.ReturnOrderLine {
-		if line.SKU == "" {
-			return fmt.Errorf("⚠️ SKU is required for line %d", i+1)
-		}
-		if *line.QTY <= 0 {
-			return fmt.Errorf("⚠️ quantity must be greater than 0 for line %d", i+1)
-		}
-		if line.ReturnQTY < 0 {
-			return fmt.Errorf("⚠️ return quantity cannot be negative for line %d", i+1)
-		}
-		if line.ReturnQTY > *line.QTY {
-			return fmt.Errorf("⚠️ return quantity cannot be greater than quantity for line %d", i+1)
-		}
-		if line.Price < 0 {
-			return fmt.Errorf("⚠️ price cannot be negative for line %d", i+1)
-		}
 	}
 
 	return nil
@@ -236,52 +194,12 @@ func ValidateUpdateSaleReturn(req req.UpdateSaleReturn) error {
 	}
 	return nil
 }
-
-// ✅ ValidateCreateReturnOrder - ตรวจสอบความถูกต้องของการสร้าง Return Order
-func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
-	// 🔹 ตรวจสอบค่าพื้นฐาน
-	if err := validateRequiredString("order number", req.OrderNo); err != nil {
-		return err
-	}
-	if err := validateRequiredString("SO number", req.SoNo); err != nil {
-		return err
-	}
-	if err := validatePositiveInt("channel ID", req.ChannelID); err != nil {
-		return err
-	}
-
-	// 🔹 ตรวจสอบว่า order lines ต้องมีข้อมูล
-	if len(req.ReturnOrderLine) == 0 {
-		return fmt.Errorf("⚠️ at least one order line is required")
-	}
-
-	// 🔹 ตรวจสอบค่าภายใน order lines
-	for i, line := range req.ReturnOrderLine {
-		if err := validateRequiredString(fmt.Sprintf("SKU for line %d", i+1), line.SKU); err != nil {
-			return err
-		}
-		if err := validatePositiveInt(fmt.Sprintf("quantity for line %d", i+1), line.QTY); err != nil {
-			return err
-		}
-		if line.ReturnQTY < 0 {
-			return fmt.Errorf("⚠️ return quantity cannot be negative for line %d", i+1)
-		}
-		if line.ReturnQTY > *line.QTY {
-			return fmt.Errorf("⚠️ return quantity cannot be greater than quantity for line %d", i+1)
-		}
-		if line.Price < 0 {
-			return fmt.Errorf("⚠️ price cannot be negative for line %d", i+1)
-		}
-	}
-
-	return nil
-}
 */
 
 func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
 	var validate []string
 
-	// 1. ตรวจสอบข้อมูลพื้นฐาน
+	// ตรวจสอบข้อมูลออเดอร์
 	if req.OrderNo == "" {
 		validate = append(validate, "order number is required")
 	}
@@ -289,17 +207,15 @@ func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
 		validate = append(validate, "SO number is required")
 	}
 
-	// 2. ตรวจสอบค่าที่ต้องมากกว่า 0
-	if *req.ChannelID <= 0 {
+	if *req.ChannelID == 0 {
 		validate = append(validate, "invalid channel ID")
 	}
 
-	// 4. ตรวจสอบ order lines
+	// ตรวจสอบรายการคืน
 	if len(req.ReturnOrderLine) == 0 {
 		validate = append(validate, "at least one order line is required")
 	}
 
-	// 🔹 ตรวจสอบค่าภายใน order lines
 	for i, line := range req.ReturnOrderLine {
 		if line.SKU == "" {
 			validate = append(validate, fmt.Sprintf("SKU is required for line %d", i+1))
@@ -326,9 +242,111 @@ func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
 			formattedErrors[i] = fmt.Sprintf("{%s}", err)
 		}
 
-		errorMsg := strings.Join(formattedErrors, ", ") 
+		errorMsg := strings.Join(formattedErrors, ", ")
 		return fmt.Errorf("%s", errorMsg)
 	}
-	
+
+	return nil
+}
+
+func ValidateCreateTradeReturn(req req.BeforeReturnOrder) error {
+	var validate []string
+
+	// ตรวจสอบข้อมูลออเดอร์
+	if req.OrderNo == "" {
+		validate = append(validate, "order number is required")
+	}
+	if req.SoNo == "" {
+		validate = append(validate, "SO number is required")
+	}
+	if req.CustomerID == "" {
+		validate = append(validate, "customer ID is required")
+	}
+
+	if req.ChannelID == 0 {
+		validate = append(validate, "invalid channel ID")
+	}
+	if req.WarehouseID == 0 {
+		validate = append(validate, "invalid warehouse ID")
+	}
+
+	// ตรวจสอบรายการคืน
+	if len(req.BeforeReturnOrderLines) == 0 {
+		validate = append(validate, "at least one order line is required")
+	}
+
+	for i, line := range req.BeforeReturnOrderLines {
+		if line.SKU == "" {
+			validate = append(validate, fmt.Sprintf("SKU is required for line %d", i+1))
+		}
+		if line.QTY <= 0 {
+			validate = append(validate, fmt.Sprintf("quantity must be greater than 0 for line %d", i+1))
+		}
+		if line.ReturnQTY < 0 {
+			validate = append(validate, fmt.Sprintf("return quantity cannot be negative for line %d", i+1))
+		}
+		if line.ReturnQTY > line.QTY {
+			validate = append(validate, fmt.Sprintf("return quantity cannot be greater than quantity for line %d", i+1))
+		}
+		if line.Price < 0 {
+			validate = append(validate, fmt.Sprintf("price cannot be negative for line %d", i+1))
+		}
+		if line.AlterSKU != nil && *line.AlterSKU == "" {
+			validate = append(validate, fmt.Sprintf("alter SKU cannot be empty if provided for line %d", i+1))
+		}
+	}
+
+	// หากพบข้อผิดพลาด ให้ส่งคืนข้อผิดพลาดทั้งหมด
+	if len(validate) > 0 {
+		formattedErrors := make([]string, len(validate))
+
+		for i, err := range validate {
+			formattedErrors[i] = fmt.Sprintf("{%s}", err)
+		}
+
+		errorMsg := strings.Join(formattedErrors, ", ")
+		return fmt.Errorf("%s", errorMsg)
+	}
+
+	return nil
+}
+
+
+func ValidateCreateTradeReturnLine(lines []req.OrderLines) error {
+	var validate []string
+
+	for i, line := range lines {
+		if line.SKU == "" {
+			validate = append(validate, fmt.Sprintf("SKU is required for line %d", i+1))
+		}
+		if line.QTY <= 0 {
+			validate = append(validate, fmt.Sprintf("quantity must be greater than 0 for line %d", i+1))
+		}
+		if line.ReturnQTY < 0 {
+			validate = append(validate, fmt.Sprintf("return quantity cannot be negative for line %d", i+1))
+		}
+		if line.ReturnQTY > line.QTY {
+			validate = append(validate, fmt.Sprintf("return quantity cannot be greater than quantity for line %d", i+1))
+		}
+		if line.Price < 0 {
+			validate = append(validate, fmt.Sprintf("price cannot be negative for line %d", i+1))
+		}
+		// if line.AlterSKU != nil && *line.AlterSKU == "" {
+		// 	validate = append(validate, fmt.Sprintf("alter SKU cannot be empty if provided for line %d", i+1))
+		// }
+	}
+
+	// หากพบข้อผิดพลาด ให้ส่งคืนข้อผิดพลาดทั้งหมด
+	if len(validate) > 0 {
+		formattedErrors := make([]string, len(validate))
+
+		for i, err := range validate {
+			formattedErrors[i] = fmt.Sprintf("{%s}", err)
+		}
+
+		errorMsg := strings.Join(formattedErrors, ", ")
+		return fmt.Errorf("%s", errorMsg)
+	}
+
 	return nil
 }

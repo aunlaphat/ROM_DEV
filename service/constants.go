@@ -1,135 +1,131 @@
 package service
 
-// import (
-// 	entity "boilerplate-backend-go/Entity"
-// 	"context"
-// 	"database/sql"
-// 	"fmt"
-// )
+import (
+	entity "boilerplate-backend-go/Entity"
+	"boilerplate-backend-go/errors"
+	"context"
+	"database/sql"
 
-// // ส่วนรับ dropdown
-// type Constants interface {
-// 	GetThaiProvince() ([]entity.Province, error)
-// 	GetThaiDistrict() ([]entity.District, error)
-// 	GetThaiSubDistrict() ([]entity.SubDistrict, error)
-// 	// GetPostCode() ([]entity.PostCode, error)
-// 	GetWarehouse() ([]entity.Warehouse, error)
-// 	GetProduct(page, limit int) ([]entity.ROM_V_ProductAll, error)
-// 	//GetCustomer() ([]entity.ROM_V_Customer, error)
+	"go.uber.org/zap"
+)
 
-// }
+// ส่วนรับ dropdown
+type Constants interface {
+	GetThaiProvince(ctx context.Context) ([]entity.Province, error)
+	GetThaiDistrict(ctx context.Context) ([]entity.District, error)
+	GetThaiSubDistrict(ctx context.Context) ([]entity.SubDistrict, error)
+	// GetPostCode(ctx context.Context) ([]entity.PostCode, error)
+	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)
+	GetProduct(ctx context.Context, page, limit int) ([]entity.ROM_V_ProductAll, error)
+	//GetCustomer(ctx context.Context) ([]entity.ROM_V_Customer, error)
+    SearchProduct(ctx context.Context, keyword string) ([]entity.ROM_V_ProductAll, error)
+}
 
-// func (srv service) GetThaiProvince() ([]entity.Province, error) {
+func (srv service) GetThaiProvince(ctx context.Context) ([]entity.Province, error) {
+    getProvince, err := srv.constant.GetThaiProvince(ctx)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            srv.logger.Warn("[ data not found ]", zap.Error(err))
+            return nil, errors.ValidationError("[ no province data: %v ]", err)
+        }
+        srv.logger.Error("[ get province error ]", zap.Error(err))
+        return nil, errors.InternalError("[ get province error: %v ]", err)
+    }
+    return getProvince, nil
+}
 
-// 	getProvince, err := srv.constant.GetThaiProvince()
+func (srv service) GetThaiDistrict(ctx context.Context) ([]entity.District, error) {
+    getDistrict, err := srv.constant.GetThaiDistrict(ctx)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            srv.logger.Warn("[ data not found ]", zap.Error(err))
+            return nil, errors.ValidationError("[ no district data: %v ]", err)
+        }
+        srv.logger.Error("[ get district error ]", zap.Error(err))
+        return nil, errors.InternalError("[ get district error: %v ]", err)
+    }
+    return getDistrict, nil
+}
+
+func (srv service) GetThaiSubDistrict(ctx context.Context) ([]entity.SubDistrict, error) {
+    getSubDistrict, err := srv.constant.GetThaiSubDistrict(ctx)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            srv.logger.Warn("[ data not found ]", zap.Error(err))
+            return nil, errors.ValidationError("[ no sub district data: %v ]", err)
+        }
+        srv.logger.Error("[ get sub district error ]", zap.Error(err))
+        return nil, errors.InternalError("[ get sub district error: %v ]", err)
+    }
+    return getSubDistrict, nil
+}
+
+// func (srv service) GetPostCode(ctx context.Context) ([]entity.PostCode, error) {
+// 	getPostCode, err := srv.constant.GetPostCode(ctx)
 // 	if err != nil {
-// 		switch err {
-// 		case sql.ErrNoRows:
-// 			srv.logger.Error(err)
-// 			return nil, fmt.Errorf("no province data: %w", err)
-// 		default:
-// 			srv.logger.Error(err)
-// 			return nil, fmt.Errorf("get province error: %w", err)
+// 		if err == sql.ErrNoRows {
+// 			srv.logger.Warn("[  data not found ]", zap.Error(err))
+// 			return nil, errors.ValidationError("[ no post code data: %v ]", err)
 // 		}
+// 		srv.logger.Error("[  get post code error ]", zap.Error(err))
+// 		return nil, errors.InternalError("[ get post code error: %v ]", err)
 // 	}
-
-// 	return getProvince, nil
+// 	return getPostCode, nil
 // }
 
-// func (srv service) GetThaiDistrict() ([]entity.District, error) {
+func (srv service) GetWarehouse(ctx context.Context) ([]entity.Warehouse, error) {
+    getWarehouse, err := srv.constant.GetWarehouse(ctx)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            srv.logger.Warn("[  data not found ]", zap.Error(err))
+            return nil, errors.ValidationError("[ no warehouse data: %v ]", err)
+        }
+        srv.logger.Error("[  get warehouse error ]", zap.Error(err))
+        return nil, errors.InternalError("[ get warehouse error: %v ]", err)
+    }
+    return getWarehouse, nil
+}
 
-// 	getDistrict, err := srv.constant.GetThaiDistrict()
+func (srv service) GetProduct(ctx context.Context, page, limit int) ([]entity.ROM_V_ProductAll, error) {
+    offset := (page - 1) * limit
+
+    getProducts, err := srv.constant.GetProduct(ctx, offset, limit)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            srv.logger.Warn("[  data not found ]", zap.Error(err))
+            return nil, errors.ValidationError("[ no product data: %v ]", err)
+        }
+        srv.logger.Error("[  get product error ]", zap.Error(err))
+        return nil, errors.InternalError("[ get product error: %v ]", err)
+    }
+
+    return getProducts, nil
+}
+
+// func (srv service) GetCustomer(ctx context.Context) ([]entity.ROM_V_Customer, error) {
+// 	getCustomer, err := srv.constant.GetCustomer(ctx)
 // 	if err != nil {
-// 		switch err {
-// 		case sql.ErrNoRows:
-// 			srv.logger.Error(err)
-// 			return nil, fmt.Errorf("no district data: %w", err)
-// 		default:
-// 			srv.logger.Error(err)
-// 			return nil, fmt.Errorf("get district error: %w", err)
+// 		if err == sql.ErrNoRows {
+// 			srv.logger.Warn("[  data not found ]", zap.Error(err))
+// 			return nil, errors.ValidationError("[ no customer data: %v ]", err)
 // 		}
+// 		srv.logger.Error("[  get customer error ]", zap.Error(err))
+// 		return nil, errors.InternalError("[ get customer error: %v ]", err)
 // 	}
-
-// 	return getDistrict, nil
+// 	return getCustomer, nil
 // }
 
-// func (srv service) GetThaiSubDistrict() ([]entity.SubDistrict, error) {
+func (srv service) SearchProduct(ctx context.Context, keyword string) ([]entity.ROM_V_ProductAll, error) {
 
-// 	getSubDistrict, err := srv.constant.GetThaiSubDistrict()
-// 	if err != nil {
-// 		switch err {
-// 		case sql.ErrNoRows:
-// 			srv.logger.Error(err)
-// 			return nil, fmt.Errorf("no sub district data: %w", err)
-// 		default:
-// 			srv.logger.Error(err)
-// 			return nil, fmt.Errorf("get sub district error: %w", err)
-// 		}
-// 	}
+    getProducts, err := srv.constant.SearchProduct(ctx, keyword)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			srv.logger.Warn("[  data not found ]", zap.Error(err))
+			return nil, errors.ValidationError("[ no product data: %v ]", err)
+		}
+		srv.logger.Error("[  search product error ]", zap.Error(err))
+		return nil, errors.InternalError("[ search product error: %v ]", err)
+	}
 
-// 	return getSubDistrict, nil
-// }
-
-// // func (srv service) GetPostCode() ([]entity.PostCode, error) {
-
-// // 	getPostCode, err := srv.constant.GetPostCode()
-// // 	if err != nil {
-// // 		switch err {
-// // 		case sql.ErrNoRows:
-// // 			srv.logger.Error(err)
-// // 			return nil, fmt.Errorf("no post code data: %w", err)
-// // 		default:
-// // 			srv.logger.Error(err)
-// // 			return nil, fmt.Errorf("get post code error: %w", err)
-// // 		}
-// // 	}
-
-// // 	return getPostCode, nil
-// // }
-
-//
-// func (srv service) GetWarehouse() ([]entity.Warehouse, error) {
-
-// 	getWarehouse, err := srv.constant.GetWarehouse()
-// 	if err != nil {
-// 		switch err {
-// 		case sql.ErrNoRows:
-// 			srv.logger.Error(err)
-// 			return nil, fmt.Errorf("no warehouse data: %w", err)
-// 		default:
-// 			srv.logger.Error(err)
-// 			return nil, fmt.Errorf("get warehouse error: %w", err)
-// 		}
-// 	}
-
-// 	return getWarehouse, nil
-// }
-
-//
-// func (srv service) GetProduct(page, limit int) ([]entity.ROM_V_ProductAll, error) {
-
-// 	offset := (page - 1) * limit
-
-// 	products, err := srv.constant.GetProduct(context.Background(), offset, limit)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return products, nil
-// }
-
-// // func (srv service) GetCustomer() ([]entity.ROM_V_Customer, error) {
-// // 	getCustomer, err := srv.constant.GetCustomer()
-// // 	if err != nil {
-// // 		switch err {
-// // 		case sql.ErrNoRows:
-// // 			srv.logger.Error(err)
-// // 			return nil, fmt.Errorf("no customer data: %w", err)
-// // 		default:
-// // 			srv.logger.Error(err)
-// // 			return nil, fmt.Errorf("get customer error: %w", err)
-// // 		}
-// // 	}
-
-// // 	return getCustomer, nil
-// // }
+	return getProducts, nil
+}

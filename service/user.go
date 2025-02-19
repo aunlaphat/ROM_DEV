@@ -46,9 +46,9 @@ func (srv service) Login(ctx context.Context, req request.LoginWeb) (response.Us
 	userResponse := response.User{
 		UserID:       user.UserID,
 		UserName:     user.UserName,
-		RoleID:       user.RoleID,
-		FullNameTH:   user.FullNameTH,
-		NickName:     user.NickName,
+		RoleID:       *user.RoleID,
+		FullNameTH:   *user.FullNameTH,
+		NickName:     *user.NickName,
 		DepartmentNo: user.DepartmentNo,
 		Platform:     "web",
 	}
@@ -95,13 +95,13 @@ func (srv service) GetUser(ctx context.Context, username string) (response.UserR
 	userResponse := response.UserRole{
 		UserID:       user.UserID,
 		UserName:     user.UserName,
-		FullNameTH:   user.FullNameTH,
-		NickName:     user.NickName,
+		FullNameTH:   *user.FullNameTH,
+		NickName:     *user.NickName,
 		DepartmentNo: user.DepartmentNo,
-		RoleID:       user.RoleID,
-		RoleName:     user.RoleName,
-		Description:  user.Description,
-		Permission:   user.Permission,
+		RoleID:       *user.RoleID,
+		RoleName:     *user.RoleName,
+		Description:  *user.Description,
+		// Permission:   user.Permission,
 	}
 
 	logFinish.Info("✅ User credentials fetched successfully", zap.String("username", username))

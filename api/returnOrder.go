@@ -1,8 +1,9 @@
 package api
 
 import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
+	"boilerplate-backend-go/dto/request"
+	"boilerplate-backend-go/dto/response"
+	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/middleware"
 	"net/http"
 
@@ -37,9 +38,9 @@ func (app *Application) ReturnOrder(apiRouter *gin.RouterGroup) {
 // @Failure 	500 {object} Response "Internal Server Error"
 // @Router 		/return-order/get-all [get]
 func (app *Application) GetAllReturnOrder(c *gin.Context) {
-
 	result, err := app.Service.ReturnOrder.GetAllReturnOrder(c.Request.Context())
 	if err != nil {
+		app.Logger.Error("[ Error fetching return order ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -62,8 +63,15 @@ func (app *Application) GetAllReturnOrder(c *gin.Context) {
 func (app *Application) GetReturnOrderByOrderNo(c *gin.Context) {
 	orderNo := c.Param("orderNo")
 
+	if orderNo == "" {
+		app.Logger.Warn("[ OrderNo is required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		return
+	}
+
 	result, err := app.Service.ReturnOrder.GetReturnOrderByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
+		app.Logger.Error("[ Error fetching return order ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -85,6 +93,7 @@ func (app *Application) GetReturnOrderByOrderNo(c *gin.Context) {
 func (app *Application) GetAllReturnOrderLines(c *gin.Context) {
 	result, err := app.Service.ReturnOrder.GetAllReturnOrderLines(c.Request.Context())
 	if err != nil {
+		app.Logger.Error("[ Error fetching return order lines ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -107,8 +116,15 @@ func (app *Application) GetAllReturnOrderLines(c *gin.Context) {
 func (app *Application) GetReturnOrderLineByOrderNo(c *gin.Context) {
 	orderNo := c.Param("orderNo")
 
+	if orderNo == "" {
+		app.Logger.Warn("[ OrderNo is required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		return 
+	}
+
 	result, err := app.Service.ReturnOrder.GetReturnOrderLineByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
+		app.Logger.Error("[ Error fetching return order lines ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -143,13 +159,14 @@ func (app *Application) CreateReturnOrder(c *gin.Context) {
 	userID, exists := c.Get("UserID")
 	if !exists {
 		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
-		handleResponse(c, false, "[ Unauthorized - Missing UserID ]", nil, http.StatusUnauthorized)
+		handleError(c, errors.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
 		return
 	}
 
 	req.CreateBy = userID.(string)
 	result, err := app.Service.ReturnOrder.CreateReturnOrder(c.Request.Context(), req)
 	if err != nil {
+		app.Logger.Error("[  Failed to create order with lines ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -174,6 +191,12 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 	orderNo := c.Param("orderNo")
 	var req request.UpdateReturnOrder
 
+	if req.OrderNo == "" {
+		app.Logger.Warn("[ OrderNo is required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		return 
+	}
+
 	// *️⃣ ดึง Request JSON
 	if err := c.ShouldBindJSON(&req); err != nil {
 		app.Logger.Warn("[ Invalid request payload ]", zap.Error(err))
@@ -185,7 +208,7 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 	userID, exists := c.Get("UserID")
 	if !exists {
 		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
-		handleResponse(c, false, "[ Unauthorized - Missing UserID ]", nil, http.StatusUnauthorized)
+		handleError(c, errors.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
 		return
 	}
 
@@ -199,6 +222,7 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.UpdateReturnOrder(c.Request.Context(), req)
 	if err != nil {
+		app.Logger.Error("[ Failed to update order with lines ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -222,8 +246,15 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 func (app *Application) DeleteReturnOrder(c *gin.Context) {
 	orderNo := c.Param("orderNo")
 
+	if orderNo == "" {
+		app.Logger.Warn("[ OrderNo is required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		return 
+	}
+
 	err := app.Service.ReturnOrder.DeleteReturnOrder(c.Request.Context(), orderNo)
 	if err != nil {
+		app.Logger.Error("[ Failed to delete order with lines ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}

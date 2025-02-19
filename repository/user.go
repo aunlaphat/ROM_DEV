@@ -15,8 +15,8 @@ type UserRepository interface {
 func (repo repositoryDB) GetUser(ctx context.Context, username string) (entity.User, error) {
 	var user entity.User
 	query := `
-        SELECT UserID, UserName, Password, NickName, FullNameTH, DepartmentNo, RoleID, RoleName, Description, Permission
-        FROM ROM_V_UserPermission
+        SELECT UserID, UserName, Password, NickName, FullNameTH, DepartmentNo, RoleID, RoleName, Description
+        FROM ROM_V_UserDetail
         WHERE UserName = :username
     `
 
@@ -42,8 +42,8 @@ func (repo repositoryDB) GetUser(ctx context.Context, username string) (entity.U
 func (repo repositoryDB) GetUserFromLark(ctx context.Context, userID, username string) (response.User, error) {
 	var user response.User
 	query := `
-        SELECT UserID, UserName, RoleID, FullNameTH, NickName, DepartmentNo
-        FROM ROM_V_UserPermission
+        SELECT UserID, UserName, FullNameTH, NickName, DepartmentNo
+        FROM ROM_V_UserDetail
         WHERE UserID = :userID AND UserName = :userName
     `
 	params := map[string]interface{}{

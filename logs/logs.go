@@ -35,7 +35,7 @@ func NewLogger(serviceName, logPath string, maxSize, maxBackups, maxAge int) (*L
 		zapcore.NewCore(jsonEncoder, zapcore.AddSync(hook), zapcore.ErrorLevel),
 		zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), zapcore.DebugLevel),
 	)
-
+	// review
 	logger := zap.New(
 		core,
 		zap.Fields(zap.String("service", serviceName)),
