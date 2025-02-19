@@ -4,8 +4,8 @@ import (
 	request "boilerplate-backend-go/dto/request"
 	response "boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
-	"boilerplate-backend-go/utils"
 	"context"
+
 	// "database/sql"
 	"fmt"
 
@@ -56,8 +56,8 @@ type BeforeReturnService interface {
 
 	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อทั้งหมดพร้อมการแบ่งหน้า
 	GetAllOrderDetails(ctx context.Context, page, limit int) ([]response.OrderDetail, error)
-	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อโดยใช้หมายเลข SO
-	GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error)
+	// Method ดึงข้อมูลรายละเอียดคำสั่งซื้อโดยใช้ SO/OrderNo
+	SearchOrderDetail(ctx context.Context, soNo string) (*response.OrderDetail, error)
 	// Method ลบรายการ BeforeReturnOrderLine
 	DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error
 	// Method สร้างคำสั่งซื้อคืนสินค้า
@@ -73,18 +73,6 @@ type BeforeReturnService interface {
 // *️⃣ create trade , set statusReturnID = 3 (booking)
 func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("[ Starting trade return creation process ]", zap.String("OrderNo", req.OrderNo))
-
-	// *️⃣ ตรวจสอบว่า ReturnOrderLine ต้องไม่เป็นค่าว่าง (มีอย่างน้อย 1 รายการ) จึงจะสามารถสร้างการคืนของได้
-	if len(req.BeforeReturnOrderLines) == 0 {
-		srv.logger.Warn("[ ReturnOrderLine can't empty must be > 0 line ]")
-		return nil, errors.ValidationError("[ ReturnOrderLine can't empty must be > 0 line ]")
-	}
-
-	// *️⃣ Validate request ที่ส่งมา
-	if err := utils.ValidateCreateTradeReturn(req); err != nil {
-		srv.logger.Warn("[ Validation failed ]", zap.Error(err))
-		return nil, errors.ValidationError("[ Validation failed: %v ]", err)
-	}
 
 	// *️⃣ ตรวจสอบว่า OrderNo สร้างซ้ำหรือไม่
 	exists, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
@@ -112,11 +100,6 @@ func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeRetu
 func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, lines request.TradeReturnLine) ([]response.BeforeReturnOrderItem, error) {
 	srv.logger.Info("[ Starting trade return line creation process ]", zap.String("OrderNo", orderNo))
 
-	if orderNo == "" {
-		srv.logger.Warn("[ OrderNo is required ]")
-		return nil, errors.ValidationError("[ OrderNo is required ]")
-	}
-
 	// *️⃣ ตรวจสอบ OrderNo ว่ามีอยู่ใน BeforeReturnOrder
 	exists, err := srv.beforeReturnRepo.CheckBefOrderNoExists(ctx, orderNo)
 	if err != nil {
@@ -128,24 +111,18 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 		return nil, errors.NotFoundError("[ This OrderNo not found: %s ]", orderNo)
 	}
 
-	// *️⃣ Validate request ที่ส่งมา
-	if err := utils.ValidateCreateTradeReturnLine(lines.TradeReturnLine); err != nil {
-		srv.logger.Warn("[ Validation failed ]", zap.Error(err))
-		return nil, errors.ValidationError("[ Validation failed: %v ]", err)
-	}
-
 	// *️⃣ สร้างข้อมูลใน BeforeReturnOrderLine
 	err = srv.beforeReturnRepo.CreateTradeReturnLine(ctx, orderNo, lines.TradeReturnLine)
 	if err != nil {
 		srv.logger.Error("[ Failed to create trade return line ]", zap.Error(err))
-		return nil,  errors.InternalError("[ Failed to create trade return line: %v ]", err)
+		return nil, errors.InternalError("[ Failed to create trade return line: %v ]", err)
 	}
 
 	// *️⃣ ดึงข้อมูลของ order lines ที่เพิ่งสร้างขึ้นมาแสดง
 	createdOrderLines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)
 	if err != nil {
 		srv.logger.Error("[ Failed to fetch created order lines ]", zap.Error(err))
-		return nil,  errors.InternalError("[ Failed to fetch created order lines: %v ]", err)
+		return nil, errors.InternalError("[ Failed to fetch created order lines: %v ]", err)
 	}
 
 	return createdOrderLines, nil
@@ -153,16 +130,6 @@ func (srv service) CreateTradeReturnLine(ctx context.Context, orderNo string, li
 
 func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, orderNo string, sku string) error {
 	srv.logger.Info("[ Starting delete process ]", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
-
-	if orderNo == "" {
-		srv.logger.Warn("[ OrderNo is required ]")
-		return errors.ValidationError("[ OrderNo is required ]")
-	}
-
-	if sku == "" {
-		srv.logger.Warn("[ SKU is required ]")
-		return errors.ValidationError("[ SKU is required ]")
-	}
 
 	err := srv.beforeReturnRepo.DeleteBeforeReturnOrderLine(ctx, orderNo, sku)
 	if err != nil {
@@ -176,12 +143,6 @@ func (srv service) DeleteBeforeReturnOrderLine(ctx context.Context, orderNo stri
 
 func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeReturnRequest, updateBy string) error {
 	srv.logger.Info("[ Starting confirm receipt process ]", zap.String("Identifier", req.Identifier))
-
-	// *️⃣ ตรวจสอบค่าว่าง
-	if req.Identifier == "" {
-		srv.logger.Warn("[ OrderNo or TrackingNo are required ]")
-		return errors.ValidationError("[ OrderNo or TrackingNo are required ]")
-	}
 
 	// *️⃣ ตรวจสอบว่า orderNo or trackingNo มีอยู่ในฐานข้อมูล BeforeReturnOrder หรือไม่
 	exists, err := srv.beforeReturnRepo.CheckBefOrderOrTrackingExists(ctx, req.Identifier)
@@ -199,7 +160,7 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 		exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, req.Identifier, line.SKU)
 		if err != nil {
 			srv.logger.Error("[ Failed to check SKU existence", zap.String("SKU", line.SKU), zap.Error(err))
-			return  errors.InternalError("[ failed to check SKU existence: %v ]", err)
+			return errors.InternalError("[ failed to check SKU existence: %v ]", err)
 		}
 		if !exists {
 			srv.logger.Warn("[ SKU does not exist in BeforeReturnOrderLine from Identifier ]", zap.Error(err))
@@ -210,14 +171,14 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 	// 1. *️⃣อัปเดตสถานะใน BeforeReturnOrder
 	if err := srv.beforeReturnRepo.UpdateBefToWaiting(ctx, req, updateBy); err != nil {
 		srv.logger.Error("[ Failed to update BeforeReturnOrder ]", zap.Error(err))
-		return  errors.InternalError("[ Failed to update BeforeReturnOrder: %v ]", err)
+		return errors.InternalError("[ Failed to update BeforeReturnOrder: %v ]", err)
 	}
 
 	// 2. *️⃣ดึงข้อมูลจาก BeforeReturnOrder
 	returnOrderData, err := srv.beforeReturnRepo.GetBeforeReturnOrderData(ctx, req)
 	if err != nil {
 		srv.logger.Error("[ Failed to fetch BeforeReturnOrder ]", zap.Error(err))
-		return  errors.InternalError("[ Failed to fetch BeforeReturnOrder: %v ]", err)
+		return errors.InternalError("[ Failed to fetch BeforeReturnOrder: %v ]", err)
 	}
 
 	// *️⃣ กำหนดค่าเริ่มต้นให้กับ StatusCheckID ให้เป็นสถานะ waiting
@@ -226,19 +187,19 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 	// 3. *️⃣Insert ข้อมูลลงใน ReturnOrder
 	if err := srv.beforeReturnRepo.InsertReturnOrder(ctx, returnOrderData); err != nil {
 		srv.logger.Error("[ Failed to insert into ReturnOrder ]", zap.Error(err))
-		return  errors.InternalError("[ Failed to insert into ReturnOrder: %v ]", err)
+		return errors.InternalError("[ Failed to insert into ReturnOrder: %v ]", err)
 	}
 
 	// 4. *️⃣Insert ข้อมูลจาก importLines ลงใน ReturnOrderLine + Check ว่า SKU ตรงกับใน BeforeOD ก่อนถึงเพิ่มได้
 	if err := srv.beforeReturnRepo.InsertReturnOrderLine(ctx, returnOrderData, req); err != nil {
 		srv.logger.Error("[ Failed to insert into ReturnOrderLine ]", zap.Error(err))
-		return  errors.InternalError("[ Failed to insert into ReturnOrderLine: %v ]", err)
+		return errors.InternalError("[ Failed to insert into ReturnOrderLine: %v ]", err)
 	}
 
 	// 5. *️⃣Insert ข้อมูลภาพลงใน Images (ไฟล์ภาพ)
 	if err := srv.beforeReturnRepo.InsertImages(ctx, returnOrderData, req); err != nil {
 		srv.logger.Error("[ Failed to insert images ]", zap.Error(err))
-		return  errors.InternalError("[ Failed to insert images: %v ]", err)
+		return errors.InternalError("[ Failed to insert images: %v ]", err)
 	}
 
 	srv.logger.Info("[ Confirm Receipt successfully ]", zap.String("UpdateBy", updateBy))
@@ -249,16 +210,11 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToReturnRequest, updateBy string) error {
 	srv.logger.Info("[ Starting confirm return process ]", zap.String("OrderNo", req.OrderNo))
 
-	if req.OrderNo == "" {
-		srv.logger.Warn("[ OrderNo is required ]")
-		return errors.ValidationError("[ OrderNo is required ]")
-	}
-
 	// *️⃣ ตรวจสอบว่า OrderNo ตรงกับฐานข้อมูลใน BeforeReturn หรือไม่
 	exists, err := srv.beforeReturnRepo.CheckBefOrderNoExists(ctx, req.OrderNo)
 	if err != nil {
 		srv.logger.Error("[ Failed to check order existence ]", zap.Error(err))
-		return  errors.InternalError("[ Failed to check order existence: %v ]", err)
+		return errors.InternalError("[ Failed to check order existence: %v ]", err)
 	}
 	if !exists {
 		srv.logger.Warn("[ OrderNo does not exist in BeforeReturnOrder ]", zap.Error(err))
@@ -275,7 +231,7 @@ func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToRetur
 		exists, err := srv.beforeReturnRepo.CheckReLineSKUExists(ctx, req.OrderNo, line.SKU)
 		if err != nil {
 			srv.logger.Error("[ failed to check SKU existence ]", zap.Error(err))
-			return  errors.InternalError("[ failed to check SKU existence: %v", err)
+			return errors.InternalError("[ failed to check SKU existence: %v", err)
 		}
 		if !exists {
 			srv.logger.Warn("[ SKU does not exist in ReturnOrderLine from OrderNo ]", zap.Error(err))
@@ -286,20 +242,20 @@ func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToRetur
 	// *️⃣ อัปเดต BeforeReturnOrder
 	if err := srv.beforeReturnRepo.UpdateStatusToSuccess(ctx, req.OrderNo, updateBy); err != nil {
 		srv.logger.Error("[ Failed to update BeforeReturnOrder ]", zap.Error(err))
-		return  errors.InternalError("[ Failed to update BeforeReturnOrder: %v ]", err)
+		return errors.InternalError("[ Failed to update BeforeReturnOrder: %v ]", err)
 	}
 
 	// *️⃣ ดึงข้อมูล BeforeReturnOrder
 	beforeReturnOrder, err := srv.beforeReturnRepo.GetBeforeOrderDetails(ctx, req.OrderNo)
 	if err != nil {
 		srv.logger.Error("[ Failed to fetch BeforeReturnOrder details ]", zap.Error(err))
-		return  errors.InternalError("[ Failed to fetch BeforeReturnOrder details: %v ]", err)
+		return errors.InternalError("[ Failed to fetch BeforeReturnOrder details: %v ]", err)
 	}
 
 	// *️⃣ อัปเดต ReturnOrder และ ReturnOrderLine
 	if err := srv.beforeReturnRepo.UpdateReturnOrderAndLines(ctx, req, beforeReturnOrder); err != nil {
 		srv.logger.Error("[ Failed to fetch updated ReturnOrder and ReturnOrderLine ]", zap.Error(err))
-		return  errors.InternalError("[ Failed to fetch updated ReturnOrder and ReturnOrderLine: %v ]", err)
+		return errors.InternalError("[ Failed to fetch updated ReturnOrder and ReturnOrderLine: %v ]", err)
 	}
 
 	srv.logger.Info("[ Confirm Return successfully ]", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", updateBy))
@@ -321,16 +277,16 @@ func (srv service) GetAllOrderDetails(ctx context.Context, page, limit int) ([]r
 	return allorder, nil
 }
 
-func (srv service) GetOrderDetailBySO(ctx context.Context, soNo string) (*response.OrderDetail, error) {
-	srv.logger.Info("[ Starting get order detail by SO process ]", zap.String("SoNo", soNo))
+func (srv service) SearchOrderDetail(ctx context.Context, soNo string) (*response.OrderDetail, error) {
+	srv.logger.Info("[ Starting get order detail process ]")
 
-	orders, err := srv.beforeReturnRepo.GetOrderDetailBySO(ctx, soNo)
+	orders, err := srv.beforeReturnRepo.SearchOrderDetail(ctx, soNo)
 	if err != nil {
 		srv.logger.Error("[ Failed to fetch order ]", zap.Error(err))
 		return nil, errors.InternalError("[ Failed to fetch order: %v ]", err)
 	}
 
-	srv.logger.Info("[ Successfully fetched Order Details ]", zap.String("SoNo", soNo))
+	srv.logger.Info("[ Successfully fetched Order Details ]")
 	return orders, nil
 }
 
@@ -394,9 +350,9 @@ func (srv service) GetOrderDetailBySO(ctx context.Context, soNo string) (*respon
 func (srv service) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("[ Starting to get return order by order number ]", zap.String("OrderNo", orderNo))
 
-	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo) 
+	order, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, orderNo)
 	if err != nil {
-		srv.logger.Error("[ Failed to get return order by order number ]", zap.Error(err)) 
+		srv.logger.Error("[ Failed to get return order by order number ]", zap.Error(err))
 		return nil, errors.InternalError("[ Failed to get return order by order number: %v ]", err)
 	}
 
@@ -417,9 +373,9 @@ func (srv service) GetBeforeReturnOrderByOrderNo(ctx context.Context, orderNo st
 
 // Method สำหรับดึง Before Return Order Lines โดยใช้ OrderNo
 func (srv service) GetBeforeReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.BeforeReturnOrderItem, error) {
-	srv.logger.Info("[ Starting to get return order lines by order number ]", zap.String("OrderNo", orderNo)) 
-	
-	lines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)                  
+	srv.logger.Info("[ Starting to get return order lines by order number ]", zap.String("OrderNo", orderNo))
+
+	lines, err := srv.beforeReturnRepo.GetBeforeReturnOrderLineByOrderNo(ctx, orderNo)
 	if err != nil {
 		srv.logger.Error("[ Failed to get return order lines by order number ]", zap.Error(err))
 		return nil, errors.InternalError("[ Failed to get return order order lines by order number: %v ]", err)

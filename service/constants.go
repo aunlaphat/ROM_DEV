@@ -116,11 +116,6 @@ func (srv service) GetProduct(ctx context.Context, page, limit int) ([]entity.RO
 // }
 
 func (srv service) SearchProduct(ctx context.Context, keyword string) ([]entity.ROM_V_ProductAll, error) {
-    
-	if keyword == "" {
-        srv.logger.Warn("[ keyword is required ]")
-		return nil, errors.ValidationError("[ keyword is required ]")
-	}
 
     getProducts, err := srv.constant.SearchProduct(ctx, keyword)
 	if err != nil {

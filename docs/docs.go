@@ -217,72 +217,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/before-return-order/get-orderbySO/{soNo}": {
-            "get": {
-                "description": "Get details of an order by its SO number",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Before Return Order"
-                ],
-                "summary": "Get Before Return Order by SO",
-                "operationId": "GetBySO-BefReturnOrder",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "soNo",
-                        "name": "soNo",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Get by SO",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/response.OrderDetail"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "not found endpoint",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/before-return-order/get-orders": {
             "get": {
                 "description": "Get all Before Return Order with pagination",
@@ -343,6 +277,72 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/before-return-order/search": {
+            "get": {
+                "description": "Get details of an order by its SoNo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Before Return Order"
+                ],
+                "summary": "Get Before Return Order by SoNo",
+                "operationId": "SearchOrderDetail-BefReturnOrder",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "soNo",
+                        "name": "soNo",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Orders retrieved by SoNo",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.OrderDetail"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "not found endpoint",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }

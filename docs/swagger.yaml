@@ -1038,47 +1038,6 @@ paths:
       summary: Delete Order line
       tags:
       - Before Return Order
-  /before-return-order/get-orderbySO/{soNo}:
-    get:
-      consumes:
-      - application/json
-      description: Get details of an order by its SO number
-      operationId: GetBySO-BefReturnOrder
-      parameters:
-      - description: soNo
-        in: path
-        name: soNo
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get by SO
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.OrderDetail'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: not found endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Before Return Order by SO
-      tags:
-      - Before Return Order
   /before-return-order/get-orders:
     get:
       consumes:
@@ -1123,6 +1082,47 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get Paginated Before Return Order
+      tags:
+      - Before Return Order
+  /before-return-order/search:
+    get:
+      consumes:
+      - application/json
+      description: Get details of an order by its SoNo
+      operationId: SearchOrderDetail-BefReturnOrder
+      parameters:
+      - description: soNo
+        in: query
+        name: soNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Orders retrieved by SoNo
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.OrderDetail'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: not found endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Before Return Order by SoNo
       tags:
       - Before Return Order
   /constants/get-district:

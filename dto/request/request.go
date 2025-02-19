@@ -234,3 +234,26 @@ type ImportLinesActual struct {
 	Price        float64 `json:"price" db:"Price"`
 	StatusDelete bool    `json:"statusDelete" db:"StatusDelete"`
 }
+
+
+type OrderHeadDetail struct {
+	OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ
+	SoNo        string    `db:"SoNo" json:"soNo"`               // เลขที่ใบสั่งขาย
+	StatusMKP   string    `db:"StatusMKP" json:"statusMKP"`     // สถานะในตลาด
+	SalesStatus string    `db:"SalesStatus" json:"salesStatus"` // สถานะการขาย
+	CreateDate  time.Time `db:"CreateDate" json:"-"`            // วันที่สร้างรายการ
+
+	OrderLineDetail []OrderLineDetail `json:"OrderLineDetail"`
+}
+
+type OrderLineDetail struct {
+	OrderNo     string    `db:"OrderNo" json:"-"`         // เลขที่ใบสั่งซื้อ
+	SoNo        string    `db:"SoNo" json:"-"`            // เลขที่ใบสั่งขาย
+	StatusMKP   string    `db:"StatusMKP" json:"-"`       // สถานะ Market Place
+	SalesStatus string    `db:"SalesStatus" json:"-"`     // สถานะการขาย
+	SKU         string    `db:"SKU" json:"sku"`           // รหัสสินค้า
+	ItemName    string    `db:"ItemName" json:"itemName"` // ชื่อสินค้า
+	QTY         int       `db:"QTY" json:"qty"`           // จำนวนสินค้า
+	Price       float64   `db:"Price" json:"price"`       // ราคาต่อหน่วย
+	CreateDate  time.Time `db:"CreateDate" json:"-"`      // วันที่สร้างรายการ
+}

@@ -3,9 +3,11 @@ package api
 import (
 	// "boilerplate-backend-go/dto/request"
 	// res "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/middleware"
 	"boilerplate-backend-go/errors"
+	"boilerplate-backend-go/middleware"
 	"boilerplate-backend-go/utils"
+	"strings"
+
 	// "encoding/json"
 	// "fmt"
 	"net/http"
@@ -13,64 +15,65 @@ import (
 	// "time"
 
 	"github.com/gin-gonic/gin"
-	// "go.uber.org/zap"
+	"go.uber.org/zap"
 )
 
 // ReturnOrderRoute defines the routes for return order operations
 func (app *Application) BeforeReturnRoute(apiRouter *gin.RouterGroup) {
 	api := apiRouter.Group("/before-return-order")
-		// get real order
-		api.GET("/get-orders", app.GetAllOrderDetails) // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
-		api.GET("/get-orderbySO/:soNo", app.GetOrderDetailBySO) // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO
-	
+	// get real order
+	api.GET("/get-orders", app.GetAllOrderDetails)  // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
+	api.GET("/search", app.SearchOrderDetail) 		// แสดงข้อมูล order ที่ทำรายการคืนของมาโดยเลข SO or OrderNo
+
 	apiAuth := api.Group("/")
-		apiAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
-		apiAuth.DELETE("/delete-line/:orderNo/:sku", app.DeleteBeforeReturnOrderLine) // ลบรายการคืนแต่ละรายการ
+	apiAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
+	apiAuth.DELETE("/delete-line/:orderNo/:sku", app.DeleteBeforeReturnOrderLine) // ลบรายการคืนแต่ละรายการ
 	/*
-	apiRouter.Route("/before-return-order", func(r chi.Router) {
-		r.Get("/list-orders", app.ListBeforeReturnOrders)
-		r.Get("/list-lines", app.ListBeforeReturnOrderLines)
-		r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
-		r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
-		r.Post("/create", app.CreateBeforeReturnOrderWithLines)
-		r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
+		apiRouter.Route("/before-return-order", func(r chi.Router) {
+			r.Get("/list-orders", app.ListBeforeReturnOrders)
+			r.Get("/list-lines", app.ListBeforeReturnOrderLines)
+			r.Get("/{orderNo}", app.GetBeforeReturnOrderByOrderNo)
+			r.Get("/line/{orderNo}", app.GetBeforeReturnOrderLineByOrderNo)
+			r.Post("/create", app.CreateBeforeReturnOrderWithLines)
+			r.Patch("/update/{orderNo}", app.UpdateBeforeReturnOrderWithLines)
 
-		// get real order
-		r.Get("/get-orders", app.GetAllOrderDetails) // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
-		r.Get("/get-orderbySO/{soNo}", app.GetOrderDetailBySO) // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO
-		r.Delete("/delete-line/{orderNo}/{sku}", app.DeleteBeforeReturnOrderLine) // ลบรายการคืนแต่ละรายการ
-	})
+			// get real order
+			r.Get("/get-orders", app.GetAllOrderDetails) // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
+			r.Get("/get-orderbySO/{soNo}", app.SearchOrderDetail) // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO
+			r.Delete("/delete-line/{orderNo}/{sku}", app.DeleteBeforeReturnOrderLine) // ลบรายการคืนแต่ละรายการ
+		})
 
-	apiRouter.Route("/sale-return", func(r chi.Router) {
-		r.Use(jwtauth.Verifier(app.TokenAuth))
-		r.Use(jwtauth.Authenticator)
+		apiRouter.Route("/sale-return", func(r chi.Router) {
+			r.Use(jwtauth.Verifier(app.TokenAuth))
+			r.Use(jwtauth.Authenticator)
 
-		r.Get("/search", app.SearchOrder)
-		r.Post("/create", app.CreateSaleReturn)
-		r.Patch("/update/{orderNo}", app.UpdateSaleReturn)
-		r.Post("/confirm/{orderNo}", app.ConfirmSaleReturn)
-		r.Post("/cancel/{orderNo}", app.CancelSaleReturn)
-	})
+			r.Get("/search", app.SearchOrder)
+			r.Post("/create", app.CreateSaleReturn)
+			r.Patch("/update/{orderNo}", app.UpdateSaleReturn)
+			r.Post("/confirm/{orderNo}", app.ConfirmSaleReturn)
+			r.Post("/cancel/{orderNo}", app.CancelSaleReturn)
+		})
 
-	apiRouter.Route("/draft-confirm", func(r chi.Router) {
-		r.Use(jwtauth.Verifier(app.TokenAuth))
-		r.Use(jwtauth.Authenticator)
+		apiRouter.Route("/draft-confirm", func(r chi.Router) {
+			r.Use(jwtauth.Verifier(app.TokenAuth))
+			r.Use(jwtauth.Authenticator)
 
-		// Draft & Confirm ใช้เหมือนกันในส่วนของการเปิด Modal และดูรายละเอียดของ Order
-		r.Get("/detail/{orderNo}", app.GetDraftConfirmOrderByOrderNo)
+			// Draft & Confirm ใช้เหมือนกันในส่วนของการเปิด Modal และดูรายละเอียดของ Order
+			r.Get("/detail/{orderNo}", app.GetDraftConfirmOrderByOrderNo)
 
-		// Draft
-		r.Get("/list-drafts", app.ListDraftOrders)
-		r.Get("/list-code-r", app.ListCodeR)
-		r.Post("/code-r", app.AddCodeR)
-		r.Delete("/code-r/{orderNo}/{sku}", app.DeleteCodeR)
-		r.Patch("/update-draft/{orderNo}", app.UpdateDraftOrder)
+			// Draft
+			r.Get("/list-drafts", app.ListDraftOrders)
+			r.Get("/list-code-r", app.ListCodeR)
+			r.Post("/code-r", app.AddCodeR)
+			r.Delete("/code-r/{orderNo}/{sku}", app.DeleteCodeR)
+			r.Patch("/update-draft/{orderNo}", app.UpdateDraftOrder)
 
-		// Confirm
-		r.Get("/list-confirms", app.ListConfirmOrders)
-	})
+			// Confirm
+			r.Get("/list-confirms", app.ListConfirmOrders)
+		})
 	*/
 }
+
 /*
 
 // ListReturnOrders godoc
@@ -895,7 +898,7 @@ func (app *Application) UpdateDraftOrder(c *gin.Context) {
 }
 */
 
- // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
+// แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
 // @Summary 	Get Paginated Before Return Order
 // @Description Get all Before Return Order with pagination
 // @ID 			Get-BefReturnOrder-Paginated
@@ -915,6 +918,7 @@ func (app *Application) GetAllOrderDetails(c *gin.Context) {
 
 	result, err := app.Service.BeforeReturn.GetAllOrderDetails(c.Request.Context(), page, limit)
 	if err != nil {
+		app.Logger.Error("[ Failed to fetch order ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -922,36 +926,40 @@ func (app *Application) GetAllOrderDetails(c *gin.Context) {
 	handleResponse(c, true, "[ Orders retrieved successfully ]", result, http.StatusOK)
 }
 
- // แสดงข้อมูล order ที่ทำการคืนมาโดยเลข SO
-// @Summary      Get Before Return Order by SO
-// @Description  Get details of an order by its SO number
-// @ID           GetBySO-BefReturnOrder
+// @Summary      Get Before Return Order by SoNo
+// @Description  Get details of an order by its SoNo
+// @ID           SearchOrderDetail-BefReturnOrder
 // @Tags         Before Return Order
 // @Accept       json
 // @Produce      json
-// @Param        soNo  path     string  true  "soNo"
-// @Success      200 	  {object} Response{result=[]response.OrderDetail} "Get by SO"
-// @Failure      400      {object} Response "Bad Request"
-// @Failure      404      {object} Response "not found endpoint"
-// @Failure      500      {object} Response "Internal Server Error"
-// @Router       /before-return-order/get-orderbySO/{soNo} [get]
-func (app *Application) GetOrderDetailBySO(c *gin.Context) {
-	soNo := c.Param("soNo")
+// @Param        soNo  query    string  true  "soNo"     // Query parameter for SoNo
+// @Success      200    {object} Response{result=[]response.OrderDetail} "Orders retrieved by SoNo"
+// @Failure      400    {object} Response "Bad Request"
+// @Failure      404    {object} Response "not found endpoint"
+// @Failure      500    {object} Response "Internal Server Error"
+// @Router       /before-return-order/search [get]
+func (app *Application) SearchOrderDetail(c *gin.Context) {
+	soNo := c.DefaultQuery("soNo", "")
+
+	soNo = strings.TrimSpace(soNo)
 	if soNo == "" {
-		handleError(c, errors.ValidationError("soNo is required"))
+		app.Logger.Warn("[ SoNo is required ]")
+		handleError(c, errors.BadRequestError("SoNo is required"))
 		return
 	}
 
-	result, err := app.Service.BeforeReturn.GetOrderDetailBySO(c.Request.Context(), soNo)
+	result, err := app.Service.BeforeReturn.SearchOrderDetail(c.Request.Context(), soNo)
 	if err != nil {
+		app.Logger.Error("[ Failed to fetch order ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
 
-	handleResponse(c, true, "[ Orders retrieved by SO successfully ]", result, http.StatusOK)
+	handleResponse(c, true, "[ Orders retrieved successfully ]", result, http.StatusOK)
 }
 
- // ลบรายการคืนแต่ละรายการ
+
+// ลบรายการคืนแต่ละรายการ
 // @Summary 	Delete Order line
 // @Description Delete an order line
 // @ID 			delete-BeforeReturnOrderLine
@@ -969,7 +977,20 @@ func (app *Application) DeleteBeforeReturnOrderLine(c *gin.Context) {
 	orderNo := c.Param("orderNo")
 	sku := c.Param("sku")
 
+	if orderNo == "" {
+		app.Logger.Warn("[ OrderNo is required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		return 
+	}
+
+	if sku == "" {
+		app.Logger.Warn("[ SKU is required ]")
+		handleError(c, errors.BadRequestError("[ SKU is required ]"))
+		return 
+	}
+
 	if err := app.Service.BeforeReturn.DeleteBeforeReturnOrderLine(c.Request.Context(), orderNo, sku); err != nil {
+		app.Logger.Error("[ Failed to delete order line ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}

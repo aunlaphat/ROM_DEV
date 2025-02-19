@@ -3,7 +3,10 @@ package api
 import (
 	"boilerplate-backend-go/dto/request"
 	"boilerplate-backend-go/dto/response"
+	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/middleware"
+	"boilerplate-backend-go/utils"
+
 	// "boilerplate-backend-go/utils"
 	// "encoding/json"
 	// "fmt"
@@ -43,6 +46,7 @@ func (app *Application) TradeReturnRoute(apiRouter *gin.RouterGroup) {
 func (app *Application) GetStatusWaitingDetail(c *gin.Context) {
 	result, err := app.Service.ReturnOrder.GetReturnOrdersByStatus(c.Request.Context(), 1) // StatusCheckID = 1
 	if err != nil {
+		app.Logger.Error("[ Failed to fetch Return Orders ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -63,6 +67,7 @@ func (app *Application) GetStatusWaitingDetail(c *gin.Context) {
 func (app *Application) GetStatusConfirmDetail(c *gin.Context) {
 	result, err := app.Service.ReturnOrder.GetReturnOrdersByStatus(c.Request.Context(), 2) // StatusCheckID = 2
 	if err != nil {
+		app.Logger.Error("[ Failed to fetch Return Orders ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -83,13 +88,12 @@ func (app *Application) GetStatusConfirmDetail(c *gin.Context) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router  /trade-return/search-waiting [get]
 func (app *Application) SearchStatusWaitingDetail(c *gin.Context) {
-	startDate := c.DefaultQuery("startDate", "") // ใช้ DefaultQuery เพื่อหลีกเลี่ยงกรณีที่ไม่มี query parameter
-	endDate := c.DefaultQuery("endDate", "")     // ใช้ DefaultQuery เพื่อหลีกเลี่ยงกรณีที่ไม่มี query parameter
-	// startDate := c.URL.Query().Get("startDate")
-	// endDate := c.URL.Query().Get("endDate")
+	startDate := c.DefaultQuery("startDate", "")
+	endDate := c.DefaultQuery("endDate", "")
 
 	result, err := app.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(c.Request.Context(), 1, startDate, endDate) // StatusCheckID = 1
 	if err != nil {
+		app.Logger.Error("[ Failed to fetch Return Orders ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -110,13 +114,12 @@ func (app *Application) SearchStatusWaitingDetail(c *gin.Context) {
 // @Failure 500 {object} Response "Internal Server Error"
 // @Router  /trade-return/search-confirm [get]
 func (app *Application) SearchStatusConfirmDetail(c *gin.Context) {
-	startDate := c.DefaultQuery("startDate", "") // ใช้ DefaultQuery เพื่อหลีกเลี่ยงกรณีที่ไม่มี query parameter
-	endDate := c.DefaultQuery("endDate", "")     // ใช้ DefaultQuery เพื่อหลีกเลี่ยงกรณีที่ไม่มี query parameter
-	// startDate := c.URL.Query().Get("startDate")
-	// endDate := c.URL.Query().Get("endDate")
+	startDate := c.DefaultQuery("startDate", "")
+	endDate := c.DefaultQuery("endDate", "")
 
 	result, err := app.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(c.Request.Context(), 2, startDate, endDate) // StatusCheckID = 2
 	if err != nil {
+		app.Logger.Error("[ Failed to fetch Return Orders ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -146,6 +149,20 @@ func (app *Application) CreateTradeReturn(c *gin.Context) {
 		return
 	}
 
+	// *️⃣ ตรวจสอบว่า ReturnOrderLine ต้องไม่เป็นค่าว่าง (มีอย่างน้อย 1 รายการ)
+	if len(req.BeforeReturnOrderLines) == 0 {
+		app.Logger.Warn("[ sku information can't empty must be > 0 line ]")
+		handleError(c, errors.BadRequestError("[ sku information can't empty must be > 0 line ]"))
+		return
+	}
+
+	// *️⃣ Validate request ที่ส่งมา
+	if err := utils.ValidateCreateTradeReturn(req); err != nil {
+		app.Logger.Warn("[ Validation failed ]", zap.Error(err))
+		handleError(c, errors.BadRequestError("[ Validation failed: %v ]", err))
+		return
+	}
+
 	// *️⃣ ดึง userID จาก JWT token
 	userID, exists := c.Get("UserID")
 	if !exists {
@@ -157,6 +174,7 @@ func (app *Application) CreateTradeReturn(c *gin.Context) {
 	req.CreateBy = userID.(string)
 	result, err := app.Service.BeforeReturn.CreateTradeReturn(c.Request.Context(), req)
 	if err != nil {
+		app.Logger.Error("[ Failed to create trade return order ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -179,6 +197,13 @@ func (app *Application) CreateTradeReturn(c *gin.Context) {
 // @Router  /trade-return/add-line/{orderNo} [post]
 func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 	orderNo := c.Param("orderNo")
+
+	if orderNo == "" {
+		app.Logger.Warn("[ OrderNo is required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		return
+	}
+
 	var req request.TradeReturnLine
 
 	// *️⃣ ดึง Request JSON
@@ -187,6 +212,13 @@ func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 		handleValidationError(c, err)
 		return
 	}
+
+	// *️⃣ Validate request ที่ส่งมา
+	if err := utils.ValidateCreateTradeReturnLine(req.TradeReturnLine); err != nil {
+		app.Logger.Warn("[ Validation failed ]", zap.Error(err))
+		handleError(c, errors.BadRequestError("[ Validation failed: %v ]", err))
+		return
+	} 
 
 	// *️⃣ ดึง userID จาก JWT token
 	userID, exists := c.Get("UserID")
@@ -204,6 +236,7 @@ func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 
 	result, err := app.Service.BeforeReturn.CreateTradeReturnLine(c.Request.Context(), orderNo, req)
 	if err != nil {
+		app.Logger.Error("[ Failed to create trade return line ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -226,6 +259,13 @@ func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 // @Router  /trade-return/confirm-return/{orderNo} [Patch]
 func (app *Application) ConfirmReturn(c *gin.Context) {
 	orderNo := c.Param("orderNo")
+
+	if orderNo == "" {
+		app.Logger.Warn("[ OrderNo is required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		return
+	}
+
 	var req request.ConfirmToReturnRequest
 
 	// *️⃣ ดึง Request JSON
@@ -244,8 +284,9 @@ func (app *Application) ConfirmReturn(c *gin.Context) {
 	}
 
 	req.OrderNo = orderNo
-	err := app.Service.BeforeReturn.ConfirmReturn(c.Request.Context(), req, userID.(string)); 
+	err := app.Service.BeforeReturn.ConfirmReturn(c.Request.Context(), req, userID.(string))
 	if err != nil {
+		app.Logger.Error("[ Failed to comfirm return ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}

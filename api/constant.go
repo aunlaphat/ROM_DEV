@@ -1,12 +1,13 @@
 package api
 
 //for dropdown
-
 import (
+	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func (app *Application) Constants(apiRouter *gin.RouterGroup) {
@@ -36,6 +37,7 @@ func (app *Application) Constants(apiRouter *gin.RouterGroup) {
 func (app *Application) GetThaiProvince(c *gin.Context) {
 	result, err := app.Service.Constant.GetThaiProvince(c.Request.Context())
 	if err != nil {
+		app.Logger.Error("[ Error ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -57,6 +59,7 @@ func (app *Application) GetThaiProvince(c *gin.Context) {
 func (app *Application) GetThaiDistrict(c *gin.Context) {
 	result, err := app.Service.Constant.GetThaiDistrict(c.Request.Context())
 	if err != nil {
+		app.Logger.Error("[ Error ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -79,6 +82,7 @@ func (app *Application) GetThaiDistrict(c *gin.Context) {
 func (app *Application) GetThaiSubDistrict(c *gin.Context) {
 	result, err := app.Service.Constant.GetThaiSubDistrict(c.Request.Context())
 	if err != nil {
+		app.Logger.Error("[ Error ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -101,6 +105,7 @@ func (app *Application) GetThaiSubDistrict(c *gin.Context) {
 // func (app *Application) GetPostCode(c *gin.Context) {
 // 	result, err := app.Service.Constant.GetPostCode(c.Request.Context())
 // 	if err != nil {
+	// app.Logger.Error("[ Error ]", zap.Error(err))
 // 		handleError(c, err)
 // 		return
 // 	}
@@ -122,6 +127,7 @@ func (app *Application) GetThaiSubDistrict(c *gin.Context) {
 func (app *Application) GetWarehouse(c *gin.Context) {
 	result, err := app.Service.Constant.GetWarehouse(c.Request.Context())
 	if err != nil {
+		app.Logger.Error("[ Error ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -148,6 +154,7 @@ func (app *Application) GetProduct(c *gin.Context) {
 
 	result, err := app.Service.Constant.GetProduct(c.Request.Context(), page, limit)
 	if err != nil {
+		app.Logger.Error("[ Error ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -169,6 +176,7 @@ func (app *Application) GetProduct(c *gin.Context) {
 // func (app *Application) GetCustomer(c *gin.Context) {
 // 	result, err := app.Service.Constant.GetThaiSubDistrict(c.Request.Context())
 // 	if err != nil {
+	// app.Logger.Error("[ Error ]", zap.Error(err))
 // 		handleError(c, err)
 // 		return
 // 	}
@@ -190,8 +198,15 @@ func (app *Application) GetProduct(c *gin.Context) {
 func (app *Application) SearchProduct(c *gin.Context) {
 	keyword := c.Query("keyword")
 
+	if keyword == "" {
+        app.Logger.Warn("[ keyword is required ]")
+		handleError(c, errors.ValidationError("[ keyword is required ]"))
+		return 
+	}
+
 	result, err := app.Service.Constant.SearchProduct(c.Request.Context(), keyword)
 	if err != nil {
+		app.Logger.Error("[ Error ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}

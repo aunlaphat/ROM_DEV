@@ -9,7 +9,6 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -32,13 +31,6 @@ type ImportOrderService interface {
 func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error) {
 	srv.logger.Info("[ Starting search order process ]", zap.String("Search", search))
 
-	// *️⃣ ตรวจสอบ search ว่าเป็นค่าว่างหรือไม่
-	search = strings.TrimSpace(search)
-	if search == "" {
-		srv.logger.Warn("[ Search input is required (OrderNo or TrackingNo) ]")
-		return nil, errors.ValidationError("[ Search input is required (OrderNo or TrackingNo) ]")
-	}
-
 	// *️⃣ ตรวจสอบว่า search มีอยู่จริงในฐานข้อมูลหรือไม่
 	exists, err := srv.importOrderRepo.CheckSearch(ctx, search)
 	if err != nil {
@@ -46,8 +38,8 @@ func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]
 		return nil, errors.InternalError("[ Failed to check OrderNo or TrackingNo existence: %v ]", err)
 	}
 	if !exists {
-		srv.logger.Warn("[ Search value does not exist in database ]", zap.String("Search", search))
-		return nil, errors.NotFoundError("[ No orders found for the given OrderNo or TrackingNo: %s ]", search)
+		srv.logger.Warn("[ No orders found ]", zap.String("Search", search))
+		return nil, errors.NotFoundError("[ No orders found : %s ]", search)
 	}
 
 	// *️⃣ ค้นหา order จาก repository (เรียกใช้แบบ chunking)
@@ -74,17 +66,6 @@ var (
 
 func (srv service) UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error {
 	srv.logger.Info("[ Starting upload photo process ]", zap.String("OrderNo", orderNo), zap.String("ImageTypeID", imageTypeID), zap.String("SKU", sku), zap.String("Filename", filename))
-
-	if orderNo == "" || imageTypeID == "" {
-		srv.logger.Warn("[ OrderNo and ImageTypeID are required ]")
-		return errors.ValidationError("[ OrderNo and ImageTypeID are required ]")
-	}
-
-	// *️⃣ หาก ImageTypeID เป็น 3 แต่ SKU ไม่ได้ถูกส่งมา
-	if imageTypeID == "3" && sku == "" {
-		srv.logger.Warn("[ SKU is required for 3 imageTypeID ]")
-		return errors.ValidationError("[ SKU is required for 3 imageTypeID ]")
-	}
 
 	// *️⃣ สร้าง path สำหรับบันทึกไฟล์
 	dirPath := filepath.Join("uploads/images", orderNo, imageTypeID)
@@ -141,16 +122,6 @@ func (srv service) GetSummaryImportOrder(ctx context.Context, orderNo string) ([
 // *️⃣ เช็คว่า sku ที่รับเข้าค่าตรงกับที่มีในระบบของออเดอร์นั้น หากตรงกันจึงจะยืนยันการรับเข้าได้สำเร็จ
 func (srv service) ValidateSKU(ctx context.Context, orderNo, sku string) error {
 	srv.logger.Info("[ Starting validate SKU process ]", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
-
-	if orderNo == "" {
-		srv.logger.Warn("[ OrderNo is required ]")
-		return errors.ValidationError("[ OrderNo is required ]")
-	}
-
-	if sku == "" {
-		srv.logger.Warn("[ SKU is required ]")
-		return errors.ValidationError("[ SKU is required ]")
-	}
 
 	valid, err := srv.importOrderRepo.ValidateSKU(ctx, orderNo, sku)
 	if err != nil {
@@ -210,21 +181,6 @@ func (srv service) SaveImageMetadata(ctx context.Context, image request.Images) 
 
 func (srv service) ConfirmFromWH(ctx context.Context, soNo string, imageTypeID int, skus string, files []*multipart.FileHeader) ([]response.ImageResponse, error) {
 	srv.logger.Info("[ Starting confirm from warehouse process ]", zap.String("soNo", soNo), zap.Int("imageTypeID", imageTypeID))
-
-	if soNo == "" {
-		srv.logger.Warn("[ SoNo is required ]")
-		return nil, errors.ValidationError("[ SoNo is required ]")
-	}
-
-	if imageTypeID < 1 || imageTypeID > 3 {
-		srv.logger.Warn("[ Image Type ID 1, 2, 3 only ]")
-		return nil, errors.ValidationError("[ Image Type ID 1, 2, 3 only ]")
-	}
-
-	if len(files) == 0 {
-		srv.logger.Warn("[ no files uploaded ]")
-		return nil, errors.ValidationError("[ no files uploaded ]")
-	}
 
 	orderNo, err := srv.importOrderRepo.FetchReturnDetailsBySaleOrder(ctx, soNo)
 	if err != nil {

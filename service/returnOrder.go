@@ -47,12 +47,6 @@ func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrde
 func (srv service) GetReturnOrderByOrderNo(ctx context.Context, orderNo string) (*response.ReturnOrder, error) {
 	srv.logger.Info("[ Starting get return order process ]", zap.String("OrderNo", orderNo))
 
-	// *️⃣ ตรวจสอบว่า OrderNo ไม่เป็นค่าว่าง
-	if orderNo == "" {
-		srv.logger.Warn("[ OrderNo is required ]")
-		return nil, errors.ValidationError("[ OrderNo is required ]")
-	}
-
 	// *️⃣ ตรวจสอบ OrderNo
 	err := srv.CheckOrderNoExist(ctx, orderNo)
 	if err != nil {
@@ -96,11 +90,6 @@ func (srv service) GetAllReturnOrderLines(ctx context.Context) ([]response.Retur
 
 func (srv service) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error) {
 	srv.logger.Info("[ Starting get return order line process ]", zap.String("OrderNo", orderNo))
-
-	if orderNo == "" {
-		srv.logger.Warn("[ OrderNo is required ]")
-		return nil, errors.ValidationError("[ OrderNo is required ]")
-	}
 
 	// *️⃣ ตรวจสอบว่า OrderNo มีอยู่ใน ReturnOrderLine
 	err := srv.CheckOrderNoExist(ctx, orderNo)
@@ -208,11 +197,6 @@ func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateRetu
 func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder) (*response.UpdateReturnOrder, error) {
 	srv.logger.Info("[ Starting return order update process ]", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", *req.UpdateBy))
 
-	if req.OrderNo == "" {
-		srv.logger.Warn("[ OrderNo is required ]")
-		return nil, errors.ValidationError("[ OrderNo is required ]")
-	}
-
 	// *️⃣ ตรวจสอบ OrderNo
 	err := srv.CheckOrderNoExist(ctx, req.OrderNo)
 	if err != nil {
@@ -221,8 +205,8 @@ func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateRetu
 
 	err = srv.returnOrderRepo.UpdateReturnOrder(ctx, req)
 	if err != nil {
-		srv.logger.Error("[ Error updating ReturnOrder ]", zap.Error(err))
-		return nil, errors.InternalError("[ Error updating ReturnOrder: %v ]", err)
+		srv.logger.Error("[ Failed to update order with lines ]", zap.Error(err))
+		return nil, errors.InternalError("[ Failed to update order with lines: %v ]", err)
 	}
 
 	// *️⃣ ดึงข้อมูล order ที่อัพเดทเสร็จแล้ว
@@ -239,11 +223,6 @@ func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateRetu
 func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error {
 	srv.logger.Info("[ Starting delete return order process ]", zap.String("OrderNo", orderNo))
 
-	if orderNo == "" {
-		srv.logger.Warn("[ OrderNo is required ]")
-		return errors.ValidationError("[ OrderNo is required ]")
-	}
-
 	// *️⃣ ตรวจสอบ OrderNo
 	err := srv.CheckOrderNoExist(ctx, orderNo)
 	if err != nil {
@@ -252,8 +231,8 @@ func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error 
 
 	err = srv.returnOrderRepo.DeleteReturnOrder(ctx, orderNo)
 	if err != nil {
-		srv.logger.Error("[ Error deleting ReturnOrder ]", zap.Error(err))
-		return errors.InternalError("Failed to delete ReturnOrder: %v", err)
+		srv.logger.Error("[ Failed to delete order with lines ]", zap.Error(err))
+		return errors.InternalError("Failed to delete order with lines: %v", err)
 	}
 
 	srv.logger.Info("[ Return order deleted successfully ]", zap.String("OrderNo", orderNo))

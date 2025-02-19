@@ -5,6 +5,8 @@ import (
 	res "boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
 	"boilerplate-backend-go/middleware"
+	"strings"
+
 	// "boilerplate-backend-go/utils"
 	// "encoding/json"
 	"time"
@@ -49,8 +51,17 @@ func (app *Application) ImportOrderRoute(apiRouter *gin.RouterGroup) {
 func (app *Application) SearchOrderORTracking(c *gin.Context) {
 	search := c.DefaultQuery("search", "")
 
+	// *️⃣ ตรวจสอบ search ว่าเป็นค่าว่างหรือไม่
+	search = strings.TrimSpace(search) // ลบช่องว่างหน้าหลังข้อความกันการค้นหาผิดเพราะค่าว่าง
+	if search == "" {
+		app.Logger.Warn("[ Search input is required ]")
+		handleError(c, errors.BadRequestError("[ Search input is required ]"))
+		return 
+	}
+
 	result, err := app.Service.ImportOrder.SearchOrderORTracking(c.Request.Context(), search)
 	if err != nil {
+		app.Logger.Error("[ Failed to search ]", zap.String("Search", search), zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -78,10 +89,23 @@ func (app *Application) UploadPhotoHandler(c *gin.Context) {
 	imageTypeID := c.PostForm("imageTypeID")
 	sku := c.PostForm("sku")
 
-	header, err := c.FormFile("file") 
+	if orderNo == "" || imageTypeID == "" {
+		app.Logger.Warn("[ OrderNo and ImageTypeID are required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo and ImageTypeID are required ]"))
+		return 
+	}
+
+	// *️⃣ หาก ImageTypeID เป็น 3 แต่ SKU ไม่ได้ถูกส่งมา
+	if imageTypeID == "3" && sku == "" {
+		app.Logger.Warn("[ SKU is required for 3 imageTypeID ]")
+		handleError(c, errors.BadRequestError("[ SKU is required for 3 imageTypeID ]"))
+		return 
+	}
+
+	header, err := c.FormFile("file")
 	if err != nil {
 		app.Logger.Error("[ Failed to get file from request ]", zap.Error(err))
-		handleResponse(c, false, "[ Failed to get file from request ]", nil, http.StatusBadRequest)
+		handleError(c, errors.BadRequestError("[ Failed to get file from request ]"))
 		return
 	}
 
@@ -89,13 +113,14 @@ func (app *Application) UploadPhotoHandler(c *gin.Context) {
 	file, err := header.Open()
 	if err != nil {
 		app.Logger.Error("[ Failed to open file ]", zap.Error(err))
-		handleResponse(c, false, "[ Failed to open file ]", nil, http.StatusInternalServerError)
+		handleError(c, errors.InternalError("[ Failed to open file ]"))
 		return
 	}
 	defer file.Close() // ปิดไฟล์เมื่อใช้งานเสร็จ
 
 	err = app.Service.ImportOrder.UploadPhotoHandler(c.Request.Context(), orderNo, imageTypeID, sku, file, header.Filename)
 	if err != nil {
+		app.Logger.Error("[ Failed to upload ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -118,8 +143,15 @@ func (app *Application) UploadPhotoHandler(c *gin.Context) {
 func (app *Application) GetSummaryImportOrder(c *gin.Context) {
 	orderNo := c.Param("orderNo")
 
+	if orderNo == "" {
+		app.Logger.Warn("[ OrderNo is required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		return 
+	}
+
 	summary, err := app.Service.ImportOrder.GetSummaryImportOrder(c.Request.Context(), orderNo)
 	if err != nil {
+		app.Logger.Error("[ Failed to get order ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -144,8 +176,21 @@ func (app *Application) ValidateSKU(c *gin.Context) {
 	orderNo := c.Param("orderNo")
 	sku := c.Param("sku")
 
+	if orderNo == "" {
+		app.Logger.Warn("[ OrderNo is required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		return 
+	}
+
+	if sku == "" {
+		app.Logger.Warn("[ SKU is required ]")
+		handleError(c, errors.BadRequestError("[ SKU is required ]"))
+		return 
+	}
+
 	err := app.Service.ImportOrder.ValidateSKU(c.Request.Context(), orderNo, sku)
 	if err != nil {
+		app.Logger.Error("[ Failed to validate SKU ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -169,6 +214,13 @@ func (app *Application) ValidateSKU(c *gin.Context) {
 func (app *Application) ConfirmReceipt(c *gin.Context) {
 	identifier := c.Param("identifier")
 
+	// *️⃣ ตรวจสอบค่าว่าง
+	if identifier == "" {
+		app.Logger.Warn("[ OrderNo or TrackingNo are required ]")
+		handleError(c, errors.BadRequestError("[ OrderNo or TrackingNo are required ]"))
+		return 
+	}
+
 	var req request.ConfirmTradeReturnRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -186,6 +238,7 @@ func (app *Application) ConfirmReceipt(c *gin.Context) {
 	req.Identifier = identifier
 	err := app.Service.BeforeReturn.ConfirmReceipt(c.Request.Context(), req, userID.(string))
 	if err != nil {
+		app.Logger.Error("[ Failed to comfirm receipt ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -220,7 +273,7 @@ func (app *Application) ConfirmReceipt(c *gin.Context) {
 func (app *Application) ConfirmFromWH(c *gin.Context) {
 	// *️⃣ Parse Form Data
 	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
-		handleError(c, errors.ValidationError("Unable to parse form data"))
+		handleError(c, errors.BadRequestError("Unable to parse form data"))
 		return
 	}
 
@@ -228,12 +281,30 @@ func (app *Application) ConfirmFromWH(c *gin.Context) {
 	soNo := c.PostForm("soNo")
 	imageTypeID, err := strconv.Atoi(c.PostForm("imageTypeID"))
 	if err != nil {
-		handleError(c, errors.ValidationError("Invalid Image Type ID"))
+		handleError(c, errors.BadRequestError("Invalid Image Type ID"))
 		return
 	}
 
 	skus := c.PostForm("skus")
 	files := c.Request.MultipartForm.File["files"]
+
+	if soNo == "" {
+		app.Logger.Warn("[ SoNo is required ]")
+		handleError(c, errors.BadRequestError("[ SoNo is required ]"))
+		return 
+	}
+
+	if imageTypeID < 1 || imageTypeID > 3 {
+		app.Logger.Warn("[ Image Type ID 1, 2, 3 only ]")
+		handleError(c, errors.BadRequestError("[ Image Type ID 1, 2, 3 only ]"))
+		return 
+	}
+
+	if len(files) == 0 {
+		app.Logger.Warn("[ no files uploaded ]")
+		handleError(c, errors.BadRequestError("[ no files uploaded ]"))
+		return 
+	}
 
 	// *️⃣ เรียก Service เพื่อประมวลผล
 	result, err := app.Service.ImportOrder.ConfirmFromWH(c.Request.Context(), soNo, imageTypeID, skus, files)

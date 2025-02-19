@@ -205,19 +205,19 @@ func (repo repositoryDB) SearchProduct(ctx context.Context, keyword string) ([]e
 	var products []entity.ROM_V_ProductAll
 	offset := 0
 
-	// ✅ เพิ่ม `%` เข้าไปใน Go ก่อนใช้กับ SQL
+	// *️⃣ เพิ่ม `%` เข้าไปใน Go ก่อนใช้กับ SQL
 	searchParam := "%" + keyword + "%"
 
 	for {
-		query := `SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
-				  FROM Data_WebReturn.dbo.ROM_V_ProductAll
-				  WHERE NAMEALIAS LIKE :Keyword 
-				     OR SKU LIKE :Keyword
-				  ORDER BY SKU
-				  OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY;`
-
+		query := `	SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
+					FROM Data_WebReturn.dbo.ROM_V_ProductAll
+					WHERE NAMEALIAS LIKE :Keyword 
+						  OR SKU LIKE :Keyword
+					ORDER BY SKU
+					OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY
+				 `
 		var productBatch []entity.ROM_V_ProductAll
-		nstmt, err := repo.db.PrepareNamed(query)
+		nstmt, err := repo.db.PrepareNamed(query) // PrepareNamed ลด overhead จากการ compile SQL ซ้ำ ๆ
 		if err != nil {
 			return nil, fmt.Errorf("failed to prepare statement: %w", err)
 		}
@@ -238,9 +238,8 @@ func (repo repositoryDB) SearchProduct(ctx context.Context, keyword string) ([]e
 			break
 		}
 
-		// *️⃣ เพิ่ม batch เข้าไปในผลลัพธ์
+		// *️⃣ ถ้ามีข้อมูล เพิ่ม batch เข้าไปในผลลัพธ์
 		products = append(products, productBatch...)
-
 		// *️⃣ เพิ่ม offset เพื่อดึง batch ถัดไป
 		offset += chunkSize
 	}
