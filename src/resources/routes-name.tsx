@@ -2,15 +2,9 @@ import Home from "../screens/home";
 import LoginScene from "../screens/Authen/LoginScene";
 import NotfoundScene from "../screens/notFound";
 import { env } from "../utils/env/config";
-import Platform from "../screens/AdjustStock/Platformpercentages";
-import Management from "../screens/management/Product-multi-Management";
-import Sync from "../screens/sync/Shopee_Dcom";
-import Adjust from "../screens/Adjust/AdjustStock"; 
 import ImportOrder from "../screens/Return_import/Import_Return_Order"; 
 import ReturnOrder from "../screens/Return/Returnorder"; 
-import CreateExpense from "../screens/Expense/CreateExpense";
 import CreateReturn from "../screens/CreateReturn/CreateReturn";
-import SR from "../screens/CreateReturn/SR";
 import SRPage from "../screens/CreateReturn/SR";
 import IJPage from "../screens/CreateReturn/IJ";
 import CreateTradeReturn from "../screens/Create Trade Return/CreateTradeReturn";
@@ -36,13 +30,8 @@ type Route = {
 export type Routes = {
   ROUTE_MAIN: Route;
   ROUTE_NOTFOUND: Route;
-  ROUTE_PLATFORM: Route;
-  ROUTE_MANAGEMENT: Route;
-  ROUTE_SYNC: Route;
-  ROUTE_ADJUST: Route; // เพิ่ม ROUTE_ADJUST
   ROUTE_IMPORTORDER: Route;
   ROUTE_RETURNORDER: Route;
-  ROUTE_CREATEEXPENSE: Route;
   ROUTE_CREATERETURN: Route;
   ROUTE_SR: Route;
   ROUTE_IJ: Route;
@@ -79,34 +68,6 @@ export const ROUTES_PATH: Routes = {
     COMPONENT: Home,
     ELEMENT: () => <Home />,
   },
-  ROUTE_PLATFORM: {
-    KEY: "platform",
-    PATH: "/platform",
-    LABEL: "platform",
-    COMPONENT: Platform,
-    ELEMENT: () => <Platform />,
-  },
-  ROUTE_MANAGEMENT: {
-    KEY: "management",
-    PATH: "/management",
-    LABEL: "Product multi-management",
-    COMPONENT: Management,
-    ELEMENT: () => <Management />,
-  },
-  ROUTE_SYNC: {
-    KEY: "sync",
-    PATH: "/shopee_",
-    LABEL: "Sync MKP",
-    COMPONENT: Sync,
-    ELEMENT: () => <Sync />,
-  },
-  ROUTE_ADJUST: {
-    KEY: "adjust",
-    PATH: "/adjuststock", // กำหนด PATH ให้ AdjustStock
-    LABEL: "Adjust Stock",
-    COMPONENT: Adjust, // กำหนด COMPONENT ให้ Adjust
-    ELEMENT: () => <Adjust />, // กำหนด ELEMENT ให้ Adjust
-  },
   ROUTE_NOTFOUND: {
     KEY: "not_found",
     PATH: "/*",
@@ -128,14 +89,6 @@ export const ROUTES_PATH: Routes = {
     COMPONENT: ReturnOrder,
     ELEMENT: () => < ReturnOrder />,
   },
-
-ROUTE_CREATEEXPENSE: {
-  KEY: "Create_Expense",
-  PATH: "/Create_Expense",
-  LABEL: "Create Expense",
-  COMPONENT: CreateExpense,
-  ELEMENT: () => < CreateExpense />,
-},
 ROUTE_CREATERETURN: {
   KEY: "CreateReturn",
   PATH: "/CreateReturn",
@@ -221,18 +174,14 @@ ROUTE_MANAGEUSER: {
   COMPONENT: ManageUser,
   ELEMENT: () => <ManageUser/>,
 },
+
 };
 
 export type RoutesWorker = {
   ROUTE_MAIN: Route;
   ROUTE_NOTFOUND: Route;
-  ROUTE_PLATFORM: Route;
-  ROUTE_MANAGEMENT: Route;
-  ROUTE_SYNC: Route;
-  ROUTE_ADJUST: Route;
   ROUTE_IMPORTORDER: Route;
   ROUTE_RETURNORDER: Route;
-  ROUTE_CREATEEXPENSE: Route;
   ROUTE_CREATERETURN: Route;
   ROUTE_SR: Route;
   ROUTE_IJ: Route;
@@ -245,8 +194,6 @@ export type RoutesWorker = {
   ROUTE_REPORT: Route;
   ROUTE_DRAFTANDCONFIRM: Route;
   ROUTE_MANAGEUSER: Route;
-
-
 };
 
 export const ROUTES_PATH_WORKER: RoutesWorker = {
@@ -257,35 +204,6 @@ export const ROUTES_PATH_WORKER: RoutesWorker = {
     COMPONENT: Home,
     ELEMENT: () => <Home />,
   },
-  ROUTE_PLATFORM: {
-    KEY: "platform",
-    PATH: "/platform",
-    LABEL: "platform",
-    COMPONENT: Platform,
-    ELEMENT: () => <Platform />,
-  },
-  ROUTE_MANAGEMENT: {
-    KEY: "management",
-    PATH: "/management",
-    LABEL: "Product multi-management",
-    COMPONENT: Management,
-    ELEMENT: () => <Management />,
-  },
-  ROUTE_SYNC: {
-    KEY: "sync",
-    PATH: "/sync",
-    LABEL: "Dcom",
-    COMPONENT: Sync,
-    ELEMENT: () => <Sync />,
-  },
-  ROUTE_ADJUST: {
-    KEY: "adjust",
-    PATH: "/adjuststock",
-    LABEL: "Adjust Stock",
-    COMPONENT: Adjust,
-    ELEMENT: () => <Adjust />,
-  },
-
   ROUTE_NOTFOUND: {
     KEY: "not_found",
     PATH: "/*",
@@ -306,13 +224,6 @@ export const ROUTES_PATH_WORKER: RoutesWorker = {
     LABEL: "return order",
     COMPONENT: ReturnOrder,
     ELEMENT: () => < ReturnOrder />,
-  },
-  ROUTE_CREATEEXPENSE: {
-    KEY: "CreateExpense",
-    PATH: "/CreateExpense",
-    LABEL: "CreateExpense",
-    COMPONENT: CreateExpense,
-    ELEMENT: () => < CreateExpense />,
   },
   ROUTE_CREATERETURN: {
     KEY: "CreateReturn",
@@ -398,7 +309,7 @@ ROUTE_MANAGEUSER: {
   LABEL: "Manage User",
   COMPONENT: ManageUser,
   ELEMENT: () => <ManageUser/>,
-},
+}, 
 
 };
 
