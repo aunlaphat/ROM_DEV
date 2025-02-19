@@ -12,16 +12,18 @@ type ROM_V_User struct {
 }
 
 type ROM_V_UserDetail struct {
-	UserID       string `db:"UserID"`       // รหัสผู้ใช้
-	Password     string `db:"Password"`     // (MD5 Hash) ใช้สำหรับยืนยันตัวตน
-	UserName     string `db:"UserName"`     // ชื่อผู้ใช้
-	NickName     string `db:"NickName"`     // ชื่อเล่น
-	FullNameTH   string `db:"FullNameTH"`   // ชื่อเต็มภาษาไทย
-	DepartmentNo string `db:"DepartmentNo"` // รหัสแผนก
-	RoleID       int    `db:"RoleID"`       // รหัสบทบาท
-	RoleName     string `db:"RoleName"`     // ชื่อบทบาท
-	Description  string `db:"Description"`  // รายละเอียดบทบาท
-	IsActive     bool   `db:"IsActive"`     // สถานะการใช้งานบัญชี
+	UserID        string `db:"UserID"`        // รหัสผู้ใช้
+	Password      string `db:"Password"`      // (MD5 Hash) ใช้สำหรับยืนยันตัวตน
+	UserName      string `db:"UserName"`      // ชื่อผู้ใช้
+	NickName      string `db:"NickName"`      // ชื่อเล่น
+	FullNameTH    string `db:"FullNameTH"`    // ชื่อเต็มภาษาไทย
+	DepartmentNo  string `db:"DepartmentNo"`  // รหัสแผนก
+	RoleID        int    `db:"RoleID"`        // รหัสบทบาท
+	RoleName      string `db:"RoleName"`      // ชื่อบทบาท
+	WarehouseID   int    `db:"WarehouseID"`   // คลังสินค้า
+	WarehouseName string `db:"WarehouseName"` // ชื่อคลังสินค้า
+	Description   string `db:"Description"`   // รายละเอียดบทบาท
+	IsActive      bool   `db:"IsActive"`      // สถานะการใช้งานบัญชี
 }
 
 type ROM_V_OrderHeadDetail struct {

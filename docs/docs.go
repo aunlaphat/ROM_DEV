@@ -1558,28 +1558,12 @@ const docTemplate = `{
         "response.EditUserResponse": {
             "type": "object",
             "properties": {
-                "newRoleID": {
-                    "description": "Role ID ใหม่ (nullable)",
-                    "type": "integer"
-                },
-                "newRoleName": {
-                    "description": "ชื่อ Role ใหม่ (nullable)",
-                    "type": "string"
-                },
-                "newWarehouseID": {
-                    "description": "รหัสคลังสินค้าใหม่ (nullable)",
-                    "type": "string"
-                },
-                "oldRoleID": {
+                "roleID": {
                     "description": "Role ID เดิม",
                     "type": "integer"
                 },
-                "oldRoleName": {
+                "roleName": {
                     "description": "ชื่อ Role เดิม",
-                    "type": "string"
-                },
-                "oldWarehouseID": {
-                    "description": "รหัสคลังสินค้าเดิม",
                     "type": "string"
                 },
                 "updatedAt": {
@@ -1592,6 +1576,14 @@ const docTemplate = `{
                 },
                 "userID": {
                     "description": "รหัสพนักงานที่แก้ไข",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "description": "รหัสคลังสินค้าเดิม",
+                    "type": "integer"
+                },
+                "warehouseName": {
+                    "description": "ชื่อคลังสินค้าเดิม",
                     "type": "string"
                 }
             }
@@ -1800,6 +1792,14 @@ const docTemplate = `{
                 },
                 "userName": {
                     "description": "ชื่อผู้ใช้",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "description": "รหัสคลังสินค้า",
+                    "type": "integer"
+                },
+                "warehouseName": {
+                    "description": "ชื่อคลังสินค้า",
                     "type": "string"
                 }
             }

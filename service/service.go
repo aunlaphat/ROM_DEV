@@ -9,6 +9,7 @@ import (
 
 type service struct {
 	logger           logs.Logger
+	constantRepo     repository.ConstantRepository
 	userRepo         repository.UserRepository
 	orderRepo        repository.OrderRepository
 	draftConfirmRepo repository.DraftConfirmRepository
@@ -24,6 +25,7 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 	repo := repository.NewDB(db)
 	srv := service{
 		logger:           logger,
+		constantRepo:     repo,
 		userRepo:         repo,
 		orderRepo:        repo,
 		draftConfirmRepo: repo,
