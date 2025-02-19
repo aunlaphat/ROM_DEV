@@ -159,7 +159,7 @@ func (app *Application) CreateReturnOrder(c *gin.Context) {
 	userID, exists := c.Get("UserID")
 	if !exists {
 		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
-		handleResponse(c, false, "[ Unauthorized - Missing UserID ]", nil, http.StatusUnauthorized)
+		handleError(c, errors.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
 		return
 	}
 
@@ -208,7 +208,7 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 	userID, exists := c.Get("UserID")
 	if !exists {
 		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
-		handleResponse(c, false, "[ Unauthorized - Missing UserID ]", nil, http.StatusUnauthorized)
+		handleError(c, errors.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
 		return
 	}
 
