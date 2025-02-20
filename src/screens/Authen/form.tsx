@@ -12,7 +12,7 @@ export const LoginForm = () => {
       key: "2",
       span: 24,
       name: "password",
-      label: "รหัสผ่าน",
+      label: "รหัสผ่าน (password)",
       type: "INPUT_PASSWORD",
       rules: {
         required: true,

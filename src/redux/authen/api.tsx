@@ -3,7 +3,7 @@ import { GET, POST } from "../../services";
 import { CHECKAUTH, LARK_LOGIN, LOGIN } from "../../services/path";
 import * as type from "./types";
 import { windowNavigateReplaceTo } from "../../utils/navigation";
-import { ROUTES_PATH, ROUTE_LOGIN } from "../../resources/routes-name";
+import { ROUTES_PATH, ROUTE_LOGIN } from "../../resources/routes";
 import { removeCookies } from "../../store/useCookies";
 import {
   closeLoading,
@@ -30,17 +30,33 @@ export function* login(payload: any): Generator<any, void, any> {
   }
 }
 
-export function* logout() {
+export function* logout(): Generator<any, void, any> {
   try {
     openAlert({ type: "info", title: "ออกจากระบบสำเร็จ" });
     openLoading();
-    removeCookies("jwt");
+
+    // ✅ ใช้ fetch() แทน axios เพื่อให้มั่นใจว่า Cookie ถูกส่งไป
+    const response = yield fetch(`${process.env.REACT_APP_BACKEND_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include", // ✅ ให้ JWT Cookie ถูกส่งไปกับ API
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.warn("🚨 Logout failed with status:", response.status);
+    }
+
     yield put({ type: type.AUTHEN_LOGOUT_SUCCESS });
+
+    // ✅ Redirect ไปหน้า Login หลัง Logout สำเร็จ
+    windowNavigateReplaceTo({ pathname: ROUTE_LOGIN });
+
   } catch (e: any) {
-    openAlert({ type: "error", message: e.data });
+    openAlert({ type: "error", message: "เกิดข้อผิดพลาดระหว่าง Logout" });
     yield put({ type: type.AUTHEN_LOGOUT_FAIL, message: e.message });
   } finally {
-    windowNavigateReplaceTo({ pathname: ROUTE_LOGIN });
     closeLoading();
   }
 }
@@ -80,6 +96,8 @@ export function* checkAuthen(): Generator<any, void, any> {
       window.location.replace(ROUTES_PATH.ROUTE_MAIN.PATH);
     }
   } catch (e: any) {
+    console.warn("JWT Invalid → Redirecting to Login");
+    windowNavigateReplaceTo({ pathname: ROUTE_LOGIN });
     yield put({ type: type.AUTHEN_CHECK_FAIL, message: e.message });
   } finally {
     closeLoading();

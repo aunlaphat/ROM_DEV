@@ -61,7 +61,7 @@ const LoginScene = () => {
                     <img alt={imgLogo} src={imgLogo} width={300} />
                   </div>
                   <TextLogoLogin
-                    text={"Boiler Page System"}
+                    text={"Return Order Management System"}
                     bold
                     size={"28px"}
                     align={"center"}
@@ -97,7 +97,7 @@ const LoginScene = () => {
                             </ContainerButton>
                           </div>
                           <TextXSMall
-                            text={`Boiler Page Digitalcommerce`}
+                            text={`© ${new Date().getFullYear()} All Rights Reserved.`}
                             align={"center"}
                             color="grey"
                           />

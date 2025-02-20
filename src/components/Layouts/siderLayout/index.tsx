@@ -5,7 +5,7 @@ import { MenuItemProps } from "../../../resources/interface";
 import logo from "../../../assets/images/logo_org.png";
 import { useAuthLogin } from "../../../hooks/useAuth";
 import { useEffect } from "react";
-import { ROUTES_PATH } from "../../../resources/routes-name";
+import { ROUTES_PATH } from "../../../resources/routes";
 import { Icon } from "../../../resources";
 import { FormOutlined} from '@ant-design/icons';
 

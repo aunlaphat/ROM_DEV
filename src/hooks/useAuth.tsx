@@ -1,6 +1,6 @@
 import { useDispatch } from "react-redux";
 import { NavigateTo, windowNavigateReplaceTo } from "../utils/navigation";
-import { ROUTES_PATH, ROUTE_LOGIN } from "../resources/routes-name";
+import { ROUTES_PATH, ROUTE_LOGIN } from "../resources/routes";
 import { login, logout, login_lark } from "../redux/authen/action";
 import { getCookies } from "../store/useCookies";
 

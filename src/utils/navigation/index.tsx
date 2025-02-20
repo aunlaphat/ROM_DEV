@@ -1,4 +1,4 @@
-import * as routes from "../../resources/routes-name";
+import * as routes from "../../resources/routes";
 import { useNavigate } from "react-router-dom";
 
 export const NavigateTo = ({ pathname, state, search }: any) => {

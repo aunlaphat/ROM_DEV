@@ -4,7 +4,7 @@ import {
   ROUTES_PATH,
   ROUTES_PATH_NOPERMISSION,
   ROUTES_PATH_WORKER,
-} from "../../../resources/routes-name";
+} from "../../../resources/routes";
 import { useSelector } from "react-redux";
 
 const ContentLayout = ({ children }: any) => {

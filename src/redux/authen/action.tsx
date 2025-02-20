@@ -3,7 +3,7 @@ import * as type from "./types";
 export function login(payload: any) {
   return {
     type: type.AUTHEN_LOGIN_REQ,
-    payload: payload,
+    payload: payload, // { username, password }
   };
 }
 

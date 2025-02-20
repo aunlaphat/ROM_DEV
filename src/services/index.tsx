@@ -7,7 +7,7 @@ import { getCookies } from "../store/useCookies";
 //   PRODUCTION: env.url_prd,
 // };
 
-export const CONNECT_API = process.env.REACT_APP_BACKEND_URL;
+export const CONNECT_API = process.env.REACT_APP_BACKEND_URL; // .env
 
 const api = axios.create({
   baseURL: CONNECT_API,
@@ -28,11 +28,8 @@ const apiupload = axios.create({
 });
 
 export const GET = async (path: string, header?: any) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
   try {
-    const response = await api.get(`${path}`, header ? header : config);
+    const response = await api.get(`${path}`, header);
     let data = await response.data;
     return data;
   } catch (error: any) {
@@ -100,7 +97,7 @@ export const DELETE = async (path: string, data: any, header?: any) => {
   }
 };
 
-export const UPLODA = async (
+export const UPLOAD = async (
   path: string,
   formdata: FormData,
   header?: any
