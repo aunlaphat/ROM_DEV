@@ -1,9 +1,8 @@
 import { useDispatch } from "react-redux";
 import { NavigateTo, windowNavigateReplaceTo } from "../utils/navigation";
 import { ROUTES_PATH, ROUTE_LOGIN } from "../resources/routes-name";
-import { checkAuthen, login, logout } from "../redux/authen/action";
+import { login, logout, login_lark } from "../redux/authen/action";
 import { getCookies } from "../store/useCookies";
-import { openAlert } from "../components/alert/useAlert";
 
 export const useAuthLogin = () => {
   const dispatch = useDispatch();
@@ -20,19 +19,9 @@ export const useAuthLogin = () => {
     dispatch(logout());
   };
 
-  function checkLoginToken() {
-    // if (!getCookies('accessToken')) { // open this and comment below
-    // if (!getCookies("jwt") && window.location.pathname !== "/") {
-    //   openAlert({
-    //     type: "error",
-    //     message: "Token is unauthorized!",
-    //     title: "ERROR!",
-    //   });
-    //   dispatch(logout());
-    // } else {
-    //   dispatch(checkAuthen());
-    // }
-  }
+  const onLarkLogin = async (values: any) => {
+    dispatch(login_lark(values));
+  };
 
   function redirectToMain() {
     // if (getCookies('accessToken')) { // open this and comment below
@@ -43,9 +32,9 @@ export const useAuthLogin = () => {
 
   return {
     toLogin,
-    checkLoginToken,
     redirectToMain,
     onLogin,
     onLogout,
+    onLarkLogin,
   };
 };

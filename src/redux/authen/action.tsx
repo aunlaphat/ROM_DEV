@@ -19,3 +19,9 @@ export function checkAuthen() {
     type: type.AUTHEN_CHECK_REQ,
   };
 }
+export function login_lark(payload: any) {
+  return {
+    type: type.AUTHEN_LOGIN_LARK_REQ,
+    payload: payload,
+  };
+}

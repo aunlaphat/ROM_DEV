@@ -1,13 +1,13 @@
 import axios from "axios";
-import { env } from "../utils/env/config";
+//import { env } from "../utils/env/config";
 import { getCookies } from "../store/useCookies";
 
-export const MODE_API: any = {
-  DEVELOPMENT: env.url_dev,
-  PRODUCTION: env.url_prd,
-};
+// export const MODE_API: any = {
+//   DEVELOPMENT: env.url_dev,
+//   PRODUCTION: env.url_prd,
+// };
 
-export const CONNECT_API = MODE_API[`${env.node_env}`.toUpperCase()];
+export const CONNECT_API = process.env.REACT_APP_BACKEND_URL;
 
 const api = axios.create({
   baseURL: CONNECT_API,

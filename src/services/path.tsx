@@ -1,3 +1,9 @@
 export const LOGIN = `/auth/login`;
+export const LARK_LOGIN = `/auth/login`;
 export const LOGOUT = `/auth/logout`;
 export const CHECKAUTH = `/checkAuthen`;
+export const FETCHUSERS = `/manage-users/`;
+export const FETCHUSERBYID = `/manage-users/`;
+export const ADDUSER = `/manage-users/add`;
+export const EDITUSER = `/manage-users/edit/`;
+export const DELETEUSER = `/manage-users/delete/`;

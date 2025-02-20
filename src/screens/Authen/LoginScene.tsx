@@ -14,7 +14,7 @@ import { useAuthLogin } from "../../hooks/useAuth";
 const LoginScene = () => {
   const [disabled, setDisabled] = useState(true);
   const [loading, setLoading] = useState(false);
-  const { onLogin, checkLoginToken } = useAuthLogin();
+  const { onLogin } = useAuthLogin();
 
   const { setValue, getValues, control } = useForm();
 
