@@ -16,11 +16,11 @@ func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 	auth := apiRouter.Group("/auth")
 	auth.POST("/login", app.Login)              // Standard Login
 	auth.POST("/login-lark", app.LoginFromLark) // Login via Lark
+	auth.POST("/logout", app.Logout)            // Logout
 
 	// Routes requiring JWT authentication
 	auth.Use(middleware.JWTMiddleware(app.TokenAuth))
-	auth.GET("/", app.CheckAuthen)   // Check authentication status
-	auth.POST("/logout", app.Logout) // Logout
+	auth.GET("/", app.CheckAuthen) // Check authentication status
 }
 
 // Generate JWT token from user claims
@@ -69,7 +69,7 @@ func (app *Application) Login(c *gin.Context) {
 	token := app.GenerateToken(user)
 	app.Logger.Info("✅ Login successful", zap.String("username", user.UserName))
 
-	c.SetCookie("jwt", token, 4*3600, "/", "", false, true)
+	c.SetCookie("jwt", token, 4*3600, "/", "localhost", false, true)
 
 	handleResponse(c, true, "Login Success", token, http.StatusOK)
 }
@@ -102,7 +102,7 @@ func (app *Application) LoginFromLark(c *gin.Context) {
 	token := app.GenerateToken(user)
 	app.Logger.Info("✅ Lark login successful", zap.String("username", user.UserName))
 
-	c.SetCookie("jwt", token, 4*3600, "/", "", false, true)
+	c.SetCookie("jwt", token, 4*3600, "/", "localhost", false, true)
 
 	handleResponse(c, true, "Lark Login Success", token, http.StatusOK)
 }
