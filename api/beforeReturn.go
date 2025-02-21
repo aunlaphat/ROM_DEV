@@ -3,16 +3,13 @@ package api
 import (
 	// "boilerplate-backend-go/dto/request"
 	// res "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
+	Status "boilerplate-backend-go/errors"
+	"errors"
 	"boilerplate-backend-go/middleware"
 	"boilerplate-backend-go/utils"
+	"database/sql"
 	"strings"
-
-	// "encoding/json"
-	// "fmt"
 	"net/http"
-	// "strings"
-	// "time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -923,6 +920,12 @@ func (app *Application) GetAllOrderDetails(c *gin.Context) {
 		return
 	}
 
+	if len(result) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
+		return
+	}
+
 	handleResponse(c, true, "[ Orders retrieved successfully ]", result, http.StatusOK)
 }
 
@@ -944,14 +947,25 @@ func (app *Application) SearchOrderDetail(c *gin.Context) {
 	soNo = strings.TrimSpace(soNo)
 	if soNo == "" {
 		app.Logger.Warn("[ SoNo is required ]")
-		handleError(c, errors.BadRequestError("SoNo is required"))
+		handleError(c, Status.BadRequestError("SoNo is required"))
 		return
 	}
 
 	result, err := app.Service.BeforeReturn.SearchOrderDetail(c.Request.Context(), soNo)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			app.Logger.Warn("[ No data found ]", zap.String("soNo", soNo))
+			handleError(c, Status.NotFoundError("[ No data found for soNo: %s ]", soNo))
+			return
+		}
 		app.Logger.Error("[ Failed to fetch order ]", zap.Error(err))
 		handleError(c, err)
+		return
+	}
+
+	if len(result.OrderHeadDetail) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
 		return
 	}
 
@@ -979,18 +993,17 @@ func (app *Application) DeleteBeforeReturnOrderLine(c *gin.Context) {
 
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
 		return 
 	}
 
 	if sku == "" {
 		app.Logger.Warn("[ SKU is required ]")
-		handleError(c, errors.BadRequestError("[ SKU is required ]"))
+		handleError(c, Status.BadRequestError("[ SKU is required ]"))
 		return 
 	}
 
 	if err := app.Service.BeforeReturn.DeleteBeforeReturnOrderLine(c.Request.Context(), orderNo, sku); err != nil {
-		app.Logger.Error("[ Failed to delete order line ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}

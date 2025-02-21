@@ -3,12 +3,12 @@ package entity
 import "time"
 
 type User struct {
-	UserID       string `db:"UserID"`
-	UserName     string `db:"UserName"`
-	Password     string `db:"Password"`
+	UserID       string  `db:"UserID"`
+	UserName     string  `db:"UserName"`
+	Password     string  `db:"Password"`
 	NickName     *string `db:"NickName"`
 	FullNameTH   *string `db:"FullNameTH"`
-	DepartmentNo string `db:"DepartmentNo"`
+	DepartmentNo string  `db:"DepartmentNo"`
 	RoleID       *int    `db:"RoleID"`
 	RoleName     *string `db:"RoleName"`
 	Description  *string `db:"Description"`
@@ -48,27 +48,31 @@ type ROM_V_ProductAll struct {
 	Type      *string `db:"Type" json:"type"`           // ประเภทของสินค้า
 }
 
-type District struct {
-	Code         int    `db:"Code" json:"code"`
-	ProvinceCode int    `db:"ProvinceCode" json:"provinceCode"`
-	NameEN       string `db:"NameEN" json:"nameEN"`
-	NameTH       string `db:"NameTH" json:"nameTH"`
-}
-
-type SubDistrict struct {
-	Code         int    `db:"Code" json:"code"`
-	DistrictCode int    `db:"DistrictCode" json:"districtCode"`
-	ZipCode      string `db:"ZipCode" json:"zipCode"`
-	NameTH       string `db:"NameTH" json:"nameTH"`
-	NameEN       string `db:"NameEN" json:"nameEN"`
+type InvoiceInformation struct {
+	CustomerID   string  `db:"CustomerID" json:"customerID"`
+	CustomerName *string `db:"CustomerName" json:"customerName"` // ใช้เป็น CustomerName and InvoiceName
+	Address      *string `db:"Address" json:"address"`
+	TaxID        string  `db:"TaxID" json:"taxID"`
 }
 
 type Province struct {
-	Code   int    `db:"Code" json:"code"`
-	NameTH string `db:"NameTH" json:"nameTH"`
-	NameEN string `db:"NameEN" json:"nameEN"`
+	ProvinceCode    int    `db:"ProvinceCode" json:"provinceCode"`
+	ProvicesTH      string `db:"ProvicesTH" json:"provicesTH"`
 }
 
-type PostCode struct {
+type District struct {
+	ProvinceCode    int    `db:"ProvinceCode" json:"provinceCode"`
+	DistrictCode    int    `db:"DistrictCode" json:"districtCode"`
+	DistrictTH      string `db:"DistrictTH" json:"districtTH"`
+}
 
+type SubDistrict struct {
+	DistrictCode    int    `db:"DistrictCode" json:"districtCode"`
+	SubdistrictCode int    `db:"SubdistrictCode" json:"subdistrictCode"`
+	SubdistrictTH   string `db:"SubdistrictTH" json:"subdistrictTH"`
+}
+
+type PostalCode struct {
+	SubdistrictCode int    `db:"SubdistrictCode" json:"subdistrictCode"`
+	ZipCode         string `db:"ZipCode" json:"zipCode"`
 }

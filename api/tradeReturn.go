@@ -3,7 +3,7 @@ package api
 import (
 	"boilerplate-backend-go/dto/request"
 	"boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
+	Status "boilerplate-backend-go/errors"
 	"boilerplate-backend-go/middleware"
 	"boilerplate-backend-go/utils"
 
@@ -51,6 +51,12 @@ func (app *Application) GetStatusWaitingDetail(c *gin.Context) {
 		return
 	}
 
+	if len(result) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
+		return
+	}
+
 	handleResponse(c, true, "[ Return Orders with StatusCheckID = 1 (WAITING) retrieved successfully ]", result, http.StatusOK)
 }
 
@@ -69,6 +75,12 @@ func (app *Application) GetStatusConfirmDetail(c *gin.Context) {
 	if err != nil {
 		app.Logger.Error("[ Failed to fetch Return Orders ]", zap.Error(err))
 		handleError(c, err)
+		return
+	}
+
+	if len(result) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
 		return
 	}
 
@@ -98,6 +110,12 @@ func (app *Application) SearchStatusWaitingDetail(c *gin.Context) {
 		return
 	}
 
+	if len(result) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
+		return
+	}
+
 	handleResponse(c, true, "[ Return Orders of StatusCheckID = 1 retrieved successfully ]", result, http.StatusOK)
 }
 
@@ -119,8 +137,13 @@ func (app *Application) SearchStatusConfirmDetail(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.GetReturnOrdersByStatusAndDateRange(c.Request.Context(), 2, startDate, endDate) // StatusCheckID = 2
 	if err != nil {
-		app.Logger.Error("[ Failed to fetch Return Orders ]", zap.Error(err))
 		handleError(c, err)
+		return
+	}
+
+	if len(result) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
 		return
 	}
 
@@ -152,14 +175,14 @@ func (app *Application) CreateTradeReturn(c *gin.Context) {
 	// *️⃣ ตรวจสอบว่า ReturnOrderLine ต้องไม่เป็นค่าว่าง (มีอย่างน้อย 1 รายการ)
 	if len(req.BeforeReturnOrderLines) == 0 {
 		app.Logger.Warn("[ sku information can't empty must be > 0 line ]")
-		handleError(c, errors.BadRequestError("[ sku information can't empty must be > 0 line ]"))
+		handleError(c, Status.BadRequestError("[ sku information can't empty must be > 0 line ]"))
 		return
 	}
 
 	// *️⃣ Validate request ที่ส่งมา
 	if err := utils.ValidateCreateTradeReturn(req); err != nil {
 		app.Logger.Warn("[ Validation failed ]", zap.Error(err))
-		handleError(c, errors.BadRequestError("[ Validation failed: %v ]", err))
+		handleError(c, Status.BadRequestError("[ Validation failed: %v ]", err))
 		return
 	}
 
@@ -167,14 +190,13 @@ func (app *Application) CreateTradeReturn(c *gin.Context) {
 	userID, exists := c.Get("UserID")
 	if !exists {
 		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
-		handleError(c, errors.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
+		handleError(c, Status.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
 		return
 	}
 
 	req.CreateBy = userID.(string)
 	result, err := app.Service.BeforeReturn.CreateTradeReturn(c.Request.Context(), req)
 	if err != nil {
-		app.Logger.Error("[ Failed to create trade return order ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -200,7 +222,7 @@ func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
 		return
 	}
 
@@ -216,7 +238,7 @@ func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 	// *️⃣ Validate request ที่ส่งมา
 	if err := utils.ValidateCreateTradeReturnLine(req.TradeReturnLine); err != nil {
 		app.Logger.Warn("[ Validation failed ]", zap.Error(err))
-		handleError(c, errors.BadRequestError("[ Validation failed: %v ]", err))
+		handleError(c, Status.BadRequestError("[ Validation failed: %v ]", err))
 		return
 	} 
 
@@ -224,7 +246,7 @@ func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 	userID, exists := c.Get("UserID")
 	if !exists {
 		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
-		handleError(c, errors.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
+		handleError(c, Status.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
 		return
 	}
 
@@ -236,7 +258,6 @@ func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 
 	result, err := app.Service.BeforeReturn.CreateTradeReturnLine(c.Request.Context(), orderNo, req)
 	if err != nil {
-		app.Logger.Error("[ Failed to create trade return line ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -262,7 +283,7 @@ func (app *Application) ConfirmReturn(c *gin.Context) {
 
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
 		return
 	}
 
@@ -279,14 +300,13 @@ func (app *Application) ConfirmReturn(c *gin.Context) {
 	userID, exists := c.Get("UserID")
 	if !exists {
 		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
-		handleError(c, errors.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
+		handleError(c, Status.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
 		return
 	}
 
 	req.OrderNo = orderNo
 	err := app.Service.BeforeReturn.ConfirmReturn(c.Request.Context(), req, userID.(string))
 	if err != nil {
-		app.Logger.Error("[ Failed to comfirm return ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}

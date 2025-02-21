@@ -3,7 +3,7 @@ package api
 import (
 	"boilerplate-backend-go/dto/request"
 	"boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
+	Status "boilerplate-backend-go/errors"
 	"boilerplate-backend-go/middleware"
 	"net/http"
 
@@ -45,6 +45,12 @@ func (app *Application) GetAllReturnOrder(c *gin.Context) {
 		return
 	}
 
+	if len(result) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
+		return
+	}
+
 	handleResponse(c, true, "[ Get Return Order successfully ]", result, http.StatusOK)
 }
 
@@ -65,13 +71,12 @@ func (app *Application) GetReturnOrderByOrderNo(c *gin.Context) {
 
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
 		return
 	}
 
 	result, err := app.Service.ReturnOrder.GetReturnOrderByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
-		app.Logger.Error("[ Error fetching return order ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -98,6 +103,12 @@ func (app *Application) GetAllReturnOrderLines(c *gin.Context) {
 		return
 	}
 
+	if len(result) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
+		return
+	}
+
 	handleResponse(c, true, "[ Get Return Order Lines successfully ]", result, http.StatusOK)
 }
 
@@ -118,13 +129,12 @@ func (app *Application) GetReturnOrderLineByOrderNo(c *gin.Context) {
 
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
-		return 
+		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
+		return
 	}
 
 	result, err := app.Service.ReturnOrder.GetReturnOrderLineByOrderNo(c.Request.Context(), orderNo)
 	if err != nil {
-		app.Logger.Error("[ Error fetching return order lines ]", zap.String("orderNo", orderNo), zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -159,14 +169,13 @@ func (app *Application) CreateReturnOrder(c *gin.Context) {
 	userID, exists := c.Get("UserID")
 	if !exists {
 		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
-		handleError(c, errors.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
+		handleError(c, Status.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
 		return
 	}
 
 	req.CreateBy = userID.(string)
 	result, err := app.Service.ReturnOrder.CreateReturnOrder(c.Request.Context(), req)
 	if err != nil {
-		app.Logger.Error("[  Failed to create order with lines ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -193,8 +202,8 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 
 	if req.OrderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
-		return 
+		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
+		return
 	}
 
 	// *️⃣ ดึง Request JSON
@@ -208,7 +217,7 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 	userID, exists := c.Get("UserID")
 	if !exists {
 		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
-		handleError(c, errors.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
+		handleError(c, Status.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
 		return
 	}
 
@@ -222,7 +231,6 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 
 	result, err := app.Service.ReturnOrder.UpdateReturnOrder(c.Request.Context(), req)
 	if err != nil {
-		app.Logger.Error("[ Failed to update order with lines ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -248,13 +256,12 @@ func (app *Application) DeleteReturnOrder(c *gin.Context) {
 
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
-		return 
+		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
+		return
 	}
 
 	err := app.Service.ReturnOrder.DeleteReturnOrder(c.Request.Context(), orderNo)
 	if err != nil {
-		app.Logger.Error("[ Failed to delete order with lines ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}

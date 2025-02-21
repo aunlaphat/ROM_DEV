@@ -10,23 +10,31 @@ definitions:
     type: object
   entity.District:
     properties:
-      code:
+      districtCode:
         type: integer
-      nameEN:
-        type: string
-      nameTH:
+      districtTH:
         type: string
       provinceCode:
         type: integer
     type: object
+  entity.InvoiceInformation:
+    properties:
+      address:
+        type: string
+      customerID:
+        type: string
+      customerName:
+        description: ใช้เป็น CustomerName and InvoiceName
+        type: string
+      taxID:
+        type: string
+    type: object
   entity.Province:
     properties:
-      code:
+      provicesTH:
+        type: string
+      provinceCode:
         type: integer
-      nameEN:
-        type: string
-      nameTH:
-        type: string
     type: object
   entity.ROM_V_ProductAll:
     properties:
@@ -51,15 +59,11 @@ definitions:
     type: object
   entity.SubDistrict:
     properties:
-      code:
-        type: integer
       districtCode:
         type: integer
-      nameEN:
-        type: string
-      nameTH:
-        type: string
-      zipCode:
+      subdistrictCode:
+        type: integer
+      subdistrictTH:
         type: string
     type: object
   entity.Warehouse:
@@ -1129,13 +1133,19 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get all Thai District.
-      operationId: get-district
+      description: Retrieve a list of districts by province code
+      operationId: get-district-by-province
+      parameters:
+      - description: Province code
+        in: query
+        name: provinceCode
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: District
+          description: List of districts
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
@@ -1149,15 +1159,41 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
-        "404":
-          description: District not found
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get District by ProvinceCode
+      tags:
+      - Constants
+  /constants/get-postal-code:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve postal code by subdistrict code
+      operationId: get-postalcode-by-subdistrict
+      parameters:
+      - description: Subdistrict code
+        in: query
+        name: subdistrictCode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Postal code
+          schema:
+            type: string
+        "400":
+          description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Get Thai District
+      summary: Get Postal Code by SubdistrictCode
       tags:
       - Constants
   /constants/get-product:
@@ -1206,52 +1242,23 @@ paths:
       summary: Get ProductAll with Pagination
       tags:
       - Constants
-  /constants/get-province:
-    get:
-      consumes:
-      - application/json
-      description: Get all Thai Province.
-      operationId: get-province
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Province
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.Province'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Province not found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Thai Province
-      tags:
-      - Constants
   /constants/get-sub-district:
     get:
       consumes:
       - application/json
-      description: Get all Thai SubDistrict.
-      operationId: get-sub-district
+      description: Retrieve a list of subdistricts by district code
+      operationId: get-subdistrict-by-district
+      parameters:
+      - description: District code
+        in: query
+        name: districtCode
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: SubDistrict
+          description: List of subdistricts
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
@@ -1265,15 +1272,11 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
-        "404":
-          description: SubDistrict not found
-          schema:
-            $ref: '#/definitions/api.Response'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Get Thai SubDistrict
+      summary: Get Subdistrict by DistrictCode
       tags:
       - Constants
   /constants/get-warehouse:
@@ -1311,11 +1314,69 @@ paths:
       summary: Get Warehouse
       tags:
       - Constants
+  /constants/search-customer:
+    get:
+      consumes:
+      - application/json
+      description: Search for customers by CustomerID or InvoiceName with pagination
+        support (limit and offset)
+      operationId: search-customer
+      parameters:
+      - description: Search keyword
+        in: query
+        name: keyword
+        required: true
+        type: string
+      - description: Search by 'CustomerID' or 'InvoiceName'
+        in: query
+        name: searchType
+        required: true
+        type: string
+      - default: 0
+        description: Offset for pagination (default is 0)
+        in: query
+        name: offset
+        type: integer
+      - default: 4
+        description: Limit for number of customers to return (default is 4)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search Results
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.InvoiceInformation'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: No matching customer found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search Customer by CustomerID or InvoiceName
+      tags:
+      - Constants
   /constants/search-product:
     get:
       consumes:
       - application/json
-      description: Search for products by name or SKU with a limit
+      description: Search for products by SKU or NAMEALIAS with pagination support
+        (limit and offset)
       operationId: search-product
       parameters:
       - description: Search keyword
@@ -1323,6 +1384,21 @@ paths:
         name: keyword
         required: true
         type: string
+      - description: Search by 'SKU' or 'NAMEALIAS'
+        in: query
+        name: searchType
+        required: true
+        type: string
+      - default: 0
+        description: Offset for pagination (default is 0)
+        in: query
+        name: offset
+        type: integer
+      - default: 4
+        description: Limit for number of products to return (default is 4)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -1341,11 +1417,52 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
+        "404":
+          description: No matching products found
+          schema:
+            $ref: '#/definitions/api.Response'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
       summary: Search Product by Keyword
+      tags:
+      - Constants
+  /constants/search-province:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the list of provinces by keyword
+      operationId: search-province
+      parameters:
+      - description: Province search keyword
+        in: query
+        name: keyword
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of provinces
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.Province'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search Province by keyword
       tags:
       - Constants
   /import-order/confirm-receipt/{identifier}:

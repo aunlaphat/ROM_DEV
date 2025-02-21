@@ -3,133 +3,132 @@ package repository
 import (
 	entity "boilerplate-backend-go/Entity"
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"strings"
 )
 
 type Constants interface {
-	GetThaiProvince(ctx context.Context) ([]entity.Province, error)       // จังหวัด
-	GetThaiDistrict(ctx context.Context) ([]entity.District, error)       // เขต
-	GetThaiSubDistrict(ctx context.Context) ([]entity.SubDistrict, error) // ตำบล
-	// GetPostCode(ctx context.Context) ([]entity.PostCode, error) // เลขไปรษณีย์
-	GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) // รายการสินค้าแบบแบ่งรายการ
-	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)                         // ชื่อคลังสินค้า
-	// GetCustomer(ctx context.Context) ([]entity.ROM_V_Customer, error) // ข้อมูลลูกค้า
-	SearchProduct(ctx context.Context, keyword string) ([]entity.ROM_V_ProductAll, error)
+	SearchProvince(ctx context.Context, keyword string) ([]entity.Province, error)
+	GetDistrict(ctx context.Context, provinceCode string) ([]entity.District, error)
+	GetSubDistrict(ctx context.Context, districtCode string) ([]entity.SubDistrict, error)
+	GetPostalCode(ctx context.Context, subdistrictCode string) ([]entity.PostalCode, error)
+	
+	GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error)                                              // รายการสินค้าแบบแบ่งรายการ
+	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)                                                                      // ชื่อคลัง + location
+	SearchCustomer(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.InvoiceInformation, error) // ข้อมูลลูกค้า + invoice
+	SearchProduct(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.ROM_V_ProductAll, error)    // ข้อมูลสินค้า
 }
 
-func (repo repositoryDB) GetThaiProvince(ctx context.Context) ([]entity.Province, error) {
-	provinces := []entity.Province{}
+// ค้นหาในฐานข้อมูล Province ที่ตรงกับคำค้นหาของผู้ใช้ และคืนค่าผลลัพธ์เป็นจังหวัดที่มีอยู่ทั้งหมด
+func (repo repositoryDB) SearchProvince(ctx context.Context, keyword string) ([]entity.Province, error) {
+	var provinces []entity.Province
+	// ทำให้ keyword เป็น lowercase และลบช่องว่าง
+	cleanedKeyword := strings.ToLower(strings.ReplaceAll(keyword, " ", ""))
+	// เพิ่ม % เพื่อใช้กับ LIKE
+	searchParam := cleanedKeyword + "%"
 
-	query := `  SELECT Code, NameTH, NameEN
-				FROM V_ThaiAddressProvince
-				ORDER BY Code
-			 `
-	rows, err := repo.db.QueryxContext(ctx, query)
+	query := `	SELECT DISTINCT ProvinceCode, ProvicesTH
+				FROM Data_WebReturn.dbo.V_ThaiAddress
+				WHERE LOWER(ProvicesTH) LIKE :Keyword
+			  `
+
+	// เตรียมการคิวรี
+	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer rows.Close()
+	defer nstmt.Close()
 
-	for rows.Next() {
-		var province entity.Province
-		if err := rows.StructScan(&province); err != nil {
-			return nil, err
-		}
-		provinces = append(provinces, province)
+	// ดึงข้อมูลจากฐานข้อมูล
+	err = nstmt.SelectContext(ctx, &provinces, map[string]interface{}{"Keyword": searchParam})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch province data: %w", err)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
+	if len(provinces) == 0 {
+		return nil, sql.ErrNoRows
 	}
 
 	return provinces, nil
 }
 
-func (repo repositoryDB) GetThaiDistrict(ctx context.Context) ([]entity.District, error) {
-	districts := []entity.District{}
+// หลังจากเลือกจังหวัดแล้ว ระบบจะใช้ ProvinceCode เพื่อดึงข้อมูล District ที่สัมพันธ์กับจังหวัดนั้น
+func (repo repositoryDB) GetDistrict(ctx context.Context, provinceCode string) ([]entity.District, error) {
+	var districts []entity.District
 
-	query := `  SELECT ProvinceCode, Code, NameTH, NameEN
-				FROM V_ThaiAddressDistrict
-				ORDER BY Code
-			 `
+	query := `	SELECT DISTINCT ProvinceCode, DistrictCode, DistrictTH
+				FROM Data_WebReturn.dbo.V_ThaiAddress
+				WHERE ProvinceCode = :ProvinceCode
+				ORDER BY DistrictTH
+			  `
 
-	rows, err := repo.db.QueryxContext(ctx, query)
+	// เตรียมการคิวรี
+	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer rows.Close()
+	defer nstmt.Close()
 
-	for rows.Next() {
-		var district entity.District
-		if err := rows.StructScan(&district); err != nil {
-			return nil, err
-		}
-		districts = append(districts, district)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
+	// ดึงข้อมูลจากฐานข้อมูล
+	err = nstmt.SelectContext(ctx, &districts, map[string]interface{}{"ProvinceCode": provinceCode})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch district data: %w", err)
 	}
 
 	return districts, nil
 }
 
-func (repo repositoryDB) GetThaiSubDistrict(ctx context.Context) ([]entity.SubDistrict, error) {
-	subDistricts := []entity.SubDistrict{}
+// หลังจากเลือก District ระบบจะจำกัดตัวเลือก Subdistrict ตาม DistrictCode
+func (repo repositoryDB) GetSubDistrict(ctx context.Context, districtCode string) ([]entity.SubDistrict, error) {
+	var subdistricts []entity.SubDistrict
 
-	query := `	SELECT Code, DistrictCode, ZipCode, NameTH, NameEN
-				FROM V_ThaiAddressSubDistrict
-				ORDER BY Code
-			 `
-	rows, err := repo.db.QueryxContext(ctx, query)
+	query := `	SELECT DISTINCT DistrictCode, SubdistrictCode, SubdistrictTH
+				FROM Data_WebReturn.dbo.V_ThaiAddress
+				WHERE DistrictCode = :DistrictCode
+			  `
+
+	// เตรียมการคิวรี
+	nstmt, err := repo.db.PrepareNamed(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer rows.Close()
+	defer nstmt.Close()
 
-	for rows.Next() {
-		var subDistrict entity.SubDistrict
-		if err := rows.StructScan(&subDistrict); err != nil {
-			return nil, err
-		}
-		subDistricts = append(subDistricts, subDistrict)
+	// ดึงข้อมูลจากฐานข้อมูล
+	err = nstmt.SelectContext(ctx, &subdistricts, map[string]interface{}{"DistrictCode": districtCode})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch subdistrict data: %w", err)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return subDistricts, nil
+	return subdistricts, nil
 }
 
-// func (repo repositoryDB) GetPostCode(ctx context.Context) ([]entity.PostCode, error) {
+// เมื่อเลือก Subdistrict ระบบจะแสดง PostalCode ที่ตรงกับ SubdistrictCode
+func (repo repositoryDB) GetPostalCode(ctx context.Context, subdistrictCode string) ([]entity.PostalCode, error) {
+	var postalCodes []entity.PostalCode
 
-// 	postCodes := []entity.PostCode{}
+	query := `	SELECT DISTINCT SubdistrictCode, ZipCode
+				FROM Data_WebReturn.dbo.V_ThaiAddress
+				WHERE SubdistrictCode = :SubdistrictCode
+			  `
 
-// 	query := `
+	// เตรียมการคิวรี
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
 
-//           `
+	// ดึงข้อมูลจากฐานข้อมูล
+	err = nstmt.SelectContext(ctx, &postalCodes, map[string]interface{}{"SubdistrictCode": subdistrictCode})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch postal code data: %w", err)
+	}
 
-// 	rows, err := repo.db.QueryxContext(ctx, query)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer rows.Close()
-
-// 	for rows.Next() {
-// 		var postCode entity.PostCode
-// 		if err := rows.StructScan(&postCode); err != nil {
-// 			return nil, err
-// 		}
-// 		postCodes = append(postCodes, postCode)
-// 	}
-
-// 	if err := rows.Err(); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return postCodes, nil
-// }
+	return postalCodes, nil
+}
 
 func (repo repositoryDB) GetWarehouse(ctx context.Context) ([]entity.Warehouse, error) {
 	warehouses := []entity.Warehouse{}
@@ -157,6 +156,7 @@ func (repo repositoryDB) GetWarehouse(ctx context.Context) ([]entity.Warehouse, 
 }
 
 func (repo repositoryDB) GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) {
+
 	query := `  SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
 				FROM Data_WebReturn.dbo.ROM_V_ProductAll
 				ORDER BY SKU
@@ -195,53 +195,118 @@ func (repo repositoryDB) GetProduct(ctx context.Context, offset, limit int) ([]e
 	return products, nil
 }
 
-// func (repo repositoryDB) GetCustomer(ctx context.Context) ([]entity.SubDistrict, error) {
+// เมื่อผู้ใช้เลือก CustomerID จาก dropdown ระบบจะดึงข้อมูล CustomerName, Address, TaxID ที่เกี่ยวข้องกับ CustomerID
+// เมื่อผู้ใช้เลือก InvoiceName ระบบจะดึง CustomerName, Address, TaxID ที่เกี่ยวข้องกับ InvoiceName
+func (repo repositoryDB) SearchCustomer(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.InvoiceInformation, error) {
+	var customers []entity.InvoiceInformation
 
-// }
+	// ทำให้ keyword เป็น lowercase และลบช่องว่าง
+	cleanedKeyword := strings.ToLower(strings.ReplaceAll(keyword, " ", ""))
 
-func (repo repositoryDB) SearchProduct(ctx context.Context, keyword string) ([]entity.ROM_V_ProductAll, error) {
-	// *️⃣ จำนวนข้อมูลที่ต้องการดึงในแต่ละ batch
-	const chunkSize = 1000
+	// เพิ่ม % เพื่อใช้กับ LIKE
+	searchParam := cleanedKeyword + "%"
+
+	var query string
+
+	// เลือกค้นหาตาม searchType
+	if searchType == "CustomerID" {
+		// ค้นหาจาก CustomerID
+		query = `	SELECT CustomerID, CustomerName, Address, TaxID
+					FROM Data_WebReturn.dbo.InvoiceInformation
+					WHERE REPLACE(LOWER(CustomerID), ' ', '') LIKE :Keyword
+					ORDER BY CustomerID
+					OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY
+				`
+	} else if searchType == "InvoiceName" {
+		// ค้นหาจาก InvoiceName
+		query = `	SELECT CustomerName, Address, TaxID
+					FROM Data_WebReturn.dbo.InvoiceInformation
+					WHERE REPLACE(LOWER(CustomerName), ' ', '') LIKE :Keyword
+					ORDER BY CustomerName
+					OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY
+				`
+	} else {
+		return nil, fmt.Errorf("invalid search type")
+	}
+
+	// เตรียมการคิวรี
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
+
+	// ดึงข้อมูลจากฐานข้อมูลโดยใช้ OFFSET และ FETCH
+	err = nstmt.SelectContext(ctx, &customers, map[string]interface{}{
+		"Keyword": searchParam,
+		"Offset":  offset,
+		"Limit":   limit,
+	})
+	if err != nil {
+
+		return nil, fmt.Errorf("failed to fetch customer data: %w", err)
+	}
+
+	if len(customers) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
+	return customers, nil
+}
+
+// เมื่อเลือก SKU ระบบจะแสดง NAMEALIAS ที่ตรงกับ SKU
+// เมื่อเลือก NAMEALIAS ระบบจะแสดง SKU ที่ตรงกับ NAMEALIAS
+func (repo repositoryDB) SearchProduct(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) {
 	var products []entity.ROM_V_ProductAll
-	offset := 0
 
-	// *️⃣ เพิ่ม `%` เข้าไปใน Go ก่อนใช้กับ SQL
-	searchParam := "%" + keyword + "%"
+	// ทำให้ keyword เป็น lowercase และลบช่องว่าง
+	cleanedKeyword := strings.ToLower(strings.ReplaceAll(keyword, " ", ""))
 
-	for {
-		query := `	SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
+	// เพิ่ม % เพื่อใช้กับ LIKE
+	searchParam := "%" + cleanedKeyword + "%"
+
+	var query string
+
+	// เลือกค้นหาตาม SKU หรือ NAMEALIAS
+	if searchType == "SKU" {
+		// ค้นหาจาก SKU
+		query = `	SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
 					FROM Data_WebReturn.dbo.ROM_V_ProductAll
-					WHERE NAMEALIAS LIKE :Keyword 
-						  OR SKU LIKE :Keyword
+					WHERE REPLACE(LOWER(SKU), ' ', '') LIKE :Keyword
 					ORDER BY SKU
 					OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY
 				 `
-		var productBatch []entity.ROM_V_ProductAll
-		nstmt, err := repo.db.PrepareNamed(query) // PrepareNamed ลด overhead จากการ compile SQL ซ้ำ ๆ
-		if err != nil {
-			return nil, fmt.Errorf("failed to prepare statement: %w", err)
-		}
-		defer nstmt.Close()
+	} else if searchType == "NAMEALIAS" {
+		// ค้นหาจาก NAMEALIAS
+		query = `	SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
+					FROM Data_WebReturn.dbo.ROM_V_ProductAll
+					WHERE REPLACE(LOWER(NAMEALIAS), ' ', '') LIKE :Keyword
+					ORDER BY NAMEALIAS
+					OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY
+				 `
+	} else {
+		return nil, fmt.Errorf("invalid search type")
+	}
 
-		// *️⃣ ดึงข้อมูลจาก View ในแต่ละ batch
-		err = nstmt.SelectContext(ctx, &productBatch, map[string]interface{}{
-			"Keyword": searchParam,
-			"Limit":   chunkSize,
-			"Offset":  offset,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch product data: %w", err)
-		}
+	// เตรียมการคิวรี
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
 
-		// *️⃣ ถ้าไม่มีข้อมูลให้หยุดการดึงข้อมูล
-		if len(productBatch) == 0 {
-			break
-		}
+	// ดึงข้อมูลจากฐานข้อมูลโดยใช้ OFFSET และ FETCH
+	err = nstmt.SelectContext(ctx, &products, map[string]interface{}{
+		"Keyword": searchParam,
+		"Offset":  offset,
+		"Limit":   limit,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch product data: %w", err)
+	}
 
-		// *️⃣ ถ้ามีข้อมูล เพิ่ม batch เข้าไปในผลลัพธ์
-		products = append(products, productBatch...)
-		// *️⃣ เพิ่ม offset เพื่อดึง batch ถัดไป
-		offset += chunkSize
+	if len(products) == 0 {
+		return nil, sql.ErrNoRows
 	}
 
 	return products, nil
