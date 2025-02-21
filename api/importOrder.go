@@ -3,7 +3,7 @@ package api
 import (
 	"boilerplate-backend-go/dto/request"
 	res "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
+	Status "boilerplate-backend-go/errors"
 	"boilerplate-backend-go/middleware"
 	"strings"
 
@@ -55,7 +55,7 @@ func (app *Application) SearchOrderORTracking(c *gin.Context) {
 	search = strings.TrimSpace(search) // ลบช่องว่างหน้าหลังข้อความกันการค้นหาผิดเพราะค่าว่าง
 	if search == "" {
 		app.Logger.Warn("[ Search input is required ]")
-		handleError(c, errors.BadRequestError("[ Search input is required ]"))
+		handleError(c, Status.BadRequestError("[ Search input is required ]"))
 		return 
 	}
 
@@ -63,6 +63,12 @@ func (app *Application) SearchOrderORTracking(c *gin.Context) {
 	if err != nil {
 		app.Logger.Error("[ Failed to search ]", zap.String("Search", search), zap.Error(err))
 		handleError(c, err)
+		return
+	}
+
+	if len(result) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
 		return
 	}
 
@@ -91,21 +97,21 @@ func (app *Application) UploadPhotoHandler(c *gin.Context) {
 
 	if orderNo == "" || imageTypeID == "" {
 		app.Logger.Warn("[ OrderNo and ImageTypeID are required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo and ImageTypeID are required ]"))
+		handleError(c, Status.BadRequestError("[ OrderNo and ImageTypeID are required ]"))
 		return 
 	}
 
 	// *️⃣ หาก ImageTypeID เป็น 3 แต่ SKU ไม่ได้ถูกส่งมา
 	if imageTypeID == "3" && sku == "" {
 		app.Logger.Warn("[ SKU is required for 3 imageTypeID ]")
-		handleError(c, errors.BadRequestError("[ SKU is required for 3 imageTypeID ]"))
+		handleError(c, Status.BadRequestError("[ SKU is required for 3 imageTypeID ]"))
 		return 
 	}
 
 	header, err := c.FormFile("file")
 	if err != nil {
 		app.Logger.Error("[ Failed to get file from request ]", zap.Error(err))
-		handleError(c, errors.BadRequestError("[ Failed to get file from request ]"))
+		handleError(c, Status.BadRequestError("[ Failed to get file from request ]"))
 		return
 	}
 
@@ -113,7 +119,7 @@ func (app *Application) UploadPhotoHandler(c *gin.Context) {
 	file, err := header.Open()
 	if err != nil {
 		app.Logger.Error("[ Failed to open file ]", zap.Error(err))
-		handleError(c, errors.InternalError("[ Failed to open file ]"))
+		handleError(c, Status.InternalError("[ Failed to open file ]"))
 		return
 	}
 	defer file.Close() // ปิดไฟล์เมื่อใช้งานเสร็จ
@@ -145,7 +151,7 @@ func (app *Application) GetSummaryImportOrder(c *gin.Context) {
 
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
 		return 
 	}
 
@@ -153,6 +159,12 @@ func (app *Application) GetSummaryImportOrder(c *gin.Context) {
 	if err != nil {
 		app.Logger.Error("[ Failed to get order ]", zap.Error(err))
 		handleError(c, err)
+		return
+	}
+
+	if len(summary) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
 		return
 	}
 
@@ -178,20 +190,24 @@ func (app *Application) ValidateSKU(c *gin.Context) {
 
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo is required ]"))
+		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
 		return 
 	}
 
 	if sku == "" {
 		app.Logger.Warn("[ SKU is required ]")
-		handleError(c, errors.BadRequestError("[ SKU is required ]"))
+		handleError(c, Status.BadRequestError("[ SKU is required ]"))
 		return 
 	}
 
-	err := app.Service.ImportOrder.ValidateSKU(c.Request.Context(), orderNo, sku)
+	valid, err := app.Service.ImportOrder.ValidateSKU(c.Request.Context(), orderNo, sku)
 	if err != nil {
-		app.Logger.Error("[ Failed to validate SKU ]", zap.Error(err))
 		handleError(c, err)
+		return
+	}
+	if !valid {
+		app.Logger.Warn("[ SKU mismatch ]", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
+		handleError(c, Status.BadRequestError("[ SKU %s mismatch for this order %s ]", sku, orderNo))
 		return
 	}
 
@@ -217,7 +233,7 @@ func (app *Application) ConfirmReceipt(c *gin.Context) {
 	// *️⃣ ตรวจสอบค่าว่าง
 	if identifier == "" {
 		app.Logger.Warn("[ OrderNo or TrackingNo are required ]")
-		handleError(c, errors.BadRequestError("[ OrderNo or TrackingNo are required ]"))
+		handleError(c, Status.BadRequestError("[ OrderNo or TrackingNo are required ]"))
 		return 
 	}
 
@@ -231,14 +247,13 @@ func (app *Application) ConfirmReceipt(c *gin.Context) {
 	userID, exists := c.Get("UserID")
 	if !exists {
 		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
-		handleError(c, errors.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
+		handleError(c, Status.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
 		return
 	}
 
 	req.Identifier = identifier
 	err := app.Service.BeforeReturn.ConfirmReceipt(c.Request.Context(), req, userID.(string))
 	if err != nil {
-		app.Logger.Error("[ Failed to comfirm receipt ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
@@ -273,7 +288,7 @@ func (app *Application) ConfirmReceipt(c *gin.Context) {
 func (app *Application) ConfirmFromWH(c *gin.Context) {
 	// *️⃣ Parse Form Data
 	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
-		handleError(c, errors.BadRequestError("Unable to parse form data"))
+		handleError(c, Status.BadRequestError("Unable to parse form data"))
 		return
 	}
 
@@ -281,7 +296,7 @@ func (app *Application) ConfirmFromWH(c *gin.Context) {
 	soNo := c.PostForm("soNo")
 	imageTypeID, err := strconv.Atoi(c.PostForm("imageTypeID"))
 	if err != nil {
-		handleError(c, errors.BadRequestError("Invalid Image Type ID"))
+		handleError(c, Status.BadRequestError("Invalid Image Type ID"))
 		return
 	}
 
@@ -290,19 +305,19 @@ func (app *Application) ConfirmFromWH(c *gin.Context) {
 
 	if soNo == "" {
 		app.Logger.Warn("[ SoNo is required ]")
-		handleError(c, errors.BadRequestError("[ SoNo is required ]"))
+		handleError(c, Status.BadRequestError("[ SoNo is required ]"))
 		return 
 	}
 
 	if imageTypeID < 1 || imageTypeID > 3 {
 		app.Logger.Warn("[ Image Type ID 1, 2, 3 only ]")
-		handleError(c, errors.BadRequestError("[ Image Type ID 1, 2, 3 only ]"))
+		handleError(c, Status.BadRequestError("[ Image Type ID 1, 2, 3 only ]"))
 		return 
 	}
 
 	if len(files) == 0 {
 		app.Logger.Warn("[ no files uploaded ]")
-		handleError(c, errors.BadRequestError("[ no files uploaded ]"))
+		handleError(c, Status.BadRequestError("[ no files uploaded ]"))
 		return 
 	}
 

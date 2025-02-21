@@ -24,6 +24,7 @@ type ReturnOrderService interface {
 
 	CheckOrderNoExist(ctx context.Context, orderNo string) error
 }
+
 // review all
 func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrder, error) {
 	srv.logger.Info("[ Starting get return order process ]")
@@ -32,12 +33,6 @@ func (srv service) GetAllReturnOrder(ctx context.Context) ([]response.ReturnOrde
 	if err != nil {
 		srv.logger.Error("[ Error fetching all return orders ]", zap.Error(err))
 		return nil, errors.InternalError("[ Failed to fetch all return orders: %v ]", err)
-	}
-
-	// *️⃣ เช็คเมื่อไม่มีข้อมูลออเดอร์
-	if len(allorder) == 0 {
-		srv.logger.Info("[ No orders found ]")
-		return allorder, nil // return empty slice
 	}
 
 	srv.logger.Info("[ Fetched all return orders ]", zap.Int("Total amount of data", len(allorder)))
@@ -59,12 +54,6 @@ func (srv service) GetReturnOrderByOrderNo(ctx context.Context, orderNo string) 
 		return nil, errors.InternalError("[ Error fetching ReturnOrder by OrderNo %s: %v ]", orderNo, err)
 	}
 
-	// *️⃣ เช็คเมื่อไม่มีข้อมูลรายการส่งคืนในคำสั่งซื้อ
-	if len(idorder.ReturnOrderLine) == 0 {
-		srv.logger.Info("[ No lines found for this order ]")
-		return idorder, nil
-	}
-
 	srv.logger.Info("[ Fetched return order by orderNo ]", zap.String("OrderNo", orderNo))
 	return idorder, nil
 }
@@ -76,12 +65,6 @@ func (srv service) GetAllReturnOrderLines(ctx context.Context) ([]response.Retur
 	if err != nil {
 		srv.logger.Error("[ Error fetching all return order lines ]", zap.Error(err))
 		return nil, errors.InternalError("[ Error fetching all return order lines: %v ]", err)
-	}
-
-	// *️⃣ เช็คเมื่อไม่มีข้อมูลรายการสั่งคืนในคำสั่งซื้อ
-	if len(lines) == 0 {
-		srv.logger.Info("[ No lines found ]")
-		return lines, nil
 	}
 
 	srv.logger.Info("[ Fetched all return order lines ]", zap.Int("Total amount of data", len(lines)))
@@ -174,7 +157,7 @@ func (srv service) CreateReturnOrder(ctx context.Context, req request.CreateRetu
 	}
 	if exists {
 		srv.logger.Warn("[ OrderNo already exists ]", zap.String("OrderNo", req.OrderNo))
-		return nil, errors.ValidationError("[ OrderNo %s already exists ]", req.OrderNo)
+		return nil, errors.ConflictError("[ OrderNo %s already exists ]", req.OrderNo)
 	}
 
 	err = srv.returnOrderRepo.CreateReturnOrder(ctx, req)

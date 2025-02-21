@@ -5,8 +5,7 @@ import (
 	response "boilerplate-backend-go/dto/response"
 	"boilerplate-backend-go/errors"
 	"context"
-
-	// "database/sql"
+	"database/sql"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -82,7 +81,7 @@ func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeRetu
 	}
 	if exists != nil {
 		srv.logger.Warn("[ Order already exists ]", zap.String("OrderNo", req.OrderNo))
-		return nil, errors.ValidationError("[ OrderNo %s already exists: %v ]", req.OrderNo, err)
+		return nil, errors.ConflictError("[ OrderNo %s already exists: %v ]", req.OrderNo, err)
 	}
 
 	// *️⃣ สร้าง trade return order
@@ -218,14 +217,14 @@ func (srv service) ConfirmReturn(ctx context.Context, req request.ConfirmToRetur
 	}
 	if !exists {
 		srv.logger.Warn("[ OrderNo does not exist in BeforeReturnOrder ]", zap.Error(err))
-		return errors.ValidationError("[ OrderNo does not exist in BeforeReturnOrder: %v ]", err)
+		return errors.NotFoundError("[ OrderNo does not exist in BeforeReturnOrder: %v ]", err)
 	}
 
 	// *️⃣ ตรวจสอบ SKU
 	for _, line := range req.ImportLinesActual {
 		if line.SKU == "" {
 			srv.logger.Warn("[ SKU is required ]")
-			return errors.ValidationError("[ SKU is required ]")
+			return errors.BadRequestError("[ SKU is required ]")
 		}
 
 		exists, err := srv.beforeReturnRepo.CheckReLineSKUExists(ctx, req.OrderNo, line.SKU)
@@ -282,6 +281,10 @@ func (srv service) SearchOrderDetail(ctx context.Context, soNo string) (*respons
 
 	orders, err := srv.beforeReturnRepo.SearchOrderDetail(ctx, soNo)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			srv.logger.Warn("[  Data not found ]", zap.Error(err))
+			return nil, sql.ErrNoRows
+		}
 		srv.logger.Error("[ Failed to fetch order ]", zap.Error(err))
 		return nil, errors.InternalError("[ Failed to fetch order: %v ]", err)
 	}

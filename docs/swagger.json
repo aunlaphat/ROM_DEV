@@ -351,7 +351,7 @@
         },
         "/constants/get-district": {
             "get": {
-                "description": "Get all Thai District.",
+                "description": "Retrieve a list of districts by province code",
                 "consumes": [
                     "application/json"
                 ],
@@ -361,11 +361,20 @@
                 "tags": [
                     "Constants"
                 ],
-                "summary": "Get Thai District",
-                "operationId": "get-district",
+                "summary": "Get District by ProvinceCode",
+                "operationId": "get-district-by-province",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Province code",
+                        "name": "provinceCode",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "District",
+                        "description": "List of districts",
                         "schema": {
                             "allOf": [
                                 {
@@ -391,8 +400,47 @@
                             "$ref": "#/definitions/api.Response"
                         }
                     },
-                    "404": {
-                        "description": "District not found",
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/constants/get-postal-code": {
+            "get": {
+                "description": "Retrieve postal code by subdistrict code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get Postal Code by SubdistrictCode",
+                "operationId": "get-postalcode-by-subdistrict",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Subdistrict code",
+                        "name": "subdistrictCode",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Postal code",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -478,66 +526,9 @@
                 }
             }
         },
-        "/constants/get-province": {
-            "get": {
-                "description": "Get all Thai Province.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Constants"
-                ],
-                "summary": "Get Thai Province",
-                "operationId": "get-province",
-                "responses": {
-                    "200": {
-                        "description": "Province",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/api.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "result": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/entity.Province"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Province not found",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/constants/get-sub-district": {
             "get": {
-                "description": "Get all Thai SubDistrict.",
+                "description": "Retrieve a list of subdistricts by district code",
                 "consumes": [
                     "application/json"
                 ],
@@ -547,11 +538,20 @@
                 "tags": [
                     "Constants"
                 ],
-                "summary": "Get Thai SubDistrict",
-                "operationId": "get-sub-district",
+                "summary": "Get Subdistrict by DistrictCode",
+                "operationId": "get-subdistrict-by-district",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "District code",
+                        "name": "districtCode",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "SubDistrict",
+                        "description": "List of subdistricts",
                         "schema": {
                             "allOf": [
                                 {
@@ -573,12 +573,6 @@
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/api.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "SubDistrict not found",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -649,9 +643,96 @@
                 }
             }
         },
+        "/constants/search-customer": {
+            "get": {
+                "description": "Search for customers by CustomerID or InvoiceName with pagination support (limit and offset)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Search Customer by CustomerID or InvoiceName",
+                "operationId": "search-customer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "keyword",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by 'CustomerID' or 'InvoiceName'",
+                        "name": "searchType",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset for pagination (default is 0)",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 4,
+                        "description": "Limit for number of customers to return (default is 4)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search Results",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.InvoiceInformation"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "No matching customer found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/constants/search-product": {
             "get": {
-                "description": "Search for products by name or SKU with a limit",
+                "description": "Search for products by SKU or NAMEALIAS with pagination support (limit and offset)",
                 "consumes": [
                     "application/json"
                 ],
@@ -670,6 +751,27 @@
                         "name": "keyword",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by 'SKU' or 'NAMEALIAS'",
+                        "name": "searchType",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset for pagination (default is 0)",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 4,
+                        "description": "Limit for number of products to return (default is 4)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -687,6 +789,72 @@
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/definitions/entity.ROM_V_ProductAll"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "No matching products found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/constants/search-province": {
+            "get": {
+                "description": "Retrieve the list of provinces by keyword",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Search Province by keyword",
+                "operationId": "search-province",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Province search keyword",
+                        "name": "keyword",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of provinces",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.Province"
                                             }
                                         }
                                     }
@@ -2363,13 +2531,10 @@
         "entity.District": {
             "type": "object",
             "properties": {
-                "code": {
+                "districtCode": {
                     "type": "integer"
                 },
-                "nameEN": {
-                    "type": "string"
-                },
-                "nameTH": {
+                "districtTH": {
                     "type": "string"
                 },
                 "provinceCode": {
@@ -2377,17 +2542,32 @@
                 }
             }
         },
+        "entity.InvoiceInformation": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "customerID": {
+                    "type": "string"
+                },
+                "customerName": {
+                    "description": "ใช้เป็น CustomerName and InvoiceName",
+                    "type": "string"
+                },
+                "taxID": {
+                    "type": "string"
+                }
+            }
+        },
         "entity.Province": {
             "type": "object",
             "properties": {
-                "code": {
+                "provicesTH": {
+                    "type": "string"
+                },
+                "provinceCode": {
                     "type": "integer"
-                },
-                "nameEN": {
-                    "type": "string"
-                },
-                "nameTH": {
-                    "type": "string"
                 }
             }
         },
@@ -2423,19 +2603,13 @@
         "entity.SubDistrict": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer"
-                },
                 "districtCode": {
                     "type": "integer"
                 },
-                "nameEN": {
-                    "type": "string"
+                "subdistrictCode": {
+                    "type": "integer"
                 },
-                "nameTH": {
-                    "type": "string"
-                },
-                "zipCode": {
+                "subdistrictTH": {
                     "type": "string"
                 }
             }

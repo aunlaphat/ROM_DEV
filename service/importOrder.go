@@ -19,7 +19,7 @@ type ImportOrderService interface {
 	SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
 	UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error
 	GetSummaryImportOrder(ctx context.Context, orderNo string) ([]response.ImportOrderSummary, error)
-	ValidateSKU(ctx context.Context, orderNo, sku string) error
+	ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error)
 
 	// ยังไม่ใช้
 	GetReturnDetailsFromSaleOrder(ctx context.Context, soNo string) (string, error)
@@ -47,12 +47,6 @@ func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]
 	if err != nil {
 		srv.logger.Error("[ Failed to search OrderNo or TrackingNo ]", zap.String("Search", search), zap.Error(err))
 		return nil, errors.InternalError("[ Failed to search OrderNo or TrackingNo: %v ]", err)
-	}
-
-	// *️⃣ เช็คเมื่อไม่มีข้อมูลออเดอร์
-	if len(orders) == 0 {
-		srv.logger.Info("[ No orders found ]")
-		return orders, nil // return empty slice
 	}
 
 	srv.logger.Info("[ Successfully search order detail ]")
@@ -120,21 +114,17 @@ func (srv service) GetSummaryImportOrder(ctx context.Context, orderNo string) ([
 }
 
 // *️⃣ เช็คว่า sku ที่รับเข้าค่าตรงกับที่มีในระบบของออเดอร์นั้น หากตรงกันจึงจะยืนยันการรับเข้าได้สำเร็จ
-func (srv service) ValidateSKU(ctx context.Context, orderNo, sku string) error {
+func (srv service) ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error) {
 	srv.logger.Info("[ Starting validate SKU process ]", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
 
 	valid, err := srv.importOrderRepo.ValidateSKU(ctx, orderNo, sku)
 	if err != nil {
 		srv.logger.Error("[ Failed to validate SKU ]", zap.Error(err))
-		return errors.InternalError("[ Failed to validate SKU: %v ]", err)
-	}
-	if !valid {
-		srv.logger.Warn("[ SKU mismatch ]", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
-		return errors.ValidationError("[ The provided SKU does not match any records for OrderNo %s ]", orderNo)
+		return false, errors.InternalError("[ Failed to validate SKU: %v ]", err)
 	}
 
 	srv.logger.Info("[ Both match: Confirm Receipt]", zap.String("OrderNo", orderNo), zap.String("SKU", sku))
-	return nil
+	return valid, nil
 }
 
 // ทำรอไว้ยังไม่ได้ข้อสรุปว่าหน้าที่จัดการจะเป็นหน้าอย่างไร ทุกฟังก์ชันหลังบรรทัดนี้

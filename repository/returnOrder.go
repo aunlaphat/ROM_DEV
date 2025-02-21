@@ -41,7 +41,7 @@ func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.Retu
 				  `
 	err := repo.db.SelectContext(ctx, &orders, queryHead)
 	if err != nil {
-		return nil, fmt.Errorf("[ failed to fetch return orders: %w ]", err)
+		return nil, fmt.Errorf("failed to fetch return orders: %w", err)
 	}
 
 	// *️⃣ ใช้แมปเพื่อจัดกลุ่ม Order
@@ -70,12 +70,12 @@ func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.Retu
 				`
 		query, args, err := sqlx.In(queryLine, orderNos[i:end])
 		if err != nil {
-			return nil, fmt.Errorf("[ failed to prepare query: %w ]", err)
+			return nil, fmt.Errorf("failed to prepare query: %w", err)
 		}
 		query = repo.db.Rebind(query)
 
 		if err := repo.db.SelectContext(ctx, &lines, query, args...); err != nil {
-			return nil, fmt.Errorf("[ failed to fetch return order lines: %w ]", err)
+			return nil, fmt.Errorf("failed to fetch return order lines: %w", err)
 		}
 
 		// *️⃣ แมปข้อมูล ReturnOrderLine กลับเข้า Order
@@ -101,21 +101,18 @@ func (repo repositoryDB) GetReturnOrderByOrderNo(ctx context.Context, orderNo st
 			 `
 	query, args, err := sqlx.Named(query, map[string]interface{}{"OrderNo": orderNo})
 	if err != nil {
-		return nil, fmt.Errorf("[ failed to prepare query: %w ]", err)
+		return nil, fmt.Errorf("failed to prepare query: %w", err)
 	}
 	query = repo.db.Rebind(query)
 
 	err = repo.db.GetContext(ctx, &order, query, args...)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) { // เมื่อไม่มีแถวที่ตรงกับเงื่อนไขในคิวรี่
-			return nil, nil 
-		}
-		return nil, fmt.Errorf("[ database error querying ReturnOrder by OrderNo %s: %w ]", orderNo, err)
+		return nil, fmt.Errorf("database error querying ReturnOrder by OrderNo %s: %w", orderNo, err)
 	}
 
 	lines, err := repo.GetReturnOrderLineByOrderNo(ctx, orderNo)
 	if err != nil {
-		return nil, fmt.Errorf("[ error fetching ReturnOrderLines for OrderNo %s: %w ]", orderNo, err)
+		return nil, fmt.Errorf("error fetching ReturnOrderLines for OrderNo %s: %w", orderNo, err)
 	}
 
 	//  *️⃣ เพิ่มข้อมูล ReturnOrderLine เข้าไปใน ReturnOrder ที่ OrderNo เดียวกัน
@@ -135,7 +132,7 @@ func (repo repositoryDB) GetAllReturnOrderLines(ctx context.Context) ([]response
 
 	err := repo.db.SelectContext(ctx, &lines, query)
 	if err != nil {
-		return nil, fmt.Errorf("[ get all return order lines error: %w ]", err)
+		return nil, fmt.Errorf("failed to fetch return order lines: %w", err)
 	}
 
 	return lines, nil
@@ -150,16 +147,18 @@ func (repo repositoryDB) GetReturnOrderLineByOrderNo(ctx context.Context, orderN
 				WHERE OrderNo = :OrderNo
 			 	ORDER BY RecID
 			 `
-	params := map[string]interface{}{"OrderNo": orderNo}
+	params := map[string]interface{}{
+		"OrderNo": orderNo,
+	}
 
 	namedQuery, args, err := sqlx.Named(query, params)
 	if err != nil {
-		return nil, fmt.Errorf("[ failed to prepare query: %w ]", err)
+		return nil, fmt.Errorf("failed to prepare query: %w", err)
 	}
 	query = repo.db.Rebind(namedQuery)
 
 	if err := repo.db.SelectContext(ctx, &lines, query, args...); err != nil {
-		return nil, fmt.Errorf("[ failed to fetch return order lines: %w ]", err)
+		return nil, fmt.Errorf("failed to fetch return order lines: %w", err)
 	}
 
 	return lines, nil
@@ -173,17 +172,19 @@ func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusChec
 				WHERE StatusCheckID = :statusCheckID
 				ORDER BY CreateDate ASC
 			 `
-	params := map[string]interface{}{"statusCheckID": statusCheckID}
+	params := map[string]interface{}{
+		"statusCheckID": statusCheckID,
+	}
 
 	query, args, err := sqlx.Named(query, params)
 	if err != nil {
-		return nil, fmt.Errorf("[ failed to bind named parameters: %w ]", err)
+		return nil, fmt.Errorf("failed to bind named parameters: %w", err)
 	}
 	query = repo.db.Rebind(query)
 
 	err = repo.db.SelectContext(ctx, &orders, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("[ failed to fetch return orders: %w ]", err)
+		return nil, fmt.Errorf("failed to fetch return orders: %w", err)
 	}
 
 	return orders, nil
@@ -200,7 +201,6 @@ func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context
 				AND CAST(CreateDate AS DATE) <= :EndDate
 				ORDER BY CreateDate ASC
 			 `
-
 	params := map[string]interface{}{
 		"StatusCheckID": statusCheckID,
 		"StartDate":     startDate,
@@ -209,13 +209,13 @@ func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context
 
 	query, args, err := sqlx.Named(query, params)
 	if err != nil {
-		return nil, fmt.Errorf("[ failed to bind named parameters: %w ]", err)
+		return nil, fmt.Errorf("failed to bind named parameters: %w", err)
 	}
 	query = repo.db.Rebind(query)
 
 	err = repo.db.SelectContext(ctx, &orders, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("[ failed to fetch return orders: %w ]", err)
+		return nil, fmt.Errorf("failed to fetch return orders: %w", err)
 	}
 
 	return orders, nil
@@ -249,7 +249,7 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 		}
 
 		if _, err := tx.NamedExecContext(ctx, queryHead, params); err != nil {
-			return fmt.Errorf("[ failed to insert ReturnOrder: %w ]", err)
+			return fmt.Errorf("failed to insert ReturnOrder: %w", err)
 		}
 
 		// *️⃣ บังคับให้สร้างรายการคืน 1 คำสั่งซื้อขึ้นไป จึงจะทำการสร้างได้
@@ -274,7 +274,7 @@ func (repo repositoryDB) CreateReturnOrder(ctx context.Context, req request.Crea
 			}
 
 			if _, err := tx.NamedExecContext(ctx, queryLines, lineParams); err != nil {
-				return fmt.Errorf("[ failed to insert ReturnOrderLines: %w ]", err)
+				return fmt.Errorf("failed to insert ReturnOrderLines: %w", err)
 			}
 		}
 
@@ -298,13 +298,13 @@ func (repo repositoryDB) GetCreateReturnOrder(ctx context.Context, orderNo strin
 		if errors.Is(err, sql.ErrNoRows) { // เมื่อไม่มีแถวที่ตรงกับเงื่อนไขในคิวรี่
 			return nil, nil 
 		}
-		return nil, fmt.Errorf("[ database error querying ReturnOrder by OrderNo %s: %w ]", orderNo, err)
+		return nil, fmt.Errorf("database error querying ReturnOrder by OrderNo %s: %w", orderNo, err)
 	}
 
 	// *️⃣ ดึงข้อมูล ReturnOrderLine ที่เลข OrderNo ตรงกับใน ReturnOrder
 	lines, err := repo.GetReturnOrderLineByOrderNo(ctx, orderNo)
 	if err != nil {
-		return nil, fmt.Errorf("[ error fetching ReturnOrderLines for OrderNo %s: %w ]", orderNo, err)
+		return nil, fmt.Errorf("error fetching ReturnOrderLines for OrderNo %s: %w", orderNo, err)
 	}
 	// *️⃣ เพิ่มข้อมูล ReturnOrderLine เข้าไปใน ReturnOrder
 	order.ReturnOrderLine = lines
@@ -327,7 +327,7 @@ func (repo repositoryDB) GetUpdateReturnOrder(ctx context.Context, orderNo strin
 		if errors.Is(err, sql.ErrNoRows) { // เมื่อไม่มีแถวที่ตรงกับเงื่อนไขในคิวรี่
 			return nil, nil 
 		}
-		return nil, fmt.Errorf("[ database error querying ReturnOrder by OrderNo %s: %w ]", orderNo, err)
+		return nil, fmt.Errorf("database error querying ReturnOrder by OrderNo %s: %w", orderNo, err)
 	}
 
 	return &order, nil
@@ -350,15 +350,15 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 
 		namedQuery, args, err := sqlx.Named(queryCurrent, currentParams)
 		if err != nil {
-			return fmt.Errorf("[ failed to prepare query: %w ]", err)
+			return fmt.Errorf("failed to prepare query: %w", err)
 		}
 		query := tx.Rebind(namedQuery)
 
 		if err := tx.GetContext(ctx, &current, query, args...); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				return fmt.Errorf("[ OrderNo not found: %w ]", err)
+				return fmt.Errorf("OrderNo not found: %w", err)
 			}
-			return fmt.Errorf("[ failed to fetch current data: %w ]", err)
+			return fmt.Errorf("failed to fetch current data: %w", err)
 		}
 
 		// *️⃣ ตรวจสอบค่าที่เปลี่ยนแปลงและสร้าง SQL Update เฉพาะส่วนที่เปลี่ยนแปลง
@@ -434,17 +434,18 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 
 		namedUpdateQuery, updateArgs, err := sqlx.Named(updateQuery, params)
 		if err != nil {
-			return fmt.Errorf("[ failed to prepare update query: %w ]", err)
+			return fmt.Errorf("failed to prepare update query: %w", err)
 		}
 		updateQueryRebind := tx.Rebind(namedUpdateQuery)
 
 		// *️⃣ ดำเนินการอัปเดตใน ReturnOrder
 		if _, err := tx.ExecContext(ctx, updateQueryRebind, updateArgs...); err != nil {
-			return fmt.Errorf("[ failed to update ReturnOrder: %w ]", err)
+			return fmt.Errorf("failed to update ReturnOrder: %w", err)
 		}
 
 		// *️⃣ อัปเดต TrackingNo, UpdateBy, UpdateDate ใน ReturnOrderLine หากมีการเปลี่ยนแปลงที่ฟิลด์ TrackingNo
 		if req.TrackingNo != nil && (current.TrackingNo == nil || *req.TrackingNo != *current.TrackingNo) {
+
 			updateLineQuery := `   UPDATE ReturnOrderLine
 									SET TrackingNo = :TrackingNo, 
 										UpdateBy = :UpdateBy, 
@@ -453,12 +454,12 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 								`
 			namedLineQuery, lineArgs, err := sqlx.Named(updateLineQuery, params)
 			if err != nil {
-				return fmt.Errorf("[ failed to prepare line update query: %w ]", err)
+				return fmt.Errorf("failed to prepare line update query: %w", err)
 			}
 			lineQueryRebind := tx.Rebind(namedLineQuery)
 
 			if _, err := tx.ExecContext(ctx, lineQueryRebind, lineArgs...); err != nil {
-				return fmt.Errorf("[ failed to update ReturnOrderLine: %w ]", err)
+				return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
 			}
 		}
 
@@ -476,7 +477,7 @@ func (repo repositoryDB) DeleteReturnOrder(ctx context.Context, orderNo string) 
 		if _, err := tx.NamedExecContext(ctx, queryLine, map[string]interface{}{
 			"OrderNo": orderNo,
 		}); err != nil {
-			return fmt.Errorf("[ failed to delete ReturnOrderLine: %w ]", err)
+			return fmt.Errorf("failed to delete ReturnOrderLine: %w", err)
 		}
 
 		queryHead := ` DELETE FROM ReturnOrder
@@ -485,7 +486,7 @@ func (repo repositoryDB) DeleteReturnOrder(ctx context.Context, orderNo string) 
 		if _, err := tx.NamedExecContext(ctx, queryHead, map[string]interface{}{
 			"OrderNo": orderNo,
 		}); err != nil {
-			return fmt.Errorf("[ error deleting ReturnOrder for OrderNo %s: %w ]", orderNo, err)
+			return fmt.Errorf("error deleting ReturnOrder for OrderNo %s: %w", orderNo, err)
 		}
 
 		return nil
@@ -502,7 +503,7 @@ func (repo repositoryDB) CheckOrderNoExist(ctx context.Context, orderNo string) 
     		 `
 	err := repo.db.GetContext(ctx, &exists, query, sql.Named("OrderNo", orderNo))
 	if err != nil {
-		return false, fmt.Errorf("[ failed to check OrderNo existence: %w ]", err)
+		return false, fmt.Errorf("failed to check OrderNo existence: %w", err)
 	}
 
 	return exists, nil
@@ -518,7 +519,7 @@ func (repo repositoryDB) CheckOrderNoLineExist(ctx context.Context, orderNo stri
    			 `
 	err := repo.db.GetContext(ctx, &exists, query, sql.Named("OrderNo", orderNo))
 	if err != nil {
-		return false, fmt.Errorf("[ failed to check OrderNo existence: %w ]", err)
+		return false, fmt.Errorf("failed to check OrderNo existence: %w", err)
 	}
 
 	return exists, nil
