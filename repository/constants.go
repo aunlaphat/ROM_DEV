@@ -4,7 +4,6 @@ import (
 	entity "boilerplate-backend-go/Entity"
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 )
