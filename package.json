@@ -27,6 +27,7 @@
     "react-highlight-words": "^0.20.0",
     "react-hook-form": "^7.49.3",
     "react-icons": "^5.0.1",
+    "react-nice-avatar": "^1.5.0",
     "react-qr-reader": "^3.0.0-beta-1",
     "react-qr-scanner": "^1.0.0-alpha.11",
     "react-redux": "^9.2.0",
@@ -44,12 +45,12 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-  "dev": "react-scripts start",
-  "watch": "nodemon --watch src --ext js,jsx,ts,tsx --ignore node_modules/ --ignore public/ --exec npm run dev",
-  "build": "react-scripts build",
-  "test": "react-scripts test",
-  "eject": "react-scripts eject"
-},
+    "dev": "react-scripts start",
+    "watch": "nodemon --watch src --ext js,jsx,ts,tsx --ignore node_modules/ --ignore public/ --exec npm run dev",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
   "eslintConfig": {
     "extends": [
       "react-app",
