@@ -28,8 +28,8 @@ func Routes(router *gin.Engine, app *Application) {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{allowedOrigin},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-		AllowHeaders:     []string{"X-PINGOTHER", "Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposeHeaders:    []string{"Authorization", "Content-Length"},
+		AllowHeaders:     []string{"Authorization", "Content-Type"},
+		ExposeHeaders:    []string{"Authorization","Set-Cookie"},
 		AllowCredentials: true,
 		MaxAge:           300, // 5 minutes
 	}))

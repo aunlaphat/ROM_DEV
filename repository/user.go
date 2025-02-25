@@ -24,7 +24,7 @@ type UserRepository interface {
 func (repo repositoryDB) Login(ctx context.Context, userName string) (entity.ROM_V_UserDetail, error) {
 	var user entity.ROM_V_UserDetail
 	query := `
-        SELECT UserID, Password, UserName, NickName, FullNameTH, DepartmentNo, RoleID
+        SELECT UserID, Password, UserName, NickName, FullNameTH, DepartmentNo, RoleID, RoleName
         FROM ROM_V_UserDetail
         WHERE UserName = :userName
     `
@@ -49,7 +49,7 @@ func (repo repositoryDB) Login(ctx context.Context, userName string) (entity.ROM
 func (repo repositoryDB) LoginLark(ctx context.Context, userID, userName string) (entity.ROM_V_UserDetail, error) {
 	var user entity.ROM_V_UserDetail
 	query := `
-        SELECT UserID, Password, UserName, NickName, FullNameTH, DepartmentNo, RoleID
+        SELECT UserID, Password, UserName, NickName, FullNameTH, DepartmentNo, RoleID, RoleName
         FROM ROM_V_UserDetail
         WHERE UserID = :userID AND UserName = :userName
     `

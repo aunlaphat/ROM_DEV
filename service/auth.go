@@ -45,6 +45,7 @@ func (srv service) Login(ctx context.Context, req request.LoginWeb) (response.Lo
 		FullNameTH:   user.FullNameTH,
 		NickName:     user.NickName,
 		RoleID:       user.RoleID,
+		RoleName:     user.RoleName,
 		DepartmentNo: user.DepartmentNo,
 		Platform:     "web",
 	}
@@ -74,6 +75,7 @@ func (srv service) LoginLark(ctx context.Context, req request.LoginLark) (respon
 		FullNameTH:   user.FullNameTH,
 		NickName:     user.NickName,
 		RoleID:       user.RoleID,
+		RoleName:     user.RoleName,
 		DepartmentNo: user.DepartmentNo,
 		Platform:     "lark",
 	}

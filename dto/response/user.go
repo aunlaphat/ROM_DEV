@@ -6,6 +6,7 @@ type Login struct {
 	UserID       string `json:"userID" db:"UserID"`
 	UserName     string `json:"userName" db:"UserName"`
 	RoleID       int    `json:"roleID" db:"RoleID"`
+	RoleName     string `json:"roleName" db:"RoleName"`
 	FullNameTH   string `json:"fullNameTH" db:"FullNameTH"`
 	NickName     string `json:"nickName" db:"NickName"`
 	DepartmentNo string `json:"departmentNo" db:"DepartmentNo"`

@@ -1617,6 +1617,9 @@ const docTemplate = `{
                 "roleID": {
                     "type": "integer"
                 },
+                "roleName": {
+                    "type": "string"
+                },
                 "userID": {
                     "type": "string"
                 },

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"boilerplate-backend-go/dto/request"
@@ -18,9 +19,10 @@ func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 	auth.POST("/login-lark", app.LoginFromLark) // Login via Lark
 	auth.POST("/logout", app.Logout)            // Logout
 
-	// Routes requiring JWT authentication
-	auth.Use(middleware.JWTMiddleware(app.TokenAuth))
-	auth.GET("/", app.CheckAuthen) // Check authentication status
+	// Protected Routes (ต้องใช้ JWT)
+	protected := auth.Group("/")
+	protected.Use(middleware.JWTMiddleware(app.TokenAuth))
+	protected.GET("/", app.CheckAuthen) // ตรวจสอบ Authentication
 }
 
 // Generate JWT token from user claims
@@ -28,16 +30,19 @@ func (app *Application) GenerateToken(tokenData response.Login) string {
 	claims := map[string]interface{}{
 		"userID":     tokenData.UserID,
 		"userName":   tokenData.UserName,
-		"roleID":     tokenData.RoleID,
 		"fullNameTH": tokenData.FullNameTH,
 		"nickName":   tokenData.NickName,
+		"roleID":     tokenData.RoleID,
+		"roleName":   tokenData.RoleName,
 		"department": tokenData.DepartmentNo,
 		"platform":   tokenData.Platform,
 	}
 
 	_, tokenString, _ := app.TokenAuth.Encode(claims)
-	app.Logger.Info("🔑 Generated JWT token", zap.String("token", tokenString))
-	app.Logger.Info(" Claims", zap.Any("claims", claims))
+
+	// ✅ Debug Mode - แสดง Token ใน Console
+	fmt.Println("🔑 Debug JWT:", tokenString)
+
 	return tokenString
 }
 
@@ -69,7 +74,14 @@ func (app *Application) Login(c *gin.Context) {
 	token := app.GenerateToken(user)
 	app.Logger.Info("✅ Login successful", zap.String("username", user.UserName))
 
-	c.SetCookie("jwt", token, 4*3600, "/", "localhost", false, true)
+	// ✅ ตรวจสอบว่า Token ถูกสร้างหรือไม่
+	if token == "" {
+		handleResponse(c, false, "Failed to generate token", nil, http.StatusInternalServerError)
+		return
+	}
+
+	// ✅ แก้ไข `Set-Cookie` ให้ทำงานใน `localhost`
+	c.SetCookie("jwt", token, 4*3600, "/", "", false, true) // Secure: false for localhost
 
 	handleResponse(c, true, "Login Success", token, http.StatusOK)
 }
@@ -125,22 +137,31 @@ func (app *Application) Logout(c *gin.Context) {
 // @Failure 401 {object} api.Response "Unauthorized"
 // @Router /auth [get]
 func (app *Application) CheckAuthen(c *gin.Context) {
+	// ✅ ดึง JWT Source (Header หรือ Cookie)
 	source, _ := c.Get("jwt_source")
+	claims := middleware.GetJWTClaims(c)
 
-	var claims interface{}
-	if source == "header" {
-		claims, _ = c.Get("jwt_claims_header")
-	} else if source == "cookie" {
-		claims, _ = c.Get("jwt_claims_cookie")
-	}
-
+	// ❌ ถ้าไม่มี Claims => Unauthorized
 	if claims == nil {
-		handleResponse(c, false, "unauthorized - no claims found", nil, http.StatusUnauthorized)
+		handleResponse(c, false, "Unauthorized - No claims found", nil, http.StatusUnauthorized)
 		return
 	}
+
+	// ✅ Debug Log - แสดง Claims ทั้งหมด
 	app.Logger.Info("✅ User authenticated", zap.Any("claims", claims))
+
+	// ✅ คืนค่า Response ที่อ่านง่ายขึ้น
 	handleResponse(c, true, "User authenticated", gin.H{
 		"source": source,
-		"claims": claims,
+		"user": gin.H{
+			"userID":       claims["userID"],
+			"userName":     claims["userName"],
+			"fullName":     claims["fullNameTH"],
+			"nickName":     claims["nickName"],
+			"roleID":       claims["roleID"],
+			"roleName":     claims["roleName"],
+			"departmentNo": claims["department"],
+			"platform":     claims["platform"],
+		},
 	}, http.StatusOK)
 }
