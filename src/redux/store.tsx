@@ -1,37 +1,23 @@
-import { createStore, applyMiddleware } from "redux";
-import rootReducer from "./rootReducer";
-import createSagaMiddleware from "redux-saga";
-import rootSaga from "./rootSaga";
-import { composeWithDevTools } from "redux-devtools-extension";
 import { configureStore } from "@reduxjs/toolkit";
-
-/**
- * Redux-saga --> https://redux-saga.js.org/
- * Tutorial with Example --> https://www.blog.duomly.com/implement-redux-saga-with-reactjs-and-redux/
- */
-
-/** Redux dev tool -->  https://www.npmjs.com/package/@redux-devtools/extension
- * ถ้าจะใช้ต้องลง lib และ extension ใน chrome ด้วย [Redux DevTools]
- */
-// const composeEnhancers = composeWithDevTools({
-//   // Specify here name, actionsDenylist, actionsCreators and other options
-//   trace: true,
-// });
-
-// const initialState = {
-//   authen: {
-//     loading: false,
-//     users: [],
-//   },
-// };
+import createSagaMiddleware from "redux-saga";
+import rootReducer from "./rootReducer";
+import rootSaga from "./rootSaga";
 
 const sagaMiddleware = createSagaMiddleware();
 
-const store = configureStore({
+// ✅ สร้าง Redux Store พร้อม Redux-Saga Middleware
+export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(sagaMiddleware),
+    getDefaultMiddleware({ thunk: false }).concat(sagaMiddleware), // ✅ ปิด Redux-Thunk ที่ไม่ใช้
+  devTools: process.env.NODE_ENV !== "production", // ✅ เปิด DevTools เฉพาะใน Development Mode
 });
+
+// ✅ รัน Redux-Saga
 sagaMiddleware.run(rootSaga);
+
+// ✅ กำหนด Type สำหรับ Redux Store
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
 
 export default store;

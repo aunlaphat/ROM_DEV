@@ -6,6 +6,8 @@ export const LoginForm = () => {
       name: "username",
       label: "ชื่อผู้ใช้ (username)",
       type: "INPUT",
+      placeholder: "กรอกชื่อผู้ใช้",
+      title: "ชื่อผู้ใช้",
       rules: { required: true },
     },
     {
@@ -14,6 +16,8 @@ export const LoginForm = () => {
       name: "password",
       label: "รหัสผ่าน (password)",
       type: "INPUT_PASSWORD",
+      placeholder: "กรอกรหัสผ่าน",
+      title: "รหัสผ่าน",
       rules: {
         required: true,
         maxLength: {

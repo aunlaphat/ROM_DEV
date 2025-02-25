@@ -8,7 +8,7 @@ const config = {
 const cookies = new Cookies();
 
 function getExpire() {
-  //Note: 60 minutes * 60 seconds * 24 hours * 1000(for milliseconds) * 15 days
+  // Note: 60 minutes * 60 seconds * 24 hours * 1000(for milliseconds) * 15 days
   return new Date(new Date().getTime() + 60 * 60 * 24 * 1000 * 15);
 }
 

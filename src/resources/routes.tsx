@@ -1,6 +1,6 @@
 import Home from "../screens/home";
 import LoginScene from "../screens/Authen/LoginScene";
-import NotfoundScene from "../screens/notFound";
+import NotfoundScene from "../screens/NotFound";
 import { env } from '../utils/env/config';
 import ImportOrder from "../screens/Return_import/Import_Return_Order";
 import ReturnOrder from "../screens/Return/Returnorder";

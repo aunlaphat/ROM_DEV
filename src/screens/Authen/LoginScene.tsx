@@ -10,6 +10,7 @@ import { LoginForm } from "./form";
 import { ContainerButton } from "../../style";
 import { ButtonTheme } from "../../components/buttons";
 import { useAuthLogin } from "../../hooks/useAuth";
+import { getCookies, setCookies } from "../../store/useCookies";
 
 const LoginScene = () => {
   const [disabled, setDisabled] = useState(true);
@@ -27,16 +28,14 @@ const LoginScene = () => {
   const onSubmit = async () => {
     try {
       const { username, password } = getValues();
-      onLogin({ username, password });
       setLoading(true);
+      await onLogin({ username, password });
     } catch (error) {
-      console.log(error);
+      console.error("Login Error:", error);
+    } finally {
+      setLoading(false);
     }
   };
-
-  // useEffect(() => {
-  //   checkLoginToken();
-  // }, []);
 
   return (
     <Spin spinning={loading} delay={500}>

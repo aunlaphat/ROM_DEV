@@ -1,8 +1,9 @@
 import { useDispatch } from "react-redux";
 import { NavigateTo, windowNavigateReplaceTo } from "../utils/navigation";
 import { ROUTES_PATH, ROUTE_LOGIN } from "../resources/routes";
-import { login, logout, login_lark } from "../redux/authen/action";
+import { login, logout } from "../redux/auth/action";
 import { getCookies } from "../store/useCookies";
+import { logger } from '../utils/logger';
 
 export const useAuthLogin = () => {
   const dispatch = useDispatch();
@@ -12,15 +13,25 @@ export const useAuthLogin = () => {
   }
 
   const onLogin = async (values: any) => {
-    dispatch(login(values));
+    try {
+      console.log("Dispatching login with values:", values);
+      // Just dispatch and let the saga handle the rest
+      dispatch(login(values));
+    } catch (error) {
+      console.error("Login Error:", error);
+      throw error;
+    }
   };
 
-  const onLogout = async (values?: any) => {
-    dispatch(logout());
-  };
-
-  const onLarkLogin = async (values: any) => {
-    dispatch(login_lark(values));
+  const onLogout = async () => {
+    try {
+      logger.auth('info', 'Processing logout request');
+      dispatch(logout());
+      localStorage.removeItem("access_token");  // Clear local storage
+      document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";  // Clear cookie
+    } catch (error) {
+      logger.auth('error', 'Logout failed', { error });
+    }
   };
 
   function redirectToMain() {
@@ -35,6 +46,6 @@ export const useAuthLogin = () => {
     redirectToMain,
     onLogin,
     onLogout,
-    onLarkLogin,
+    //onLarkLogin,
   };
 };

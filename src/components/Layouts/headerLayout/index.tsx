@@ -1,4 +1,4 @@
-import { Avatar, Button, Dropdown, MenuProps, Tag } from "antd";
+import { Avatar, Button, Dropdown, MenuProps, Tag, Modal } from "antd";
 import React from "react";
 import { MenuUnfoldOutlined, MenuFoldOutlined } from "@ant-design/icons";
 import { HeaderBarStyle, TopBarDropDown, TopBarUser } from "./style";
@@ -6,10 +6,32 @@ import { Icon } from "../../../resources";
 import { useAuthLogin } from "../../../hooks/useAuth";
 import { useSelector } from "react-redux";
 import { TextSmall } from "../../text";
+import { logger } from '../../../utils/logger';
 
 const HeaderBar = ({ collapsed, toggle }: any) => {
   const { onLogout } = useAuthLogin();
-  const user = useSelector((state: any) => state.authen);
+  const user = useSelector((state: any) => state.auth.user);
+
+  const handleLogout = () => {
+    Modal.confirm({
+      title: 'ยืนยันการออกจากระบบ',
+      content: 'คุณต้องการออกจากระบบใช่หรือไม่?',
+      okText: 'ออกจากระบบ',
+      cancelText: 'ยกเลิก',
+      onOk: () => {
+        logger.auth('info', 'User logging out', {
+          userId: user?.userID,
+          userName: user?.userName
+        });
+        onLogout();
+      }
+    });
+  };
+
+  // Add null check for user
+  const userId = user?.userID || 'N/A';
+  const userName = user?.userName || 'N/A';
+  const roleName = user?.roleName || 'N/A';
 
   const items: MenuProps["items"] = [
     {
@@ -18,9 +40,8 @@ const HeaderBar = ({ collapsed, toggle }: any) => {
         <Button
           type="text"
           icon={Icon.logout()}
-          onClick={() => {
-            onLogout();
-          }}
+          onClick={handleLogout}
+          danger
         >
           ออกจากระบบ
         </Button>
@@ -47,10 +68,13 @@ const HeaderBar = ({ collapsed, toggle }: any) => {
           text={
             <>
               <Tag className="item-right-topbar" color="blue">
-                {user.users.userID}
+                {userId}
               </Tag>
               <Tag className="item-right-topbar" color="volcano">
-                {user.users.userFullName}
+                {userName}
+              </Tag>
+              <Tag className="item-right-topbar" color="green">
+                {roleName}
               </Tag>
             </>
           }

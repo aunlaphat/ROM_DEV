@@ -1,63 +1,59 @@
-import axios from "axios";
-//import { env } from "../utils/env/config";
+import axios, { AxiosRequestConfig } from 'axios';
+import { env } from "../utils/env/config";
 import { getCookies } from "../store/useCookies";
 
-// export const MODE_API: any = {
-//   DEVELOPMENT: env.url_dev,
-//   PRODUCTION: env.url_prd,
-// };
-
-export const CONNECT_API = process.env.REACT_APP_BACKEND_URL; // .env
-
-const api = axios.create({
-  baseURL: CONNECT_API,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
+// ตั้งค่าพื้นฐานสำหรับ Axios
+const axiosInstance = axios.create({
+  baseURL: process.env.REACT_APP_BACKEND_URL,
   timeout: 10000,
+  withCredentials: true, // สำคัญสำหรับการรับ cookies
+  headers: {
+    'Content-Type': 'application/json',
+  }
 });
 
-const apiupload = axios.create({
-  baseURL: CONNECT_API,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "multipart/form-data",
-  },
-  timeout: 10000,
+// Interceptor สำหรับ request
+axiosInstance.interceptors.request.use((config) => {
+  console.log('📤 [API] Request:', {
+    method: config.method,
+    url: config.url,
+    data: config.data
+  });
+  return config;
 });
 
-export const GET = async (path: string, header?: any) => {
-  try {
-    const response = await api.get(`${path}`, header);
-    let data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
+// Interceptor สำหรับ response
+axiosInstance.interceptors.response.use(
+  (response) => {
+    console.log('📥 [API] Response:', {
+      status: response.status,
+      data: response.data,
+      cookies: document.cookie
+    });
+    return response;
+  },
+  (error) => {
+    console.error('❌ [API] Error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    return Promise.reject(error);
   }
-};
+);
 
-export const POST = async (path: string, data: any, header?: any) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
-  try {
-    const response = await api.post(`${path}`, data, header ? header : config);
-    data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
-  }
-};
+export const POST = (url: string, data: any, config?: AxiosRequestConfig) => 
+  axiosInstance.post(url, data, { ...config });
+
+export const GET = (url: string, config?: AxiosRequestConfig) => 
+  axiosInstance.get(url, { ...config });
 
 export const PATCH = async (path: string, data: any) => {
   const config = {
     headers: { Authorization: `Bearer ${getCookies("jwt")}` },
   };
   try {
-    const response = await api.patch(`${path}`, data, config);
+    const response = await axiosInstance.patch(`${path}`, data, config);
     data = await response.data;
     return data;
   } catch (error: any) {
@@ -71,7 +67,7 @@ export const PUT = async (path: string, data: any, header?: any) => {
     headers: { Authorization: `Bearer ${getCookies("jwt")}` },
   };
   try {
-    const response = await api.put(`${path}`, data, header ? header : config);
+    const response = await axiosInstance.put(`${path}`, data, header ? header : config);
     data = await response.data;
     return data;
   } catch (error: any) {
@@ -85,7 +81,7 @@ export const DELETE = async (path: string, data: any, header?: any) => {
     headers: { Authorization: `Bearer ${getCookies("jwt")}` },
   };
   try {
-    const response = await api.delete(`${path}`, {
+    const response = await axiosInstance.delete(`${path}`, {
       headers: header ? header : config,
       data,
     });
@@ -106,7 +102,7 @@ export const UPLOAD = async (
     headers: { Authorization: `Bearer ${getCookies("jwt")}` },
   };
   try {
-    const response = await apiupload.post(
+    const response = await axiosInstance.post(
       `${path}`,
       formdata,
       header ? header : config
