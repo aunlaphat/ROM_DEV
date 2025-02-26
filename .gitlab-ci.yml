@@ -46,7 +46,7 @@ deploy-test:
     - apk add --update openssh-client openssh bash --repository https://uk.alpinelinux.org/alpine/v3.11/main
     - mkdir -p ~/.ssh
     - eval $(ssh-agent -s)
-    - echo "$SSH_KEY_PROD" > ./key.file
+    - echo "$SSH_KEY_86" > ./key.file
     - chmod 400 ./key.file
     - ssh-add ./key.file
     - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
