@@ -19,6 +19,9 @@ type Constants interface {
 	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)
 	GetProduct(ctx context.Context, page, limit int) ([]entity.ROM_V_ProductAll, error)
 	SearchCustomer(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.InvoiceInformation, error)
+	GetCustomerID(ctx context.Context) ([]entity.InvoiceInformation, error)
+	GetInvoiceNamesByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error)
+	GetCustomerInfoByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error)
 	SearchProduct(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.ROM_V_ProductAll, error)
 }
 
@@ -100,6 +103,35 @@ func (srv service) SearchCustomer(ctx context.Context, keyword string, searchTyp
 	}
 
 	return getCustomer, nil
+}
+
+func (srv service) GetCustomerID(ctx context.Context) ([]entity.InvoiceInformation, error) {
+	customerID, err := srv.constant.GetCustomerID(ctx)
+	if err != nil {
+		srv.logger.Error("[  get customerID error ]", zap.Error(err))
+		return nil, errors.InternalError("[ get customerID error: %v ]", err)
+	}
+	return customerID, nil
+}
+
+// Service Method ที่ค้นหาข้อมูลรหัสไปรษณีย์ (PostalCode) ตาม SubdistrictCode
+func (srv service) GetCustomerInfoByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error) {
+	customer, err := srv.constant.GetCustomerInfoByCustomerID(ctx, customerID, offset, limit)
+	if err != nil {
+		srv.logger.Error("[ Failed to fetch data ]", zap.Error(err))
+		return nil, errors.InternalError("[ Failed to fetch data: %v ]", err)
+	}
+	return customer, nil
+}
+
+// Service Method ที่ค้นหาข้อมูลรหัสไปรษณีย์ (PostalCode) ตาม SubdistrictCode
+func (srv service) GetInvoiceNamesByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error) {
+	invoice, err := srv.constant.GetInvoiceNamesByCustomerID(ctx, customerID, offset, limit)
+	if err != nil {
+		srv.logger.Error("[ Failed to fetch data ]", zap.Error(err))
+		return nil, errors.InternalError("[ Failed to fetch data: %v ]", err)
+	}
+	return invoice, nil
 }
 
 func (srv service) SearchProduct(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) {

@@ -1129,6 +1129,84 @@ paths:
       summary: Get Before Return Order by SoNo
       tags:
       - Before Return Order
+  /constants/get-customer-id:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all customer IDs
+      operationId: get-customer-ids
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of customer IDs
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.InvoiceInformation'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Customer IDs
+      tags:
+      - Constants
+  /constants/get-customer-info:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve customer information by customer ID
+      operationId: get-customer-info-by-id
+      parameters:
+      - description: Customer ID
+        in: query
+        name: customerID
+        required: true
+        type: string
+      - default: 0
+        description: Offset for pagination (default is 0)
+        in: query
+        name: offset
+        type: integer
+      - default: 4
+        description: Limit for number of customers to return (default is 4)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Customer information
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.InvoiceInformation'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Customer Info by CustomerID
+      tags:
+      - Constants
   /constants/get-district:
     get:
       consumes:
@@ -1164,6 +1242,53 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get District by ProvinceCode
+      tags:
+      - Constants
+  /constants/get-invoice-names:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve invoice names by customer ID
+      operationId: get-invoice-names-by-customer-id
+      parameters:
+      - description: Customer ID
+        in: query
+        name: customerID
+        required: true
+        type: string
+      - default: 0
+        description: Offset for pagination (default is 0)
+        in: query
+        name: offset
+        type: integer
+      - default: 4
+        description: Limit for number of invoices to return (default is 4)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invoice names
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.InvoiceInformation'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Invoice Names by CustomerID
       tags:
       - Constants
   /constants/get-postal-code:
