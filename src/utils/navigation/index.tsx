@@ -9,7 +9,7 @@ export const NavigateTo = ({ pathname, state, search }: any) => {
   }
 
   if (!pathname) {
-    navigate(routes.ROUTES_PATH.ROUTE_MAIN.PATH);
+    navigate(routes.ROUTES.ROUTE_MAIN.PATH);
   }
 
   const fullPath = search ? `${pathname}?${search}` : pathname;
@@ -20,7 +20,7 @@ export const NavigateTo = ({ pathname, state, search }: any) => {
 export const NavigateReplaceTo = ({ pathname, state = {}, search }: any) => {
   const navigate = useNavigate();
   if (!pathname) {
-    navigate(routes.ROUTES_PATH.ROUTE_MAIN.PATH);
+    navigate(routes.ROUTES.ROUTE_MAIN.PATH);
   } else {
     const fullPathname = search ? `${pathname}?${search}` : pathname;
     navigate(fullPathname, { state: { ...state } });

@@ -1,326 +1,162 @@
 import Home from "../screens/home";
-import LoginScene from "../screens/Authen/LoginScene";
-import NotfoundScene from "../screens/NotFound";
-import { env } from '../utils/env/config';
-import ImportOrder from "../screens/Return_import/Import_Return_Order";
-import ReturnOrder from "../screens/Return/Returnorder";
-import CreateReturn from "../screens/CreateReturn/CreateReturn";
-import SRPage from "../screens/CreateReturn/SR";
-import IJPage from "../screens/CreateReturn/IJ";
-import CreateTradeReturn from "../screens/Create Trade Return/CreateTradeReturn";
-import ConfirmReturnTrade from "../screens/ConfirmReturnTrade/ConfirmReturnTrade";
-import OtherReturn from "../screens/SaleReturn/SR/OtherReturn";
-import SaleReturn from "../screens/SaleReturn/Sale_Return";
-import CreateBlind from "../screens/Create_Blind/CreateBlindReturn";
-import Takepicture from "../screens/Create_Blind/Takepicture";
-import Report from "../screens/Report/Report";
-import DraftandConfirm from "../screens/Draft&Confirm/Draft&Confirm";
-import ManageUser from "../screens/ManageUser/Manageuser";
+import { Login } from "../screens/auth";
+import { NotFound } from "../screens/notFound";
+import { ManageUser } from "../screens/manageUser";
 
-export const ROUTE_LOGIN = process.env.REACT_APP_FRONTEND_URL+"/";
+export const ROUTE_LOGIN = process.env.REACT_APP_FRONTEND_URL + "/";
 
-type Route = {
-  KEY: string;                // ชื่อ Key ของ Route (ใช้เป็นตัวระบุ)
-  PATH: string;               // URL Path เช่น "/home"
-  LABEL: string;              // ชื่อ Route ที่แสดงผลใน UI
-  COMPONENT: React.ComponentType; // Component ที่จะใช้ใน Route
-  ELEMENT: () => JSX.Element; // ฟังก์ชันที่ Return JSX
+type RouteType = {
+  KEY: string;
+  PATH: string;
+  LABEL: string;
+  COMPONENT: React.ComponentType;
+  ELEMENT: () => JSX.Element;
 };
 
-export type Routes = {
-  ROUTE_MAIN: Route;
-  ROUTE_NOTFOUND: Route;
-  ROUTE_IMPORTORDER: Route;
-  ROUTE_RETURNORDER: Route;
-  ROUTE_CREATERETURN: Route;
-  ROUTE_SR: Route;
-  ROUTE_IJ: Route;
-  ROUTE_CREATETRADERETURN: Route;
-  ROUTE_CONFIRMRETURNTRADE: Route;
-  ROUTE_SALERETURN: Route;
-  ROUTE_OTHER: Route;
-  ROUTE_CREATEBLIND: Route;
-  ROUTE_TAKEPICTURE: Route;
-  ROUTE_REPORT: Route;
-  ROUTE_DRAFTANDCONFIRM: Route;
-  ROUTE_MANAGEUSER: Route;
+export type RoutesType = {
+  ROUTE_MAIN: RouteType;
+  ROUTE_NOTFOUND: RouteType;
+  // ROUTE_IMPORTORDER: RouteType;
+  // ROUTE_RETURNORDER: RouteType;
+  // ROUTE_CREATERETURN: RouteType;
+  // ROUTE_SR: RouteType;
+  // ROUTE_IJ: RouteType;
+  // ROUTE_CREATETRADERETURN: RouteType;
+  // ROUTE_CONFIRMRETURNTRADE: RouteType;
+  // ROUTE_SALERETURN: RouteType;
+  // ROUTE_OTHERRETURN: RouteType;
+  // ROUTE_CREATEBLINDRETURN: RouteType;
+  // ROUTE_TAKEPICTURE: RouteType;
+  // ROUTE_REPORT: RouteType;
+  // ROUTE_DRAFTANDCONFIRM: RouteType;
+  ROUTE_MANAGEUSER: RouteType;
 };
 
-export type Routes_Not_Auth = {
-  ROUTE_LOGIN: Route;
-};
-
-export const ROUTE_NOT_AUTHEN: Routes_Not_Auth = {
-  ROUTE_LOGIN: {
-    KEY: "login",
-    PATH: "/",
-    LABEL: "ล็อคอิน",
-    COMPONENT: LoginScene,
-    ELEMENT: () => <LoginScene />,
-  },
-};
-
-export const ROUTES_PATH: Routes = {
-  ROUTE_MAIN: {
-    KEY: "home",
-    PATH: "home",
-    LABEL: "ใบงานทั้งหมด",
-    COMPONENT: Home,
-    ELEMENT: () => <Home />,
-  },
-  ROUTE_NOTFOUND: {
-    KEY: "not_found",
-    PATH: "*",
-    LABEL: "NOT FOUND",
-    COMPONENT: NotfoundScene,
-    ELEMENT: () => <NotfoundScene />,
-  },
-  ROUTE_IMPORTORDER: {
-    KEY: "import_order",
-    PATH: "import_order",
-    LABEL: "Import Return order ",
-    COMPONENT: ImportOrder,
-    ELEMENT: () => <ImportOrder />,
-  },
-  ROUTE_RETURNORDER: {
-    KEY: "return_order",
-    PATH: "return_order",
-    LABEL: "Home",
-    COMPONENT: ReturnOrder,
-    ELEMENT: () => < ReturnOrder />,
-  },
-  ROUTE_CREATERETURN: {
-    KEY: "CreateReturn",
-    PATH: "CreateReturn",
-    LABEL: "Create Return",
-    COMPONENT: CreateReturn,
-    ELEMENT: () => < CreateReturn />,
-  },
-  ROUTE_SR: {
-    KEY: "SR",
-    PATH: "SR",
-    LABEL: "SR",
-    COMPONENT: SRPage,
-    ELEMENT: () => < SRPage />,
-  },
-  ROUTE_IJ: {
-    KEY: "IJ",
-    PATH: "IJ",
-    LABEL: "IJ",
-    COMPONENT: IJPage,
-    ELEMENT: () => < IJPage />,
-  },
-  ROUTE_CREATETRADERETURN: {
-    KEY: "CreateTrandReturn",
-    PATH: "CreateTrandReturn",
-    LABEL: "Create Trand Return",
-    COMPONENT: CreateTradeReturn,
-    ELEMENT: () => < CreateTradeReturn />,
-  },
-  ROUTE_CONFIRMRETURNTRADE: {
-    KEY: "ConfirmReturnTrade",
-    PATH: "ConfirmReturnTrade",
-    LABEL: "Confirm Return Trade",
-    COMPONENT: ConfirmReturnTrade,
-    ELEMENT: () => < ConfirmReturnTrade />,
-  },
-  ROUTE_OTHER: {
-    KEY: "Other",
-    PATH: "Other",
-    LABEL: "SR/IJ และ อื่นๆ Return ",
-    COMPONENT: OtherReturn,
-    ELEMENT: () => <OtherReturn />,
-  },
-  ROUTE_SALERETURN: {
-    KEY: "SaleReturn",
-    PATH: "SaleReturn",
-    LABEL: "Sale Return",
-    COMPONENT: SaleReturn,
-    ELEMENT: () => <SaleReturn />,
-  },
-  ROUTE_CREATEBLIND: {
-    KEY: "CreateBlindReturn",
-    PATH: "CreateBlindReturn",
-    LABEL: "Create Build Return",
-    COMPONENT: CreateBlind,
-    ELEMENT: () => <CreateBlind />,
-  },
-  ROUTE_TAKEPICTURE: {
-    KEY: "Takepicture",
-    PATH: "Takepicture",
-    LABEL: "Takepicture",
-    COMPONENT: Takepicture,
-    ELEMENT: () => <Takepicture />,
-  },
-  ROUTE_REPORT: {
-    KEY: "Report",
-    PATH: "Report",
-    LABEL: "Report",
-    COMPONENT: Report,
-    ELEMENT: () => <Report />,
-  },
-  ROUTE_DRAFTANDCONFIRM: {
-    KEY: "DraftandConfirm",
-    PATH: "DraftandConfirm",
-    LABEL: "Draft&Confirm",
-    COMPONENT: DraftandConfirm,
-    ELEMENT: () => <DraftandConfirm />,
-  },
-  ROUTE_MANAGEUSER: {
-    KEY: "Manageuser",
-    PATH: "Manageuser",
-    LABEL: "Manage User",
-    COMPONENT: ManageUser,
-    ELEMENT: () => <ManageUser />,
-  },
-
-};
-
-export type RoutesWorker = {
-  ROUTE_MAIN: Route;
-  ROUTE_NOTFOUND: Route;
-  ROUTE_IMPORTORDER: Route;
-  ROUTE_RETURNORDER: Route;
-  ROUTE_CREATERETURN: Route;
-  ROUTE_SR: Route;
-  ROUTE_IJ: Route;
-  ROUTE_CREATETRADERETURN: Route;
-  ROUTE_CONFIRMRETURNTRADE: Route;
-  ROUTE_OTHER: Route;
-  ROUTE_SALERETURN: Route;
-  ROUTE_CREATEBLIND: Route;
-  ROUTE_TAKEPICTURE: Route;
-  ROUTE_REPORT: Route;
-  ROUTE_DRAFTANDCONFIRM: Route;
-  ROUTE_MANAGEUSER: Route;
-};
-
-export const ROUTES_PATH_WORKER: RoutesWorker = {
+export const ROUTES: RoutesType = {
   ROUTE_MAIN: {
     KEY: "home",
     PATH: "/home",
-    LABEL: "ใบงานทั้งหมด",
+    LABEL: "หน้าแรก",
     COMPONENT: Home,
     ELEMENT: () => <Home />,
   },
   ROUTE_NOTFOUND: {
-    KEY: "not_found",
-    PATH: "/*",
-    LABEL: "NOT FOUND",
-    COMPONENT: NotfoundScene,
-    ELEMENT: () => <NotfoundScene />,
+    KEY: "notFound",
+    PATH: "*",
+    LABEL: "ไม่พบหน้านี้",
+    COMPONENT: NotFound,
+    ELEMENT: () => <NotFound />,
   },
-  ROUTE_IMPORTORDER: {
-    KEY: "import_order",
-    PATH: "import_order",
-    LABEL: "Import Return order ",
-    COMPONENT: NotfoundScene,
-    ELEMENT: () => <ImportOrder />,
-  },
-  ROUTE_RETURNORDER: {
-    KEY: "return_order",
-    PATH: "/return_order",
-    LABEL: "return order",
-    COMPONENT: ReturnOrder,
-    ELEMENT: () => < ReturnOrder />,
-  },
-  ROUTE_CREATERETURN: {
-    KEY: "CreateReturn",
-    PATH: "/CreateReturn",
-    LABEL: "Create Return",
-    COMPONENT: CreateReturn,
-    ELEMENT: () => < CreateReturn />,
-  },
-  ROUTE_SR: {
-    KEY: "SR",
-    PATH: "/SR",
-    LABEL: "SR",
-    COMPONENT: SRPage,
-    ELEMENT: () => < SRPage />,
-  },
-  ROUTE_IJ: {
-    KEY: "IJ",
-    PATH: "/IJ",
-    LABEL: "IJ",
-    COMPONENT: IJPage,
-    ELEMENT: () => < IJPage />,
-  },
-  ROUTE_CREATETRADERETURN: {
-    KEY: "CreateTrandReturn",
-    PATH: "/CreateTrandReturn",
-    LABEL: "Create Trand Return",
-    COMPONENT: CreateTradeReturn,
-    ELEMENT: () => < CreateTradeReturn />,
-  },
-  ROUTE_CONFIRMRETURNTRADE: {
-    KEY: "ConfirmReturnTrade",
-    PATH: "/ConfirmReturnTrade",
-    LABEL: "Confirm Return Trade",
-    COMPONENT: ConfirmReturnTrade,
-    ELEMENT: () => < ConfirmReturnTrade />,
-  },
-  ROUTE_OTHER: {
-    KEY: "Other",
-    PATH: "/Other",
-    LABEL: "SR/IJ และ อื่นๆ Return ",
-    COMPONENT: OtherReturn,
-    ELEMENT: () => < OtherReturn />,
-  },
-  ROUTE_SALERETURN: {
-    KEY: "SaleReturn",
-    PATH: "/SaleReturn",
-    LABEL: "Sale Return",
-    COMPONENT: SaleReturn,
-    ELEMENT: () => <SaleReturn />,
-  },
-  ROUTE_CREATEBLIND: {
-    KEY: "CreateBlindReturn",
-    PATH: "/CreateBlindReturn",
-    LABEL: "Create Build Return",
-    COMPONENT: CreateBlind,
-    ELEMENT: () => <CreateBlind />,
-  },
-  ROUTE_TAKEPICTURE: {
-    KEY: "Takepicture",
-    PATH: "/Takepicture",
-    LABEL: "Takepicture",
-    COMPONENT: Takepicture,
-    ELEMENT: () => <Takepicture />,
-  },
-  ROUTE_REPORT: {
-    KEY: "Report",
-    PATH: "/Report",
-    LABEL: "Report",
-    COMPONENT: Report,
-    ELEMENT: () => <Report />,
-  },
-  ROUTE_DRAFTANDCONFIRM: {
-    KEY: "DraftandConfirm",
-    PATH: "/DraftandConfirm",
-    LABEL: "Draft&Confirm",
-    COMPONENT: DraftandConfirm,
-    ELEMENT: () => <DraftandConfirm />,
-  },
+  // ROUTE_IMPORTORDER: {
+  //   KEY: "importOrder",
+  //   PATH: "/import-order",
+  //   LABEL: "นำเข้าข้อมูลการคืนสินค้า",
+  //   COMPONENT: ImportOrder,
+  //   ELEMENT: () => <ImportOrder />,
+  // },
+  // ROUTE_RETURNORDER: {
+  //   KEY: "returnOrder",
+  //   PATH: "/return-order",
+  //   LABEL: "การคืนสินค้า",
+  //   COMPONENT: ReturnOrder,
+  //   ELEMENT: () => <ReturnOrder />,
+  // },
+  // ROUTE_CREATERETURN: {
+  //   KEY: "createReturn",
+  //   PATH: "/create-return",
+  //   LABEL: "สร้างรายการคืนสินค้า",
+  //   COMPONENT: CreateReturn,
+  //   ELEMENT: () => <CreateReturn />,
+  // },
+  // ROUTE_SR: {
+  //   KEY: "sr",
+  //   PATH: "/sr",
+  //   LABEL: "SR",
+  //   COMPONENT: SRPage,
+  //   ELEMENT: () => <SRPage />,
+  // },
+  // ROUTE_IJ: {
+  //   KEY: "ij",
+  //   PATH: "/ij",
+  //   LABEL: "IJ",
+  //   COMPONENT: IJPage,
+  //   ELEMENT: () => <IJPage />,
+  // },
+  // ROUTE_CREATETRADERETURN: {
+  //   KEY: "createTradeReturn",
+  //   PATH: "/create-trade-return",
+  //   LABEL: "สร้างรายการคืนสินค้าสำหรับฝ่ายค้าขาย",
+  //   COMPONENT: CreateTradeReturn,
+  //   ELEMENT: () => <CreateTradeReturn />,
+  // },
+  // ROUTE_CONFIRMRETURNTRADE: {
+  //   KEY: "confirmReturnTrade",
+  //   PATH: "/confirm-return-trade",
+  //   LABEL: "ยืนยันการคืนสินค้า",
+  //   COMPONENT: ConfirmReturnTrade,
+  //   ELEMENT: () => <ConfirmReturnTrade />,
+  // },
+  // ROUTE_OTHERRETURN: {
+  //   KEY: "otherReturn",
+  //   PATH: "/other-return",
+  //   LABEL: "การคืนสินค้าอื่นๆ",
+  //   COMPONENT: OtherReturn,
+  //   ELEMENT: () => <OtherReturn />,
+  // },
+  // ROUTE_SALERETURN: {
+  //   KEY: "saleReturn",
+  //   PATH: "/sale-return",
+  //   LABEL: "การคืนสินค้าฝ่ายขาย",
+  //   COMPONENT: SaleReturn,
+  //   ELEMENT: () => <SaleReturn />,
+  // },
+  // ROUTE_CREATEBLINDRETURN: {
+  //   KEY: "createBlindReturn",
+  //   PATH: "/create-blind-return",
+  //   LABEL: "สร้างรายการคืนสินค้าสำหรับการตรวจสอบ",
+  //   COMPONENT: CreateBlindReturn,
+  //   ELEMENT: () => <CreateBlindReturn />,
+  // },
+  // ROUTE_TAKEPICTURE: {
+  //   KEY: "takePicture",
+  //   PATH: "/take-picture",
+  //   LABEL: "ถ่ายรูปสินค้า",
+  //   COMPONENT: TakePicture,
+  //   ELEMENT: () => <TakePicture />,
+  // },
+  // ROUTE_REPORT: {
+  //   KEY: "report",
+  //   PATH: "/report",
+  //   LABEL: "รายงานผลการคืนสินค้า",
+  //   COMPONENT: Report,
+  //   ELEMENT: () => <Report />,
+  // },
+  // ROUTE_DRAFTANDCONFIRM: {
+  //   KEY: "draftAndConfirm",
+  //   PATH: "/draft-and-confirm",
+  //   LABEL: "ร่างและยืนยันการคืนสินค้า",
+  //   COMPONENT: DraftAndConfirm,
+  //   ELEMENT: () => <DraftAndConfirm />,
+  // },
   ROUTE_MANAGEUSER: {
-    KEY: "Manageuser",
-    PATH: "/Manageuser",
-    LABEL: "Manage User",
+    KEY: "manageUser",
+    PATH: "/manage-user",
+    LABEL: "หน้าจัดการผู้ใช้งาน",
     COMPONENT: ManageUser,
     ELEMENT: () => <ManageUser />,
   },
-
 };
 
-export type RoutesNoPermission = {
-  ROUTE_NOTFOUND: Route;
+export type RoutesNoAuthType = {
+  ROUTE_LOGIN: RouteType;
 };
 
-export const ROUTES_PATH_NOPERMISSION: RoutesNoPermission = {
-  ROUTE_NOTFOUND: {
-    KEY: "not_found",
-    PATH: "/*",
-    LABEL: "NOT FOUND",
-    COMPONENT: NotfoundScene,
-    ELEMENT: () => <NotfoundScene />,
+export const ROUTES_NO_AUTH: RoutesNoAuthType = {
+  ROUTE_LOGIN: {
+    KEY: "login",
+    PATH: "/",
+    LABEL: "เข้าสู่ระบบ",
+    COMPONENT: Login,
+    ELEMENT: () => <Login />,
   },
 };

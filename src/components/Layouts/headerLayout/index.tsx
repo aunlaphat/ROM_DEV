@@ -1,91 +1,103 @@
-import { Avatar, Button, Dropdown, MenuProps, Tag, Modal } from "antd";
 import React from "react";
-import { MenuUnfoldOutlined, MenuFoldOutlined } from "@ant-design/icons";
+import { AvatarGenerator } from "../../avatar/AvatarGenerator";
+import {
+  Button,
+  Dropdown,
+  MenuProps,
+  Tag,
+  Modal,
+  notification,
+  Card,
+  Divider,
+  Space,
+  Typography,
+  Tooltip,
+  Avatar,
+} from "antd";
+import {
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
+  DownOutlined,
+} from "@ant-design/icons";
 import { HeaderBarStyle, TopBarDropDown, TopBarUser } from "./style";
 import { Icon } from "../../../resources";
 import { useAuthLogin } from "../../../hooks/useAuth";
 import { useSelector } from "react-redux";
 import { TextSmall } from "../../text";
-import { logger } from '../../../utils/logger';
+import { logger } from "../../../utils/logger";
 
 const HeaderBar = ({ collapsed, toggle }: any) => {
   const { onLogout } = useAuthLogin();
   const user = useSelector((state: any) => state.auth.user);
 
+  const userId = user?.userID || "N/A";
+  const userName = user?.userName || "N/A";
+  const userFullName = user?.fullName || "N/A";
+  const roleName = user?.roleName || "N/A";
+
   const handleLogout = () => {
     Modal.confirm({
-      title: 'ยืนยันการออกจากระบบ',
-      content: 'คุณต้องการออกจากระบบใช่หรือไม่?',
-      okText: 'ออกจากระบบ',
-      cancelText: 'ยกเลิก',
-      onOk: () => {
-        logger.auth('info', 'User logging out', {
-          userId: user?.userID,
-          userName: user?.userName
-        });
-        onLogout();
-      }
+      title: "Confirm Logout 🏃‍♂️",
+      content: "คุณต้องการออกจากระบบใช่หรือไม่? 🤔",
+      okText: "ออกจากระบบ",
+      cancelText: "ยกเลิก",
+      onOk: async () => {
+        try {
+          logger.auth("info", "User logging out", { userId, userName });
+
+          await onLogout();
+        } catch (error) {
+          console.error("Logout Failed", error);
+        }
+      },
     });
   };
 
-  // Add null check for user
-  const userId = user?.userID || 'N/A';
-  const userName = user?.userName || 'N/A';
-  const roleName = user?.roleName || 'N/A';
-
-  const items: MenuProps["items"] = [
+  const menuItems: MenuProps["items"] = [
     {
       key: "logout",
-      label: (
-        <Button
-          type="text"
-          icon={Icon.logout()}
-          onClick={handleLogout}
-          danger
-        >
-          ออกจากระบบ
-        </Button>
-      ),
+      label: "ออกจากระบบ",
+      icon: Icon.logout(),
+      onClick: handleLogout,
     },
   ];
 
   return (
     <HeaderBarStyle
       className="site-layout-background"
-      style={{
-        padding: 0,
-        backgroundColor: "white",
-      }}
+      style={{ padding: 0, backgroundColor: "white" }}
     >
       {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
         className: "trigger",
         onClick: toggle,
         style: { margin: "0 20px", color: "black" },
       })}
-      <TopBarUser>
-        <TextSmall
-          className="item-right-topbar"
-          text={
-            <>
-              <Tag className="item-right-topbar" color="blue">
-                {userId}
-              </Tag>
-              <Tag className="item-right-topbar" color="volcano">
-                {userName}
-              </Tag>
-              <Tag className="item-right-topbar" color="green">
-                {roleName}
-              </Tag>
-            </>
-          }
-        />
-      </TopBarUser>
-      <TopBarDropDown>
-        <Dropdown menu={{ items }}>
+
+      <TopBarUser
+        style={{ display: "flex", alignItems: "center", gap: "12px" }}
+      >
+        <Tooltip title="Profile">
           <Avatar
-            src={`https://api.dicebear.com/7.x/miniavs/svg?seed=1`}
+            src={`https://api.dicebear.com/7.x/miniavs/svg?seed=${userId}`}
             size="large"
           />
+        </Tooltip>
+
+        <Space direction="horizontal" size="small">
+          <Typography.Text strong>{userId}</Typography.Text>
+          <Typography.Text>{userFullName}</Typography.Text>
+          <Divider type="vertical" />
+          <Typography.Text keyboard type="success">
+            {roleName}
+          </Typography.Text>
+        </Space>
+      </TopBarUser>
+
+      <TopBarDropDown>
+        <Dropdown menu={{ items: menuItems }} trigger={["click"]}>
+          <Space style={{ cursor: "pointer", padding: "0 8px" }}>
+            <DownOutlined />
+          </Space>
         </Dropdown>
       </TopBarDropDown>
     </HeaderBarStyle>

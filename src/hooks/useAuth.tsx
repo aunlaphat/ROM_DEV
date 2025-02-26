@@ -1,51 +1,66 @@
 import { useDispatch } from "react-redux";
 import { NavigateTo, windowNavigateReplaceTo } from "../utils/navigation";
-import { ROUTES_PATH, ROUTE_LOGIN } from "../resources/routes";
+import { ROUTES, ROUTE_LOGIN } from "../resources/routes";
 import { login, logout } from "../redux/auth/action";
 import { getCookies } from "../store/useCookies";
-import { logger } from '../utils/logger';
+import { logger } from "../utils/logger";
 
 export const useAuthLogin = () => {
   const dispatch = useDispatch();
 
-  function toLogin() {
+  /**
+   * ไปยังหน้า Login
+   */
+  const toLogin = () => {
+    logger.auth("info", "Navigating to Login page");
     windowNavigateReplaceTo({ pathname: ROUTE_LOGIN });
-  }
+  };
 
+  /**
+   * ดำเนินการ Login
+   */
   const onLogin = async (values: any) => {
     try {
-      console.log("Dispatching login with values:", values);
-      // Just dispatch and let the saga handle the rest
+      logger.auth("info", "Dispatching login request", { username: values.username });
       dispatch(login(values));
     } catch (error) {
-      console.error("Login Error:", error);
+      logger.auth("error", "Login failed", { error });
       throw error;
     }
   };
 
+  /**
+   * ดำเนินการ Logout
+   */
   const onLogout = async () => {
     try {
-      logger.auth('info', 'Processing logout request');
+      logger.auth("info", "Processing logout request");
       dispatch(logout());
-      localStorage.removeItem("access_token");  // Clear local storage
-      document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";  // Clear cookie
+
+      // ล้างข้อมูลการ Authentication
+      localStorage.removeItem("access_token"); // Clear Local Storage
+      document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; // Clear Cookie
+
+      logger.auth("info", "User logged out successfully");
     } catch (error) {
-      logger.auth('error', 'Logout failed', { error });
+      logger.auth("error", "Logout failed", { error });
     }
   };
 
-  function redirectToMain() {
-    // if (getCookies('accessToken')) { // open this and comment below
+  /**
+   * Redirect ไปยังหน้า Home ถ้าผู้ใช้มีสิทธิ์เข้าใช้งาน
+   */
+  const redirectToMain = () => {
     if (!getCookies("jwt")) {
-      NavigateTo({ pathname: ROUTES_PATH.ROUTE_MAIN.PATH });
+      logger.auth("info", "Redirecting to Home page");
+      NavigateTo({ pathname: ROUTES.ROUTE_MAIN.PATH });
     }
-  }
+  };
 
   return {
     toLogin,
     redirectToMain,
     onLogin,
     onLogout,
-    //onLarkLogin,
   };
 };

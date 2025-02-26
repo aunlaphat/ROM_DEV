@@ -1,46 +1,46 @@
-import axios, { AxiosRequestConfig } from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { env } from "../utils/env/config";
 import { getCookies } from "../store/useCookies";
 
-// ตั้งค่าพื้นฐานสำหรับ Axios
 const axiosInstance = axios.create({
   baseURL: process.env.REACT_APP_BACKEND_URL,
-  timeout: 10000,
-  withCredentials: true, // สำคัญสำหรับการรับ cookies
-  headers: {
-    'Content-Type': 'application/json',
-  }
+  timeout: 10000, // ⏳ Timeout 10 วินาที
+  withCredentials: true, // 🍪 ใช้ Cookies สำหรับ Authentication
+  headers: { "Content-Type": "application/json" }, // 📌 Default Header เป็น JSON
 });
 
-// Interceptor สำหรับ request
+// ✅ Interceptor: Request
 axiosInstance.interceptors.request.use((config) => {
-  console.log('📤 [API] Request:', {
+  console.log("📤 [API] Request:", {
     method: config.method,
     url: config.url,
-    data: config.data
+    data: config.data,
   });
   return config;
 });
 
-// Interceptor สำหรับ response
+// ✅ Interceptor: Response
 axiosInstance.interceptors.response.use(
-  (response) => {
-    console.log('📥 [API] Response:', {
+  (response: AxiosResponse) => {
+    console.log("📥 [API] Response:", {
       status: response.status,
       data: response.data,
-      cookies: document.cookie
+      cookies: document.cookie,
     });
     return response;
   },
   (error) => {
-    console.error('❌ [API] Error:', {
+    console.error("❌ [API] Error:", {
       message: error.message,
       response: error.response?.data,
-      status: error.response?.status
+      status: error.response?.status,
     });
     return Promise.reject(error);
   }
 );
+
+export default axiosInstance;
+
 
 export const POST = (url: string, data: any, config?: AxiosRequestConfig) => 
   axiosInstance.post(url, data, { ...config });

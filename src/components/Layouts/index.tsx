@@ -1,5 +1,5 @@
-import { useEffect, useState, ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useCallback } from "react";
+import { useLocation, useNavigate, Outlet } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../../redux/store";
 import { checkAuthen } from "../../redux/auth/action";
@@ -8,73 +8,89 @@ import HeaderBar from "./headerLayout";
 import ContentLayout from "./contentLayout";
 import Loading from "../loading";
 import { Layout } from "antd";
-import { logger } from '../../utils/logger';
+import { logger } from "../../utils/logger";
+import { ROUTES_NO_AUTH } from "../../resources/routes";
 
-const LayoutPage = ({ children }: any ) => {
+const LayoutPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const authState = useSelector((state: RootState) => state.auth);
-  const [collapsed, setCollapsed] = useState(window.innerWidth <= 767);
-  const [collapsedWidth, setCollapsedWidth] = useState(window.innerWidth <= 767 ? 0 : undefined);
-  const userRole = authState?.user?.roleID;
 
-  // 1. Resize effect
+  const [collapsed, setCollapsed] = useState(window.innerWidth <= 767);
+  const [collapsedWidth, setCollapsedWidth] = useState<number | undefined>(
+    window.innerWidth <= 767 ? 0 : undefined
+  );
+
+  // ✅ โหลด token แค่ครั้งเดียว
+  const token = localStorage.getItem("access_token");
+
+  /**
+   * ✅ ปรับปรุงการจัดการ Responsive Layout
+   */
   useEffect(() => {
     const handleResize = () => {
-      setCollapsed(window.innerWidth <= 767);
-      setCollapsedWidth(window.innerWidth <= 767 ? 0 : undefined);
+      const isMobile = window.innerWidth <= 767;
+      setCollapsed(isMobile);
+      setCollapsedWidth(isMobile ? 0 : undefined);
     };
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Single auth check effect
+  /**
+   * ✅ ใช้ useCallback เพื่อลดการ re-run ของ useEffect
+   */
+  const validateAuth = useCallback(async () => {
+    logger.auth("debug", "Validating auth state", {
+      isAuthenticated: authState?.isAuthenticated,
+      hasUser: !!authState?.user,
+      path: location.pathname,
+      hasToken: !!token,
+    });
+
+    if (token && !authState?.user) {
+      logger.auth("info", "Has token but no user data, fetching user info");
+      await dispatch(checkAuthen());
+      return;
+    }
+
+    if (!authState?.isAuthenticated && location.pathname !== ROUTES_NO_AUTH.ROUTE_LOGIN.PATH) {
+      logger.route("warn", "Unauthorized access, redirecting to login");
+      navigate(ROUTES_NO_AUTH.ROUTE_LOGIN.PATH);
+    }
+  }, [authState?.isAuthenticated, authState?.user, location.pathname, dispatch, navigate, token]);
+
   useEffect(() => {
-    const validateAuth = async () => {
-      logger.auth('debug', 'Validating auth state', {
-        isAuth: authState?.isAuthenticated,
-        hasUser: !!authState?.user,
-        path: location.pathname,
-        token: !!localStorage.getItem('access_token')
-      });
-
-      // ถ้ามี token แต่ยังไม่มี user data
-      if (localStorage.getItem('access_token') && !authState?.user) {
-        logger.auth('info', 'Has token but no user data, fetching user info');
-        await dispatch(checkAuthen());
-        return;
-      }
-
-      // ถ้าไม่มี auth และไม่ได้อยู่หน้า login
-      if (!authState?.isAuthenticated && location.pathname !== '/') {
-        logger.route('info', 'Unauthorized, redirecting to login');
-        navigate('/');
-        return;
-      }
-    };
-
     validateAuth();
-  }, [authState?.isAuthenticated, authState?.user, location.pathname]);
+  }, [validateAuth]);
 
-  // ลบ effects ที่ไม่จำเป็นออก และปรับปรุง loading check
+  /**
+   * ✅ ปรับปรุงการโหลดข้อมูล Auth
+   */
   if (authState?.loading) {
-    logger.auth('debug', 'Loading auth state');
+    logger.auth("debug", "Loading auth state...");
     return <Loading />;
   }
 
-  // ถ้าไม่มี auth และไม่ได้อยู่หน้า login ให้ redirect
-  if (!authState?.isAuthenticated && location.pathname !== '/') {
+  if (!authState?.isAuthenticated && location.pathname !== "/") {
+    logger.auth("warn", "User not authenticated, blocking access");
     return null;
   }
 
-  // Render layout
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <SiderLayout collapsed={collapsed} collapsedWidth={collapsedWidth} toggle={() => setCollapsed(!collapsed)} />
+      <SiderLayout
+        collapsed={collapsed}
+        collapsedWidth={collapsedWidth}
+        toggle={() => setCollapsed(!collapsed)}
+      />
       <Layout className="site-layout">
         <HeaderBar collapsed={collapsed} toggle={() => setCollapsed(!collapsed)} />
-        <ContentLayout>{children}</ContentLayout>
+        <ContentLayout>
+          <Outlet />
+        </ContentLayout>
       </Layout>
     </Layout>
   );

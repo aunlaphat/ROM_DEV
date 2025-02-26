@@ -12,7 +12,7 @@ import { ButtonTheme } from "../../components/buttons";
 import { useAuthLogin } from "../../hooks/useAuth";
 import { getCookies, setCookies } from "../../store/useCookies";
 
-const LoginScene = () => {
+export const Login = () => {
   const [disabled, setDisabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const { onLogin } = useAuthLogin();
@@ -113,5 +113,3 @@ const LoginScene = () => {
     </Spin>
   );
 };
-
-export default LoginScene;

@@ -1,7 +1,7 @@
 import notFoundImg from "../../assets/images/404.png";
 import { Link } from "react-router-dom";
 
-const NotfoundScene = () => {
+export const NotFound = () => {
   return (
     <div
       style={{
@@ -20,5 +20,3 @@ const NotfoundScene = () => {
     </div>
   );
 };
-
-export default NotfoundScene;
