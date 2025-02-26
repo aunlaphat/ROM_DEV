@@ -51,7 +51,7 @@ deploy-test:
     - ssh-add ./key.file
     - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
   script:
-    - ssh -o StrictHostkeyChecking=no admindcom@$SERVER_IP_PROD "
+    - ssh -o StrictHostkeyChecking=no admindcom@$SERVER_IP_86 "
          docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
          docker stop $CI_PROJECT_NAME-${CI_COMMIT_REF_SLUG} || true &&
          docker rm $CI_PROJECT_NAME-${CI_COMMIT_REF_SLUG} || true &&
