@@ -1,6 +1,7 @@
 import Home from "../screens/home";
 import { Login } from "../screens/auth";
 import { NotFound } from "../screens/notFound";
+import { Report } from "../screens/report"; // Ensure that the file '../screens/report.tsx' exists and is correctly named
 import { ManageUser } from "../screens/manageUser";
 
 export const ROUTE_LOGIN = process.env.REACT_APP_FRONTEND_URL + "/";
@@ -27,7 +28,7 @@ export type RoutesType = {
   // ROUTE_OTHERRETURN: RouteType;
   // ROUTE_CREATEBLINDRETURN: RouteType;
   // ROUTE_TAKEPICTURE: RouteType;
-  // ROUTE_REPORT: RouteType;
+  ROUTE_REPORT: RouteType;
   // ROUTE_DRAFTANDCONFIRM: RouteType;
   ROUTE_MANAGEUSER: RouteType;
 };
@@ -124,13 +125,13 @@ export const ROUTES: RoutesType = {
   //   COMPONENT: TakePicture,
   //   ELEMENT: () => <TakePicture />,
   // },
-  // ROUTE_REPORT: {
-  //   KEY: "report",
-  //   PATH: "/report",
-  //   LABEL: "รายงานผลการคืนสินค้า",
-  //   COMPONENT: Report,
-  //   ELEMENT: () => <Report />,
-  // },
+  ROUTE_REPORT: {
+    KEY: "report",
+    PATH: "/report",
+    LABEL: "รายงานผลการคืนสินค้า",
+    COMPONENT: Report,
+    ELEMENT: () => <Report />,
+  },
   // ROUTE_DRAFTANDCONFIRM: {
   //   KEY: "draftAndConfirm",
   //   PATH: "/draft-and-confirm",

@@ -43,19 +43,19 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
       //   roles: [RoleID.ADMIN, RoleID.TRADE_CONSIGN],
       // },
       {
-        title: ROUTES.ROUTE_MANAGEUSER.LABEL,
+        title: ROUTES.ROUTE_REPORT.LABEL, // รายงาน
+        key: ROUTES.ROUTE_REPORT.PATH,
+        icon: Icon.Report(),
+        link: ROUTES.ROUTE_REPORT.PATH,
+        roles: [RoleID.ADMIN, RoleID.ACCOUNTING, RoleID.WAREHOUSE, RoleID.TRADE_CONSIGN, RoleID.VIEWER],
+      },
+      {
+        title: ROUTES.ROUTE_MANAGEUSER.LABEL, // จัดการผู้ใช้งาน
         key: ROUTES.ROUTE_MANAGEUSER.PATH,
         icon: Icon.manageUser(),
         link: ROUTES.ROUTE_MANAGEUSER.PATH,
         roles: [RoleID.ADMIN],
       },
-      // {
-      //   title: ROUTES.ROUTE_REPORT.LABEL,
-      //   key: ROUTES.ROUTE_REPORT.PATH,
-      //   icon: Icon.Report(),
-      //   link: ROUTES.ROUTE_REPORT.PATH,
-      //   roles: [RoleID.ADMIN, RoleID.ACCOUNTING],
-      // },
     ],
     []
   );
