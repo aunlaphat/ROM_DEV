@@ -43,6 +43,27 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
       //   roles: [RoleID.ADMIN, RoleID.TRADE_CONSIGN],
       // },
       {
+        title: ROUTES.ROUTE_CREATERETURNORDERMKP.LABEL,
+        key: ROUTES.ROUTE_CREATERETURNORDERMKP.PATH,
+        icon: Icon.Edit1(),
+        link: ROUTES.ROUTE_CREATERETURNORDERMKP.PATH,
+        roles: [RoleID.ADMIN, RoleID.ACCOUNTING, RoleID.WAREHOUSE, RoleID.TRADE_CONSIGN, RoleID.VIEWER],
+      },
+      {
+        title: ROUTES.ROUTE_DRAFTANDCONFIRM.LABEL, // รายการรออนุมัติ MKP
+        key: ROUTES.ROUTE_DRAFTANDCONFIRM.PATH,
+        icon: Icon.Draft(),
+        link: ROUTES.ROUTE_DRAFTANDCONFIRM.PATH,
+        roles: [RoleID.ADMIN, RoleID.ACCOUNTING, RoleID.WAREHOUSE, RoleID.TRADE_CONSIGN, RoleID.VIEWER],
+      },
+      {
+        title: ROUTES.ROUTE_CONFIRMRETURNTRADE.LABEL, // รายการรออนุมัติ Trade
+        key: ROUTES.ROUTE_CONFIRMRETURNTRADE.PATH,
+        icon: Icon.Confirm(),
+        link: ROUTES.ROUTE_CONFIRMRETURNTRADE.PATH,
+        roles: [RoleID.ADMIN, RoleID.ACCOUNTING, RoleID.WAREHOUSE, RoleID.TRADE_CONSIGN, RoleID.VIEWER],
+      },
+      {
         title: ROUTES.ROUTE_REPORT.LABEL, // รายงาน
         key: ROUTES.ROUTE_REPORT.PATH,
         icon: Icon.Report(),

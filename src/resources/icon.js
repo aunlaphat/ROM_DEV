@@ -156,4 +156,6 @@ export const Icon = {
   users: (props) => <FaRegUser {...props} />,
   manageUser: (props) => <FaUserCog {...props} />,
   addUser: (props) => <FaUserPlus {...props} />,
+  Draft: (props) => <BsFileEarmarkText {...props} />,
+  Confirm: (props) => <BsCheckCircle {...props} />,
 };

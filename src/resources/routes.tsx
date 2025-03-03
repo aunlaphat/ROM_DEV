@@ -1,8 +1,11 @@
-import Home from "../screens/home";
+import Home from "../screens/Home";
 import { Login } from "../screens/auth";
-import { NotFound } from "../screens/notFound";
-import { Report } from "../screens/report"; // Ensure that the file '../screens/report.tsx' exists and is correctly named
-import { ManageUser } from "../screens/manageUser";
+import { NotFound } from "../screens/NotFound";
+import { CreateReturnOrderMKP } from "../screens/MKP";
+import { DraftAndConfirm } from "../screens/Draft&Confirm";
+import { ConfirmReturnTrade } from "../screens/ConfirmReturnTrade";
+import { Report } from "../screens/Report";
+import { ManageUser } from "../screens/ManageUser";
 
 export const ROUTE_LOGIN = process.env.REACT_APP_FRONTEND_URL + "/";
 
@@ -20,16 +23,16 @@ export type RoutesType = {
   // ROUTE_IMPORTORDER: RouteType;
   // ROUTE_RETURNORDER: RouteType;
   // ROUTE_CREATERETURN: RouteType;
-  // ROUTE_SR: RouteType;
+  ROUTE_CREATERETURNORDERMKP: RouteType;
   // ROUTE_IJ: RouteType;
   // ROUTE_CREATETRADERETURN: RouteType;
-  // ROUTE_CONFIRMRETURNTRADE: RouteType;
+  ROUTE_CONFIRMRETURNTRADE: RouteType;
   // ROUTE_SALERETURN: RouteType;
   // ROUTE_OTHERRETURN: RouteType;
   // ROUTE_CREATEBLINDRETURN: RouteType;
   // ROUTE_TAKEPICTURE: RouteType;
   ROUTE_REPORT: RouteType;
-  // ROUTE_DRAFTANDCONFIRM: RouteType;
+  ROUTE_DRAFTANDCONFIRM: RouteType;
   ROUTE_MANAGEUSER: RouteType;
 };
 
@@ -37,14 +40,14 @@ export const ROUTES: RoutesType = {
   ROUTE_MAIN: {
     KEY: "home",
     PATH: "/home",
-    LABEL: "หน้าแรก",
+    LABEL: "Home",
     COMPONENT: Home,
     ELEMENT: () => <Home />,
   },
   ROUTE_NOTFOUND: {
     KEY: "notFound",
     PATH: "*",
-    LABEL: "ไม่พบหน้านี้",
+    LABEL: "Page Not Found",
     COMPONENT: NotFound,
     ELEMENT: () => <NotFound />,
   },
@@ -69,13 +72,13 @@ export const ROUTES: RoutesType = {
   //   COMPONENT: CreateReturn,
   //   ELEMENT: () => <CreateReturn />,
   // },
-  // ROUTE_SR: {
-  //   KEY: "sr",
-  //   PATH: "/sr",
-  //   LABEL: "SR",
-  //   COMPONENT: SRPage,
-  //   ELEMENT: () => <SRPage />,
-  // },
+  ROUTE_CREATERETURNORDERMKP: {
+    KEY: "createReturnOrderMKP",
+    PATH: "/create-return-order-mkp",
+    LABEL: "Create Return Order MKP",
+    COMPONENT: CreateReturnOrderMKP,
+    ELEMENT: () => <CreateReturnOrderMKP />,
+  },
   // ROUTE_IJ: {
   //   KEY: "ij",
   //   PATH: "/ij",
@@ -90,13 +93,13 @@ export const ROUTES: RoutesType = {
   //   COMPONENT: CreateTradeReturn,
   //   ELEMENT: () => <CreateTradeReturn />,
   // },
-  // ROUTE_CONFIRMRETURNTRADE: {
-  //   KEY: "confirmReturnTrade",
-  //   PATH: "/confirm-return-trade",
-  //   LABEL: "ยืนยันการคืนสินค้า",
-  //   COMPONENT: ConfirmReturnTrade,
-  //   ELEMENT: () => <ConfirmReturnTrade />,
-  // },
+  ROUTE_CONFIRMRETURNTRADE: {
+    KEY: "confirmReturnTrade",
+    PATH: "/confirm-return-trade",
+    LABEL: "Confirm Return Trade",
+    COMPONENT: ConfirmReturnTrade,
+    ELEMENT: () => <ConfirmReturnTrade />,
+  },
   // ROUTE_OTHERRETURN: {
   //   KEY: "otherReturn",
   //   PATH: "/other-return",
@@ -128,21 +131,21 @@ export const ROUTES: RoutesType = {
   ROUTE_REPORT: {
     KEY: "report",
     PATH: "/report",
-    LABEL: "รายงานผลการคืนสินค้า",
+    LABEL: "Report",
     COMPONENT: Report,
     ELEMENT: () => <Report />,
   },
-  // ROUTE_DRAFTANDCONFIRM: {
-  //   KEY: "draftAndConfirm",
-  //   PATH: "/draft-and-confirm",
-  //   LABEL: "ร่างและยืนยันการคืนสินค้า",
-  //   COMPONENT: DraftAndConfirm,
-  //   ELEMENT: () => <DraftAndConfirm />,
-  // },
+  ROUTE_DRAFTANDCONFIRM: {
+    KEY: "draftAndConfirm",
+    PATH: "/draft-and-confirm",
+    LABEL: "Draft and Confirm",
+    COMPONENT: DraftAndConfirm,
+    ELEMENT: () => <DraftAndConfirm />,
+  },
   ROUTE_MANAGEUSER: {
     KEY: "manageUser",
     PATH: "/manage-user",
-    LABEL: "หน้าจัดการผู้ใช้งาน",
+    LABEL: "Manage User",
     COMPONENT: ManageUser,
     ELEMENT: () => <ManageUser />,
   },
@@ -156,7 +159,7 @@ export const ROUTES_NO_AUTH: RoutesNoAuthType = {
   ROUTE_LOGIN: {
     KEY: "login",
     PATH: "/",
-    LABEL: "เข้าสู่ระบบ",
+    LABEL: "Login",
     COMPONENT: Login,
     ELEMENT: () => <Login />,
   },

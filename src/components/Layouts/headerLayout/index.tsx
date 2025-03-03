@@ -37,7 +37,7 @@ const HeaderBar = ({ collapsed, toggle }: any) => {
 
   const handleLogout = () => {
     Modal.confirm({
-      title: "Confirm Logout 🏃‍♂️",
+      title: "Confirm Logout",
       content: "คุณต้องการออกจากระบบใช่หรือไม่? 🤔",
       okText: "ออกจากระบบ",
       cancelText: "ยกเลิก",
@@ -77,10 +77,7 @@ const HeaderBar = ({ collapsed, toggle }: any) => {
         style={{ display: "flex", alignItems: "center", gap: "12px" }}
       >
         <Tooltip title="Profile">
-          <Avatar
-            src={`https://api.dicebear.com/7.x/miniavs/svg?seed=${userId}`}
-            size="large"
-          />
+          <AvatarGenerator userName={userName} userID={userId} size="large" />
         </Tooltip>
 
         <Space direction="horizontal" size="small">

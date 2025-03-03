@@ -138,12 +138,18 @@ export const Report = () => {
   };
 
   return (
-    <Layout style={{ padding: 24, background: '#F5F5F5' }}>
+    <Layout style={{
+      margin: "24px",
+      padding: 24,
+      minHeight: 360,
+      background: "#f5f5f5",
+      borderRadius: "8px",
+    }}>
       {/* Header Section */}
       <Card bordered={false} style={{ marginBottom: 24 }}>
         <Space direction="vertical" size="small">
           <Title level={4}>
-            {Icon.analytics({ style: { fontSize: 24, color: "#1890ff" } })} รายงาน
+            {Icon.analytics({ style: { fontSize: 24, color: "#1890ff" } })} Report
           </Title>
           <Text type="secondary">
             {Icon.chart({ style: { fontSize: 16 } })} แสดงข้อมูลรายงานการคืนสินค้าตามช่วงเวลา

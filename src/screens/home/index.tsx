@@ -91,18 +91,18 @@ const Home: React.FC = () => {
       title: "รายการรอดำเนินการ",
       value: 25,
       icon: Icon.pending({ style: { fontSize: 24, color: "#1890ff" } }),
-      color: "#1890ff"
+      color: "#1890ff",
     },
     {
       title: "ผู้ใช้งานทั้งหมด",
       value: 150,
       icon: Icon.team({ style: { fontSize: 24, color: "#52c41a" } }),
-      color: "#52c41a"
+      color: "#52c41a",
     },
     {
-      title: "คลังสินค้า",
-      value: 5,
-      icon: Icon.warehouse({ style: { fontSize: 24, color: "#722ed1" } }),
+      title: "รายการออเดอร์ที่เข้าวันนี้",
+      value: 999,
+      icon: Icon.BarCode({ style: { fontSize: 24, color: "#722ed1" } }),
       color: "#722ed1"
     }
   ];
@@ -112,12 +112,20 @@ const Home: React.FC = () => {
   };
 
   return (
-    <Layout style={{ padding: 24, background: "#F5F5F5" }}>
+    <Layout
+      style={{
+        margin: "24px",
+        padding: 24,
+        minHeight: 360,
+        background: "#f5f5f5",
+        borderRadius: "8px",
+      }}
+    >
       {/* Welcome Section */}
       <Card bordered={false} style={{ marginBottom: 24 }}>
         <Space direction="vertical" size="small">
           <Title level={4}>
-            <HomeOutlined /> หน้าหลัก
+            <HomeOutlined /> Home Page
           </Title>
           <Text>ยินดีต้อนรับ, คุณ {user?.fullName}</Text>
           <Text type="secondary">บทบาท: {user?.roleName}</Text>
@@ -145,7 +153,12 @@ const Home: React.FC = () => {
       </Row>
 
       <Content>
-        <Title level={3} style={{ color: "#1677ff" }}>
+        <Title level={3} style={{
+          marginLeft: "28px",
+          fontSize: "25px",
+          fontWeight: "bold",
+          color: "DodgerBlue",
+        }}>
           Home
         </Title>
 

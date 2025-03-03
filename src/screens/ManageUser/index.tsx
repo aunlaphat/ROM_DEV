@@ -25,7 +25,7 @@ import { useState, useEffect } from "react";
 import { GET, POST, PATCH, DELETE } from "../../services/index";
 import { FETCHUSERS, ADDUSER, EDITUSER, DELETEUSER } from "../../services/path";
 import { User, Role, Warehouse, ApiResponse } from "./types";
-import { AvatarGenerator } from "../../components/avatar/AvatarGenerator"; // ✅ ใช้ AvatarGenerator
+import { AvatarGenerator } from "../../components/avatar/AvatarGenerator";
 
 const { Content } = Layout;
 const { Search } = Input;
@@ -41,6 +41,11 @@ export const ManageUser = () => {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [filteredData, setFilteredData] = useState<User[]>([]);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 100
+  });
 
   useEffect(() => {
     loadUsers();
@@ -76,30 +81,34 @@ export const ManageUser = () => {
     }
   };
 
-  const loadUsers = async () => {
+  const loadUsers = async (page = pagination.current, pageSize = pagination.pageSize) => {
     try {
-        setLoading(true);
-        const isActive = true;
-        const limit = 100;
-        const offset = 0;
+      setLoading(true);
+      const offset = (page - 1) * pageSize;
+      
+      const response = await GET(`manage-users/?isActive=true&limit=${pageSize}&offset=${offset}`);
+      const apiResponse = response.data as ApiResponse<User[]>;
 
-        const response = await GET(`manage-users/?isActive=${isActive}&limit=${limit}&offset=${offset}`);
-
-        const apiResponse = response.data as ApiResponse<User[]>;
-
-        if (apiResponse.success && Array.isArray(apiResponse.data)) {
-            setData(apiResponse.data);
-            setFilteredData(apiResponse.data);
-        } else {
-            notification.error({ message: "Failed to load users" });
-        }
-    } catch (error) {
-        console.error("Failed to fetch users", error);
+      if (apiResponse.success && Array.isArray(apiResponse.data)) {
+        setData(apiResponse.data);
+        setFilteredData(apiResponse.data);
+        setPagination({
+          ...pagination,
+          current: page,
+          pageSize: pageSize,
+          //total: apiResponse.total || apiResponse.data.length // ต้องมีการส่ง total จาก API
+          total: 100
+        });
+      } else {
         notification.error({ message: "Failed to load users" });
+      }
+    } catch (error) {
+      console.error("Failed to fetch users", error);
+      notification.error({ message: "Failed to load users" });
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
   const handleSave = async () => {
     try {
@@ -143,6 +152,10 @@ export const ManageUser = () => {
     setSearchText(value);
   };
 
+  const handleTableChange = (pagination: any) => {
+    loadUsers(pagination.current, pagination.pageSize);
+  };
+
   const columns = [
     {
       title: "ผู้ใช้งาน",
@@ -150,7 +163,7 @@ export const ManageUser = () => {
       width: 250,
       render: (record: User) => (
         <Space>
-          <AvatarGenerator userID={record.userID} size="large" />{" "}
+          <AvatarGenerator userID={record.userName} userName={record.userName} size="large" />{" "}
           <div>
             <div style={{ fontWeight: "bold" }}>{record.userName}</div>
             <div style={{ color: "#666" }}>{record.nickName}</div>
@@ -216,7 +229,13 @@ export const ManageUser = () => {
   return (
     <Layout
       className="site-layout-background"
-      style={{ padding: 24, background: "#F5F5F5" }}
+      style={{
+        margin: "24px",
+        padding: 24,
+        minHeight: 360,
+        background: "#f5f5f5",
+        borderRadius: "8px",
+      }}
     >
       <Card bordered={false}>
         <Row
@@ -226,7 +245,7 @@ export const ManageUser = () => {
         >
           <Col>
             <Title level={4} style={{ margin: 0 }}>
-              <UserOutlined /> จัดการผู้ใช้งาน
+              <UserOutlined /> Mange Users
             </Title>
           </Col>
           <Col>
@@ -254,11 +273,13 @@ export const ManageUser = () => {
           rowKey="userID"
           loading={loading}
           pagination={{
+            ...pagination,
             showSizeChanger: true,
             showTotal: (total) => `ทั้งหมด ${total} รายการ`,
-            pageSize: 10,
             showQuickJumper: true,
+            pageSizeOptions: ['10', '20', '50', '100']
           }}
+          onChange={handleTableChange}
           size="middle"
           bordered
         />
