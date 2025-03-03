@@ -19,11 +19,14 @@ type Constants interface {
 
 	GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error)                                              // รายการสินค้าแบบแบ่งรายการ
 	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)                                                                      // ชื่อคลัง + location
-	SearchCustomer(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.InvoiceInformation, error) // ข้อมูลลูกค้า + invoice
+
+	SearchInvoiceNameByCustomerID(ctx context.Context, customerID string, keyword string, offset int, limit int) ([]entity.InvoiceInformation, error)
 	GetCustomerID(ctx context.Context) ([]entity.InvoiceInformation, error)
 	GetInvoiceNamesByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error)
 	GetCustomerInfoByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error)
+	
 	SearchProduct(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) // ข้อมูลสินค้า
+	SearchSKUByNameAndSize(ctx context.Context, nameAlias string, size string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) 
 }
 
 // ค้นหาในฐานข้อมูล Province ที่ตรงกับคำค้นหาของผู้ใช้ และคืนค่าผลลัพธ์เป็นจังหวัดที่มีอยู่ทั้งหมด
@@ -167,17 +170,8 @@ func (repo repositoryDB) GetProduct(ctx context.Context, offset, limit int) ([]e
 				ORDER BY SKU
 				OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY;
 			 `
-	countQuery := ` SELECT COUNT(*)
-					FROM Data_WebReturn.dbo.ROM_V_ProductAll;
-				  `
 
 	var products []entity.ROM_V_ProductAll
-	total := 0
-
-	// Fetch total count
-	if err := repo.db.GetContext(ctx, &total, countQuery); err != nil {
-		return nil, fmt.Errorf("failed to fetch total count: %w", err)
-	}
 
 	// Fetch paginated data
 	rows, err := repo.db.NamedQueryContext(ctx, query, map[string]interface{}{
@@ -200,39 +194,26 @@ func (repo repositoryDB) GetProduct(ctx context.Context, offset, limit int) ([]e
 	return products, nil
 }
 
-// เมื่อผู้ใช้เลือก CustomerID จาก dropdown ระบบจะดึงข้อมูล CustomerName, Address, TaxID ที่เกี่ยวข้องกับ CustomerID
+// เมื่อผู้ใช้เลือก CustomerID ระบบจะดึงข้อมูล CustomerName, Address, TaxID ที่เกี่ยวข้องกับ CustomerID
+// และค้นหาจาก CustomerName ด้วย LIKE
 // เมื่อผู้ใช้เลือก InvoiceName ระบบจะดึง CustomerName, Address, TaxID ที่เกี่ยวข้องกับ InvoiceName
-func (repo repositoryDB) SearchCustomer(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.InvoiceInformation, error) {
-	var customers []entity.InvoiceInformation
+func (repo repositoryDB) SearchInvoiceNameByCustomerID(ctx context.Context, customerID string, keyword string, offset int, limit int) ([]entity.InvoiceInformation, error) {
+	var invoices []entity.InvoiceInformation
 
-	// ทำให้ keyword เป็น lowercase และลบช่องว่าง
+	// ทำให้ customerID และ keyword เป็น lowercase และลบช่องว่าง
+	cleanedCustomerID := strings.ToLower(strings.ReplaceAll(customerID, " ", ""))
 	cleanedKeyword := strings.ToLower(strings.ReplaceAll(keyword, " ", ""))
 
 	// เพิ่ม % เพื่อใช้กับ LIKE
 	searchParam := cleanedKeyword + "%"
 
-	var query string
-
-	// เลือกค้นหาตาม searchType
-	if searchType == "CustomerID" {
-		// ค้นหาจาก CustomerID
-		query = `	SELECT DISTINCT CustomerID, CustomerName, Address, TaxID
-					FROM Data_WebReturn.dbo.InvoiceInformation
-					WHERE REPLACE(LOWER(CustomerID), ' ', '') LIKE :Keyword
-					ORDER BY CustomerID
-					OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY
-				`
-	} else if searchType == "InvoiceName" {
-		// ค้นหาจาก InvoiceName
-		query = `	SELECT CustomerName, Address, TaxID
-					FROM Data_WebReturn.dbo.InvoiceInformation
-					WHERE REPLACE(LOWER(CustomerName), ' ', '') LIKE :Keyword
-					ORDER BY CustomerName
-					OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY
-				`
-	} else {
-		return nil, fmt.Errorf("invalid search type")
-	}
+	// คิวรีสำหรับค้นหาโดยใช้ CustomerID และค้นหาจาก CustomerName ด้วย LIKE
+	query := `SELECT DISTINCT CustomerName, Address, TaxID
+			  FROM Data_WebReturn.dbo.InvoiceInformation
+			  WHERE CustomerID = :CustomerID
+			  AND REPLACE(LOWER(CustomerName), ' ', '') LIKE :Keyword
+			  ORDER BY CustomerName
+			  OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY`
 
 	// เตรียมการคิวรี
 	nstmt, err := repo.db.PrepareNamed(query)
@@ -242,22 +223,23 @@ func (repo repositoryDB) SearchCustomer(ctx context.Context, keyword string, sea
 	defer nstmt.Close()
 
 	// ดึงข้อมูลจากฐานข้อมูลโดยใช้ OFFSET และ FETCH
-	err = nstmt.SelectContext(ctx, &customers, map[string]interface{}{
-		"Keyword": searchParam,
-		"Offset":  offset,
-		"Limit":   limit,
+	err = nstmt.SelectContext(ctx, &invoices, map[string]interface{}{
+		"CustomerID": cleanedCustomerID,
+		"Keyword":    searchParam,
+		"Offset":     offset,
+		"Limit":      limit,
 	})
 	if err != nil {
-
-		return nil, fmt.Errorf("failed to fetch customer data: %w", err)
+		return nil, fmt.Errorf("failed to fetch invoice data: %w", err)
 	}
 
-	if len(customers) == 0 {
+	if len(invoices) == 0 {
 		return nil, sql.ErrNoRows
 	}
 
-	return customers, nil
+	return invoices, nil
 }
+
 
 var customerCache = cache.New(10*time.Minute, 15*time.Minute)
 
@@ -285,7 +267,7 @@ func (repo repositoryDB) GetCustomerInfoByCustomerID(ctx context.Context, custom
 	var customers []entity.InvoiceInformation
 
 	query := `
-		SELECT CustomerID, CustomerName, Address, TaxID
+		SELECT DISTINCT CustomerID, CustomerName, Address, TaxID
 		FROM Data_WebReturn.dbo.InvoiceInformation
 		WHERE CustomerID = :CustomerID
 		ORDER BY CustomerID
@@ -349,25 +331,25 @@ func (repo repositoryDB) SearchProduct(ctx context.Context, keyword string, sear
 	cleanedKeyword := strings.ToLower(strings.ReplaceAll(keyword, " ", ""))
 
 	// เพิ่ม % เพื่อใช้กับ LIKE
-	searchParam := "%" + cleanedKeyword + "%"
+	searchParam := cleanedKeyword + "%"
 
 	var query string
 
 	// เลือกค้นหาตาม SKU หรือ NAMEALIAS
 	if searchType == "SKU" {
 		// ค้นหาจาก SKU
-		query = `	SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
+		query = `	SELECT SKU, NAMEALIAS, Size
 					FROM Data_WebReturn.dbo.ROM_V_ProductAll
 					WHERE REPLACE(LOWER(SKU), ' ', '') LIKE :Keyword
-					ORDER BY SKU
+					ORDER BY SKU, NAMEALIAS, Size
 					OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY
 				 `
 	} else if searchType == "NAMEALIAS" {
 		// ค้นหาจาก NAMEALIAS
-		query = `	SELECT SKU, NAMEALIAS, Size, SizeID, Barcode, Type
+		query = `	SELECT DISTINCT NAMEALIAS, Size
 					FROM Data_WebReturn.dbo.ROM_V_ProductAll
 					WHERE REPLACE(LOWER(NAMEALIAS), ' ', '') LIKE :Keyword
-					ORDER BY NAMEALIAS
+					ORDER BY NAMEALIAS, Size
 					OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY
 				 `
 	} else {
@@ -396,4 +378,40 @@ func (repo repositoryDB) SearchProduct(ctx context.Context, keyword string, sear
 	}
 
 	return products, nil
+}
+
+// SearchSKUByNameAndSize ค้นหา SKU ด้วย name และ size
+func (repo repositoryDB) SearchSKUByNameAndSize(ctx context.Context, nameAlias string, size string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) {
+    var products []entity.ROM_V_ProductAll
+
+    query := `SELECT SKU, NAMEALIAS, Size
+              FROM Data_WebReturn.dbo.ROM_V_ProductAll
+              WHERE NAMEALIAS = :Name
+              AND Size = :Size
+              ORDER BY SKU, NAMEALIAS, Size
+              OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY`
+
+    // เตรียมการคิวรี
+    nstmt, err := repo.db.PrepareNamed(query)
+    if err != nil {
+        return nil, fmt.Errorf("failed to prepare statement: %w", err)
+    }
+    defer nstmt.Close()
+
+    // ดึงข้อมูลจากฐานข้อมูลโดยใช้ OFFSET และ FETCH
+    err = nstmt.SelectContext(ctx, &products, map[string]interface{}{
+        "Name":   nameAlias,
+        "Size":   size,
+        "Offset": offset,
+        "Limit":  limit,
+    })
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch product data: %w", err)
+    }
+
+    if len(products) == 0 {
+        return nil, sql.ErrNoRows
+    }
+
+    return products, nil
 }

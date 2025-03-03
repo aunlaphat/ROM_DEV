@@ -1177,8 +1177,8 @@ paths:
         in: query
         name: offset
         type: integer
-      - default: 4
-        description: Limit for number of customers to return (default is 4)
+      - default: 5
+        description: Limit for number of customers to return (default is 5)
         in: query
         name: limit
         type: integer
@@ -1261,8 +1261,8 @@ paths:
         in: query
         name: offset
         type: integer
-      - default: 4
-        description: Limit for number of invoices to return (default is 4)
+      - default: 5
+        description: Limit for number of invoices to return (default is 5)
         in: query
         name: limit
         type: integer
@@ -1328,13 +1328,13 @@ paths:
       description: Get paginated products
       operationId: get-productAll-paginated
       parameters:
-      - default: 1
-        description: Page number
+      - default: 0
+        description: Offset number
         in: query
-        name: page
+        name: offset
         required: true
         type: integer
-      - default: 4
+      - default: 30
         description: Limit per page
         in: query
         name: limit
@@ -1365,6 +1365,63 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get ProductAll with Pagination
+      tags:
+      - Constants
+  /constants/get-sku:
+    get:
+      consumes:
+      - application/json
+      description: Search for SKUs by name and size with pagination support (limit
+        and offset)
+      operationId: search-sku-by-name-and-size
+      parameters:
+      - description: Search name
+        in: query
+        name: nameAlias
+        required: true
+        type: string
+      - description: Search size
+        in: query
+        name: size
+        required: true
+        type: string
+      - default: 0
+        description: Offset for pagination (default is 0)
+        in: query
+        name: offset
+        type: integer
+      - default: 30
+        description: Limit for number of products to return (default is 30)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search Results
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/entity.ROM_V_ProductAll'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: No matching products found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search SKU by Name and Size
       tags:
       - Constants
   /constants/get-sub-district:
@@ -1439,22 +1496,22 @@ paths:
       summary: Get Warehouse
       tags:
       - Constants
-  /constants/search-customer:
+  /constants/search-invoice-names:
     get:
       consumes:
       - application/json
       description: Search for customers by CustomerID or InvoiceName with pagination
         support (limit and offset)
-      operationId: search-customer
+      operationId: search-invoice-names
       parameters:
+      - description: Customer ID
+        in: query
+        name: customerID
+        required: true
+        type: string
       - description: Search keyword
         in: query
         name: keyword
-        required: true
-        type: string
-      - description: Search by 'CustomerID' or 'InvoiceName'
-        in: query
-        name: searchType
         required: true
         type: string
       - default: 0
@@ -1462,8 +1519,8 @@ paths:
         in: query
         name: offset
         type: integer
-      - default: 4
-        description: Limit for number of customers to return (default is 4)
+      - default: 5
+        description: Limit for number of customers to return (default is 5)
         in: query
         name: limit
         type: integer
@@ -1519,8 +1576,8 @@ paths:
         in: query
         name: offset
         type: integer
-      - default: 4
-        description: Limit for number of products to return (default is 4)
+      - default: 5
+        description: Limit for number of products to return (default is 5)
         in: query
         name: limit
         type: integer
