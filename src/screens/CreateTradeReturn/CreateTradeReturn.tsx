@@ -1,40 +1,13 @@
-import {
-  Popconfirm,
-  Button,
-  Col,
-  ConfigProvider,
-  DatePicker,
-  Form,
-  FormInstance,
-  Input,
-  InputNumber,
-  Layout,
-  Row,
-  Select,
-  Table,
-  notification,
-  Modal,
-  Upload,
-  Divider,
-  Tooltip,
-  Pagination,
-} from "antd";
-import {
-  SearchOutlined,
-  DeleteOutlined,
-  LeftOutlined,
-  PlusCircleOutlined,
-  UploadOutlined,
-  CloseOutlined,
-  QuestionCircleOutlined,
-} from "@ant-design/icons";
+import { Popconfirm, Button, Col, ConfigProvider, DatePicker, Form, FormInstance, Input, InputNumber, Layout, Row, Select, Table, notification, Modal, Upload, Divider, Tooltip, } from "antd";
+import { SearchOutlined, DeleteOutlined, LeftOutlined, PlusCircleOutlined, UploadOutlined, CloseOutlined, QuestionCircleOutlined, } from "@ant-design/icons";
+import { debounce } from "lodash";
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import Popup from "reactjs-popup";
 import icon from "../../assets/images/document-text.png";
 import axios from "axios";
 import apiClient from "../../utils/axios/axiosInstance"; // นำเข้า axios instance
-import { debounce } from "lodash"; // นำเข้า debounce จาก lodash
+
 const { Option } = Select;
 
 interface Address {
@@ -83,15 +56,7 @@ const data: Address[] = [
   },
   // เพิ่มข้อมูลเพิ่มเติมตามต้องการ
 ];
-const SKUName = [
-  {
-    Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)",
-    SKU: "G097171-ARM01-BL",
-  },
-  { Name: "Bewell Sport armband size M For", SKU: "G097171-ARM01-GY" },
-  { Name: "Sport armband size L", SKU: "G097171-ARM02-BL" },
-  { Name: "Bewell Sport armband size M with light", SKU: "G097171-ARM03-GR" },
-];
+
 
 interface Customer {
   Key: number;
@@ -108,17 +73,24 @@ interface DataItem {
   QTY: number;
 }
 
-// สร้าง options สำหรับ SKU
-const skuOptions = SKUName.map((item) => ({
-  value: item.SKU, // SKU เป็นค่า value
-  label: item.SKU, // SKU เป็น label เพื่อแสดงใน dropdown
-}));
+interface Product {
+  Key: string;
+  sku: string;
+  nameAlias: string;
+  size: string;
+}
 
-// สร้าง options สำหรับ SKU Name
-const nameOptions = SKUName.map((item) => ({
-  value: item.Name, // Name เป็นค่า value
-  label: item.Name, // Name เป็น label เพื่อแสดงใน dropdown
-}));
+// // สร้าง options สำหรับ SKU
+// const skuOptions = SKUName.map((item) => ({
+//   value: item.SKU, // SKU เป็นค่า value
+//   label: item.SKU, // SKU เป็น label เพื่อแสดงใน dropdown
+// }));
+
+// // สร้าง options สำหรับ SKU Name
+// const nameOptions = SKUName.map((item) => ({
+//   value: item.Name, // Name เป็นค่า value
+//   label: item.Name, // Name เป็น label เพื่อแสดงใน dropdown
+// }));
 
 const CreateTradeReturn = () => {
   const [isSaving, setIsSaving] = useState(false);
@@ -126,7 +98,7 @@ const CreateTradeReturn = () => {
   const [open, setOpen] = useState(false);
   const [selectedSKU, setSelectedSKU] = useState<string | undefined>(undefined);
   const [selectedName, setSelectedName] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [form] = Form.useForm();
   const [formValid, setFormValid] = useState(false);
@@ -151,6 +123,9 @@ const CreateTradeReturn = () => {
   const [customerPage, setCustomerPage] = useState(1); // Pagination สำหรับ customer accounts
 
   const limit = 4; // จำนวนข้อมูลในแต่ละหน้า
+
+  const [skuOptions, setSkuOptions] = useState<Product[]>([]); // To store SKU options
+  const [nameOptions, setNameOptions] = useState<Product[]>([]); // To store Name Alias options
 
   // ดึงข้อมูล customer account จาก API
   useEffect(() => {
@@ -189,7 +164,7 @@ const CreateTradeReturn = () => {
 
       // Fetch customer information based on selected customer ID
       const customerResponse = await apiClient.get(
-        `/api/constants/get-customer-info?customerID=${value}`
+        `/api/constants/get-customer-info?customerID=${value}`,
       );
       const customerData = customerResponse.data.data[0]; // Assuming it's an array and we want the first item
 
@@ -198,7 +173,7 @@ const CreateTradeReturn = () => {
 
         // Fetch the invoices for this customer
         const invoiceResponse = await apiClient.get(
-          `/api/constants/get-invoice-names?customerID=${value}`
+          `/api/constants/get-invoice-names?customerID=${value}`,
         );
         const invoiceData = invoiceResponse.data.data; // Assuming it's an array
 
@@ -239,24 +214,36 @@ const CreateTradeReturn = () => {
 
   // ฟังก์ชันสำหรับการเลือก invoice
   const handleInvoiceChange = async (value: string) => {
-     // ใช้ RegEx แยกข้อมูลตาม " - " และเอาค่าที่ถูกต้องออก
-  // ใช้ + แยกข้อมูล
-  const invoiceData = value.split('+');
-  const customerName = invoiceData[0].trim(); // ชื่อของลูกค้า
-  const address = invoiceData.slice(1, invoiceData.length - 1).join('+').trim(); // ที่อยู่จะต้องรวมหลายๆ ส่วน
-  const taxID = invoiceData[invoiceData.length - 1].trim(); // taxID จะเป็นค่าที่แยกออกมาเป็นส่วนสุดท้าย
-    
+    // ใช้ + แยกข้อมูล
+    const invoiceData = value.split("+");
+    const customerName = invoiceData[0].trim(); // ชื่อของลูกค้า
+    const address = invoiceData
+      .slice(1, invoiceData.length - 1)
+      .join("+")
+      .trim(); // ที่อยู่จะต้องรวมหลายๆ ส่วน
+    const taxID = invoiceData[invoiceData.length - 1].trim(); // taxID จะเป็นค่าที่แยกออกมาเป็นส่วนสุดท้าย
 
     console.log("Invoice Value:", value);
-    console.log("Extracted Values: customerName:", customerName, "address:", address, "taxID:", taxID);
+    console.log(
+      "Extracted Values: customerName:",
+      customerName,
+      "address:",
+      address,
+      "taxID:",
+      taxID,
+    );
 
     // ค้นหา selectedInvoice ที่ตรงกับ customerName, address และ taxID
-    const selectedInvoice = invoiceNames.find((invoice) => 
-      invoice.customerName === customerName && invoice.address === address && invoice.taxID === taxID);
-    
+    const selectedInvoice = invoiceNames.find(
+      (invoice) =>
+        invoice.customerName === customerName &&
+        invoice.address === address &&
+        invoice.taxID === taxID,
+    );
+
     if (selectedInvoice) {
       setSelectedInvoice(selectedInvoice); // Update selected invoice
-  
+
       // อัปเดตฟอร์มด้วยข้อมูลที่เลือก
       form.setFieldsValue({
         Customer_name: selectedInvoice.customerName,
@@ -267,57 +254,54 @@ const CreateTradeReturn = () => {
       // ถ้าไม่พบข้อมูลใบแจ้งหนี้ที่ตรงกับการเลือก
       form.setFieldsValue({
         Customer_name: "", // รีเซ็ตค่า Customer_name
-        Address: "",       // รีเซ็ตค่า Address
-        Tax: "",           // รีเซ็ตค่า Tax
+        Address: "", // รีเซ็ตค่า Address
+        Tax: "", // รีเซ็ตค่า Tax
       });
     }
   };
 
-  // const debouncedSearch = debounce((value: string) => {
-  //   if (value.trim() === "") {
-  //     // ถ้าไม่พิมพ์อะไรเลย จะไม่เรียก searchCustomer
-  //     return;
-  //   }
-  //   searchCustomer(value, setSelectedAccount, form, setCustomerAccounts, page); // ส่ง `setCustomerAccounts` เพื่อเก็บผลการค้นหา
-  // }, 2000); // หน่วงเวลา 2000ms หลังจากพิมพ์สุดท้าย
+  // การใช้ debounce ในการค้นหาเมื่อเริ่มพิมพ์ในช่องค้นหา
+  const debouncedSearch = debounce(async (value: string) => {
+    if (!value) {
+      setInvoiceNames([]); // รีเซ็ตข้อมูลเมื่อไม่มีการพิมพ์
+      return;
+    }
 
-  // const searchCustomer = async (
-  //   keyword: string,
-  //   setSelectedAccount: (customer: Customer | null) => void,
-  //   form: FormInstance,
-  //   setCustomerAccounts: (accounts: Customer[]) => void,
-  //   page: number
-  // ) => {
-  //   const params = {
-  //     keyword: keyword || "",
-  //     searchType: "CustomerID",
-  //     offset: (page - 1) * 4,
-  //     limit: 4,
-  //   };
+    // ตั้งค่า loading เป็น true ก่อนที่จะเริ่มค้นหา
+    setLoading(true);
 
-  //   try {
-  //     const response = await apiClient.get("/api/constants/search-customer", {
-  //       params,
-  //     });
+    try {
+      // เรียก API สำหรับค้นหาชื่อใบแจ้งหนี้
+      const response = await apiClient.get(
+        "/api/constants/search-invoice-names",
+        {
+          params: {
+            customerID: selectedAccount?.customerID, // ใช้ customerID ที่เลือก
+            keyword: value, // ใช้ keyword ที่ค้นหา
+            offset: 0,
+            limit: 10, // กำหนด limit ในการค้นหา
+          },
+        },
+      );
 
-  //     console.log("API Response:", response.data);  // ตรวจสอบข้อมูลที่ได้รับจาก API
-  //     if (response.data.success && response.data.data && response.data.data.length > 0) {
-  //       setCustomerAccounts(response.data.data);  // ตั้งค่าผลการค้นหาลงใน state
-  //     } else {
-  //       notification.warning({
-  //         message: "ไม่พบข้อมูล",
-  //         description: "ไม่มีลูกค้าที่ตรงกับคำค้นหา",
-  //       });
-  //       setCustomerAccounts([]);  // หากไม่มีข้อมูล ให้ล้าง dropdown
-  //     }
-  //   } catch (error) {
-  //     console.error("Error searching customer:", error);
-  //     notification.error({
-  //       message: "เกิดข้อผิดพลาด",
-  //       description: "ไม่สามารถดึงข้อมูลลูกค้าได้",
-  //     });
-  //   }
-  // };
+      // ตั้งค่า invoiceNames ตามข้อมูลที่ได้จาก API
+      setInvoiceNames(response.data.data);
+    } catch (error) {
+      console.error("Error fetching invoice names:", error);
+      notification.error({
+        message: "Error",
+        description: "There was an error fetching invoice names.",
+      });
+    } finally {
+      // ตั้งค่า loading เป็น false หลังจากเสร็จสิ้นการค้นหา
+      setLoading(false);
+    }
+  }, 1000); // ตั้งเวลา debounce เป็น 1000ms (1 วินาที)
+
+  // ฟังก์ชันสำหรับการพิมพ์ในช่องค้นหา
+  const handleInvoiceSearch = (value: string) => {
+    debouncedSearch(value); // เรียกใช้ฟังก์ชันค้นหาเมื่อพิมพ์
+  };
 
   const handleProvinceChange = (value: string) => {
     setProvince(value);
@@ -349,81 +333,16 @@ const CreateTradeReturn = () => {
     new Set(
       data
         .filter((item) => item.province === province)
-        .map((item) => item.district)
-    )
+        .map((item) => item.district),
+    ),
   );
   const subDistricts = Array.from(
     new Set(
       data
         .filter((item) => item.district === district)
-        .map((item) => item.subDistrict)
-    )
+        .map((item) => item.subDistrict),
+    ),
   );
-
-  // const handleAccountChange = (value: string) => {
-  //   const selectedCustomer = customerAccounts.find(
-  //     (account) => account.customerID === value // ใช้ customerID แทน Customer_account
-  //   );
-  //   setSelectedAccount(selectedCustomer || null);
-
-  //   // ตั้งค่าใน form เมื่อเลือกข้อมูลจาก dropdown
-  //   form.setFieldsValue({
-  //     Customer_account: selectedCustomer?.customerID || "", // ใช้ customerID แทน Customer_account
-  //     Customer_name: selectedCustomer?.customerName || "", // ใช้ customerName แทน Customer_name
-  //     Invoice_name: selectedCustomer?.invoiceName || "",
-  //     Address: selectedCustomer?.address || "",
-  //     Tax: selectedCustomer?.taxID || "",
-  //   });
-
-  //   // ให้สามารถค้นหา Invoice Name จาก customer ID ได้
-  //   if (selectedCustomer) {
-  //     setKeyword(selectedCustomer.customerID);  // ตั้งค่า keyword เป็น Customer ID
-  //     searchInvoiceName(selectedCustomer.customerID);  // ค้นหาข้อมูล Invoice Name ที่สัมพันธ์
-  //   }
-  // };
-
-  // // ฟังก์ชันค้นหา Invoice Name ตาม Customer ID
-  // const searchInvoiceName = async (customerID: string) => {
-  //   const params = {
-  //     keyword: keyword || "",
-  //     searchType: "InvoiceName",
-  //     offset: (page - 1) * 4,
-  //     limit: 4,
-  //   };
-
-  //   try {
-  //     const response = await apiClient.get("/api/constants/search-customer", {
-  //       params,
-  //     });
-
-  //     if (response.data.success && response.data.data && response.data.data.length > 0) {
-  //       form.setFieldsValue({ Invoice_name: response.data.data[0].invoiceName });  // แสดง Invoice Name ที่เกี่ยวข้อง
-  //     }
-  //   } catch (error) {
-  //     console.error("Error searching invoice name:", error);
-  //     notification.error({
-  //       message: "เกิดข้อผิดพลาด",
-  //       description: "ไม่สามารถดึงข้อมูล Invoice Name ได้",
-  //     });
-  //   }
-  // };
-
-  // const handleInvoiceChange = (value: string) => {
-  //   const selectedCustomer = customerAccounts.find(
-  //     (account) => account.invoiceName === value
-  //   );
-
-  //   if (selectedCustomer) {
-  //     // Update selected account with the selected invoice name
-  //     setSelectedAccount(selectedCustomer);
-
-  //     // Optionally, update other fields if necessary
-  //     form.setFieldsValue({
-  //       Invoice_name: selectedCustomer.invoiceName,
-  //       Address: selectedCustomer.address,
-  //     });
-  //   }
-  // };
 
   const handleOpen = () => {
     setOpen(true);
@@ -438,29 +357,134 @@ const CreateTradeReturn = () => {
     // setOpen(false);
   };
 
-  const handleSKUChange = (value: string) => {
-    const selectedOption = SKUName.find((val) => val.SKU === value);
-    if (selectedOption) {
-      form.setFieldsValue({
-        SKU: selectedOption.SKU,
-        SKU_Name: selectedOption.Name,
+  // การใช้ debounce ค้นหา Product (SKU หรือ NAMEALIAS)
+  const debouncedSearchSKU = debounce(async (value: string, searchType: string) => {
+    if (!value) {
+      setSkuOptions([]);
+      setNameOptions([]);
+      setSelectedSKU("");
+      setSelectedName("");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await apiClient.get("/api/constants/search-product", {
+        params: {
+          keyword: value,
+          searchType,
+          offset: 0,
+          limit: 5,
+        },
       });
-      setSelectedSKU(value);
-      setSelectedName(selectedOption.Name); // อัปเดต selectedName
+
+      const products = response.data.data;
+
+      if (searchType === "SKU") {
+        setSkuOptions(products.map((product: Product) => ({
+          sku: product.sku,
+          nameAlias: product.nameAlias,
+          size: product.size,
+        })));
+      } else if (searchType === "NAMEALIAS") {
+        setNameOptions(products.map((product: Product) => ({
+          sku: product.sku,
+          nameAlias: product.nameAlias,
+          size: product.size,
+        })));
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      notification.error({
+        message: "Error",
+        description: "There was an error fetching product data.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, 1000);
+
+  const handleSearchSKU = (value: string) => {
+    debouncedSearchSKU(value, "SKU");
+  };
+
+  const handleSearchNameAlias = (value: string) => {
+    debouncedSearchSKU(value, "NAMEALIAS");
+  };
+
+  // เมื่อเลือก Name Alias แล้วใช้ `/api/constants/get-sku` เพื่อหา SKU
+  const handleNameChange = async (value: string) => {
+    // แยกค่า nameAlias และ size โดยใช้ `+`
+    const [nameAlias, size] = value.split("+");
+
+    try {
+      setLoading(true);
+      const response = await apiClient.get("/api/constants/get-sku", {
+        params: { nameAlias, size },
+      });
+
+      // เก็บผลลัพธ์จาก API เพื่อแสดงหลาย SKU
+      const products = response.data.data;
+
+      if (products.length > 0) {
+        setSkuOptions(products.map((product: Product) => ({
+          sku: product.sku,
+          nameAlias: product.nameAlias,
+          size: product.size,
+        })));
+        form.setFieldsValue({
+          SKU: products[0].sku, // ตั้งค่า SKU ตัวแรกที่พบ
+        });
+      } else {
+        console.warn("No SKU found for:", nameAlias, size);
+        setSkuOptions([]); // เคลียร์ค่า SKU ถ้าไม่พบข้อมูล
+        setNameOptions([]); // เคลียร์ค่า Name Alias ถ้าไม่พบข้อมูล
+        form.setFieldsValue({ SKU: "", SKU_Name: "" }); // เคลียร์ค่าในฟอร์ม
+      }
+    } catch (error) {
+      console.error("Error fetching SKU:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleNameChange = (value: string) => {
-    const selectedOption = SKUName.find((val) => val.Name === value);
-    if (selectedOption) {
+  // เมื่อเลือก SKU
+  const handleSKUChange = (value: string) => {
+    if (!value) {
+      setSkuOptions([]);
+      setNameOptions([]); // เคลียร์ตัวเลือกใน SKU_Name ด้วย
+      setSelectedSKU("");
+      setSelectedName("");
+      return;
+    }
+    
+    const selected = skuOptions.find((option) => option.sku === value);
+    if (selected) {
       form.setFieldsValue({
-        SKU: selectedOption.SKU,
-        SKU_Name: selectedOption.Name,
+        SKU: selected.sku,
+        SKU_Name: selected.nameAlias,
       });
-      setSelectedName(value);
-      setSelectedSKU(selectedOption.SKU); // อัปเดต selectedSKU
+      setSelectedSKU(selected.sku);
+      setSelectedName(selected.nameAlias);
+
+     // อัปเดต nameOptions ตาม SKU ที่เลือก
+     const filteredNameOptions = skuOptions
+     .filter((option) => option.sku === selected.sku) // กรองเฉพาะ SKU ที่ตรงกับที่เลือก
+     .map((option) => ({
+       ...option,  // คัดลอกค่าเดิม
+       Key: option.sku,  // เพิ่มคีย์ Key ที่ต้องการ
+     }));
+
+   setNameOptions(filteredNameOptions);  // อัปเดต nameOptions
+    } else {
+      setSelectedSKU("");
+      setSelectedName("");
+      setNameOptions([]); // เคลียร์ nameOptions เมื่อไม่มีค่า SKU ที่ตรงกัน
     }
   };
+
+
   const handleSubmit = () => {
     if (dataSource.length === 0) {
       notification.warning({
@@ -593,6 +617,7 @@ const CreateTradeReturn = () => {
     form
       .validateFields()
       .then((values) => {
+        const [nameAlias, size] = values.SKU_Name.split('+');  // แยกค่า nameAlias กับ size
         // ตรวจสอบว่า SKU ที่กรอกมีอยู่ใน dataSource หรือไม่
         const isSKUExist = dataSource.some((item) => item.SKU === values.SKU);
 
@@ -609,7 +634,7 @@ const CreateTradeReturn = () => {
         const newData = {
           key: dataSource.length + 1,
           SKU: values.SKU,
-          Name: values.SKU_Name,
+          Name: nameAlias,
           QTY: values.QTY,
           Price: values.Price,
           Tax: values.Tax || "", // ถ้าไม่มี Tax ให้ใส่ค่าว่าง
@@ -707,30 +732,23 @@ const CreateTradeReturn = () => {
                 </Col>
                 <Col span={8}>
                   <Form.Item
-                    id="TransportType"
+                    id="Logistic"
                     label={
-                      <span style={{ color: "#657589" }}>Transport Type:</span>
+                      <span style={{ color: "#657589" }}>
+                        กรอก Logistic:&nbsp;
+                        <Tooltip title="ผู้ให้บริการขนส่ง">
+                          <QuestionCircleOutlined
+                            style={{ color: "#657589" }}
+                          />
+                        </Tooltip>
+                      </span>
                     }
-                    name="TransportType"
+                    name="Logistic"
                     rules={[
-                      { required: true, message: "กรุณาเลือก Transport Type" },
+                      { required: true, message: "กรอก Logistic" },
                     ]}
                   >
-                    <Select
-                      style={{ width: "100%", height: "40px" }}
-                      showSearch
-                      placeholder="TransportType"
-                      optionFilterProp="label"
-                      onChange={onChange}
-                      onSearch={onSearch}
-                      options={[
-                        { value: "SPX Express", label: "SPX Express" },
-                        { value: "J&T Express", label: "J&T Express" },
-                        { value: "Flash Express", label: "Flash Express" },
-                        { value: "Shopee", label: "Shopee" },
-                        { value: "NocNoc", label: "NocNoc" },
-                      ]}
-                    />
+                    <Input style={{ height: 40 }} />
                   </Form.Item>
                 </Col>
                 <Col span={8}></Col>
@@ -773,6 +791,8 @@ const CreateTradeReturn = () => {
                       placeholder="Select Customer Account"
                       onChange={handleAccountChange}
                       loading={loading}
+                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
+                      virtual // ทำให้ค้นหาไวขึ้น
                     >
                       {customerAccounts.length > 0 ? (
                         customerAccounts.map((account) => (
@@ -816,15 +836,18 @@ const CreateTradeReturn = () => {
                           ? `${selectedAccount.customerName}`
                           : "Select Invoice Name"
                       } // Dynamically set placeholder
+                      onSearch={handleInvoiceSearch} // เรียกฟังก์ชันค้นหาตอนพิมพ์
                       onChange={handleInvoiceChange}
                       loading={loading}
+                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
+                      virtual
                     >
                       {invoiceNames.map((invoice) => (
                         <Option
                           key={`${invoice.customerName}-${invoice.address}-${invoice.taxID}`}
                           value={`${invoice.customerName}+${invoice.address}+${invoice.taxID}`}
                         >
-                        {invoice.customerName} 
+                          {invoice.customerName}
                         </Option>
                       ))}
                     </Select>
@@ -852,7 +875,6 @@ const CreateTradeReturn = () => {
                     <Input value={selectedAccount?.address || ""} disabled />
                   </Form.Item>
                 </Col>
-
                 <Col span={6}>
                   <Button
                     id="NewInvoiceAddress"
@@ -864,18 +886,17 @@ const CreateTradeReturn = () => {
                   </Button>
                 </Col>
               </Row>
-              // แก้
               <Divider
                 style={{ color: "#657589", fontSize: "22px", margin: 30 }}
                 orientation="left"
-              >
+              > // แก้
                 {" "}
                 SKU information
               </Divider>
               <Row gutter={16} style={{ marginTop: "10px", width: "100%" }}>
                 <Col span={6}>
                   <Form.Item
-                    id="Sku"
+                    id="SKU"
                     label={<span style={{ color: "#657589" }}>กรอก SKU :</span>}
                     name="SKU"
                     rules={[{ required: true, message: "กรุณากรอก SKU" }]}
@@ -884,18 +905,28 @@ const CreateTradeReturn = () => {
                       showSearch
                       style={{ width: "100%", height: "40px" }}
                       placeholder="Search to Select"
-                      optionFilterProp="label"
-                      value={selectedSKU}
-                      onChange={handleSKUChange}
-                      options={skuOptions}
+                      value={selectedSKU} // ใช้ค่าที่เลือก
+                      onSearch={handleSearchSKU} // ใช้สำหรับค้นหา SKU
+                      onChange={handleSKUChange} // เมื่อเลือก SKU
+                      loading={loading}
+                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
+                      virtual // ทำให้ค้นหาไวขึ้น
                       dropdownStyle={{ minWidth: 200 }}
-                    />
+                    >
+                      {skuOptions.map((option) => (
+                        <Option key={`${option.sku}-${option.size}`} 
+                                value={option.sku}
+                        >
+                        {option.size} - {option.sku}
+                      </Option>
+                      ))}
+                    </Select>
                   </Form.Item>
                 </Col>
 
                 <Col span={7}>
                   <Form.Item
-                    id="Skuname"
+                    id="SKU_Name"
                     label={
                       <span style={{ color: "#657589" }}>กรอก SKU Name:</span>
                     }
@@ -905,15 +936,26 @@ const CreateTradeReturn = () => {
                     <Select
                       showSearch
                       style={{ width: "100%", height: "40px" }}
-                      placeholder="Search to Select"
-                      optionFilterProp="label"
-                      value={selectedName}
-                      onChange={handleNameChange}
-                      options={nameOptions}
+                      placeholder="Search by Name Alias"
+                      value={selectedName} // ใช้ค่าที่เลือก
+                      onSearch={handleSearchNameAlias} // ใช้สำหรับค้นหา Name Alias
+                      onChange={handleNameChange} // เมื่อเลือก Name Alias
+                      loading={loading}
+                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
+                      virtual // ทำให้ค้นหาไวขึ้น
                       dropdownStyle={{ minWidth: 300 }}
-                    />
+                    >
+                      {nameOptions.map((option) => (
+                        <Option key={`${option.nameAlias}-${option.size}`} 
+                                value={`${option.nameAlias}+${option.size}`}
+                        >
+                          {option.size} - {option.nameAlias}
+                        </Option>
+                      ))}
+                    </Select>
                   </Form.Item>
                 </Col>
+                
 
                 <Col span={4}>
                   <Form.Item

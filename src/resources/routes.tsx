@@ -7,7 +7,7 @@ import ReturnOrder from "../screens/Return/Returnorder";
 import CreateReturn from "../screens/CreateReturn/CreateReturn";
 import SRPage from "../screens/CreateReturn/SR";
 import IJPage from "../screens/CreateReturn/IJ";
-import CreateTradeReturn from "../screens/Create Trade Return/CreateTradeReturn";
+import CreateTradeReturn from "../screens/CreateTradeReturn/CreateTradeReturn";
 import ConfirmReturnTrade from "../screens/ConfirmReturnTrade/ConfirmReturnTrade";
 import OtherReturn from "../screens/SaleReturn/SR/OtherReturn";
 import SaleReturn from "../screens/SaleReturn/Sale_Return";
