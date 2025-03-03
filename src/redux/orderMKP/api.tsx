@@ -68,7 +68,7 @@ export interface SearchOrderResponse {
   items: SearchOrderItem[];
 }
 
-interface SearchOrderItem {
+export interface SearchOrderItem {
   sku: string;
   itemName: string;
   qty: number;
@@ -156,6 +156,7 @@ export interface ReturnOrderState {
       srNo: string | null;
       salesStatus: string;
       mkpStatus: string;
+      locationTo: string;
     };
     lines: {
       sku: string;
@@ -184,17 +185,24 @@ export function* searchOrder(action: {
   try {
     openLoading();
     logger.group('Search Order');
-    logger.api('info', '🔍 Start searching order:', action.payload);
-    logger.time('Search Duration');
+    
+    // ตรวจสอบว่ามีการส่งค่าใดค่าหนึ่งมา
+    if (!action.payload.soNo && !action.payload.orderNo) {
+      throw new Error('กรุณากรอกเลข SO หรือ Order');
+    }
 
+    // สร้าง query parameters แยกตาม field
     const queryParams = new URLSearchParams();
-    if (action.payload.soNo) queryParams.append('soNo', action.payload.soNo);
-    if (action.payload.orderNo) queryParams.append('orderNo', action.payload.orderNo);
+    if (action.payload.soNo) {
+      queryParams.append('soNo', action.payload.soNo);
+    }
+    if (action.payload.orderNo) {
+      queryParams.append('orderNo', action.payload.orderNo);
+    }
 
     const response: AxiosResponse<APIResponse<SearchOrderResponse>> = yield call(
       GET as unknown as ApiFunction, 
-      SEARCHORDER,  // ใช้ path ที่มีอยู่แล้ว
-      { params: action.payload }
+      `${SEARCHORDER}?${queryParams.toString()}`
     );
 
     logger.timeEnd('Search Duration');
@@ -297,19 +305,28 @@ export function* createBeforeReturnOrder(action: {
   }
 }
 
+export interface CreateSRRequest {
+  orderNo: string;
+  warehouseFrom: string;
+  returnDate: string;
+  trackingNo: string;
+  transportType: string;
+}
+
 export function* updateSR(action: { 
   type: ReturnOrderActionTypes; 
-  payload: string 
+  payload: CreateSRRequest
 }): SagaIterator {
   try {
     openLoading();
     logger.group('Update SR');
-    logger.api('info', '🔄 Updating SR for order:', action.payload);
+    logger.api('info', '🔄 Updating SR for order:', action.payload.orderNo);
     logger.time('Update SR Duration');
 
     const response = yield call(
       POST as unknown as ApiFunction, 
-      `${UPDATESR}/${action.payload}`
+      `${UPDATESR}/${action.payload.orderNo}`,
+      action.payload
     );
     logger.timeEnd('Update SR Duration');
 
@@ -333,7 +350,7 @@ export function* updateSR(action: {
   } catch (error: any) {
     logger.critical('Update SR Failed', {
       error: error.message,
-      orderNo: action.payload
+      orderNo: action.payload.orderNo
     });
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_FAIL,

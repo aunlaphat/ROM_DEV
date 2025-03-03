@@ -1,4 +1,4 @@
-import { BeforeReturnOrderResponse, SearchOrderResponse, ReturnOrderState } from './api';
+import { BeforeReturnOrderResponse, SearchOrderResponse, ReturnOrderState, SearchOrderItem } from './api';
 import { ReturnOrderActionTypes } from './types';
 
 const initialState: ReturnOrderState = {
@@ -34,16 +34,21 @@ export default function returnOrderReducer(state = initialState, action: any): R
         loading: false,
         orderData: {
           head: {
-            orderNo: action.payload.soNo,
+            orderNo: action.payload.orderNo,  // แก้จาก soNo เป็น orderNo
             soNo: action.payload.soNo,
-            srNo: action.payload.srNo,
+            srNo: null, // เริ่มต้นเป็น null เพราะยังไม่มีการสร้าง SR
             salesStatus: action.payload.salesStatus,
-            mkpStatus: action.payload.statusMKP
+            mkpStatus: action.payload.statusMKP,
+            locationTo: 'Return' // default value
           },
-          lines: action.payload.items
+          lines: action.payload.items.map((item: SearchOrderItem) => ({
+            ...item,
+            price: Math.abs(item.price) // แปลงให้เป็นค่าบวกเสมอ
+          }))
         },
         orderLines: action.payload.items,
-        currentStep: 'create'
+        currentStep: 'create',
+        error: null
       };
 
     case ReturnOrderActionTypes.RETURN_ORDER_CREATE_SUCCESS:
@@ -65,7 +70,14 @@ export default function returnOrderReducer(state = initialState, action: any): R
       return {
         ...state,
         loading: false,
-        srCreated: true
+        srCreated: true,
+        orderData: state.orderData ? {
+          ...state.orderData,
+          head: {
+            ...state.orderData.head,
+            srNo: action.payload.data.srNo,
+          }
+        } : null
       };
 
     // Failure cases

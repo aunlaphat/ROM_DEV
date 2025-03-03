@@ -2,9 +2,9 @@ import { ReturnOrderActionTypes } from './types';
 import { CreateBeforeReturnOrderRequest } from './api';
 
 // 1. ค้นหา Order
-export const searchOrder = (searchTerm: string) => ({
+export const searchOrder = (searchParams: { soNo?: string; orderNo?: string }) => ({
   type: ReturnOrderActionTypes.RETURN_ORDER_SEARCH_REQ,
-  payload: searchTerm
+  payload: searchParams
 });
 
 // 2. สร้าง Return Order ด้วย type ที่ถูกต้อง
