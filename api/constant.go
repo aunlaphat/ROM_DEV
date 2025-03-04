@@ -16,6 +16,7 @@ import (
 func (app *Application) Constants(apiRouter *gin.RouterGroup) {
 	api := apiRouter.Group("/constants")
 	api.GET("/search-province", app.SearchProvince)
+	api.GET("/get-provinces", app.GetProvinces)
 	api.GET("/get-district", app.GetDistrict)
 	api.GET("/get-sub-district", app.GetSubDistrict)
 	api.GET("/get-postal-code", app.GetPostalCode)
@@ -69,6 +70,34 @@ func (app *Application) SearchProvince(c *gin.Context) {
 
 	if len(provinces) == 0 {
 		app.Logger.Info("[ No data found ]", zap.String("keyword", keyword))
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
+		return
+	}
+
+	handleResponse(c, true, "[ Provinces retrieved successfully ]", provinces, http.StatusOK)
+}
+
+// GetProvinces godoc
+// @Summary Get all provinces
+// @Description Retrieve the list of all provinces
+// @ID get-provinces
+// @Tags Constants
+// @Accept json
+// @Produce json
+// @Success 200 {object} Response{result=[]entity.Province} "List of provinces"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 500 {object} Response "Internal Server Error"
+// @Router /constants/get-provinces [get]
+func (app *Application) GetProvinces(c *gin.Context) {
+	provinces, err := app.Service.Constant.GetProvinces(c.Request.Context())
+	if err != nil {
+		app.Logger.Error("[ Error ]", zap.Error(err))
+		handleError(c, err)
+		return
+	}
+
+	if len(provinces) == 0 {
+		app.Logger.Info("[ No data found ]")
 		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
 		return
 	}

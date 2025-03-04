@@ -725,6 +725,57 @@
                 }
             }
         },
+        "/constants/get-provinces": {
+            "get": {
+                "description": "Retrieve the list of all provinces",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get all provinces",
+                "operationId": "get-provinces",
+                "responses": {
+                    "200": {
+                        "description": "List of provinces",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.Province"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/constants/get-sku": {
             "get": {
                 "description": "Search for SKUs by name and size with pagination support (limit and offset)",

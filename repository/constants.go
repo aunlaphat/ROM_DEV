@@ -13,20 +13,21 @@ import (
 
 type Constants interface {
 	SearchProvince(ctx context.Context, keyword string) ([]entity.Province, error)
+	GetProvinces(ctx context.Context) ([]entity.Province, error)
 	GetDistrict(ctx context.Context, provinceCode string) ([]entity.District, error)
 	GetSubDistrict(ctx context.Context, districtCode string) ([]entity.SubDistrict, error)
 	GetPostalCode(ctx context.Context, subdistrictCode string) ([]entity.PostalCode, error)
 
-	GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error)                                              // รายการสินค้าแบบแบ่งรายการ
-	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)                                                                      // ชื่อคลัง + location
+	GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) // รายการสินค้าแบบแบ่งรายการ
+	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)                         // ชื่อคลัง + location
 
 	SearchInvoiceNameByCustomerID(ctx context.Context, customerID string, keyword string, offset int, limit int) ([]entity.InvoiceInformation, error)
 	GetCustomerID(ctx context.Context) ([]entity.InvoiceInformation, error)
 	GetInvoiceNamesByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error)
 	GetCustomerInfoByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error)
-	
+
 	SearchProduct(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) // ข้อมูลสินค้า
-	SearchSKUByNameAndSize(ctx context.Context, nameAlias string, size string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) 
+	SearchSKUByNameAndSize(ctx context.Context, nameAlias string, size string, offset int, limit int) ([]entity.ROM_V_ProductAll, error)
 }
 
 // ค้นหาในฐานข้อมูล Province ที่ตรงกับคำค้นหาของผู้ใช้ และคืนค่าผลลัพธ์เป็นจังหวัดที่มีอยู่ทั้งหมด
@@ -57,6 +58,31 @@ func (repo repositoryDB) SearchProvince(ctx context.Context, keyword string) ([]
 
 	if len(provinces) == 0 {
 		return nil, sql.ErrNoRows
+	}
+
+	return provinces, nil
+}
+
+// GetProvinces ดึงข้อมูล Province ทั้งหมด
+func (repo repositoryDB) GetProvinces(ctx context.Context) ([]entity.Province, error) {
+	var provinces []entity.Province
+
+	query := `SELECT DISTINCT ProvicesTH, ProvinceCode
+              FROM Data_WebReturn.dbo.V_ThaiAddress
+              ORDER BY ProvicesTH`
+
+	rows, err := repo.db.QueryxContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch provinces: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var province entity.Province
+		if err := rows.StructScan(&province); err != nil {
+			return nil, fmt.Errorf("failed to scan province: %w", err)
+		}
+		provinces = append(provinces, province)
 	}
 
 	return provinces, nil
@@ -240,7 +266,6 @@ func (repo repositoryDB) SearchInvoiceNameByCustomerID(ctx context.Context, cust
 	return invoices, nil
 }
 
-
 var customerCache = cache.New(10*time.Minute, 15*time.Minute)
 
 func (repo repositoryDB) GetCustomerID(ctx context.Context) ([]entity.InvoiceInformation, error) {
@@ -382,36 +407,36 @@ func (repo repositoryDB) SearchProduct(ctx context.Context, keyword string, sear
 
 // SearchSKUByNameAndSize ค้นหา SKU ด้วย name และ size
 func (repo repositoryDB) SearchSKUByNameAndSize(ctx context.Context, nameAlias string, size string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) {
-    var products []entity.ROM_V_ProductAll
+	var products []entity.ROM_V_ProductAll
 
-    query := `SELECT SKU, NAMEALIAS, Size
+	query := `SELECT SKU, NAMEALIAS, Size
               FROM Data_WebReturn.dbo.ROM_V_ProductAll
               WHERE NAMEALIAS = :Name
               AND Size = :Size
               ORDER BY SKU, NAMEALIAS, Size
               OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY`
 
-    // เตรียมการคิวรี
-    nstmt, err := repo.db.PrepareNamed(query)
-    if err != nil {
-        return nil, fmt.Errorf("failed to prepare statement: %w", err)
-    }
-    defer nstmt.Close()
+	// เตรียมการคิวรี
+	nstmt, err := repo.db.PrepareNamed(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer nstmt.Close()
 
-    // ดึงข้อมูลจากฐานข้อมูลโดยใช้ OFFSET และ FETCH
-    err = nstmt.SelectContext(ctx, &products, map[string]interface{}{
-        "Name":   nameAlias,
-        "Size":   size,
-        "Offset": offset,
-        "Limit":  limit,
-    })
-    if err != nil {
-        return nil, fmt.Errorf("failed to fetch product data: %w", err)
-    }
+	// ดึงข้อมูลจากฐานข้อมูลโดยใช้ OFFSET และ FETCH
+	err = nstmt.SelectContext(ctx, &products, map[string]interface{}{
+		"Name":   nameAlias,
+		"Size":   size,
+		"Offset": offset,
+		"Limit":  limit,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch product data: %w", err)
+	}
 
-    if len(products) == 0 {
-        return nil, sql.ErrNoRows
-    }
+	if len(products) == 0 {
+		return nil, sql.ErrNoRows
+	}
 
-    return products, nil
+	return products, nil
 }
