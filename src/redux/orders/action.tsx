@@ -7,19 +7,19 @@ export const searchOrder = (searchParams: { soNo?: string; orderNo?: string }) =
   payload: searchParams
 });
 
-// 2. สร้าง Return Order ด้วย type ที่ถูกต้อง
+// 2. สร้าง Return Order ด้วย type ที่ถูกต้อง Order Details)
 export const createReturnOrder = (data: CreateBeforeReturnOrderRequest) => ({
   type: ReturnOrderActionTypes.RETURN_ORDER_CREATE_REQ,
   payload: data
 });
 
-// 3. สร้าง SR Number
+// 3. สร้าง SR Numberสินค้า (SR) (`Generate SR Number`)
 export const createSrNo = (orderNo: string) => ({
   type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_REQ,
   payload: orderNo
 });
 
-// 4. ยืนยันการคืนสินค้า (update status)
+// 4. ยืนยันคำสั่งคืนสินค้า (Confirm Return Order)
 export const confirmReturn = (data: {
   orderNo: string;
   roleId: number;

@@ -323,7 +323,7 @@ export function* updateSR(action: {
     logger.api('info', '🔄 Updating SR for order:', action.payload.orderNo);
     logger.time('Update SR Duration');
 
-    const response = yield call(
+    const response: AxiosResponse<APIResponse<UpdateSrNoResponse>> = yield call(
       POST as unknown as ApiFunction, 
       `${UPDATESR}/${action.payload.orderNo}`,
       action.payload
@@ -335,16 +335,17 @@ export function* updateSR(action: {
     }
 
     logger.api('info', '✅ SR updated successfully:', {
-      orderNo: response.data.orderNo,
-      newSrNo: response.data.srNo
+      orderNo: response.data.data.orderNo,
+      newSrNo: response.data.data.srNo
     });
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_SUCCESS,
-      payload: response.data
+      payload: response.data.data
     });
 
     notification.success({
-      message: 'อัพเดท SR สำเร็จ'
+      message: 'อัพเดท SR สำเร็จ',
+      description: response.data.message
     });
 
   } catch (error: any) {

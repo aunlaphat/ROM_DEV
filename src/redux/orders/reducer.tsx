@@ -75,7 +75,7 @@ export default function returnOrderReducer(state = initialState, action: any): R
           ...state.orderData,
           head: {
             ...state.orderData.head,
-            srNo: action.payload.data.srNo,
+            srNo: action.payload.srNo,
           }
         } : null
       };

@@ -3,13 +3,13 @@ import { useLocation, useNavigate, Outlet } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../../redux/store";
 import { checkAuthen } from "../../redux/auth/action";
-import SiderLayout from "./siderLayout";
-import HeaderBar from "./headerLayout";
-import ContentLayout from "./contentLayout";
 import Loading from "../loading";
 import { Layout } from "antd";
 import { logger } from "../../utils/logger";
 import { ROUTES_NO_AUTH } from "../../resources/routes";
+import SiderLayout from "../layouts/siderLayout";
+import HeaderBar from "../layouts/headerLayout";
+import ContentLayout from "../layouts/contentLayout";
 
 const LayoutPage: React.FC = () => {
   const location = useLocation();

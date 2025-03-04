@@ -1,5 +1,4 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { env } from "../utils/env/config";
 import { getCookies } from "../store/useCookies";
 
 const axiosInstance = axios.create({
@@ -41,76 +40,20 @@ axiosInstance.interceptors.response.use(
 
 export default axiosInstance;
 
-
 export const POST = (url: string, data: any, config?: AxiosRequestConfig) => 
   axiosInstance.post(url, data, { ...config });
 
 export const GET = (url: string, config?: AxiosRequestConfig) => 
   axiosInstance.get(url, { ...config });
 
-export const PATCH = async (path: string, data: any) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
-  try {
-    const response = await axiosInstance.patch(`${path}`, data, config);
-    data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
-  }
-};
+export const PATCH = (url: string, data: any, config?: AxiosRequestConfig) => 
+  axiosInstance.patch(url, data, { ...config });
 
-export const PUT = async (path: string, data: any, header?: any) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
-  try {
-    const response = await axiosInstance.put(`${path}`, data, header ? header : config);
-    data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
-  }
-};
+export const PUT = (url: string, data: any, config?: AxiosRequestConfig) => 
+  axiosInstance.put(url, data, { ...config });
 
-export const DELETE = async (path: string, data: any, header?: any) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
-  try {
-    const response = await axiosInstance.delete(`${path}`, {
-      headers: header ? header : config,
-      data,
-    });
-    data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
-  }
-};
+export const DELETE = (url: string, config?: AxiosRequestConfig) => 
+  axiosInstance.delete(url, { ...config });
 
-export const UPLOAD = async (
-  path: string,
-  formdata: FormData,
-  header?: any
-) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
-  try {
-    const response = await axiosInstance.post(
-      `${path}`,
-      formdata,
-      header ? header : config
-    );
-    let data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
-  }
-};
+export const UPLOAD = (url: string, formData: FormData, config?: AxiosRequestConfig) => 
+  axiosInstance.post(url, formData, { ...config });

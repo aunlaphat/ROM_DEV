@@ -7,7 +7,7 @@ import store from "./redux/store";
 import { ROUTES, ROUTES_NO_AUTH } from "./resources/routes";
 import Loading from "./components/loading";
 import Alert from "./components/alert/alert";
-import LayoutPage from "./components/Layouts";
+import LayoutPage from "./components/layouts";
 
 const App = () => {
   return (

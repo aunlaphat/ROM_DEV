@@ -19,7 +19,7 @@ import {
   MenuFoldOutlined,
   DownOutlined,
 } from "@ant-design/icons";
-import { HeaderBarStyle, TopBarDropDown, TopBarUser } from "./style";
+import { HeaderBarStyle, TopBarDropDown, TopBarUser } from "../../layouts/headerLayout/style";
 import { Icon } from "../../../resources";
 import { useAuthLogin } from "../../../hooks/useAuth";
 import { useSelector } from "react-redux";

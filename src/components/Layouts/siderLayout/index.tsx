@@ -7,7 +7,7 @@ import { ROUTES } from "../../../resources/routes";
 import { logger } from "../../../utils/logger";
 import { Icon } from "../../../resources";
 import logo from "../../../assets/images/logo_org.png";
-import { ScrollMenu } from "./style";
+import { ScrollMenu } from "../../../components/layouts/siderLayout/style";
 
 const { Sider } = Layout;
 
