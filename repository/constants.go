@@ -23,7 +23,6 @@ type Constants interface {
 
 	SearchInvoiceNameByCustomerID(ctx context.Context, customerID string, keyword string, offset int, limit int) ([]entity.InvoiceInformation, error)
 	GetCustomerID(ctx context.Context) ([]entity.InvoiceInformation, error)
-	GetInvoiceNamesByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error)
 	GetCustomerInfoByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error)
 
 	SearchProduct(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) // ข้อมูลสินค้า
@@ -275,7 +274,10 @@ func (repo repositoryDB) GetCustomerID(ctx context.Context) ([]entity.InvoiceInf
 	}
 
 	customerID := []entity.InvoiceInformation{}
-	query := `SELECT DISTINCT CustomerID FROM Data_WebReturn.dbo.InvoiceInformation ORDER BY CustomerID`
+	query := `	SELECT DISTINCT CustomerID 
+				FROM Data_WebReturn.dbo.InvoiceInformation 
+				ORDER BY CustomerID
+			 `
 
 	err := repo.db.SelectContext(ctx, &customerID, query)
 	if err != nil {
@@ -315,36 +317,6 @@ func (repo repositoryDB) GetCustomerInfoByCustomerID(ctx context.Context, custom
 	}
 
 	return customers, nil
-}
-
-// คิวรีที่ดึง InvoiceName (CustomerName) ตาม CustomerID (รองรับแบ่งหน้า)
-func (repo repositoryDB) GetInvoiceNamesByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error) {
-	var invoiceNames []entity.InvoiceInformation
-
-	query := `
-		SELECT DISTINCT CustomerID, CustomerName, Address, TaxID
-		FROM Data_WebReturn.dbo.InvoiceInformation
-		WHERE CustomerID = :CustomerID
-		ORDER BY CustomerID
-		OFFSET :Offset ROWS FETCH NEXT :Limit ROWS ONLY
-	`
-
-	nstmt, err := repo.db.PrepareNamed(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer nstmt.Close()
-
-	err = nstmt.SelectContext(ctx, &invoiceNames, map[string]interface{}{
-		"CustomerID": customerID,
-		"Limit":      limit,
-		"Offset":     offset,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch invoice names: %w", err)
-	}
-
-	return invoiceNames, nil
 }
 
 // เมื่อเลือก SKU ระบบจะแสดง NAMEALIAS ที่ตรงกับ SKU

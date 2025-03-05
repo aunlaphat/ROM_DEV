@@ -27,7 +27,6 @@ func (app *Application) Constants(apiRouter *gin.RouterGroup) {
 	api.GET("/search-invoice-names", app.SearchInvoiceNameByCustomerID)
 	api.GET("/get-customer-id", app.GetCustomerID)
 	api.GET("/get-customer-info", app.GetCustomerInfoByCustomerID)
-	api.GET("/get-invoice-names", app.GetInvoiceNamesByCustomerID)
 
 	api.GET("/search-product", app.SearchProduct)
 	api.GET("/get-sku", app.SearchSKUByNameAndSize)
@@ -348,40 +347,6 @@ func (app *Application) GetCustomerInfoByCustomerID(c *gin.Context) {
 	}
 
 	handleResponse(c, true, "[ Get Customer Info successfully ]", result, http.StatusOK)
-}
-
-// @Summary Get Invoice Names by CustomerID
-// @Description Retrieve invoice names by customer ID
-// @ID get-invoice-names-by-customer-id
-// @Tags Constants
-// @Accept json
-// @Produce json
-// @Param customerID query string true "Customer ID"
-// @Param offset query int false "Offset for pagination (default is 0)" default(0)
-// @Param limit query int false "Limit for number of invoices to return (default is 5)" default(5)
-// @Success 200 {object} Response{result=[]entity.InvoiceInformation} "Invoice names"
-// @Failure 400 {object} Response "Bad Request"
-// @Failure 500 {object} Response "Internal Server Error"
-// @Router /constants/get-invoice-names [get]
-func (app *Application) GetInvoiceNamesByCustomerID(c *gin.Context) {
-	customerID := c.Query("customerID")
-	if customerID == "" {
-		app.Logger.Warn("[ customerID is required ]")
-		handleError(c, Status.BadRequestError("[ customerID is required ]"))
-		return
-	}
-
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "5"))
-
-	result, err := app.Service.Constant.GetInvoiceNamesByCustomerID(c.Request.Context(), customerID, offset, limit)
-	if err != nil {
-		app.Logger.Error("[ Error ]", zap.Error(err))
-		handleError(c, err)
-		return
-	}
-
-	handleResponse(c, true, "[ Get Invoice Names successfully ]", result, http.StatusOK)
 }
 
 // @Summary Search Product by Keyword

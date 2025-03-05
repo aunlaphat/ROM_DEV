@@ -1244,53 +1244,6 @@ paths:
       summary: Get District by ProvinceCode
       tags:
       - Constants
-  /constants/get-invoice-names:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve invoice names by customer ID
-      operationId: get-invoice-names-by-customer-id
-      parameters:
-      - description: Customer ID
-        in: query
-        name: customerID
-        required: true
-        type: string
-      - default: 0
-        description: Offset for pagination (default is 0)
-        in: query
-        name: offset
-        type: integer
-      - default: 5
-        description: Limit for number of invoices to return (default is 5)
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Invoice names
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.InvoiceInformation'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Invoice Names by CustomerID
-      tags:
-      - Constants
   /constants/get-postal-code:
     get:
       consumes:
