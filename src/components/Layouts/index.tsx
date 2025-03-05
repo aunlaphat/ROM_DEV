@@ -7,9 +7,9 @@ import Loading from "../loading";
 import { Layout } from "antd";
 import { logger } from "../../utils/logger";
 import { ROUTES_NO_AUTH } from "../../resources/routes";
-import SiderLayout from "../Layouts/siderLayout";
-import ContentLayout from "../Layouts/contentLayout";
-import HeaderBar from "../Layouts/headerLayout";
+import SiderLayout from "../layouts/siderLayout";
+import ContentLayout from "../layouts/contentLayout";
+import HeaderBar from "../layouts/headerLayout";
 
 const LayoutPage: React.FC = () => {
   const location = useLocation();
@@ -43,7 +43,7 @@ const LayoutPage: React.FC = () => {
    * ✅ ใช้ useCallback เพื่อลดการ re-run ของ useEffect
    */
   const validateAuth = useCallback(async () => {
-    logger.auth("debug", "Validating auth state", {
+    logger.log("debug", "Validating auth state", {
       isAuthenticated: authState?.isAuthenticated,
       hasUser: !!authState?.user,
       path: location.pathname,
@@ -51,13 +51,13 @@ const LayoutPage: React.FC = () => {
     });
 
     if (token && !authState?.user) {
-      logger.auth("info", "Has token but no user data, fetching user info");
+      logger.log("info", "Has token but no user data, fetching user info");
       await dispatch(checkAuthen());
       return;
     }
 
     if (!authState?.isAuthenticated && location.pathname !== ROUTES_NO_AUTH.ROUTE_LOGIN.PATH) {
-      logger.route("warn", "Unauthorized access, redirecting to login");
+      logger.log("warn", "Unauthorized access, redirecting to login");
       navigate(ROUTES_NO_AUTH.ROUTE_LOGIN.PATH);
     }
   }, [authState?.isAuthenticated, authState?.user, location.pathname, dispatch, navigate, token]);
@@ -70,12 +70,12 @@ const LayoutPage: React.FC = () => {
    * ✅ ปรับปรุงการโหลดข้อมูล Auth
    */
   if (authState?.loading) {
-    logger.auth("debug", "Loading auth state...");
+    logger.log("debug", "Loading auth state...");
     return <Loading />;
   }
 
   if (!authState?.isAuthenticated && location.pathname !== "/") {
-    logger.auth("warn", "User not authenticated, blocking access");
+    logger.log("warn", "User not authenticated, blocking access");
     return null;
   }
 

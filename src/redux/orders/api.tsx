@@ -18,6 +18,7 @@ import {
 } from "../../services/path";
 import { calculateReturnStatus } from '../../utils/calculateStatus';
 import { STATUS } from "../../constants/returnOrder";
+import { ReactNode } from "react";
 
 // Request Types
 export interface SearchOrderRequest {
@@ -26,6 +27,8 @@ export interface SearchOrderRequest {
 }
 
 export interface CreateBeforeReturnOrderRequest {
+  success: any;
+  message: ReactNode;
   orderNo: string;
   soNo: string;
   channelID: number;
@@ -184,14 +187,13 @@ export interface ReturnOrderState {
 // เพิ่ม type สำหรับ API calls
 type ApiFunction = (...args: any[]) => Promise<AxiosResponse>;
 
-export function* searchOrder(action: { 
-  type: ReturnOrderActionTypes; 
-  payload: SearchOrderRequest 
-}): SagaIterator {
+// ตัวอย่างการใช้งาน logger ที่ปรับปรุงแล้ว
+export function* searchOrder(action: { type: ReturnOrderActionTypes; payload: SearchOrderRequest }): SagaIterator {
   try {
     openLoading();
-    logger.group('Search Order');
-    
+    logger.perf.start('Search Order');
+    logger.api.request(SEARCHORDER, action.payload);
+
     // ตรวจสอบว่ามีการส่งค่าใดค่าหนึ่งมา
     if (!action.payload.soNo && !action.payload.orderNo) {
       throw new Error('กรุณากรอกเลข SO หรือ Order');
@@ -211,13 +213,11 @@ export function* searchOrder(action: {
       `${SEARCHORDER}?${queryParams.toString()}`
     );
 
-    logger.timeEnd('Search Duration');
-
     if (!response.data.success) {
       throw new Error(response.data.message || 'Search failed');
     }
 
-    logger.api('info', '✅ Search completed:', response.data);
+    logger.api.success(SEARCHORDER, response.data.data);
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_SEARCH_SUCCESS,
       payload: response.data.data // เปลี่ยนเป็น response.data.data
@@ -229,10 +229,7 @@ export function* searchOrder(action: {
     });
 
   } catch (error: any) {
-    logger.critical('Search Order Failed', {
-      error: error.message,
-      payload: action.payload
-    });
+    logger.error('Search Order', error);
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_SEARCH_FAIL,
       payload: error.message
@@ -242,24 +239,19 @@ export function* searchOrder(action: {
       description: error.response?.data?.message || 'กรุณาลองใหม่อีกครั้ง'
     });
   } finally {
-    logger.groupEnd();
-    yield delay(300);
+    logger.perf.end('Search Order');
     closeLoading();
   }
 }
 
-export function* createBeforeReturnOrder(action: { 
-  type: ReturnOrderActionTypes; 
-  payload: CreateBeforeReturnOrderRequest 
-}): SagaIterator {
+export function* createBeforeReturnOrder(action: { type: ReturnOrderActionTypes; payload: CreateBeforeReturnOrderRequest }): SagaIterator {
   try {
     openLoading();
-    logger.group('Create Return Order');
-    logger.api('info', '📝 Creating new return order:', {
+    logger.perf.start('Create Return Order');
+    logger.api.request(CREATEBEFORERETURNORDER, {
       orderNo: action.payload.orderNo,
-      soNo: action.payload.soNo
+      items: action.payload.items.length
     });
-    logger.time('Create Duration');
 
     const formattedData = {
       ...action.payload,
@@ -271,16 +263,16 @@ export function* createBeforeReturnOrder(action: {
       CREATEBEFORERETURNORDER,  // ใช้ path ที่มีอยู่แล้ว
       formattedData
     );
-    logger.timeEnd('Create Duration');
 
     if (!response.data.success) {
       throw new Error(response.data.message);
     }
 
-    logger.api('info', '✅ Order created successfully:', {
+    logger.api.success(CREATEBEFORERETURNORDER, {
       orderNo: response.data.data.orderNo,
       srNo: response.data.data.srNo
     });
+
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_CREATE_SUCCESS,
       payload: response.data.data
@@ -292,10 +284,7 @@ export function* createBeforeReturnOrder(action: {
     });
 
   } catch (error: any) {
-    logger.critical('Create Order Failed', {
-      error: error.message,
-      orderNo: action.payload.orderNo
-    });
+    logger.error('Create Return Order', error);
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_CREATE_FAIL,
       payload: error.message
@@ -305,19 +294,20 @@ export function* createBeforeReturnOrder(action: {
       description: error.response?.data?.message || 'กรุณาลองใหม่อีกครั้ง'
     });
   } finally {
-    logger.groupEnd();
-    yield delay(300);
+    logger.perf.end('Create Return Order');
     closeLoading();
   }
 }
 
+// แก้ไข interface เป็น
 export interface CreateSRRequest {
+  srNo: any;
   orderNo: string;
   warehouseFrom: string;
   returnDate: string;
   trackingNo: string;
   transportType: string;
-  srNo: string;
+  // ลบ srNo ออก เพราะควรถูกสร้างที่ backend
 }
 
 export function* updateSrNo(action: { 
@@ -326,25 +316,31 @@ export function* updateSrNo(action: {
 }): SagaIterator {
   try {
     openLoading();
-    logger.group('Update SR');
-    logger.api('info', '🔄 Updating SR for order:', action.payload.orderNo);
-    logger.time('Update SR Duration');
+    logger.perf.start('Generate SR');
+    
+    // Generate SR Number
+    logger.api.request(GENERATESR, { orderNo: action.payload.orderNo });
+    const srResponse = yield call(POST as unknown as ApiFunction, `${GENERATESR}/${action.payload.orderNo}`);
+    
+    if (!srResponse.data.success) {
+      throw new Error('SR Generation failed');
+    }
+    
+    const srNo = srResponse.data.data;
+    logger.api.success(GENERATESR, { srNo });
 
-    const response: AxiosResponse<APIResponse<UpdateSrNoResponse>> = yield call(
-      POST as unknown as ApiFunction, 
-      `${UPDATESR}/${action.payload.orderNo}`,
-      { srNo: action.payload.srNo }
-    );
-    logger.timeEnd('Update SR Duration');
+    // Update SR
+    logger.api.request(UPDATESR, { ...action.payload, srNo });
+    const response = yield call(POST as unknown as ApiFunction, `${UPDATESR}/${action.payload.orderNo}`, { 
+      ...action.payload, 
+      srNo 
+    });
 
     if (!response.data.success) {
       throw new Error(response.data.message);
     }
 
-    logger.api('info', '✅ SR updated successfully:', {
-      orderNo: response.data.data.orderNo,
-      newSrNo: response.data.data.srNo
-    });
+    logger.api.success(UPDATESR, response.data.data);
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_SUCCESS,
       payload: response.data.data
@@ -356,10 +352,7 @@ export function* updateSrNo(action: {
     });
 
   } catch (error: any) {
-    logger.critical('Update SR Failed', {
-      error: error.message,
-      orderNo: action.payload.orderNo
-    });
+    logger.error('SR Update', error);
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_FAIL,
       payload: error.message
@@ -369,8 +362,7 @@ export function* updateSrNo(action: {
       description: error.response?.data?.message || 'กรุณาลองใหม่อีกครั้ง'
     });
   } finally {
-    logger.groupEnd();
-    yield delay(300);
+    logger.perf.end('Generate SR');
     closeLoading();
   }
 }
@@ -395,8 +387,8 @@ export function* updateStatus(action: {
 }): SagaIterator {
   try {
     openLoading();
-    logger.group('Update Return Order Status');
-    logger.api('info', '🔄 Calculating status for:', action.payload);
+    logger.perf.start('Update Status');
+    logger.api.request(UPDATESTATUS, action.payload);
 
     const { statusReturnID, statusConfID } = calculateReturnStatus({
       roleID: action.payload.roleID,
@@ -404,7 +396,7 @@ export function* updateStatus(action: {
       isEdited: action.payload.isEdited
     });
 
-    logger.api('info', 'Calculated status:', { statusReturnID, statusConfID });
+    logger.state.update('Calculated Status', { statusReturnID, statusConfID });
 
     const response = yield call(
       POST as unknown as ApiFunction,
@@ -421,9 +413,10 @@ export function* updateStatus(action: {
       throw new Error(response.data.message);
     }
 
+    logger.api.success(UPDATESTATUS, response.data.data);
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_STATUS_SUCCESS,
-      payload: response.data
+      payload: response.data.data
     });
 
     notification.success({
@@ -432,10 +425,7 @@ export function* updateStatus(action: {
     });
 
   } catch (error: any) {
-    logger.critical('Update status failed:', {
-      error: error.message,
-      payload: action.payload
-    });
+    logger.error('Status Update', error);
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_STATUS_FAIL,
       payload: error.message
@@ -445,8 +435,7 @@ export function* updateStatus(action: {
       description: error.response?.data?.message || 'กรุณาลองใหม่อีกครั้ง'
     });
   } finally {
-    logger.groupEnd();
-    yield delay(300);
+    logger.perf.end('Update Status');
     closeLoading();
   }
 }
@@ -457,7 +446,7 @@ export function* cancelOrder(action: {
 }): SagaIterator {
   try {
     openLoading();
-    logger.api('info', 'Cancelling order:', action.payload);
+    logger.api.request('Cancelling order', action.payload);
 
     const response = yield call(
       POST as unknown as ApiFunction, 
@@ -479,7 +468,7 @@ export function* cancelOrder(action: {
     });
 
   } catch (error: any) {
-    logger.critical('Cancel order failed:', error);
+    logger.error('Cancel order failed:', error);
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_CANCEL_FAIL,
       payload: error.message
@@ -500,7 +489,7 @@ export function* markOrderAsEdited(action: {
 }): SagaIterator {
   try {
     openLoading();
-    logger.api('info', 'Marking order as edited:', action.payload);
+    logger.log('info', 'Marking order as edited:', action.payload);
 
     const response = yield call(
       POST as unknown as ApiFunction, 
@@ -516,7 +505,7 @@ export function* markOrderAsEdited(action: {
     });
 
   } catch (error: any) {
-    logger.critical('Mark as edited failed', { 
+    logger.error('Mark as edited failed', { 
       error: error.message,
       orderNo: action.payload 
     });

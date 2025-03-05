@@ -4,7 +4,7 @@ export interface ReturnOrderState {
   loading: boolean;
   srCreated: boolean;
   error: string | null;
-  currentStep: 'search' | 'create' | 'confirm';
+  currentStep: 'search' | 'create' | 'sr' | 'preview' | 'confirm';
 }
 
 export interface OrderData {

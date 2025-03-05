@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import { NavigateTo, windowNavigateReplaceTo } from "../utils/navigation";
 import { ROUTES, ROUTE_LOGIN } from "../resources/routes";
 import { login, logout } from "../redux/auth/action";
-import { getCookies, setCookies, removeCookies } from "../store/useCookies"; // ลบ decodeToken
+import { getCookies, setCookies, removeCookies } from "../store/useCookies";
 import { logger } from "../utils/logger";
 
 // Interface สำหรับข้อมูลที่จะเก็บใน Context
@@ -35,41 +35,94 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // อ่านข้อมูล user จาก cookies
   useEffect(() => {
     const token = getCookies('jwt');
-    if (token) {
-      // ไม่ต้อง decode token ในฝั่ง frontend
-      // ข้อมูล user จะถูกดึงจาก backend โดยอัตโนมัติ
-    }
+    logger.log('info', `Authentication Status`, {
+      tokenExists: !!token,
+      timestamp: new Date().toISOString()
+    });
   }, []);
 
   const toLogin = useCallback(() => {
-    logger.auth("info", "Navigating to Login page");
+    logger.perf.start('Navigation: Login Page');
+    logger.log('info', `Redirecting`, {
+      destination: 'Login Page',
+      route: ROUTE_LOGIN
+    });
+    
     windowNavigateReplaceTo({ pathname: ROUTE_LOGIN });
+    logger.perf.end('Navigation: Login Page');
   }, []);
 
   const handleLogin = useCallback(async (values: any) => {
     try {
-      logger.auth("info", "Dispatching login request", { username: values.username });
+      logger.perf.start('Auth: Login Process');
+      logger.log('info', `Login Initiated`, {
+        username: values.username,
+        timestamp: new Date().toISOString()
+      });
+      
       dispatch(login(values));
+      
+      logger.log('success', `Login Successful`, {
+        username: values.username,
+        timestamp: new Date().toISOString()
+      });
+      
+      logger.state.update('Authentication', {
+        status: 'authenticated',
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
-      logger.auth("error", "Login failed", { error });
+      logger.error('Login Failed', {
+        error,
+        username: values.username,
+        timestamp: new Date().toISOString()
+      });
       throw error;
+    } finally {
+      logger.perf.end('Auth: Login Process');
     }
   }, [dispatch]);
 
   const handleLogout = useCallback(async () => {
     try {
-      logger.auth("info", "Processing logout request");
+      logger.perf.start('Auth: Logout Process');
+      logger.log('info', `Logout Initiated`, {
+        timestamp: new Date().toISOString()
+      });
+
       dispatch(logout());
       removeCookies("jwt");
-      logger.auth("info", "User logged out successfully");
+      
+      logger.log('success', `Logout Completed`, {
+        timestamp: new Date().toISOString()
+      });
+      
+      logger.state.update('Authentication', {
+        status: 'logged_out',
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
-      logger.auth("error", "Logout failed", { error });
+      logger.error('Logout Failed', {
+        error,
+        timestamp: new Date().toISOString()
+      });
+    } finally {
+      logger.perf.end('Auth: Logout Process');
     }
   }, [dispatch]);
 
   const redirectToMain = useCallback(() => {
-    if (!getCookies("jwt")) {
-      logger.auth("info", "Redirecting to Home page");
+    const hasToken = getCookies("jwt");
+    logger.log(hasToken ? 'warn' : 'info',
+      `Main Page Redirect`, {
+        status: hasToken ? 'blocked' : 'proceeding',
+        destination: ROUTES.ROUTE_MAIN.PATH,
+        hasToken,
+        timestamp: new Date().toISOString()
+      }
+    );
+
+    if (!hasToken) {
       NavigateTo({ pathname: ROUTES.ROUTE_MAIN.PATH });
     }
   }, []);

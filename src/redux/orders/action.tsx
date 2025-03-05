@@ -17,9 +17,6 @@ export const createReturnOrder = (data: CreateBeforeReturnOrderRequest) => {
 
 // 3. สร้าง SR Number (SR)
 export const createSrNo = (payload: CreateSRRequest) => {
-  if (!payload.srNo) {
-    throw new Error('SR Number is required');
-  }
   return {
     type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_REQ,
     payload
@@ -44,7 +41,7 @@ export const resetReturnOrder = () => ({
   type: ReturnOrderActionTypes.RETURN_ORDER_RESET
 });
 
-export const setCurrentStep = (step: 'search' | 'create' | 'sr' | 'confirm') => ({
+export const setCurrentStep = (step: 'search' | 'create' | 'sr' | 'preview' | 'confirm') => ({
   type: ReturnOrderActionTypes.RETURN_ORDER_SET_STEP,
   payload: step
 });

@@ -48,7 +48,7 @@ export default function returnOrderReducer(state = initialState, action: any): R
           }))
         },
         orderLines: action.payload.items,
-        currentStep: 'create',
+        currentStep: 'create', // เปลี่ยนเป็น create หลังค้นหาสำเร็จ
         error: null
       };
 
@@ -57,7 +57,7 @@ export default function returnOrderReducer(state = initialState, action: any): R
         ...state,
         loading: false,
         returnOrder: action.payload,
-        currentStep: 'sr' // เพิ่มการเปลี่ยน step เมื่อสร้างสำเร็จ
+        currentStep: 'sr' // เปลี่ยนเป็น sr หลังสร้าง return order สำเร็จ
       };
 
     case ReturnOrderActionTypes.RETURN_ORDER_MARK_EDITED_SUCCESS:
@@ -72,14 +72,20 @@ export default function returnOrderReducer(state = initialState, action: any): R
         ...state,
         loading: false,
         srCreated: true,
-        currentStep: 'preview', // เปลี่ยนจาก 'confirm' เป็น 'preview'
+        currentStep: 'preview', // เปลี่ยนเป็น preview หลังสร้าง SR สำเร็จ
         orderData: state.orderData ? {
           ...state.orderData,
           head: {
             ...state.orderData.head,
             srNo: action.payload.srNo,
           },
-          lines: state.returnOrder?.items || state.orderData.lines // ใช้ข้อมูล items จาก returnOrder ถ้ามี
+          // ใช้ข้อมูล items จาก returnOrder เสมอหลังจากสร้าง SR
+          lines: state.returnOrder?.items.map(item => ({
+            ...item,
+            qty: item.qty,
+            returnQty : item.returnQty,
+            price: Math.abs(item.price)
+          })) || []
         } : null,
         // อัพเดท returnOrder ถ้ามี
         returnOrder: state.returnOrder ? {
@@ -99,6 +105,7 @@ export default function returnOrderReducer(state = initialState, action: any): R
       return {
         ...state,
         loading: false,
+        currentStep: 'confirm', // เพิ่มการเปลี่ยน step เป็น confirm
         orderData: state.orderData ? {
           ...state.orderData,
           head: {

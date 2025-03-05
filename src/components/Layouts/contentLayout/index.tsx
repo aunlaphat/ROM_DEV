@@ -24,12 +24,12 @@ const ContentLayout: React.FC<ContentLayoutProps> = ({ children }) => {
   const userRoutes = roleID ? ROLE_ROUTES[roleID] ?? [] : [];
 
   if (!roleID) {
-    logger.auth(
+    logger.log(
       "warn",
       "⚠️ No valid roleID found in user data, rendering empty routes."
     );
   } else {
-    logger.auth("info", `🔹 Routes Loaded for Role ${roleID}:`, userRoutes);
+    logger.log("info", `🔹 Routes Loaded for Role ${roleID}:`, userRoutes);
   }
 
   return (

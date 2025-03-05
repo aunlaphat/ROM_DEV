@@ -42,7 +42,7 @@ interface AuthCheckResponse {
 export function* login(action: { type: AuthActionTypes; payload: LoginPayload }) {
   try {
     openLoading();
-    logger.auth('info', 'Starting login process');
+    logger.log('info', '[Auth] Starting login process');
 
     const response: AxiosResponse<LoginResponse> = yield call(POST, LOGIN, {
       userName: action.payload.username,
@@ -74,7 +74,7 @@ export function* login(action: { type: AuthActionTypes; payload: LoginPayload })
     window.location.href = ROUTES.ROUTE_MAIN.PATH;
 
   } catch (error: any) {
-    logger.auth('error', 'Login failed', { error: error.message });
+    logger.log('error', '[Auth] Login failed', { error: error.message });
 
     notification.error({ 
       message: "Login Failed! ❌",
@@ -92,7 +92,7 @@ export function* login(action: { type: AuthActionTypes; payload: LoginPayload })
 export function* logout(): Generator<Effect, void, AxiosResponse> {
   try {
     openLoading();
-    logger.auth("info", "Processing logout");
+    logger.log("info", '[Auth] Processing logout');
 
     notification.success({
       message: "Logged Out Successfully! 👋",
@@ -110,13 +110,13 @@ export function* logout(): Generator<Effect, void, AxiosResponse> {
     try {
       yield call(POST, "/auth/logout", {});
     } catch (e) {
-      logger.auth("warn", "Non-critical logout API error", e);
+      logger.log("warn", '[Auth] Non-critical logout API error', e);
     }
 
     window.location.href = ROUTES_NO_AUTH.ROUTE_LOGIN.PATH;
 
   } catch (error: any) {
-    logger.auth("error", "Critical logout error", { error: error.message });
+    logger.log("error", '[Auth] Critical logout error', { error: error.message });
 
     notification.error({
       message: "Logout Failed! ❌",
@@ -132,7 +132,7 @@ export function* logout(): Generator<Effect, void, AxiosResponse> {
 
 export function* checkAuthen(): Generator<Effect, void, AxiosResponse<AuthCheckResponse>> {
   try {
-    console.log('🔍 Starting auth check...');
+    logger.log('info', '[Auth] Starting auth check...');
     
     const response = (yield call(GET, CHECKAUTH)) as AxiosResponse<AuthCheckResponse>;
     
@@ -141,7 +141,7 @@ export function* checkAuthen(): Generator<Effect, void, AxiosResponse<AuthCheckR
     }
 
     const { user } = response.data.data;
-    console.log('✅ Auth check success:', user);
+    logger.log('info', '[Auth] Auth check success', { user });
 
     yield put({
       type: AuthActionTypes.AUTHEN_CHECK_SUCCESS,
@@ -149,13 +149,13 @@ export function* checkAuthen(): Generator<Effect, void, AxiosResponse<AuthCheckR
     });
 
   } catch (error: any) {
-    console.error('❌ Auth check error:', error);
+    logger.log('error', '[Auth] Auth check error', { error: error.message });
 
     notification.error({
       message: "Session Expired! ⏳",
       description: "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่ 🔐",
       placement: "topLeft",
-        });
+    });
 
     yield put({ 
       type: AuthActionTypes.AUTHEN_CHECK_FAIL, 

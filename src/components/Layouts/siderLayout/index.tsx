@@ -7,7 +7,7 @@ import { ROUTES } from "../../../resources/routes";
 import { logger } from "../../../utils/logger";
 import { Icon } from "../../../resources";
 import logo from "../../../assets/images/logo_org.png";
-import { ScrollMenu } from "./style";
+import { ScrollMenu } from "../../layouts/siderLayout/style";
 
 const { Sider } = Layout;
 
@@ -88,7 +88,7 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
     if (!roleID) return [];
 
     const menu = ROUTES_MENU.filter((item) => item.roles.includes(roleID));
-    logger.auth("info", `🔹 Sidebar Menu for Role ${roleID}:`, menu);
+    logger.log("info", `🔹 Sidebar Menu for Role ${roleID}:`, menu);
     return menu;
   }, [roleID, ROUTES_MENU]);
 

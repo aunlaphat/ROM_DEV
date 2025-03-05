@@ -19,7 +19,7 @@ import {
   MenuFoldOutlined,
   DownOutlined,
 } from "@ant-design/icons";
-import { HeaderBarStyle, TopBarDropDown, TopBarUser } from "./style";
+import { HeaderBarStyle, TopBarDropDown, TopBarUser } from "../../layouts/headerLayout/style";
 import { Icon } from "../../../resources";
 import { useAuth } from "../../../hooks/useAuth"; // เปลี่ยนการ import
 import { useSelector } from "react-redux";
@@ -43,7 +43,7 @@ const HeaderBar = ({ collapsed, toggle }: any) => {
       cancelText: "ยกเลิก",
       onOk: async () => {
         try {
-          logger.auth("info", "User logging out", { userId, userName });
+          logger.log("info", "User logging out", { userId, userName });
 
           await logout(); // ใช้ logout function
         } catch (error) {

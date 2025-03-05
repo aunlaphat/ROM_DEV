@@ -1,5 +1,5 @@
 import React from "react";
-import { Layout, Button, Form, Row, Col, Input, Alert } from "antd";
+import { Layout, Button, Form, Row, Col, Input, Alert, Spin } from "antd";
 import OrderDetailsSection from './OrderDetailsSection';
 import OrderItemsSection from './OrderItemsSection';
 import ReturnOrderSteps from "./ReturnOrderSteps";
@@ -25,6 +25,9 @@ interface ReturnOrderFormProps {
   getStepStatus: (stepKey: string) => 'process' | 'finish' | 'wait';
   renderBackButton: () => JSX.Element;
   returnItems: { [key: string]: number }; // เพิ่ม returnItems
+  validateStepTransition: (fromStep: string, toStep: string) => boolean;
+  stepLoading: boolean; // เพิ่ม stepLoading prop
+  isCreateSRDisabled: () => boolean; // เพิ่ม prop ใหม่
 }
 
 const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
@@ -47,150 +50,193 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
   getStepStatus,
   renderBackButton,
   returnItems, // เพิ่ม returnItems
+  validateStepTransition,
+  stepLoading = false,
+  isCreateSRDisabled,
 }) => {
-  return (
-    <Layout>
-      <Layout.Content
-        style={{
-          margin: "24px",
-          padding: 20,
-          background: "#f5f5f5",
-          borderRadius: "8px",
-        }}
-      >
-        <Row gutter={[0, 24]}>
-          <Col span={24}>
-            <ReturnOrderSteps
-              currentStep={currentStep}
-              orderData={orderData}
-              getStepStatus={getStepStatus}
-            />
-          </Col>
-          <Col span={24}>{renderBackButton()}</Col>
-        </Row>
-
-        {currentStep === "search" && (
-          <Form layout="vertical" form={form} style={{ marginTop: "40px" }}>
-            <Row gutter={30} justify="center" align="middle">
-              <Col>
-                <Form.Item
-                  label={
-                    <span style={{ color: "#657589" }}>กรอกเลข SO/Order</span>
-                  }
-                  name="selectedSalesOrder"
-                  rules={[
-                    { required: true, message: "กรุณากรอกเลข SO/Order!" },
-                  ]}
-                >
-                  <Input
-                    style={{ width: 300 }}
-                    placeholder="กรอกเลข SO/Order"
-                    value={selectedSalesOrder}
-                    onChange={handleInputChange}
-                    disabled={loading}
-                  />
-                </Form.Item>
-              </Col>
-              <Col>
-                <Button
-                  type="primary"
-                  onClick={handleSearch}
-                  loading={loading}
-                  style={{ marginTop: 4 }}
-                >
-                  ค้นหา
-                </Button>
-              </Col>
-            </Row>
-          </Form>
-        )}
-
-        {currentStep !== "search" && orderData && (
-          <Form layout="vertical" form={form}>
-            <Layout.Content
-              style={{
-                margin: "24px",
-                padding: "20px",
-                background: "#fff",
-                borderRadius: "8px",
-              }}
+  // ใช้ validateStepTransition ในการตรวจสอบก่อนแสดงปุ่มต่างๆ
+  const renderActionButtons = () => {
+    switch (currentStep) {
+      case 'create':
+        return (
+          <Button
+            type="primary"
+            onClick={handleCreateReturnOrder}
+            loading={loading || stepLoading}
+            disabled={isCreateReturnOrderDisabled()} // ใช้ฟังก์ชันที่ปรับปรุงแล้ว
+            style={{ marginRight: 8 }}
+          >
+            Create Return Order
+          </Button>
+        );
+      
+      case 'sr':
+        // ถ้ามี SR Number แล้วให้แสดงปุ่ม Next แทน Create SR
+        if (orderData?.head.srNo) {
+          return (
+            <Button
+              type="primary"
+              onClick={handleNext}
+              loading={loading || stepLoading}
+              disabled={!validateStepTransition('sr', 'preview')}
+              style={{ marginRight: 8 }}
             >
-              <OrderDetailsSection orderData={orderData} loading={loading} />
-              <OrderItemsSection
+              Next
+            </Button>
+          );
+        }
+        // ถ้ายังไม่มี SR Number ให้แสดงปุ่ม Create SR
+        return (
+          <Button
+            type="primary"
+            onClick={handleCreateSr}
+            loading={loading || stepLoading}
+            disabled={isCreateSRDisabled()}
+            style={{ marginRight: 8 }}
+          >
+            Create SR
+          </Button>
+        );
+      
+      case 'preview':
+        return (
+          <Button
+            type="primary"
+            onClick={handleNext}
+            loading={loading}
+            disabled={!validateStepTransition('preview', 'confirm')}
+          >
+            Next
+          </Button>
+        );
+      
+      case 'confirm':
+        return (
+          <Button
+            type="primary"
+            onClick={handleConfirm}
+            loading={loading}
+          >
+            ยืนยันคำสั่งคืนสินค้า
+          </Button>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Spin spinning={loading || stepLoading} tip={
+      stepLoading ? 'กำลังดำเนินการ...' : 'กำลังโหลดข้อมูล...'
+    }>
+      <Layout>
+        <Layout.Content
+          style={{
+            margin: "24px",
+            padding: 20,
+            background: "#f5f5f5",
+            borderRadius: "8px",
+          }}
+        >
+          <Row gutter={[0, 24]}>
+            <Col span={24}>
+              <ReturnOrderSteps
+                currentStep={currentStep}
                 orderData={orderData}
-                getReturnQty={getReturnQty}
-                updateReturnQty={updateReturnQty}
-                loading={loading}
-                currentStep={currentStep} // เพิ่ม prop currentStep
+                getStepStatus={getStepStatus}
               />
+            </Col>
+            <Col span={24}>{renderBackButton()}</Col>
+          </Row>
 
-              {currentStep === "preview" && orderData && (
-                <PreviewSection
-                  orderData={orderData}
-                  returnItems={returnItems}
-                />
-              )}
-
-              <Row justify="end" style={{ marginTop: 24 }}>
-                {currentStep === "create" && (
+          {currentStep === "search" && (
+            <Form layout="vertical" form={form} style={{ marginTop: "40px" }}>
+              <Row gutter={30} justify="center" align="middle">
+                <Col>
+                  <Form.Item
+                    label={
+                      <span style={{ color: "#657589" }}>กรอกเลข SO/Order</span>
+                    }
+                    name="selectedSalesOrder"
+                    rules={[
+                      { required: true, message: "กรุณากรอกเลข SO/Order!" },
+                    ]}
+                  >
+                    <Input
+                      style={{ width: 300 }}
+                      placeholder="กรอกเลข SO/Order"
+                      value={selectedSalesOrder}
+                      onChange={handleInputChange}
+                      disabled={loading}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col>
                   <Button
                     type="primary"
-                    onClick={handleCreateReturnOrder}
+                    onClick={handleSearch}
                     loading={loading}
-                    disabled={isCreateReturnOrderDisabled()}
-                    style={{ marginRight: 8 }}
+                    style={{ marginTop: 4 }}
                   >
-                    Create Return Order
+                    ค้นหา
                   </Button>
-                )}
-                {currentStep === "sr" && (
-                  <Button
-                    type="primary"
-                    onClick={handleCreateSr} // เรียก API สร้าง SR
-                    loading={loading}
-                    disabled={isCreateReturnOrderDisabled()}
-                    style={{ marginRight: 8 }}
-                  >
-                    Create SR
-                  </Button>
-                )}
-                {currentStep === "preview" && (
-                  <Button
-                    type="primary"
-                    onClick={handleNext} // เปลี่ยน step ไป confirm
-                    loading={loading}
-                    style={{ marginRight: 8 }}
-                  >
-                    Next
-                  </Button>
-                )}
-                {currentStep === "confirm" && (
-                  <Button
-                    type="primary"
-                    onClick={handleConfirm} // เรียก API confirm
-                    loading={loading}
-                    style={{ marginRight: 8 }}
-                  >
-                    ยืนยันคำสั่งคืนสินค้า
-                  </Button>
-                )}
-                <Button onClick={handleCancel}>Cancel</Button>
+                </Col>
               </Row>
-            </Layout.Content>
-          </Form>
-        )}
-      </Layout.Content>
+            </Form>
+          )}
 
-      {error && (
-        <Alert
-          message="เกิดข้อผิดพลาด"
-          description={error}
-          type="error"
-          showIcon
-          style={{ margin: "0 24px" }}
-        />
-      )}
-    </Layout>
+          {currentStep !== "search" && orderData && (
+            <Form layout="vertical" form={form}>
+              <Layout.Content
+                style={{
+                  margin: "24px",
+                  padding: "20px",
+                  background: "#fff",
+                  borderRadius: "8px",
+                }}
+              >
+                <OrderDetailsSection orderData={orderData} loading={loading} />
+                <OrderItemsSection
+                  orderData={orderData}
+                  getReturnQty={getReturnQty}
+                  updateReturnQty={updateReturnQty}
+                  loading={loading}
+                  currentStep={currentStep} // เพิ่ม prop currentStep
+                />
+
+                {currentStep === "preview" && orderData && (
+                  <PreviewSection
+                    orderData={orderData}
+                    returnItems={returnItems}
+                  />
+                )}
+
+                <Row justify="end" style={{ marginTop: 24 }}>
+                  {renderActionButtons()}
+                  <Button 
+                    onClick={handleCancel}
+                    disabled={loading || stepLoading}
+                  >
+                    Cancel
+                  </Button>
+                </Row>
+              </Layout.Content>
+            </Form>
+          )}
+        </Layout.Content>
+
+        {error && (
+          <Alert
+            message="เกิดข้อผิดพลาด"
+            description={error}
+            type="error"
+            showIcon
+            style={{ margin: "0 24px" }}
+          />
+        )}
+      </Layout>
+    </Spin>
   );
 };
 

@@ -24,14 +24,14 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ orderData, getRet
       width: '30%'
     },
     { 
-      title: 'Original QTY', 
+      title: 'QTY', 
       dataIndex: 'qty',
       width: '15%',
       align: 'center' as const,
       render: (qty: number) => Math.abs(qty)
     },
     { 
-      title: 'Return QTY', 
+      title: 'ReturnQTY', 
       width: '15%',
       align: 'center' as const,
       render: (_: any, record: any) => {
