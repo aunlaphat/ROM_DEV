@@ -19,15 +19,15 @@ import {
   MenuFoldOutlined,
   DownOutlined,
 } from "@ant-design/icons";
-import { HeaderBarStyle, TopBarDropDown, TopBarUser } from "../../layouts/headerLayout/style";
+import { HeaderBarStyle, TopBarDropDown, TopBarUser } from "./style";
 import { Icon } from "../../../resources";
-import { useAuthLogin } from "../../../hooks/useAuth";
+import { useAuth } from "../../../hooks/useAuth"; // เปลี่ยนการ import
 import { useSelector } from "react-redux";
 import { TextSmall } from "../../text";
 import { logger } from "../../../utils/logger";
 
 const HeaderBar = ({ collapsed, toggle }: any) => {
-  const { onLogout } = useAuthLogin();
+  const { logout } = useAuth(); // ใช้ logout จาก useAuth
   const user = useSelector((state: any) => state.auth.user);
 
   const userId = user?.userID || "N/A";
@@ -45,7 +45,7 @@ const HeaderBar = ({ collapsed, toggle }: any) => {
         try {
           logger.auth("info", "User logging out", { userId, userName });
 
-          await onLogout();
+          await logout(); // ใช้ logout function
         } catch (error) {
           console.error("Logout Failed", error);
         }

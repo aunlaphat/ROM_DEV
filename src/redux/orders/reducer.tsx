@@ -1,3 +1,4 @@
+import { message } from 'antd';
 import { BeforeReturnOrderResponse, SearchOrderResponse, ReturnOrderState, SearchOrderItem } from './api';
 import { ReturnOrderActionTypes } from './types';
 
@@ -56,7 +57,7 @@ export default function returnOrderReducer(state = initialState, action: any): R
         ...state,
         loading: false,
         returnOrder: action.payload,
-        currentStep: 'confirm'
+        currentStep: 'sr' // เพิ่มการเปลี่ยน step เมื่อสร้างสำเร็จ
       };
 
     case ReturnOrderActionTypes.RETURN_ORDER_MARK_EDITED_SUCCESS:
@@ -71,13 +72,56 @@ export default function returnOrderReducer(state = initialState, action: any): R
         ...state,
         loading: false,
         srCreated: true,
+        currentStep: 'preview', // เปลี่ยนจาก 'confirm' เป็น 'preview'
         orderData: state.orderData ? {
           ...state.orderData,
           head: {
             ...state.orderData.head,
             srNo: action.payload.srNo,
+          },
+          lines: state.returnOrder?.items || state.orderData.lines // ใช้ข้อมูล items จาก returnOrder ถ้ามี
+        } : null,
+        // อัพเดท returnOrder ถ้ามี
+        returnOrder: state.returnOrder ? {
+          ...state.returnOrder,
+          srNo: action.payload.srNo
+        } : null
+      };
+
+    case ReturnOrderActionTypes.RETURN_ORDER_UPDATE_STATUS_SUCCESS:
+      // ปิด loading message
+      message.success({
+        content: 'อัพเดตสถานะสำเร็จ',
+        key: 'confirmStatus',
+        duration: 2
+      });
+      
+      return {
+        ...state,
+        loading: false,
+        orderData: state.orderData ? {
+          ...state.orderData,
+          head: {
+            ...state.orderData.head,
+            statusReturnID: action.payload.statusReturnID,
+            statusConfID: action.payload.statusConfID,
+            confirmBy: action.payload.confirmBy,
+            confirmDate: action.payload.confirmDate
           }
         } : null
+      };
+
+    case ReturnOrderActionTypes.RETURN_ORDER_UPDATE_STATUS_FAIL:
+      // ปิด loading message พร้อมแสดง error
+      message.error({
+        content: 'อัพเดตสถานะไม่สำเร็จ',
+        key: 'confirmStatus',
+        duration: 2
+      });
+      return {
+        ...state,
+        loading: false,
+        error: action.payload
       };
 
     // Failure cases
@@ -94,6 +138,13 @@ export default function returnOrderReducer(state = initialState, action: any): R
 
     case ReturnOrderActionTypes.RETURN_ORDER_RESET:
       return initialState; // รีเซ็ตทุก state กลับไปเป็นค่าเริ่มต้น
+
+    // เพิ่ม case สำหรับ SET_STEP
+    case ReturnOrderActionTypes.RETURN_ORDER_SET_STEP:
+      return {
+        ...state,
+        currentStep: action.payload
+      };
 
     default:
       return state;

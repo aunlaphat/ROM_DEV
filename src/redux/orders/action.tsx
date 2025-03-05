@@ -1,5 +1,5 @@
 import { ReturnOrderActionTypes } from './types';
-import { CreateBeforeReturnOrderRequest } from './api';
+import { CreateBeforeReturnOrderRequest, CreateSRRequest } from './api';
 
 // 1. ค้นหา Order
 export const searchOrder = (searchParams: { soNo?: string; orderNo?: string }) => ({
@@ -8,24 +8,33 @@ export const searchOrder = (searchParams: { soNo?: string; orderNo?: string }) =
 });
 
 // 2. สร้าง Return Order ด้วย type ที่ถูกต้อง Order Details)
-export const createReturnOrder = (data: CreateBeforeReturnOrderRequest) => ({
-  type: ReturnOrderActionTypes.RETURN_ORDER_CREATE_REQ,
-  payload: data
-});
+export const createReturnOrder = (data: CreateBeforeReturnOrderRequest) => {
+  return {
+    type: ReturnOrderActionTypes.RETURN_ORDER_CREATE_REQ,
+    payload: data
+  };
+};
 
-// 3. สร้าง SR Numberสินค้า (SR) (`Generate SR Number`)
-export const createSrNo = (orderNo: string) => ({
-  type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_REQ,
-  payload: orderNo
-});
+// 3. สร้าง SR Number (SR)
+export const createSrNo = (payload: CreateSRRequest) => {
+  if (!payload.srNo) {
+    throw new Error('SR Number is required');
+  }
+  return {
+    type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_REQ,
+    payload
+  };
+};
 
-// 4. ยืนยันคำสั่งคืนสินค้า (Confirm Return Order)
-export const confirmReturn = (data: {
+// ปรับปรุง interface สำหรับ confirmReturn
+export interface ConfirmReturnRequest {
   orderNo: string;
   roleId: number;
-  isCNCreated?: boolean;
-  isEdited?: boolean;
-}) => ({
+  userID: string;
+}
+
+// ปรับปรุง confirmReturn action
+export const confirmReturn = (data: ConfirmReturnRequest) => ({
   type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_STATUS_REQ,
   payload: data
 });
@@ -33,4 +42,9 @@ export const confirmReturn = (data: {
 // เพิ่ม reset action
 export const resetReturnOrder = () => ({
   type: ReturnOrderActionTypes.RETURN_ORDER_RESET
+});
+
+export const setCurrentStep = (step: 'search' | 'create' | 'sr' | 'confirm') => ({
+  type: ReturnOrderActionTypes.RETURN_ORDER_SET_STEP,
+  payload: step
 });

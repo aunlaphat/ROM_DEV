@@ -1,5 +1,5 @@
 import { Spin } from "antd";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useState } from "react";
 import { CardTheme } from "../../components/card/cardTheme";
 import { TextLogoLogin, TextXSMall } from "../../components/text";
 import imgLogin from "../../assets/images/login.png";
@@ -9,13 +9,12 @@ import { useForm } from "react-hook-form";
 import { LoginForm } from "./form";
 import { ContainerButton } from "../../style";
 import { ButtonTheme } from "../../components/buttons";
-import { useAuthLogin } from "../../hooks/useAuth";
-import { getCookies, setCookies } from "../../store/useCookies";
+import { useAuth } from "../../hooks/useAuth";
 
 export const Login = () => {
   const [disabled, setDisabled] = useState(true);
   const [loading, setLoading] = useState(false);
-  const { onLogin } = useAuthLogin();
+  const { login } = useAuth();
 
   const { setValue, getValues, control } = useForm();
 
@@ -29,7 +28,7 @@ export const Login = () => {
     try {
       const { username, password } = getValues();
       setLoading(true);
-      await onLogin({ username, password });
+      await login({ username, password });
     } catch (error) {
       console.error("Login Error:", error);
     } finally {

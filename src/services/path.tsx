@@ -7,6 +7,7 @@ export const CHECKAUTH = `/auth/`;
 /* MKP */
 export const SEARCHORDER = `/order/search`;
 export const CREATEBEFORERETURNORDER = `/order/create`;
+export const GENERATESR = `/order/generate-sr`;
 export const UPDATESR = `/order/update-sr`;
 export const UPDATESTATUS = `/order/update-status`;
 export const CANCELORDER = `/order/cancel`;

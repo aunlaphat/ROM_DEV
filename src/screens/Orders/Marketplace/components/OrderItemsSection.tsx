@@ -8,9 +8,10 @@ interface OrderItemsSectionProps {
   getReturnQty: (sku: string) => number;
   updateReturnQty: (sku: string, change: number) => void;
   loading: boolean;
+  currentStep?: 'search' | 'create' | 'sr' | 'preview' | 'confirm'; // เพิ่ม prop currentStep
 }
 
-const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ orderData, getReturnQty, updateReturnQty, loading }) => {
+const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ orderData, getReturnQty, updateReturnQty, loading, currentStep = 'create' }) => {
   const columns = [
     { 
       title: 'SKU', 
@@ -33,7 +34,32 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ orderData, getRet
       title: 'Return QTY', 
       width: '15%',
       align: 'center' as const,
-      render: (_: any, record: any) => getReturnQty(record.sku)
+      render: (_: any, record: any) => {
+        // แสดงปุ่ม +/- เฉพาะในขั้นตอน create
+        if (currentStep === 'create') {
+          return (
+            <Space>
+              <Button
+                type="text"
+                icon={<MinusOutlined />}
+                onClick={() => updateReturnQty(record.sku, -1)}
+                disabled={getReturnQty(record.sku) <= 0}
+                danger={getReturnQty(record.sku) > 0}
+              />
+              <Typography.Text>{getReturnQty(record.sku)}</Typography.Text>
+              <Button
+                type="text"
+                icon={<PlusOutlined />}
+                onClick={() => updateReturnQty(record.sku, 1)}
+                disabled={getReturnQty(record.sku) >= Math.abs(record.qty)}
+                style={{ color: '#52c41a' }}
+              />
+            </Space>
+          );
+        }
+        // แสดงแค่ตัวเลขในขั้นตอนอื่นๆ
+        return <Typography.Text>{getReturnQty(record.sku)}</Typography.Text>;
+      }
     },
     { 
       title: 'Price', 
@@ -44,45 +70,6 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ orderData, getRet
         const returnQty = getReturnQty(record.sku);
         const totalPrice = Math.abs(price) * returnQty;
         return `฿${totalPrice.toLocaleString()}`;
-      }
-    },
-    {
-      title: 'Action',
-      width: '10%',
-      align: 'center' as const,
-      render: (_: any, record: any) => {
-        const currentQty = getReturnQty(record.sku);
-        const maxQty = Math.abs(record.qty);
-        
-        return (
-          <Space>
-            <Button
-              type="text"
-              icon={<MinusOutlined />}
-              onClick={() => updateReturnQty(record.sku, -1)}
-              disabled={currentQty <= 0 || !!orderData?.head.srNo}
-              danger={currentQty > 0}
-            />
-            <Typography.Text
-              style={{
-                margin: '0 8px',
-                opacity: currentQty === 0 ? 0.45 : 1
-              }}
-            >
-              {currentQty}
-            </Typography.Text>
-            <Button
-              type="text"
-              icon={<PlusOutlined />}
-              onClick={() => updateReturnQty(record.sku, 1)}
-              disabled={currentQty >= maxQty || !!orderData?.head.srNo}
-              style={{ 
-                color: currentQty >= maxQty ? undefined : '#52c41a',
-                opacity: currentQty >= maxQty ? 0.45 : 1
-              }}
-            />
-          </Space>
-        );
       }
     }
   ];
@@ -103,11 +90,12 @@ const OrderItemsSection: React.FC<OrderItemsSectionProps> = ({ orderData, getRet
         dataSource={orderData?.lines}
         rowKey="sku"
         pagination={false}
+        loading={loading}
         onRow={(record) => ({
-          style: getReturnQty(record.sku) === 0 ? {
-            backgroundColor: '#fafafa',
-            color: '#d9d9d9'
-          } : {}
+          style: {
+            backgroundColor: getReturnQty(record.sku) === 0 ? '#fafafa' : 'inherit',
+            opacity: orderData?.head.srNo ? 0.8 : 1
+          }
         })}
         summary={(pageData) => {
           const totalPrice = pageData.reduce(

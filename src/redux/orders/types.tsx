@@ -1,3 +1,5 @@
+export type ReturnOrderStep = 'search' | 'create' | 'sr' | 'preview' | 'confirm';
+
 export enum ReturnOrderActionTypes {
   // Search
   RETURN_ORDER_SEARCH_REQ = '@RETURN_ORDER/SEARCH_REQ',
@@ -30,6 +32,8 @@ export enum ReturnOrderActionTypes {
   RETURN_ORDER_MARK_EDITED_FAIL = '@RETURN_ORDER/MARK_EDITED_FAIL',
 
   // Reset
-  RETURN_ORDER_RESET = '@RETURN_ORDER/RESET'
-}
+  RETURN_ORDER_RESET = '@RETURN_ORDER/RESET',
 
+  // Set Step
+  RETURN_ORDER_SET_STEP = '@RETURN_ORDER/SET_STEP'
+}

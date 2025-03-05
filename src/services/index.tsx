@@ -33,6 +33,7 @@ axiosInstance.interceptors.response.use(
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
+      data: error.response?.data, // เพิ่มการแสดงผล data
     });
     return Promise.reject(error);
   }

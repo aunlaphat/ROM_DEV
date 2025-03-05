@@ -13,7 +13,8 @@ import {
   UPDATESR,
   MARKEDITED,
   CANCELORDER,
-  UPDATESTATUS
+  UPDATESTATUS,
+  GENERATESR
 } from "../../services/path";
 import { calculateReturnStatus } from '../../utils/calculateStatus';
 import { STATUS } from "../../constants/returnOrder";
@@ -33,20 +34,21 @@ export interface CreateBeforeReturnOrderRequest {
   soStatus?: string;
   mkpStatus?: string;
   warehouseID: number;
-  returnDate: string; // ISO date string
+  returnDate: string; // จะถูกแปลงเป็น time.Time ที่ backend
   trackingNo: string;
   logistic: string;
   items: CreateBeforeReturnOrderItemRequest[];
+  userID?: string; // Optional เพราะจะถูกเติมจาก JWT ที่ backend
 }
 
-interface CreateBeforeReturnOrderItemRequest {
+export interface CreateBeforeReturnOrderItemRequest {
   orderNo: string;
   sku: string;
   itemName: string;
   qty: number;
   returnQty: number;
   price: number;
-  createBy: string;
+  createBy?: string; // เปลี่ยนเป็น optional
   trackingNo?: string;
   alterSKU?: string;
 }
@@ -157,6 +159,10 @@ export interface ReturnOrderState {
       salesStatus: string;
       mkpStatus: string;
       locationTo: string;
+      statusReturnID?: any;
+      statusConfID?: any;
+      confirmBy?: any;
+      confirmDate?: any;
     };
     lines: {
       sku: string;
@@ -169,7 +175,7 @@ export interface ReturnOrderState {
   returnOrder: BeforeReturnOrderResponse | null;
   loading: boolean;
   error: string | null;
-  currentStep: 'search' | 'create' | 'confirm';
+  currentStep: 'search' | 'create' | 'sr' | 'preview' | 'confirm';
   isEdited: boolean;
   orderLines: any[];
   srCreated: boolean;
@@ -272,8 +278,8 @@ export function* createBeforeReturnOrder(action: {
     }
 
     logger.api('info', '✅ Order created successfully:', {
-      orderNo: response.data.orderNo,
-      srNo: response.data.srNo
+      orderNo: response.data.data.orderNo,
+      srNo: response.data.data.srNo
     });
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_CREATE_SUCCESS,
@@ -311,11 +317,12 @@ export interface CreateSRRequest {
   returnDate: string;
   trackingNo: string;
   transportType: string;
+  srNo: string;
 }
 
-export function* updateSR(action: { 
+export function* updateSrNo(action: { 
   type: ReturnOrderActionTypes; 
-  payload: CreateSRRequest
+  payload: CreateSRRequest;
 }): SagaIterator {
   try {
     openLoading();
@@ -326,7 +333,7 @@ export function* updateSR(action: {
     const response: AxiosResponse<APIResponse<UpdateSrNoResponse>> = yield call(
       POST as unknown as ApiFunction, 
       `${UPDATESR}/${action.payload.orderNo}`,
-      action.payload
+      { srNo: action.payload.srNo }
     );
     logger.timeEnd('Update SR Duration');
 
@@ -523,3 +530,17 @@ export function* markOrderAsEdited(action: {
     closeLoading();
   }
 }
+
+// ฟังก์ชันสำหรับเรียก API เพื่อสร้าง SrNo
+export const generateSrNo = async (orderNo: string): Promise<string> => {
+  try {
+    const response: AxiosResponse<APIResponse<string>> = await POST(`${GENERATESR}/${orderNo}`, {});
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message);
+    }
+  } catch (error) {
+    throw new Error('Failed to generate SrNo');
+  }
+};

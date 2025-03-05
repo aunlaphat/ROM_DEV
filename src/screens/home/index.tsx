@@ -12,6 +12,7 @@ import {
   Row,
   Col,
   Statistic,
+  ConfigProvider,
 } from "antd";
 import {
   SearchOutlined,
@@ -86,42 +87,52 @@ const Home: React.FC = () => {
   const [searchValue, setSearchValue] = useState("");
   const user = useSelector((state: any) => state.auth.user);
 
-  const stats = [
-    {
-      title: "รายการรอดำเนินการ",
-      value: 25,
-      icon: Icon.pending({ style: { fontSize: 24, color: "#1890ff" } }),
-      color: "#1890ff",
-    },
-    {
-      title: "ผู้ใช้งานทั้งหมด",
-      value: 150,
-      icon: Icon.team({ style: { fontSize: 24, color: "#52c41a" } }),
-      color: "#52c41a",
-    },
-    {
-      title: "รายการออเดอร์ที่เข้าวันนี้",
-      value: 999,
-      icon: Icon.BarCode({ style: { fontSize: 24, color: "#722ed1" } }),
-      color: "#722ed1"
-    }
-  ];
+  // const stats = [
+  //   {
+  //     title: "รายการรอดำเนินการ",
+  //     value: 25,
+  //     icon: Icon.pending({ style: { fontSize: 24, color: "#1890ff" } }),
+  //     color: "#1890ff",
+  //   },
+  //   {
+  //     title: "ผู้ใช้งานทั้งหมด",
+  //     value: 150,
+  //     icon: Icon.team({ style: { fontSize: 24, color: "#52c41a" } }),
+  //     color: "#52c41a",
+  //   },
+  //   {
+  //     title: "รายการออเดอร์ที่เข้าวันนี้",
+  //     value: 999,
+  //     icon: Icon.BarCode({ style: { fontSize: 24, color: "#722ed1" } }),
+  //     color: "#722ed1"
+  //   }
+  // ];
 
   const handleSearch = () => {
     console.log("Search:", { dateRange, searchValue });
   };
 
   return (
-    <Layout
-      style={{
-        margin: "24px",
-        padding: 24,
-        minHeight: 360,
-        background: "#f5f5f5",
-        borderRadius: "8px",
-      }}
-    >
-      {/* Welcome Section */}
+    <ConfigProvider>
+      <div
+        style={{
+          marginLeft: "28px",
+          fontSize: "25px",
+          fontWeight: "bold",
+          color: "DodgerBlue",
+        }}
+      >
+        Home
+      </div>
+      <Layout
+        style={{
+          margin: "24px",
+          padding: 20,
+          background: "#fff",
+          borderRadius: "8px",
+        }}
+      >
+        {/* Welcome Section
       <Card bordered={false} style={{ marginBottom: 24 }}>
         <Space direction="vertical" size="small">
           <Title level={4}>
@@ -130,9 +141,9 @@ const Home: React.FC = () => {
           <Text>ยินดีต้อนรับ, คุณ {user?.fullName}</Text>
           <Text type="secondary">บทบาท: {user?.roleName}</Text>
         </Space>
-      </Card>
+      </Card> */}
 
-      {/* Statistics Section */}
+        {/* Statistics Section
       <Row gutter={[24, 24]}>
         {stats.map((stat, index) => (
           <Col xs={24} sm={12} lg={8} key={index}>
@@ -150,84 +161,76 @@ const Home: React.FC = () => {
             </Card>
           </Col>
         ))}
-      </Row>
+      </Row> */}
 
-      <Content>
-        <Title level={3} style={{
-          marginLeft: "28px",
-          fontSize: "25px",
-          fontWeight: "bold",
-          color: "DodgerBlue",
-        }}>
-          Home
-        </Title>
+        <Content>
+          {/* 🔹 Tabs */}
+          <Tabs defaultActiveKey="1" type="card">
+            <Tabs.TabPane tab="Blind Return" key="1" />
+            <Tabs.TabPane tab="Booked Return" key="2" />
+            <Tabs.TabPane tab="Waiting Action" key="3" />
+            <Tabs.TabPane tab="Unsuccess" key="4" />
+            <Tabs.TabPane tab="Success" key="5" />
+          </Tabs>
 
-        {/* 🔹 Tabs */}
-        <Tabs defaultActiveKey="1" type="card">
-          <Tabs.TabPane tab="Blind Return" key="1" />
-          <Tabs.TabPane tab="Booked Return" key="2" />
-          <Tabs.TabPane tab="Waiting Action" key="3" />
-          <Tabs.TabPane tab="Unsuccess" key="4" />
-          <Tabs.TabPane tab="Success" key="5" />
-        </Tabs>
+          {/* 🔹 Search Section */}
+          <Card style={{ marginBottom: 16 }}>
+            <Row gutter={[16, 16]} align="middle">
+              <Col>
+                <RangePicker onChange={(dates) => setDateRange(dates as any)} />
+              </Col>
+              <Col>
+                <Input
+                  placeholder="ค้นหา Order/Ref IJ"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  allowClear
+                  prefix={<SearchOutlined />}
+                />
+              </Col>
+              <Col>
+                <Button type="primary" onClick={handleSearch}>
+                  Search
+                </Button>
+              </Col>
+            </Row>
+          </Card>
 
-        {/* 🔹 Search Section */}
-        <Card style={{ marginBottom: 16 }}>
-          <Row gutter={[16, 16]} align="middle">
-            <Col>
-              <RangePicker onChange={(dates) => setDateRange(dates as any)} />
-            </Col>
-            <Col>
-              <Input
-                placeholder="ค้นหา Order/Ref IJ"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                allowClear
-                prefix={<SearchOutlined />}
-              />
-            </Col>
-            <Col>
-              <Button type="primary" onClick={handleSearch}>
-                Search
+          {/* 🔹 Sale Return Table */}
+          <Card
+            title="Sale Return"
+            extra={
+              <Button type="primary" icon={<DownloadOutlined />}>
+                Export
               </Button>
-            </Col>
-          </Row>
-        </Card>
+            }
+          >
+            <Table
+              columns={saleReturnColumns}
+              dataSource={saleReturnData}
+              pagination={false}
+            />
+          </Card>
 
-        {/* 🔹 Sale Return Table */}
-        <Card
-          title="Sale Return"
-          extra={
-            <Button type="primary" icon={<DownloadOutlined />}>
-              Export
-            </Button>
-          }
-        >
-          <Table
-            columns={saleReturnColumns}
-            dataSource={saleReturnData}
-            pagination={false}
-          />
-        </Card>
-
-        {/* 🔹 IJ Return Table */}
-        <Card
-          title="IJ Return"
-          style={{ marginTop: 16 }}
-          extra={
-            <Button type="primary" icon={<DownloadOutlined />}>
-              Export
-            </Button>
-          }
-        >
-          <Table
-            columns={ijReturnColumns}
-            dataSource={ijReturnData}
-            pagination={false}
-          />
-        </Card>
-      </Content>
-    </Layout>
+          {/* 🔹 IJ Return Table */}
+          <Card
+            title="IJ Return"
+            style={{ marginTop: 16 }}
+            extra={
+              <Button type="primary" icon={<DownloadOutlined />}>
+                Export
+              </Button>
+            }
+          >
+            <Table
+              columns={ijReturnColumns}
+              dataSource={ijReturnData}
+              pagination={false}
+            />
+          </Card>
+        </Content>
+      </Layout>
+    </ConfigProvider>
   );
 };
 

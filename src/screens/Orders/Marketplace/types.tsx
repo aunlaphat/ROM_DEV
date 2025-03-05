@@ -13,7 +13,15 @@ export interface OrderData {
   srNo: string | null;
   isCNCreated: boolean;
   isEdited: boolean;
-  // ...other fields
+  head: {
+    orderNo: string;
+    soNo: string;
+    srNo: string | null;
+    salesStatus: string;
+    mkpStatus: string;
+    locationTo: string;
+  };
+  lines: OrderLineItem[];
 }
 
 export interface OrderLineItem {
