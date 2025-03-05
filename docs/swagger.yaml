@@ -1021,6 +1021,41 @@ paths:
       summary: Create a new return order
       tags:
       - Return Order MKP
+  /order/generate-sr/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Calls AX API to generate a new SrNo for the order
+      operationId: generate-sr-no-from-ax
+      parameters:
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Generate SrNo from AX system
+      tags:
+      - Return Order MKP
   /order/mark-edited/{orderNo}:
     patch:
       consumes:
