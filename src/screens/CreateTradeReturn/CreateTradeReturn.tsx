@@ -9,7 +9,7 @@ import axios from "axios";
 import apiClient from "../../utils/axios/axiosInstance"; // นำเข้า axios instance
 
 const { Option } = Select;
-// แก้
+
 interface Address {
   provicesTH: string;
   provinceCode: number;
@@ -30,7 +30,7 @@ interface Customer {
 
 interface DataItem {
   key: number;
-  SKU: string; // หรือประเภทอื่น ๆ ที่คุณต้องการ
+  SKU: string; 
   Name: string;
   QTY: number;
 }
@@ -42,39 +42,21 @@ interface Product {
   size: string;
 }
 
-// // สร้าง options สำหรับ SKU
-// const skuOptions = SKUName.map((item) => ({
-//   value: item.SKU, // SKU เป็นค่า value
-//   label: item.SKU, // SKU เป็น label เพื่อแสดงใน dropdown
-// }));
-
-// // สร้าง options สำหรับ SKU Name
-// const nameOptions = SKUName.map((item) => ({
-//   value: item.Name, // Name เป็นค่า value
-//   label: item.Name, // Name เป็น label เพื่อแสดงใน dropdown
-// }));
-
 const CreateTradeReturn = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [invoiceAddress, setInvoiceAddress] = useState("");
   const [open, setOpen] = useState(false);
-  const [form] = Form.useForm();
+  const [form] = Form.useForm(); // หลัก
   const [formValid, setFormValid] = useState(false);
-  const [formaddress] = Form.useForm();
+  const [formaddress] = Form.useForm(); // ใช้ใน modal
   const [dataSource, setDataSource] = useState<DataItem[]>([]);
   const [isInvoiceEnabled, setIsInvoiceEnabled] = useState(false);
-
-  // const [province, setProvince] = useState<string | undefined>(undefined);
-  // const [district, setDistrict] = useState<string | undefined>(undefined);
-  // const [subDistrict, setSubDistrict] = useState<string | undefined>(undefined);
-  // const [postalCode, setPostalCode] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
 
   const [provinces, setProvinces] = useState<Address[]>([]);
   const [districts, setDistricts] = useState<Address[]>([]);
   const [subDistricts, setSubDistricts] = useState<Address[]>([]);
   const [postalCode, setPostalCode] = useState<any[]>([]); 
-  const [selectedPostalCode, setSelectedPostalCode] = useState<string | undefined>(undefined);
-
   const [province, setProvince] = useState<string | undefined>(undefined);
   const [district, setDistrict] = useState<string | undefined>(undefined);
   const [subDistrict, setSubDistrict] = useState<string | undefined>(undefined);
@@ -82,39 +64,24 @@ const CreateTradeReturn = () => {
   const [selectedDistrict, setSelectedDistrict] = useState<string>(""); 
   const [selectedSubDistrict, setSelectedSubDistrict] = useState<string>(""); 
 
-  const [loading, setLoading] = useState(false);
-
   const [customerAccounts, setCustomerAccounts] = useState<Customer[]>([]); // เก็บข้อมูล customer accounts
   const [selectedAccount, setSelectedAccount] = useState<Customer | null>(null); // เก็บข้อมูล customer ที่เลือก
   const [invoiceNames, setInvoiceNames] = useState<any[]>([]); // เก็บข้อมูล invoice names
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null); // เก็บข้อมูล invoice ที่เลือก
-  const [customerPage, setCustomerPage] = useState(1); // Pagination สำหรับ customer accounts
-  const [invoicePage, setInvoicePage] = useState(1); // Pagination สำหรับ invoice names
-
-  const limit = 5; // จำนวนข้อมูลในแต่ละหน้า
 
   const [skuOptions, setSkuOptions] = useState<Product[]>([]); // To store SKU options
   const [nameOptions, setNameOptions] = useState<Product[]>([]); // To store Name Alias options
   const [selectedSKU, setSelectedSKU] = useState<string | undefined>(undefined);
   const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
-  const [price, setPrice] = useState<number | null>(null); // Allow null
-  const [qty, setQty] = useState<number | null>(null); // Allow null
-
-  
+  const [price, setPrice] = useState<number | null>(null); 
+  const [qty, setQty] = useState<number | null>(null); 
 
   /*** Customer&Invoice ***/
-
-  // ดึงข้อมูล customer account จาก API
   useEffect(() => {
     const fetchCustomerAccounts = async () => {
       setLoading(true);
       try {
-        const response = await apiClient.get("/api/constants/get-customer-id", {
-          params: {
-            limit,
-            offset: (customerPage - 1) * limit,
-          },
-        });
+        const response = await apiClient.get("/api/constants/get-customer-id");
         setCustomerAccounts(response.data.data); // เก็บข้อมูล customer accounts
       } catch (error) {
         notification.error({
@@ -128,11 +95,11 @@ const CreateTradeReturn = () => {
     };
 
     fetchCustomerAccounts();
-  }, [customerPage]); // เรียก API เมื่อ customerPage เปลี่ยนแปลง
+  }, []); 
 
   // หลังเลือก Customer Account
   const handleAccountChange = async (value: string) => {
-    try { // Reset the invoice when changing the customer
+    try { // Reset invoice when changing the customer
       setSelectedAccount(null);
       setSelectedInvoice(null); 
       form.resetFields(["Invoice_name"]);
@@ -140,41 +107,32 @@ const CreateTradeReturn = () => {
       const customerResponse = await apiClient.get(
         `/api/constants/get-customer-info?customerID=${value}`,
       );
-      const customerData = customerResponse.data.data[0]; // show first item
 
-      if (customerData) {
-        setSelectedAccount(customerData); 
+      const customerData = customerResponse.data.data;
 
-        // Fetch the invoices after selected customer
-        const invoiceResponse = await apiClient.get(
-          `/api/constants/get-invoice-names?customerID=${value}`,
-        );
-        const invoiceData = invoiceResponse.data.data; 
-
-        if (invoiceData && invoiceData.length > 0) {
-          setInvoiceNames(invoiceData); // Set available invoice names
-          form.setFieldsValue({
-            Customer_name: customerData.customerName,
-            Address: customerData.address,
-            Tax: customerData.taxID,
-            Invoice_name: invoiceData[0].customerName, // Set the first available invoice name (or leave empty if needed)
-          });
-        } else {
-          notification.warning({
-            message: "Data Not Found",
-            description: "No invoice data found for this Customer Account",
-          });
-          form.setFieldsValue({
-            Customer_name: customerData.customerName,
-            Address: customerData.address,
-            Tax: customerData.taxID,
-            Invoice_name: "", // Set to empty if no invoices found
-          });
-        }
+      if (customerData && customerData.length > 0) {
+        const firstCustomer = customerData[0];
+        setSelectedAccount(firstCustomer);
+  
+        // Set available invoice names
+        setInvoiceNames(customerData);
+  
+        form.setFieldsValue({
+          Customer_name: firstCustomer.customerName,
+          Address: firstCustomer.address,
+          Tax: firstCustomer.taxID,
+          Invoice_name: firstCustomer.customerName, // Set the first available invoice name (or leave empty if needed)
+        });
       } else {
         notification.warning({
           message: "Data Not Found",
           description: "No invoice data found for this Customer Account",
+        });
+        form.setFieldsValue({
+          Customer_name: "",
+          Address: "",
+          Tax: "",
+          Invoice_name: "", 
         });
       }
     } catch (error) {
@@ -185,28 +143,21 @@ const CreateTradeReturn = () => {
     }
   };
 
-    // ใช้ debounce ในการค้นหาเมื่อเริ่มพิมพ์ในช่องค้นหา
   const debouncedSearch = debounce(async (value: string) => {
-    if (!value) {
-      setInvoiceNames([]); // reset value
-      return;
-    }
-
-    setLoading(true); // ตั้งค่าเพื่อแสดงว่าข้อมูลกำลังโหลดอยู่
-
+    setLoading(true); 
     try {
       const response = await apiClient.get(
-        "/api/constants/search-invoice-names",  // ค้นหาชื่อลูกค้าของใบสั่งซื้อนั้น
+        "/api/constants/search-invoice-names", 
         {
           params: {
             customerID: selectedAccount?.customerID, // ใช้ customerID ที่เลือก
             keyword: value, // ใช้ keyword ที่ค้นหา
             offset: 0,
-            limit: 10, // กำหนด limit ในการค้นหา
+            limit: 50, 
           },
         },
       );
-      setInvoiceNames(response.data.data); // ตั้งค่า invoiceNames ตามข้อมูลที่ได้จาก API
+      setInvoiceNames(response.data.data); 
     } catch (error) {
       console.error("Error fetching invoice names:", error);
       notification.error({
@@ -219,10 +170,9 @@ const CreateTradeReturn = () => {
   }, 1000); // ตั้งเวลา debounce การ search เป็น 1000ms (=1 วินาที)
 
   const handleInvoiceSearch = (value: string) => {
-    debouncedSearch(value); // เรียกใช้ฟังก์ชันค้นหาเมื่อพิมพ์
+    debouncedSearch(value);
   };
 
-  // ฟังก์ชันสำหรับการเลือก invoice
   const handleInvoiceChange = async (value: string) => {
     const invoiceData = value.split("+"); // ใช้ + แยกข้อมูล
     const customerName = invoiceData[0].trim(); 
@@ -260,7 +210,6 @@ const CreateTradeReturn = () => {
   };
 
   /*** Address ***/
-  // แก้
   useEffect(() => {
     const fetchProvinces = async () => {
       setLoading(true);
@@ -273,7 +222,6 @@ const CreateTradeReturn = () => {
         setLoading(false);
       }
     };
-    // รีเซ็ตค่าในฟอร์ม
     fetchProvinces();
   }, []);
 
@@ -294,7 +242,6 @@ const CreateTradeReturn = () => {
     } else {
       setDistricts([]);
     } 
- // รีเซ็ตค่าในฟอร์ม
   }, [province]);
 
   useEffect(() => {
@@ -314,7 +261,6 @@ const CreateTradeReturn = () => {
     } else {
       setSubDistricts([]);
     }
-    // รีเซ็ตค่าในฟอร์ม
   }, [district]);
 
   useEffect(() => {
@@ -324,6 +270,10 @@ const CreateTradeReturn = () => {
         try {
           const response = await apiClient.get(`/api/constants/get-postal-code?subdistrictCode=${subDistrict}`);
           setPostalCode(response.data.data);
+          formaddress.setFieldsValue({
+            PostalCode: response.data.data.length > 0 ? response.data.data[0].zipCode : "",
+          });
+          console.log("Fetched Postal Codes: ", response.data.data); // ตรวจสอบข้อมูลที่ได้รับ
         } catch (error) {
           console.error("Failed to fetch postal code", error);
         } finally {
@@ -333,104 +283,57 @@ const CreateTradeReturn = () => {
       fetchPostalCode();
     } else {
       setPostalCode([]);
+      formaddress.setFieldsValue({
+        PostalCode: "",
+      });
     }
-  }, [subDistrict]);
+  }, [subDistrict]); 
 
   const handleProvinceChange = (value: string) => {
     if (!value) return; // ป้องกันค่า undefined
     setProvince(value);
-    setSelectedProvince(value); // เมื่อเลือกแขวง จะอัปเดตค่าใน selectedSubDistrict
-    formaddress.resetFields(["district", "SubDistrict", "PostalCode"]); // รีเซ็ตค่าในฟอร์ม
+    setSelectedProvince(value); 
+
+    formaddress.resetFields(["District", "SubDistrict", "PostalCode"]); // รีเซ็ตค่าในฟอร์ม
+    setDistrict(undefined); 
+    setSubDistrict(undefined);
+    setPostalCode([]); 
+    setSelectedDistrict(""); 
+    setSelectedSubDistrict(""); 
   };
-
-//   const handleProvinceSearch = (value: string) => {
-//     // กรองเมื่อมีการพิมพ์คำค้นหา
-//     if (value) {
-//       const filteredProvinces = provinces.filter((item) =>
-//         item.provicesTH.includes(value)
-//       );
-//       setProvinces(filteredProvinces); // อัพเดต state ด้วยข้อมูลที่กรองแล้ว
-//     } else {
-//       // ถ้าค่าค้นหาว่าง ให้แสดงข้อมูลทั้งหมด
-//       setProvinces(provinces);
-//     }
-//     formaddress.resetFields(["province","district", "SubDistrict", "PostalCode"]);
-//   };
-
-// const handleDistrictSearch = (value: string) => {
-//   if (value) {
-//   const filteredDistricts = districts.filter((item) =>
-//     item.districtTH.includes(value)
-//   );
-//   setDistricts(filteredDistricts);
-//  } else {
-//   // ถ้าค่าค้นหาว่าง ให้แสดงข้อมูลทั้งหมด
-//   setDistricts(districts);
-// }
-// };
-
-// const handleSubDistrictSearch = (value: string) => {
-//   if (value) {
-//   const filteredSubDistricts = subDistricts.filter((item) =>
-//     item.districtTH.includes(value)
-//   );
-//   setSubDistricts(filteredSubDistricts);
-//  } else {
-//   // ถ้าค่าค้นหาว่าง ให้แสดงข้อมูลทั้งหมด
-//   setSubDistricts(subDistricts);
-// }
-// };
   
   const handleDistrictChange = (value: string) => {
     if (!value) return; // ป้องกันค่า undefined
     setDistrict(value);
-    setSelectedDistrict(value); // เมื่อเลือกแขวง จะอัปเดตค่าใน selectedSubDistrict
+    setSelectedDistrict(value); 
+
     formaddress.resetFields(["SubDistrict", "PostalCode"]); // รีเซ็ตค่าในฟอร์ม
+    setSubDistrict(undefined); 
+    setPostalCode([]); 
+    setSelectedSubDistrict(""); 
   };
 
   const handleSubDistrictChange = (value: string) => {
     if (!value) return; // ป้องกันค่า undefined
     setSubDistrict(value);
-    setSelectedSubDistrict(value); // เมื่อเลือกแขวง จะอัปเดตค่าใน selectedSubDistrict
-    formaddress.resetFields(["PostalCode"]); // รีเซ็ตค่าในฟอร์ม
-    };
-
-    // ฟังก์ชันสำหรับจัดการการเปลี่ยนแปลงค่ารหัสไปรษณีย์
-  const handlePostalCodeChange = (value: string) => {
-    setSelectedPostalCode(value);  // เปลี่ยนค่ารหัสไปรษณีย์ที่เลือก
+    setSelectedSubDistrict(value); 
   };
-  // // Automatically set postal code when sub-district changes
-  // useEffect(() => {
-  //   if (subDistrict) {
-  //     const selected = data.find((item) => item.subDistrict === subDistrict);
-  //     setPostalCode(selected?.postalCode || undefined);
-  //   }
-  // }, [subDistrict]);
-
-  // const provinces = Array.from(new Set(data.map((item) => item.province)));
-  // const districts = Array.from(
-  //   new Set(
-  //     data
-  //       .filter((item) => item.province === province)
-  //       .map((item) => item.district),
-  //   ),
-  // );
-  // const subDistricts = Array.from(
-  //   new Set(
-  //     data
-  //       .filter((item) => item.district === district)
-  //       .map((item) => item.subDistrict),
-  //   ),
-  // );
 
   const handleOpen = () => {
     setOpen(true);
   };
   const handleClose = () => {
     setOpen(false);
-    // form.resetFields();  // รีเซ็ตค่าทั้งหมดในฟอร์ม
-    formaddress.resetFields(["AddressNew","province","district", "SubDistrict", "PostalCode"]);
+
     // ให้ฟอร์มรีเซ็ตเฉพาะในกรณีที่ไม่ได้กดบันทึก
+    formaddress.resetFields(["HouseNo","Province","District", "SubDistrict", "PostalCode"]);
+    setProvince(undefined); 
+    setDistrict(undefined); 
+    setSubDistrict(undefined); 
+    setPostalCode([]); 
+    setSelectedProvince(""); 
+    setSelectedDistrict(""); 
+    setSelectedSubDistrict(""); 
   };
 
   const handleSelectChange = (value: any) => {
@@ -440,18 +343,9 @@ const CreateTradeReturn = () => {
 
   /*** SKU&NameAlias ***/
 
-  // การใช้ debounce ค้นหา Product (SKU หรือ NAMEALIAS)
+  // ค้นหา Product (SKU หรือ NAMEALIAS)
   const debouncedSearchSKU = debounce(async (value: string, searchType: string) => {
-    if (!value) {
-      setSkuOptions([]);
-      setNameOptions([]);
-      setSelectedSKU("");
-      setSelectedName("");
-      return;
-    }
-
     setLoading(true);
-
     try {
       const response = await apiClient.get("/api/constants/search-product", {
         params: {
@@ -531,7 +425,6 @@ const CreateTradeReturn = () => {
     }
   };
 
-  // เมื่อเลือก SKU
   const handleSKUChange = (value: string) => {
     const selected = skuOptions.find((option) => option.sku === value);
     
@@ -571,8 +464,11 @@ const CreateTradeReturn = () => {
     // ส่งข้อมูลและรีเซ็ตฟอร์มและตาราง
     console.log("Table Data:", dataSource);
 
-    // รีเซ็ตฟอร์มและตาราง
-    form.resetFields();
+    form.resetFields();  // รีเซ็ตฟอร์มและตาราง
+    formaddress.resetFields(); // รีเซ็ตฟอร์ม address
+    setSelectedAccount(null);
+    setSelectedInvoice(null);
+    setInvoiceNames([]);
     setDataSource([]); // หรือปรับเป็นค่าเริ่มต้นที่คุณต้องการได้
 
     notification.success({
@@ -581,7 +477,7 @@ const CreateTradeReturn = () => {
     });
   };
 
-  //  handle value  Invoice_Name ของ New Invoice Address
+  // handle value Invoice_Name ของ New Invoice Address
   useEffect(() => {
     if (formaddress && (selectedInvoice || selectedAccount)) {
       formaddress.setFieldsValue({
@@ -590,28 +486,33 @@ const CreateTradeReturn = () => {
     }
   }, [selectedInvoice, selectedAccount]);
 
+  // save new invoice address
   const handleSave = async () => {
     try {
       const values = await formaddress.validateFields();
       console.log("Form Values:", values);
 
       const ProvicesTH = provinces.find(
-        (item) => item.provinceCode.toString() === values.province
+        (item) => item.provinceCode.toString() === values.Province
       )?.provicesTH;
 
       const DistrictTH = districts.find(
-        (item) => item.districtCode.toString() === values.district
+        (item) => item.districtCode.toString() === values.District
       )?.districtTH;
 
       const SubdistrictTH = subDistricts.find(
         (item) => item.subdistrictCode.toString() === values.SubDistrict
       )?.subdistrictTH;
 
+      const PostalCode = postalCode.find(
+        (item) => item.zipCode === values.PostalCode
+      )?.zipCode;
+
       // Update form values in the main form
       form.setFieldsValue({
         Invoice_Name: values.Invoice_Name, 
         Address:
-        values.AddressNew +
+        values.HouseNo +
         " " +
         ProvicesTH +
         " " +
@@ -619,12 +520,11 @@ const CreateTradeReturn = () => {
         " " +
         SubdistrictTH +
         " " +
-        postalCode.find((item) => item.zipCode === values.PostalCode)?.zipCode,
+        PostalCode,
     
       });
 
       setIsSaving(true);
-      // setSelectedAccount(values); // Save the address data if needed
       setIsSaving(false);
 
       notification.success({
@@ -632,7 +532,6 @@ const CreateTradeReturn = () => {
         description: "Update Invoice Address Success!",
       });
 
-      // formaddress.resetFields(); // Reset the fields in the modal
       handleClose(); // Close modal after save
     } catch (error) {
       console.error("Failed to save:", error);
@@ -666,6 +565,7 @@ const CreateTradeReturn = () => {
       ),
     },
   ];
+
   const handleDownloadTemplate = () => {
     const templateColumns = columns.filter((col) => col.key !== "Action"); // กรองออก action column
     const ws = XLSX.utils.json_to_sheet([]);
@@ -743,6 +643,10 @@ const CreateTradeReturn = () => {
 
         // ล้างฟิลด์ในฟอร์มหลังจากเพิ่มข้อมูลเสร็จ
         form.resetFields(["SKU", "SKU_Name", "QTY", "Price"]);
+        setSkuOptions([]);
+        setNameOptions([]);
+        setSelectedSKU("");
+        setSelectedName("");
       })
       .catch((info) => {
         console.log("Validate Failed:", info);
@@ -909,7 +813,7 @@ const CreateTradeReturn = () => {
                     rules={[{ required: true }]}
                   >
                     <Input
-                      value={selectedAccount?.customerName || ""}
+                      value={selectedAccount?.customerName || "-"}
                       disabled
                     />
                   </Form.Item>
@@ -924,11 +828,8 @@ const CreateTradeReturn = () => {
                   >
                     <Select
                       showSearch
-                      placeholder={
-                        selectedAccount
-                          ? `${selectedAccount.customerName}`
-                          : "Select Invoice Name"
-                      } // Dynamically set placeholder
+                      value={selectedAccount?.customerName || "-"}
+                      placeholder="Select Invoice Name"
                       onSearch={handleInvoiceSearch} // เรียกฟังก์ชันค้นหาตอนพิมพ์
                       onChange={handleInvoiceChange}
                       loading={loading}
@@ -948,7 +849,7 @@ const CreateTradeReturn = () => {
                 </Col>
                 <Col span={8}>
                   <Form.Item label="Tax ID" name="Tax">
-                    <Input value={selectedAccount?.taxID} disabled />
+                    <Input value={selectedAccount?.taxID || "-"} disabled />
                   </Form.Item>
                 </Col>
               </Row>
@@ -965,7 +866,7 @@ const CreateTradeReturn = () => {
                     name="Address"
                     // rules={[{ required: true }]}
                   >
-                    <Input value={selectedAccount?.address} disabled />
+                    <Input value={selectedAccount?.address || "-"} disabled />
                   </Form.Item>
                 </Col>
                 <Col span={6}>
@@ -997,7 +898,7 @@ const CreateTradeReturn = () => {
                     <Select
                       showSearch
                       style={{ width: "100%", height: "40px" }}
-                      placeholder="Search to Select"
+                      placeholder="Search by SKU"
                       value={selectedSKU} // ใช้ค่าที่เลือก
                       onSearch={handleSearchSKU} // ใช้สำหรับค้นหา SKU
                       onChange={handleSKUChange} // เมื่อเลือก SKU
@@ -1030,7 +931,7 @@ const CreateTradeReturn = () => {
                     <Select
                       showSearch
                       style={{ width: "100%", height: "40px" }}
-                      placeholder="Search by Name Alias"
+                      placeholder="Search by Product Name"
                       value={selectedName} // ใช้ค่าที่เลือก
                       onSearch={handleSearchNameAlias} // ใช้สำหรับค้นหา Name Alias
                       onChange={handleNameChange} // เมื่อเลือก Name Alias
@@ -1153,7 +1054,7 @@ const CreateTradeReturn = () => {
                   >
                   <Input
                     style={{ width: "400px", height: "40px" }}
-                    value={selectedInvoice?.customerName || selectedAccount?.customerName || ""}
+                    value={form.getFieldValue("Invoice_Name")} // ใช้ค่าจาก form
                     disabled
                   />
                   </Form.Item>
@@ -1161,11 +1062,11 @@ const CreateTradeReturn = () => {
 
                 <Col>
                   <Form.Item
-                    id="addressnew"
+                    id="้houseno"
                     label={
                       <span style={{ color: "#657589" }}>บ้านเลขที่:</span>
                     }
-                    name="AddressNew"
+                    name="HouseNo"
                     rules={[{ required: true, message: "Please Input House no." }]}
                   >
                     <Input
@@ -1180,7 +1081,7 @@ const CreateTradeReturn = () => {
                   <Form.Item
                     id="SelectProvince"
                     label={<span style={{ color: "#657589" }}>จังหวัด:</span>}
-                    name="province"
+                    name="Province"
                     rules={[{ required: true, message: "Please Select Province" }]}
                   >
                   <Select
@@ -1209,7 +1110,7 @@ const CreateTradeReturn = () => {
                   <Form.Item
                     id="SelectDistrict"
                     label={<span style={{ color: "#657589" }}>เขต:</span>}
-                    name="district"
+                    name="District"
                     rules={[{ required: true, message: "Please Select District" }]}
                   >
                     <Select
@@ -1242,11 +1143,9 @@ const CreateTradeReturn = () => {
                     name="SubDistrict"
                     rules={[{ required: true, message: "Please Select Sub-district" }]}
                   >
-                      
-               
                       <Select
                           showSearch
-                          placeholder="Select SubDistrict"
+                          placeholder="Select Sub-District"
                           value={selectedSubDistrict}
                           onChange={handleSubDistrictChange}
                           loading={loading}
@@ -1262,35 +1161,24 @@ const CreateTradeReturn = () => {
                               return option.label.toLowerCase().includes(input.toLowerCase());
                           }}
                       />
-
                   </Form.Item>
                 </Col>
 
                 {/* Postal Code */}
                 <Col>
-                <Form.Item
+                  <Form.Item
                     id="PostalCode"
                     label={
                       <span style={{ color: "#657589" }}>รหัสไปรษณีย์:</span>
                     }
                     name="PostalCode"
-                    rules={[
-                      { required: true, message: "Please Select Postcode" },
-                    ]}
+                    rules={[{ required: true, message: "Please Select Postcode" }]}
                   >
-                    <Select
-                      value={selectedPostalCode} 
-                      onChange={handlePostalCodeChange}  // เมื่อค่าของ Select เปลี่ยนแปลง
-                      placeholder="Postal Code"
-                      loading={loading}
-                      style={{ width: "400px", height: "40px" }}
-                    >
-                      {postalCode.map((item) => (
-                        <Option key={item.zipCode} value={item.zipCode}>
-                          {item.zipCode}
-                        </Option>
-                      ))}
-                    </Select>
+                  <Input
+                    style={{ width: "400px", height: "40px" }}
+                    value={postalCode.length > 0 ? postalCode[0].zipCode : ""}
+                    disabled
+                  />
                   </Form.Item>
                 </Col>
 
