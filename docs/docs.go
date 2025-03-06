@@ -3633,18 +3633,18 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 2
                 },
-                "createBy": {
+                "createDate": {
                     "type": "string"
                 },
-                "createDate": {
+                "customerId": {
+                    "type": "string"
+                },
+                "logistic": {
                     "type": "string"
                 },
                 "orderNo": {
                     "type": "string",
                     "example": "ORD0001"
-                },
-                "reason": {
-                    "type": "string"
                 },
                 "soNo": {
                     "type": "string",
@@ -3661,6 +3661,9 @@ const docTemplate = `{
                 "trackingNo": {
                     "type": "string",
                     "example": "12345678TH"
+                },
+                "warehouseId": {
+                    "type": "integer"
                 }
             }
         },

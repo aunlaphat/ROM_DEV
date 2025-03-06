@@ -588,14 +588,14 @@ definitions:
       channelId:
         example: 2
         type: integer
-      createBy:
-        type: string
       createDate:
+        type: string
+      customerId:
+        type: string
+      logistic:
         type: string
       orderNo:
         example: ORD0001
-        type: string
-      reason:
         type: string
       soNo:
         example: SO0001
@@ -609,6 +609,8 @@ definitions:
       trackingNo:
         example: 12345678TH
         type: string
+      warehouseId:
+        type: integer
     type: object
   response.ImageResponse:
     properties:

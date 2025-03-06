@@ -49,7 +49,7 @@ func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.Retu
 	orderNos := make([]string, 0, len(orders))
 	for i := range orders {
 		orderNos = append(orderNos, orders[i].OrderNo)
-		orderMap[orders[i].OrderNo] = &orders[i] // ใช้ pointer จาก slice เดิม
+		orderMap[orders[i].OrderNo] = &orders[i]
 	}
 
 	// *️⃣ Batch Processing + sqlx.In เพื่อดึงข้อมูลเป็นกลุ่ม
@@ -141,7 +141,7 @@ func (repo repositoryDB) GetAllReturnOrderLines(ctx context.Context) ([]response
 func (repo repositoryDB) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error) {
 	var lines []response.ReturnOrderLine
 
-	query := `  SELECT OrderNo, SKU, QTY, ReturnQTY, ActualQTY, Price, TrackingNo, 
+	query := `  SELECT OrderNo, SKU, ItemName, QTY, ReturnQTY, ActualQTY, Price, TrackingNo, 
 					   CreateBy, CreateDate, AlterSKU, UpdateBy, UpdateDate
 				FROM ReturnOrderLine
 				WHERE OrderNo = :OrderNo
@@ -167,13 +167,18 @@ func (repo repositoryDB) GetReturnOrderLineByOrderNo(ctx context.Context, orderN
 func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error) {
 	var orders []response.DraftTradeDetail
 
-	query := `  SELECT OrderNo, SoNo, SrNo, TrackingNo, ChannelID, Reason, StatusCheckID, CreateBy, CreateDate
-				FROM ReturnOrder
-				WHERE StatusCheckID = :statusCheckID
-				ORDER BY CreateDate ASC
+	query := ` 	SELECT 
+					r.OrderNo, r.SoNo, r.CustomerID, r.SrNo, r.TrackingNo, 
+					r.Logistic, c.ChannelName, r.CreateDate, 
+					w.WarehouseName, r.StatusCheckID
+				FROM ReturnOrder r
+				LEFT JOIN Warehouse w ON r.WarehouseID = w.WarehouseID
+				LEFT JOIN Channel c ON r.ChannelID = c.ChannelID
+				WHERE r.StatusCheckID = :StatusCheckID 
+				ORDER BY r.CreateDate ASC
 			 `
 	params := map[string]interface{}{
-		"statusCheckID": statusCheckID,
+		"StatusCheckID": statusCheckID,
 	}
 
 	query, args, err := sqlx.Named(query, params)
@@ -193,13 +198,17 @@ func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusChec
 func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error) {
 	var orders []response.DraftTradeDetail
 
-	query := `  SELECT 
-					OrderNo, SoNo, SrNo, TrackingNo, ChannelID, Reason, StatusCheckID, CreateBy, CreateDate
-				FROM ReturnOrder
-				WHERE StatusCheckID = :StatusCheckID 
-				AND CAST(CreateDate AS DATE) >= :StartDate
-				AND CAST(CreateDate AS DATE) <= :EndDate
-				ORDER BY CreateDate ASC
+	query := ` 	SELECT 
+					r.OrderNo, r.SoNo, r.CustomerID, r.SrNo, r.TrackingNo, 
+					r.Logistic, c.ChannelName, r.CreateDate, 
+					w.WarehouseName, r.StatusCheckID
+				FROM ReturnOrder r
+				LEFT JOIN Warehouse w ON r.WarehouseID = w.WarehouseID
+				LEFT JOIN Channel c ON r.ChannelID = c.ChannelID
+				WHERE r.StatusCheckID = :StatusCheckID 
+				AND CAST(r.CreateDate AS DATE) >= :StartDate
+				AND CAST(r.CreateDate AS DATE) <= :EndDate
+				ORDER BY r.CreateDate ASC
 			 `
 	params := map[string]interface{}{
 		"StatusCheckID": statusCheckID,
@@ -296,7 +305,7 @@ func (repo repositoryDB) GetCreateReturnOrder(ctx context.Context, orderNo strin
 	err := repo.db.GetContext(ctx, &order, queryHead, sql.Named("OrderNo", orderNo))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) { // เมื่อไม่มีแถวที่ตรงกับเงื่อนไขในคิวรี่
-			return nil, nil 
+			return nil, nil
 		}
 		return nil, fmt.Errorf("database error querying ReturnOrder by OrderNo %s: %w", orderNo, err)
 	}
@@ -325,7 +334,7 @@ func (repo repositoryDB) GetUpdateReturnOrder(ctx context.Context, orderNo strin
 	err := repo.db.GetContext(ctx, &order, query, sql.Named("OrderNo", orderNo))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) { // เมื่อไม่มีแถวที่ตรงกับเงื่อนไขในคิวรี่
-			return nil, nil 
+			return nil, nil
 		}
 		return nil, fmt.Errorf("database error querying ReturnOrder by OrderNo %s: %w", orderNo, err)
 	}

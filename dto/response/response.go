@@ -11,13 +11,13 @@ type SearchOrderResponse struct {
 	Items       []SearchOrderItem `json:"items"`
 }
 
-
 type SearchOrderItem struct {
 	SKU      string  `db:"SKU" json:"sku"`
 	ItemName string  `db:"ItemName" json:"itemName"`
 	QTY      int     `db:"QTY" json:"qty"`
 	Price    float64 `db:"Price" json:"price"`
 }
+
 // ในฟิลมีปรับ type ข้อมูลเพิ่ม //11/02
 type BeforeReturnOrderResponse struct {
 	OrderNo        string                  `json:"orderNo" db:"OrderNo"`
@@ -59,7 +59,6 @@ type BeforeReturnOrderItem struct {
 	AlterSKU   *string   `json:"alterSKU,omitempty" db:"AlterSKU"`
 }
 
-
 /********** Return Order ***************/
 
 type ReturnOrder struct {
@@ -88,10 +87,11 @@ type ReturnOrder struct {
 
 type ReturnOrderLine struct {
 	OrderNo    string     `json:"orderNo" db:"OrderNo"`
-	TrackingNo *string     `json:"trackingNo" db:"TrackingNo"`
+	TrackingNo *string    `json:"trackingNo" db:"TrackingNo"`
 	SKU        string     `json:"sku" db:"SKU"`
+	ItemName   *string    `json:"itemName" db:"ItemName"`
 	ReturnQTY  int        `json:"returnQTY" db:"ReturnQTY"`
-	ActualQTY  *int        `json:"actualQTY" db:"ActualQTY"`
+	ActualQTY  *int       `json:"actualQTY" db:"ActualQTY"`
 	QTY        int        `json:"qty" db:"QTY"`
 	Price      float64    `json:"price" db:"Price"`
 	CreateBy   string     `json:"createBy" db:"CreateBy"`
@@ -147,13 +147,18 @@ type DeleteReturnOrder struct {
 type DraftTradeDetail struct {
 	OrderNo       string    `json:"orderNo" db:"OrderNo" example:"ORD0001"`
 	SoNo          string    `json:"soNo" db:"SoNo" example:"SO0001"`
+	CustomerID    *string   `json:"customerId" db:"CustomerID"`
 	SrNo          *string   `json:"srNo" db:"SrNo" example:"SR0001"`
 	TrackingNo    *string   `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	Logistic      *string   `json:"logistic" db:"Logistic"`
 	ChannelID     *int      `json:"channelId" db:"ChannelID" example:"2"`
-	Reason        *string   `json:"reason" db:"Reason"`
-	StatusCheckID int       `json:"statusCheckId" db:"StatusCheckID" example:"1"`
-	CreateBy      string    `json:"createBy" db:"CreateBy"`
+	ChannelName   *string   `json:"channelName" db:"ChannelName"`
 	CreateDate    time.Time `json:"createDate" db:"CreateDate"`
+	WarehouseID   *int      `json:"warehouseId" db:"WarehouseID"`
+	WarehouseName *string   `json:"warehouseName" db:"WarehouseName"`
+	StatusCheckID int       `json:"statusCheckId" db:"StatusCheckID" example:"1"`
+	// Reason        *string   `json:"reason" db:"Reason"`
+	// CreateBy      string    `json:"createBy" db:"CreateBy"`
 }
 
 /********** OrderHead + Line data Project ***************/
@@ -272,9 +277,9 @@ type ConfirmReturnOrderDetails struct {
 // }
 
 type ImportOrderSummary struct {
-    OrderNo  string `json:"orderNo"`
-    SKU      string `json:"sku"`
-    Photo    string `json:"photo"`
+	OrderNo string `json:"orderNo"`
+	SKU     string `json:"sku"`
+	Photo   string `json:"photo"`
 }
 
 // type BeforeReturnOrderResponse struct {
