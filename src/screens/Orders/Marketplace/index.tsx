@@ -1,15 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { Layout, Button, Form, Row, Col, Input, Alert, Modal, message, Spin, notification } from "antd";
+import { Layout, Button, Form, Row, Col, Input, Alert, Modal, message, Spin, notification, ConfigProvider } from "antd";
 import { LeftOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from "react-router-dom";
-import { searchOrder, createSrNo, confirmReturn, createReturnOrder, setCurrentStep } from '../../../redux/orders/action';
+import { searchOrder, createSrNo, confirmReturn, createReturnOrder, setCurrentStep, generateSR, updateSR, GenerateSRResponse } from '../../../redux/orders/action';
 import { RootState } from "../../../redux/store";
-import { CreateBeforeReturnOrderRequest, generateSrNo, ReturnOrderState } from '../../../redux/orders/api';
+import { CreateBeforeReturnOrderRequest, ReturnOrderState } from '../../../redux/orders/api';
 import ReturnOrderForm from "./components/ReturnOrderForm";
 import { useAuth } from "../../../hooks/useAuth";
 
 const { Content } = Layout;
+
+interface CreateSrResponse {
+  type: string;
+  payload: {
+    orderNo: string;
+    srNo: string;
+  };
+}
 
 const CreateReturnOrderMKP = () => {
   const dispatch = useDispatch();
@@ -143,9 +151,8 @@ const CreateReturnOrderMKP = () => {
         return;
       }
 
-      const createReturnPayload: CreateBeforeReturnOrderRequest & { success: boolean; message: string } = {
+      const createReturnPayload: CreateBeforeReturnOrderRequest & { success: boolean; } = {
         success: true,
-        message: "Return order created successfully",
         orderNo: orderData.head.orderNo,
         soNo: orderData.head.soNo,
         channelID: auth.channelID || 1,
@@ -178,10 +185,6 @@ const CreateReturnOrderMKP = () => {
         onOk: async () => {
           const response = await dispatch(createReturnOrder(createReturnPayload));
           if (response?.payload?.success) {
-            notification.success({
-              message: "สร้างคำสั่งคืนสินค้าสำเร็จ",
-              description: response.payload.message,
-            });
             dispatch(setCurrentStep("sr"));
           }
           setStepLoading(false);
@@ -208,35 +211,20 @@ const CreateReturnOrderMKP = () => {
 
       setStepLoading(true);
       const formValues = form.getFieldsValue();
-
-      // 1. สร้าง SR Number
-      const srNo = await generateSrNo(orderData.head.orderNo);
-
-      // 2. สร้าง payload สำหรับอัพเดต SR
-      const createSrPayload = {
+      
+      // ใช้ action เดียว
+      await dispatch(createSrNo({
         orderNo: orderData.head.orderNo,
         warehouseFrom: formValues.warehouseFrom,
         returnDate: formValues.returnDate.toISOString(),
         trackingNo: formValues.trackingNo,
-        transportType: formValues.transportType,
-        srNo: srNo,
-      };
+        transportType: formValues.transportType
+      }));
 
-      // 3. ส่ง action เพื่ออัพเดต SR
-      const response = await dispatch(createSrNo(createSrPayload));
-      
-      // 4. ตรวจสอบผลลัพธ์
-      if (response?.payload?.srNo) {
-        notification.success({
-          message: "สร้างเลข SR สำเร็จ",
-          description: `SR Number: ${response.payload.srNo}`,
-        });
-        // ไม่ต้องเปลี่ยน step ทันที ให้ผู้ใช้กดปุ่ม Next เอง
-      }
     } catch (error: any) {
       notification.error({
         message: "เกิดข้อผิดพลาด",
-        description: error.message,
+        description: error.message
       });
     } finally {
       setStepLoading(false);
@@ -306,16 +294,28 @@ const CreateReturnOrderMKP = () => {
   };
 
   const updateReturnQty = (sku: string, change: number) => {
-    const currentQty = getReturnQty(sku);
-    const originalQty = Math.abs(
-      orderData?.lines.find((item) => item.sku === sku)?.qty || 0
-    );
-    const newQty = Math.max(0, Math.min(originalQty, currentQty + change));
+    setReturnItems((prev) => {
+      const currentQty = prev[sku] || 0;
+      const originalQty = Math.abs(
+        orderData?.lines.find((item) => item.sku === sku)?.qty || 0
+      );
+      
+      // คำนวณจำนวนใหม่
+      const newQty = Math.max(0, Math.min(originalQty, currentQty + change));
+      
+      // ถ้าจำนวนไม่เปลี่ยนแปลง ไม่ต้องอัพเดท state
+      if (newQty === currentQty) {
+        return prev;
+      }
 
-    setReturnItems((prev) => ({
-      ...prev,
-      [sku]: newQty,
-    }));
+      // log การเปลี่ยนแปลง
+      console.log(`[${sku}] ${currentQty} -> ${newQty} (max: ${originalQty})`);
+
+      return {
+        ...prev,
+        [sku]: newQty,
+      };
+    });
   };
 
   const renderBackButton = () => {
@@ -440,6 +440,17 @@ const CreateReturnOrderMKP = () => {
   };
 
   return (
+    <ConfigProvider>
+      <div
+        style={{
+          marginLeft: "28px",
+          fontSize: "25px",
+          fontWeight: "bold",
+          color: "DodgerBlue",
+        }}
+      >
+        Create Return Order Marketplace
+      </div>
     <ReturnOrderForm
       currentStep={currentStep}
       orderData={orderData}
@@ -463,7 +474,9 @@ const CreateReturnOrderMKP = () => {
       validateStepTransition={validateStepTransition}
       stepLoading={stepLoading}
       isCreateSRDisabled={isCreateSRDisabled} // เพิ่ม prop ใหม่
+      returnOrder={returnOrder} // ส่ง returnOrder ไปยัง ReturnOrderForm
     />
+    </ConfigProvider>
   );
 };
 

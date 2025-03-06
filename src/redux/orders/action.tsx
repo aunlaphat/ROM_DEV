@@ -15,19 +15,36 @@ export const createReturnOrder = (data: CreateBeforeReturnOrderRequest) => {
   };
 };
 
-// 3. สร้าง SR Number (SR)
-export const createSrNo = (payload: CreateSRRequest) => {
-  return {
-    type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_REQ,
-    payload
-  };
-};
+// สร้าง action creator เดียว
+export const createSrNo = (payload: CreateSRRequest) => ({
+  type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_REQ,
+  payload
+});
 
 // ปรับปรุง interface สำหรับ confirmReturn
 export interface ConfirmReturnRequest {
   orderNo: string;
   roleId: number;
   userID: string;
+}
+
+// แยก interfaces สำหรับ SR
+export interface GenerateSRRequest {
+  orderNo: string;
+}
+
+export interface GenerateSRResponse {
+  orderNo: string;
+  srNo: string;
+}
+
+export interface UpdateSRRequest {
+  orderNo: string;
+  srNo: string;
+  warehouseFrom: string;
+  returnDate: string;
+  trackingNo: string;
+  transportType: string;
 }
 
 // ปรับปรุง confirmReturn action
@@ -44,4 +61,18 @@ export const resetReturnOrder = () => ({
 export const setCurrentStep = (step: 'search' | 'create' | 'sr' | 'preview' | 'confirm') => ({
   type: ReturnOrderActionTypes.RETURN_ORDER_SET_STEP,
   payload: step
+});
+
+// แยก actions
+export const generateSR = (payload: GenerateSRRequest): {
+  type: ReturnOrderActionTypes.RETURN_ORDER_GENERATE_SR_REQ;
+  payload: GenerateSRRequest;
+} => ({
+  type: ReturnOrderActionTypes.RETURN_ORDER_GENERATE_SR_REQ,
+  payload
+});
+
+export const updateSR = (payload: UpdateSRRequest) => ({
+  type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_REQ,
+  payload
 });

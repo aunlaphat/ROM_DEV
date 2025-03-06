@@ -19,6 +19,7 @@ import {
 import { calculateReturnStatus } from '../../utils/calculateStatus';
 import { STATUS } from "../../constants/returnOrder";
 import { ReactNode } from "react";
+import { GenerateSRRequest, UpdateSRRequest, GenerateSRResponse } from "./action";
 
 // Request Types
 export interface SearchOrderRequest {
@@ -28,7 +29,6 @@ export interface SearchOrderRequest {
 
 export interface CreateBeforeReturnOrderRequest {
   success: any;
-  message: ReactNode;
   orderNo: string;
   soNo: string;
   channelID: number;
@@ -168,6 +168,7 @@ export interface ReturnOrderState {
       confirmDate?: any;
     };
     lines: {
+      returnQty: number;
       sku: string;
       itemName: string;
       qty: number;
@@ -301,13 +302,18 @@ export function* createBeforeReturnOrder(action: { type: ReturnOrderActionTypes;
 
 // แก้ไข interface เป็น
 export interface CreateSRRequest {
-  srNo: any;
   orderNo: string;
   warehouseFrom: string;
   returnDate: string;
   trackingNo: string;
   transportType: string;
-  // ลบ srNo ออก เพราะควรถูกสร้างที่ backend
+}
+
+export interface CreateSRResponse {
+  srNo: string;
+  orderNo: string;
+  success: boolean;
+  message?: string;
 }
 
 export function* updateSrNo(action: { 
@@ -318,9 +324,12 @@ export function* updateSrNo(action: {
     openLoading();
     logger.perf.start('Generate SR');
     
-    // Generate SR Number
+    // 1. Generate SR Number
     logger.api.request(GENERATESR, { orderNo: action.payload.orderNo });
-    const srResponse = yield call(POST as unknown as ApiFunction, `${GENERATESR}/${action.payload.orderNo}`);
+    const srResponse = yield call(
+      POST as unknown as ApiFunction, 
+      `${GENERATESR}/${action.payload.orderNo}`
+    );
     
     if (!srResponse.data.success) {
       throw new Error('SR Generation failed');
@@ -329,37 +338,50 @@ export function* updateSrNo(action: {
     const srNo = srResponse.data.data;
     logger.api.success(GENERATESR, { srNo });
 
-    // Update SR
-    logger.api.request(UPDATESR, { ...action.payload, srNo });
-    const response = yield call(POST as unknown as ApiFunction, `${UPDATESR}/${action.payload.orderNo}`, { 
-      ...action.payload, 
-      srNo 
-    });
+    // 2. Update SR details
+    const updatePayload = {
+      ...action.payload,
+      srNo
+    };
+
+    logger.api.request(UPDATESR, updatePayload);
+    const response = yield call(
+      POST as unknown as ApiFunction, 
+      `${UPDATESR}/${action.payload.orderNo}`, 
+      updatePayload
+    );
 
     if (!response.data.success) {
       throw new Error(response.data.message);
     }
 
-    logger.api.success(UPDATESR, response.data.data);
+    logger.api.success(UPDATESR, {
+      orderNo: action.payload.orderNo,
+      srNo
+    });
+
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_SUCCESS,
-      payload: response.data.data
+      payload: {
+        orderNo: action.payload.orderNo,
+        srNo
+      }
     });
 
     notification.success({
-      message: 'อัพเดท SR สำเร็จ',
-      description: response.data.message
+      message: 'สร้างและอัพเดท SR สำเร็จ',
+      description: `SR Number: ${srNo}`
     });
 
   } catch (error: any) {
-    logger.error('SR Update', error);
+    logger.error('SR Operation', error);
     yield put({
       type: ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_FAIL,
       payload: error.message
     });
     notification.error({
-      message: 'อัพเดท SR ไม่สำเร็จ',
-      description: error.response?.data?.message || 'กรุณาลองใหม่อีกครั้ง'
+      message: 'ดำเนินการ SR ไม่สำเร็จ',
+      description: error.message
     });
   } finally {
     logger.perf.end('Generate SR');
@@ -519,17 +541,3 @@ export function* markOrderAsEdited(action: {
     closeLoading();
   }
 }
-
-// ฟังก์ชันสำหรับเรียก API เพื่อสร้าง SrNo
-export const generateSrNo = async (orderNo: string): Promise<string> => {
-  try {
-    const response: AxiosResponse<APIResponse<string>> = await POST(`${GENERATESR}/${orderNo}`, {});
-    if (response.data.success) {
-      return response.data.data;
-    } else {
-      throw new Error(response.data.message);
-    }
-  } catch (error) {
-    throw new Error('Failed to generate SrNo');
-  }
-};

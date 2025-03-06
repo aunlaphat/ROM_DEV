@@ -68,30 +68,39 @@ export default function returnOrderReducer(state = initialState, action: any): R
       };
 
     case ReturnOrderActionTypes.RETURN_ORDER_UPDATE_SR_SUCCESS:
+      // กรณีไม่มี returnOrder ให้ return state เดิม
+      if (!state.returnOrder) {
+        return state;
+      }
+
+      const originalItems = state.returnOrder.items;
+
       return {
         ...state,
         loading: false,
         srCreated: true,
-        currentStep: 'preview', // เปลี่ยนเป็น preview หลังสร้าง SR สำเร็จ
-        orderData: state.orderData ? {
-          ...state.orderData,
+        currentStep: 'preview',
+        orderData: {
+          ...state.orderData!,
           head: {
-            ...state.orderData.head,
+            ...state.orderData!.head,
             srNo: action.payload.srNo,
           },
-          // ใช้ข้อมูล items จาก returnOrder เสมอหลังจากสร้าง SR
-          lines: state.returnOrder?.items.map(item => ({
-            ...item,
+          // ใช้ข้อมูลจาก returnOrder.items โดยตรง
+          lines: originalItems.map(item => ({
+            sku: item.sku,
+            itemName: item.itemName,
             qty: item.qty,
-            returnQty : item.returnQty,
-            price: Math.abs(item.price)
-          })) || []
-        } : null,
-        // อัพเดท returnOrder ถ้ามี
-        returnOrder: state.returnOrder ? {
+            returnQty: item.returnQty,
+            price: item.price
+          }))
+        },
+        returnOrder: {
           ...state.returnOrder,
-          srNo: action.payload.srNo
-        } : null
+          srNo: action.payload.srNo,
+          // คงค่า items เดิมไว้
+          items: originalItems
+        }
       };
 
     case ReturnOrderActionTypes.RETURN_ORDER_UPDATE_STATUS_SUCCESS:

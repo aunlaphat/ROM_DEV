@@ -7,9 +7,9 @@ import Loading from "../loading";
 import { Layout } from "antd";
 import { logger } from "../../utils/logger";
 import { ROUTES_NO_AUTH } from "../../resources/routes";
-import SiderLayout from "../layouts/siderLayout";
-import ContentLayout from "../layouts/contentLayout";
-import HeaderBar from "../layouts/headerLayout";
+import SiderLayout from "../Layouts/siderLayout";
+import ContentLayout from "../Layouts/contentLayout";
+import HeaderBar from "../Layouts/headerLayout";
 
 const LayoutPage: React.FC = () => {
   const location = useLocation();

@@ -4,6 +4,7 @@ import OrderDetailsSection from './OrderDetailsSection';
 import OrderItemsSection from './OrderItemsSection';
 import ReturnOrderSteps from "./ReturnOrderSteps";
 import PreviewSection from './PreviewSection';
+import { ReturnOrderState } from "../../../../redux/orders/api";
 
 interface ReturnOrderFormProps {
   currentStep: 'search' | 'create' | 'sr' | 'preview' | 'confirm';
@@ -20,7 +21,7 @@ interface ReturnOrderFormProps {
   handleNext: () => void; // เพิ่ม handler สำหรับปุ่มดำเนินการต่อ
   handleConfirm: () => void; // เพิ่ม handler สำหรับปุ่ม Confirm
   getReturnQty: (sku: string) => number;
-  updateReturnQty: (sku: string, change: number) => void;
+  updateReturnQty: (sku: string, change: number) => void; // แก้ไข type ให้ตรงกัน
   isCreateReturnOrderDisabled: () => boolean;
   getStepStatus: (stepKey: string) => 'process' | 'finish' | 'wait';
   renderBackButton: () => JSX.Element;
@@ -28,6 +29,7 @@ interface ReturnOrderFormProps {
   validateStepTransition: (fromStep: string, toStep: string) => boolean;
   stepLoading: boolean; // เพิ่ม stepLoading prop
   isCreateSRDisabled: () => boolean; // เพิ่ม prop ใหม่
+  returnOrder?: ReturnOrderState['returnOrder']; // เพิ่ม prop returnOrder
 }
 
 const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
@@ -53,6 +55,7 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
   validateStepTransition,
   stepLoading = false,
   isCreateSRDisabled,
+  returnOrder,
 }) => {
   // ใช้ validateStepTransition ในการตรวจสอบก่อนแสดงปุ่มต่างๆ
   const renderActionButtons = () => {
@@ -200,7 +203,7 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
                 <OrderItemsSection
                   orderData={orderData}
                   getReturnQty={getReturnQty}
-                  updateReturnQty={updateReturnQty}
+                  updateReturnQty={updateReturnQty} // ส่ง function ที่มี signature ตรงกัน
                   loading={loading}
                   currentStep={currentStep} // เพิ่ม prop currentStep
                 />
@@ -209,6 +212,7 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
                   <PreviewSection
                     orderData={orderData}
                     returnItems={returnItems}
+                    returnOrder={returnOrder} // ส่ง returnOrder ไปยัง PreviewSection
                   />
                 )}
 
