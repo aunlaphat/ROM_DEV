@@ -1,15 +1,18 @@
 import { Link } from "react-router-dom";
-import { Button, ConfigProvider, Form, Layout, Row, Table, Tabs, Tooltip, Modal, Input, Col, Select, InputNumber, Popconfirm } from "antd";
+import { Button, ConfigProvider, Form, Layout, Row, Table, Tabs, Tooltip, Modal, Input, Col, Select, InputNumber, Popconfirm, notification } from "antd";
 import { DatePicker } from "antd";
 import { DeleteOutlined, FormOutlined, PlusCircleOutlined } from '@ant-design/icons'; // นำเข้า FormOutlined
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import dayjs, { Dayjs } from "dayjs";
+import utc from "dayjs/plugin/utc";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isBetween from "dayjs/plugin/isBetween";
 import '../Return.css';
 import Webcam from "react-webcam";
+import api from "../../utils/axios/axiosInstance"; 
 
+dayjs.extend(utc);
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isBetween);
@@ -29,9 +32,27 @@ interface Order {
   nameR?: string;
 }
 
+interface OrderDetail {
+    orderNo: string;
+    soNo: string;
+    customerId: string;
+    srNo: string;
+    trackingNo: string;
+    logistic: string;
+    channelName: string;
+    createDate: string;
+    warehouseName: string;
+    data: OrderLine[]; 
+}
 
+interface OrderLine {
+    sku: string;
+    itemName: string;
+    qty: number;
+    price: string;
+    Type: 'system' | 'addon';
+}
 
-  
 interface SKUData {
   SKU: string;
   Name: string;
@@ -45,10 +66,6 @@ interface SKUData {
   }
 const ConfirmReturnTrade = () => {
     
-    
-      
-
-
   const columnsdata: Order[] = [
     {
         Order: "12345678",
@@ -99,7 +116,6 @@ const ConfirmReturnTrade = () => {
     },
 ];
 
-
     const columns = [
         { title: "Order", dataIndex: "Order", id:"Order", key: "Order",     render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
         { title: "SO/INV", dataIndex: "SO_INV", id:"SO_INV", key: "SO_INV", render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span> },
@@ -120,7 +136,7 @@ const ConfirmReturnTrade = () => {
                     <Button 
                         type="link" 
                         icon={<FormOutlined />} 
-                        onClick={() => handleEdit(record,activeTabKey)}
+                        onClick={() => handleEdit(record, activeTabKey)}
                         style={{ color: 'gray' }}
                     />
                 </Tooltip>
@@ -147,28 +163,30 @@ const ConfirmReturnTrade = () => {
                   <Button 
                       type="link" 
                       icon={<FormOutlined />} 
-                      onClick={() => handleEdit(record,activeTabKey)}
+                      onClick={() => handleEdit(record, activeTabKey)}
                       style={{ color: 'gray' }}
                   />
               </Tooltip>
           ),
       },
-  ];
+    ];
   
-    const codeROptions = [
-      { value: 'R01', label: 'R01',id:'R01' },
-      { value: 'R02', label: 'R02',id:'R02' },
-    ];
+    // const codeROptions = [
+    //   { value: 'R01', label: 'R01',id:'R01' },
+    //   { value: 'R02', label: 'R02',id:'R02' },
+    // ];
     
-    const codeNameOptions = [
-      { value: 'ส่วนลด', label: 'ส่วนลด',id:'ส่วนลด' },
-      { value: 'ของแถม', label: 'แถม',id:'แถม' },
-    ];
+    // const codeNameOptions = [
+    //   { value: 'ส่วนลด', label: 'ส่วนลด',id:'ส่วนลด' },
+    //   { value: 'ของแถม', label: 'แถม',id:'แถม' },
+    // ];
+
     const { Option } = Select;
+    const [form] = Form.useForm();
     const [dates, setDates] = useState<[Dayjs, Dayjs] | null>(null);
     const { RangePicker } = DatePicker;
     const [activeTabKey, setActiveTabKey] = useState<string>("1");
-    const [filteredData, setFilteredData] = useState<Order[]>(columnsdata);
+    const [filteredData, setFilteredData] = useState<Order[]>([]);
     const [isNewModalVisible, setIsNewModalVisible] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState<Order | null>(null);
@@ -178,13 +196,42 @@ const ConfirmReturnTrade = () => {
     const [price, setPrice] = useState<number | null>(null); // Allow null
     const [newEntries, setNewEntries] = useState([]);
 
-    const handleEdit = (record: Order ,activeTabKey:string) => {
-        setSelectedRecord(record); // เก็บข้อมูล record ที่เลือก
+    // const handleEdit = (record: Order ,activeTabKey:string) => {
+    //     setSelectedRecord(record); // เก็บข้อมูล record ที่เลือก
+    //     setIsModalVisible(true); // แสดง Modal
+
+    // };
+
+    const handleEdit = async (record: Order, activeTabKey: string) => {
+    try {
+        const response = await api.get(`/api/return-order/get-lines/${record.Order}`);
+        const orderLines: OrderLine[] = response.data.data || [];
+
+        console.log('Order Lines:', orderLines); // เพิ่มการพิมพ์ข้อมูลที่ได้รับจาก API
+        
+        const updatedRecord = {
+        ...record,
+        data: orderLines.map((line: OrderLine) => ({
+            SKU: line.sku,
+            Name: line.itemName,
+            QTY: line.qty,
+            Price: line.price,
+            Action: '',
+            Type: line.Type,
+        })),
+        };
+        console.log('Updated Record:', updatedRecord); // เพิ่มการพิมพ์ข้อมูลที่แมปแล้ว
+        setSelectedRecord(updatedRecord); // เก็บข้อมูล record ที่เลือกพร้อมกับ OrderLine
         setIsModalVisible(true); // แสดง Modal
-
+    } catch (error) {
+        console.error('Failed to fetch order lines:', error);
+        notification.error({
+        message: 'Error',
+        description: 'Failed to fetch order lines.',
+        });
+    }
     };
-      
-
+    
     const handleOk = () => {
       // Logic for saving the edited record can go here
       handleUpdate();
@@ -196,29 +243,109 @@ const ConfirmReturnTrade = () => {
         setSelectedRecord(null);
 };
 
+  const fetchData = async (statusCheckID: number) => {
+    try {
+      const endpoint = statusCheckID === 1 
+        ? '/api/trade-return/get-waiting' 
+        : '/api/trade-return/get-confirm';
+      const response = await api.get(endpoint);
+      const data = response.data.data.map((item: OrderDetail) => ({
+        Order: item.orderNo,
+        SO_INV: item.soNo,
+        Customer: item.customerId,
+        SR: item.srNo,
+        ReturnTracking: item.trackingNo,
+        Transport: item.logistic,
+        Channel: item.channelName,
+        Date_Create: dayjs(item.createDate).utc().format('YYYY-MM-DD'),
+        Warehouse: item.warehouseName,
+        data: [], // Assuming you have a way to get SKUData
+      }));
 
-    const handleSearch = () => {
-        if (dates && dates[0] && dates[1]) {
-            const startDate = dates[0].startOf("day");
-            const endDate = dates[1].endOf("day");
+      setFilteredData(data);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      notification.error({
+        message: 'Error',
+        description: 'Failed to fetch data.',
+      });
+    }
+  };
 
-            const filtered = columnsdata.filter((item) => {
-                const itemDate = dayjs(item.Date_Create);
-                return itemDate.isBetween(startDate, endDate, null, "[]");
-            });
+  useEffect(() => {
+    fetchData(activeTabKey === "1" ? 1 : 2);
+  }, [activeTabKey]);
+  
+  useEffect(() => {
+    handleSearch(activeTabKey === "1" ? 1 : 2);
+  }, []);
 
-            setFilteredData(filtered);
-        }
-        const handleDelete = (index: number) => {
-          if (selectedRecord) {
-              // สร้างข้อมูลใหม่โดยการกรองข้อมูลที่ไม่ต้องการออก
-              const updatedData = selectedRecord.data.filter((_, idx) => idx !== index);
-      
-              // อัพเดต selectedRecord ด้วยข้อมูลใหม่
-              setSelectedRecord({ ...selectedRecord, data: updatedData });
-          }
-      };
-    };
+const handleSearch = async (statusCheckID: number) =>  {
+
+    // if (!dates || !dates[0] || !dates[1]) {
+    //     if (isManualSearch) { // แจ้งเตือนเฉพาะตอนกดปุ่ม
+    //       console.log("No date selected, skipping search.");
+    //       notification.warning({
+    //         message: 'Warning',
+    //         description: 'Please select ragnge date before searching.',
+    //       });
+    //     }
+    //     return;
+    //   }
+
+  if (dates && dates[0] && dates[1]) {
+    const startDate = dates[0].format('YYYY-MM-DD');
+    const endDate = dates[1].format('YYYY-MM-DD');
+
+    try {
+      const endpoint = statusCheckID === 1 
+        ? '/api/trade-return/search-waiting' 
+        : '/api/trade-return/search-confirm';
+
+      const response = await api.get(endpoint, {
+        params: {
+          startDate,
+          endDate,
+        },
+      });
+
+      const data = response.data.data || []; // ตรวจสอบว่ามีข้อมูลหรือไม่
+      const filtered = data.filter((item: OrderDetail) => {
+        const itemDate = dayjs(item.createDate).utc().format('YYYY-MM-DD');
+        return dayjs(itemDate).isSameOrAfter(startDate) && dayjs(itemDate).isSameOrBefore(endDate);
+      }).map((item: OrderDetail) => ({
+        Order: item.orderNo,
+        SO_INV: item.soNo,
+        Customer: item.customerId,
+        SR: item.srNo,
+        ReturnTracking: item.trackingNo,
+        Transport: item.logistic,
+        Channel: item.channelName,
+        Date_Create: dayjs(item.createDate).utc().format('YYYY-MM-DD'),
+        Warehouse: item.warehouseName,
+        data: [], // Assuming you have a way to get SKUData
+      }));
+
+    //   if (filtered.length === 0) {
+    //     notification.warning({
+    //       message: 'Data not found',
+    //       description: 'Please select new date range again!',
+    //     });
+    //     // setDates(null); 
+    //     return;
+    //   } 
+  
+      setFilteredData(filtered);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      notification.error({
+        message: 'Error',
+        description: 'Failed to fetch data.',
+      });
+    }
+  }
+};
+    
     const handleAdd = () => {
       if (selectedRecord) {
         const newData: SKUData = {
@@ -255,11 +382,18 @@ const ConfirmReturnTrade = () => {
     
     const onTabChange = (key: string) => {
         setActiveTabKey(key);
+        handleSearch(key === "1" ? 1 : 2); // เรียก handleSearch พร้อมกับ StatusCheckID ที่ถูกต้อง
     };
 
     const handleDateChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
+        if (!dates || !dates[0] || !dates[1]) {
+            setDates(null); // รีเซ็ตค่า Select date เมื่อไม่มีการเลือกช่วงวันที่
+            return;
+        }
+
         if (dates) {
             setDates(dates as [Dayjs, Dayjs]);
+            // handleSearch(activeTabKey === "1" ? 1 : 2); // เรียก handleSearch พร้อมกับ StatusCheckID ที่ถูกต้อง
         }
     };
     const handleUpdate = () => {
@@ -309,7 +443,7 @@ const ConfirmReturnTrade = () => {
                             <Row gutter={8} align="middle" justify="center" style={{ marginTop: "20px" }}>
                                 <Col>
                                     <Form.Item
-                                    id="Select date"
+                                        id="Select date"
                                         layout="vertical"
                                         label="Select date"
                                         name="Select date"
@@ -327,7 +461,7 @@ const ConfirmReturnTrade = () => {
                                     id="Search"
                                         type="primary"
                                         style={{ height: "40px", width: "100px", background: "#32ADE6" }}
-                                        onClick={handleSearch}
+                                        onClick={() => handleSearch(1)}
                                     >
                                         Search
                                     </Button>
@@ -378,7 +512,7 @@ const ConfirmReturnTrade = () => {
                                 id="Search2"
                                     type="primary"
                                     style={{ height: "40px", width: "100px", background: "#32ADE6" }}
-                                    onClick={handleSearch}
+                                    onClick={() => handleSearch(2)}
                                 >
                                     Search
                                 </Button>
@@ -448,7 +582,7 @@ const ConfirmReturnTrade = () => {
                                 </Form.Item>
                             </Col>
                         </Row>
-                        <Row gutter={16}>
+                        {/* <Row gutter={16}>
                             <Col span={5}>
                             <Form.Item id="codeR1" label={<span style={{ color: '#657589' }}>กรอกโค้ด R</span>}>
                                     <Select
@@ -517,7 +651,7 @@ const ConfirmReturnTrade = () => {
                                     Add
                                 </Button>
                             </Col>
-                        </Row>
+                        </Row> */}
                     </Form>
 
                     {/* Table to display product data */}

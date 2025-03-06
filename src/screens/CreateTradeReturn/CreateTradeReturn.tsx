@@ -6,7 +6,7 @@ import * as XLSX from "xlsx";
 import Popup from "reactjs-popup";
 import icon from "../../assets/images/document-text.png";
 import axios from "axios";
-import apiClient from "../../utils/axios/axiosInstance"; // นำเข้า axios instance
+import api from "../../utils/axios/axiosInstance"; // นำเข้า axios instance
 
 const { Option } = Select;
 
@@ -81,7 +81,7 @@ const CreateTradeReturn = () => {
     const fetchCustomerAccounts = async () => {
       setLoading(true);
       try {
-        const response = await apiClient.get("/api/constants/get-customer-id");
+        const response = await api.get("/api/constants/get-customer-id");
         setCustomerAccounts(response.data.data); // เก็บข้อมูล customer accounts
       } catch (error) {
         notification.error({
@@ -104,7 +104,7 @@ const CreateTradeReturn = () => {
       setSelectedInvoice(null); 
       form.resetFields(["Invoice_name"]);
 
-      const customerResponse = await apiClient.get(
+      const customerResponse = await api.get(
         `/api/constants/get-customer-info?customerID=${value}`,
       );
 
@@ -146,7 +146,7 @@ const CreateTradeReturn = () => {
   const debouncedSearch = debounce(async (value: string) => {
     setLoading(true); 
     try {
-      const response = await apiClient.get(
+      const response = await api.get(
         "/api/constants/search-invoice-names", 
         {
           params: {
@@ -214,7 +214,7 @@ const CreateTradeReturn = () => {
     const fetchProvinces = async () => {
       setLoading(true);
       try {
-        const response = await apiClient.get("/api/constants/get-provinces");
+        const response = await api.get("/api/constants/get-provinces");
         setProvinces(response.data.data);
       } catch (error) {
         console.error("Failed to fetch provinces", error);
@@ -230,7 +230,7 @@ const CreateTradeReturn = () => {
       const fetchDistricts = async () => {
         setLoading(true);
         try {
-          const response = await apiClient.get(`/api/constants/get-district?provinceCode=${province}`);
+          const response = await api.get(`/api/constants/get-district?provinceCode=${province}`);
           setDistricts(response.data.data);
         } catch (error) {
           console.error("Failed to fetch districts", error);
@@ -249,7 +249,7 @@ const CreateTradeReturn = () => {
       const fetchSubDistricts = async () => {
         setLoading(true);
         try {
-          const response = await apiClient.get(`/api/constants/get-sub-district?districtCode=${district}`);
+          const response = await api.get(`/api/constants/get-sub-district?districtCode=${district}`);
           setSubDistricts(response.data.data);
         } catch (error) {
           console.error("Failed to fetch subdistricts", error);
@@ -268,7 +268,7 @@ const CreateTradeReturn = () => {
       const fetchPostalCode = async () => {
         setLoading(true);
         try {
-          const response = await apiClient.get(`/api/constants/get-postal-code?subdistrictCode=${subDistrict}`);
+          const response = await api.get(`/api/constants/get-postal-code?subdistrictCode=${subDistrict}`);
           setPostalCode(response.data.data);
           formaddress.setFieldsValue({
             PostalCode: response.data.data.length > 0 ? response.data.data[0].zipCode : "",
@@ -347,7 +347,7 @@ const CreateTradeReturn = () => {
   const debouncedSearchSKU = debounce(async (value: string, searchType: string) => {
     setLoading(true);
     try {
-      const response = await apiClient.get("/api/constants/search-product", {
+      const response = await api.get("/api/constants/search-product", {
         params: {
           keyword: value,
           searchType,
@@ -396,7 +396,7 @@ const CreateTradeReturn = () => {
 
     try {
       setLoading(true);
-      const response = await apiClient.get("/api/constants/get-sku", {
+      const response = await api.get("/api/constants/get-sku", {
         params: { nameAlias, size },
       });
 
