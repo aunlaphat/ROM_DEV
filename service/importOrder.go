@@ -17,6 +17,8 @@ import (
 
 type ImportOrderService interface {
 	SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
+	SearchOrderORTrackingNo(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
+	GetOrderTracking(ctx context.Context) ([]response.ImportItem, error)
 	UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error
 	GetSummaryImportOrder(ctx context.Context, orderNo string) ([]response.ImportOrderSummary, error)
 	ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error)
@@ -51,6 +53,31 @@ func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]
 
 	srv.logger.Info("[ Successfully search order detail ]")
 	return orders, nil
+}
+
+func (srv service) SearchOrderORTrackingNo(ctx context.Context, search string) ([]response.ImportOrderResponse, error) {
+	srv.logger.Info("[ Starting search order process ]", zap.String("Search", search))
+
+	// *️⃣ ค้นหา order จาก repository (เรียกใช้แบบ chunking)
+	orders, err := srv.importOrderRepo.SearchOrderORTrackingNo(ctx, search)
+	if err != nil {
+		srv.logger.Error("[ Failed to search OrderNo or TrackingNo ]", zap.String("Search", search), zap.Error(err))
+		return nil, errors.InternalError("[ Failed to search OrderNo or TrackingNo: %v ]", err)
+	}
+
+	srv.logger.Info("[ Successfully search order detail ]")
+	return orders, nil
+}
+
+func (srv service) GetOrderTracking(ctx context.Context) ([]response.ImportItem, error) {
+	order, err := srv.importOrderRepo.GetOrderTracking(ctx)
+	if err != nil {
+		srv.logger.Error("[ Error fetching rders ]", zap.Error(err))
+		return nil, errors.InternalError("[ Failed to fetch orders: %v ]", err)
+	}
+
+	srv.logger.Info("[ Fetched all orders ]", zap.Int("Total amount of data", len(order)))
+	return order, nil
 }
 
 var (

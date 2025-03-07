@@ -1290,6 +1290,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/import-order/get-order-tracking": {
+            "get": {
+                "description": "Retrieve Order and Tracking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Get Order and Tracking",
+                "operationId": "Get-Order-Tracking",
+                "responses": {
+                    "200": {
+                        "description": "Get All",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ImportItem"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found Endpoint",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/import-order/search": {
             "get": {
                 "description": "Retrieve the details of an order by its OrderNo or TrackingNo",
@@ -1304,6 +1361,69 @@ const docTemplate = `{
                 ],
                 "summary": "Search order by OrderNo or TrackingNo",
                 "operationId": "search-orderNo-or-trackingNo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OrderNo or TrackingNo",
+                        "name": "search",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "$ref": "#/definitions/response.ImportOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "OrderNo or TrackingNo not found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/import-order/search-order-tracking": {
+            "get": {
+                "description": "Retrieve the details of an order by its OrderNo or TrackingNo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Import Order"
+                ],
+                "summary": "Search order by OrderNo or TrackingNo",
+                "operationId": "search-orderNo-or-tracking",
                 "parameters": [
                     {
                         "type": "string",
@@ -3633,6 +3753,9 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 2
                 },
+                "channelName": {
+                    "type": "string"
+                },
                 "createDate": {
                     "type": "string"
                 },
@@ -3664,6 +3787,9 @@ const docTemplate = `{
                 },
                 "warehouseId": {
                     "type": "integer"
+                },
+                "warehouseName": {
+                    "type": "string"
                 }
             }
         },
@@ -3675,6 +3801,17 @@ const docTemplate = `{
                 },
                 "imageID": {
                     "type": "integer"
+                }
+            }
+        },
+        "response.ImportItem": {
+            "type": "object",
+            "properties": {
+                "orderNo": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
                 }
             }
         },
@@ -3879,6 +4016,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "createDate": {
+                    "type": "string"
+                },
+                "itemName": {
                     "type": "string"
                 },
                 "orderNo": {

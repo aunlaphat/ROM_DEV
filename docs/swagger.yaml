@@ -588,6 +588,8 @@ definitions:
       channelId:
         example: 2
         type: integer
+      channelName:
+        type: string
       createDate:
         type: string
       customerId:
@@ -611,6 +613,8 @@ definitions:
         type: string
       warehouseId:
         type: integer
+      warehouseName:
+        type: string
     type: object
   response.ImageResponse:
     properties:
@@ -618,6 +622,13 @@ definitions:
         type: string
       imageID:
         type: integer
+    type: object
+  response.ImportItem:
+    properties:
+      orderNo:
+        type: string
+      trackingNo:
+        type: string
     type: object
   response.ImportOrderLineResponse:
     properties:
@@ -754,6 +765,8 @@ definitions:
       createBy:
         type: string
       createDate:
+        type: string
+      itemName:
         type: string
       orderNo:
         type: string
@@ -1724,12 +1737,86 @@ paths:
       summary: Import order
       tags:
       - Import Order
+  /import-order/get-order-tracking:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve Order and Tracking
+      operationId: Get-Order-Tracking
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get All
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.ImportItem'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found Endpoint
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Order and Tracking
+      tags:
+      - Import Order
   /import-order/search:
     get:
       consumes:
       - application/json
       description: Retrieve the details of an order by its OrderNo or TrackingNo
       operationId: search-orderNo-or-trackingNo
+      parameters:
+      - description: OrderNo or TrackingNo
+        in: query
+        name: search
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  $ref: '#/definitions/response.ImportOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: OrderNo or TrackingNo not found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Search order by OrderNo or TrackingNo
+      tags:
+      - Import Order
+  /import-order/search-order-tracking:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the details of an order by its OrderNo or TrackingNo
+      operationId: search-orderNo-or-tracking
       parameters:
       - description: OrderNo or TrackingNo
         in: query

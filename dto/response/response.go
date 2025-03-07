@@ -18,6 +18,11 @@ type SearchOrderItem struct {
 	Price    float64 `db:"Price" json:"price"`
 }
 
+type ImportItem struct {
+	OrderNo    string `json:"orderNo" db:"OrderNo"`
+	TrackingNo string `json:"trackingNo" db:"TrackingNo"`
+}
+
 // ในฟิลมีปรับ type ข้อมูลเพิ่ม //11/02
 type BeforeReturnOrderResponse struct {
 	OrderNo        string                  `json:"orderNo" db:"OrderNo"`
