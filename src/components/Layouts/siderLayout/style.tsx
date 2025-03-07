@@ -1,4 +1,4 @@
-import { color } from "../../../resources";
+import { color } from  "../../../resources/color";
 import styled from "styled-components";
 
 export const ScrollMenu = styled.div`

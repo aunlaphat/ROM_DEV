@@ -1,33 +1,33 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Outlet } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState, AppDispatch } from "../../redux/store";
-import { checkAuthen } from "../../redux/auth/action";
-import Loading from "../loading";
 import { Layout } from "antd";
 import { logger } from "../../utils/logger";
 import { ROUTES_NO_AUTH } from "../../resources/routes";
-import SiderLayout from "../Layouts/siderLayout";
-import ContentLayout from "../Layouts/contentLayout";
-import HeaderBar from "../Layouts/headerLayout";
+import SiderLayout from "./siderLayout";
+import ContentLayout from "./contentLayout";
+import HeaderBar from "./headerLayout";
+import Loading from "../loading";
+import { useAuth } from "../../hooks/auth"; // นำเข้า hook ที่ refactor แล้ว
 
 const LayoutPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
-  const authState = useSelector((state: RootState) => state.auth);
+  
+  // ใช้ hook ที่เรา refactor แล้ว
+  const { 
+    isAuthenticated, 
+    loading, 
+    checkAuth, 
+    hasInitialized,
+    userID
+  } = useAuth();
 
   const [collapsed, setCollapsed] = useState(window.innerWidth <= 767);
   const [collapsedWidth, setCollapsedWidth] = useState<number | undefined>(
     window.innerWidth <= 767 ? 0 : undefined
   );
 
-  // ✅ โหลด token แค่ครั้งเดียว
-  const token = localStorage.getItem("access_token");
-
-  /**
-   * ✅ ปรับปรุงการจัดการ Responsive Layout
-   */
+  // จัดการ responsive layout
   useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth <= 767;
@@ -39,46 +39,57 @@ const LayoutPage: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  /**
-   * ✅ ใช้ useCallback เพื่อลดการ re-run ของ useEffect
-   */
-  const validateAuth = useCallback(async () => {
-    logger.log("debug", "Validating auth state", {
-      isAuthenticated: authState?.isAuthenticated,
-      hasUser: !!authState?.user,
-      path: location.pathname,
-      hasToken: !!token,
-    });
-
-    if (token && !authState?.user) {
-      logger.log("info", "Has token but no user data, fetching user info");
-      await dispatch(checkAuthen());
-      return;
-    }
-
-    if (!authState?.isAuthenticated && location.pathname !== ROUTES_NO_AUTH.ROUTE_LOGIN.PATH) {
-      logger.log("warn", "Unauthorized access, redirecting to login");
-      navigate(ROUTES_NO_AUTH.ROUTE_LOGIN.PATH);
-    }
-  }, [authState?.isAuthenticated, authState?.user, location.pathname, dispatch, navigate, token]);
-
+  // ตรวจสอบและจัดการการ authentication
   useEffect(() => {
-    validateAuth();
-  }, [validateAuth]);
+    const validateAuth = async () => {
+      // ตรวจสอบว่าหน้าปัจจุบันเป็นหน้า login หรือไม่
+      const isLoginPage = location.pathname === ROUTES_NO_AUTH.ROUTE_LOGIN.PATH;
+      // ตรวจสอบว่ามี token หรือไม่
+      const hasToken = localStorage.getItem("access_token");
 
-  /**
-   * ✅ ปรับปรุงการโหลดข้อมูล Auth
-   */
-  if (authState?.loading) {
+      logger.log("debug", "Validating auth state", {
+        isAuthenticated,
+        userID,
+        path: location.pathname,
+        hasToken: !!hasToken,
+        hasInitialized
+      });
+
+      // ถ้ามี token แต่ยังไม่ได้ authenticate และไม่ได้กำลังโหลด
+      if (hasToken && !isAuthenticated && !loading) {
+        logger.log("info", "Has token but not authenticated, checking auth status");
+        checkAuth();
+        return;
+      }
+
+      // ถ้าไม่ได้ authenticate และไม่ได้อยู่ที่หน้า login ให้ redirect ไปหน้า login
+      if (hasInitialized && !isAuthenticated && !isLoginPage) {
+        logger.log("warn", "Unauthorized access, redirecting to login");
+        navigate(ROUTES_NO_AUTH.ROUTE_LOGIN.PATH);
+      }
+      
+      // ถ้า authenticated แล้วและอยู่ที่หน้า login ให้ redirect ไปหน้าหลัก
+      if (hasInitialized && isAuthenticated && isLoginPage) {
+        logger.log("info", "Already authenticated, redirecting to main page");
+        navigate("/");
+      }
+    };
+
+    validateAuth();
+  }, [isAuthenticated, location.pathname, navigate, checkAuth, loading, userID, hasInitialized]);
+
+  // แสดง loading ระหว่างตรวจสอบ auth
+  if (loading || !hasInitialized) {
     logger.log("debug", "Loading auth state...");
     return <Loading />;
   }
 
-  if (!authState?.isAuthenticated && location.pathname !== "/") {
-    logger.log("warn", "User not authenticated, blocking access");
-    return null;
+  // หน้าที่ต้องการ authentication แต่ยังไม่ได้ authenticate
+  if (!isAuthenticated && location.pathname !== ROUTES_NO_AUTH.ROUTE_LOGIN.PATH) {
+    return null; // ไม่แสดงอะไรเพราะ useEffect จะทำการ redirect
   }
 
+  // Main layout สำหรับผู้ใช้ที่ authenticate แล้ว
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <SiderLayout

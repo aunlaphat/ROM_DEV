@@ -1,53 +1,52 @@
 import React from "react";
-import { AvatarGenerator } from "../../avatar/AvatarGenerator";
 import {
-  Button,
   Dropdown,
   MenuProps,
-  Tag,
   Modal,
-  notification,
-  Card,
   Divider,
   Space,
   Typography,
   Tooltip,
-  Avatar,
 } from "antd";
 import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   DownOutlined,
 } from "@ant-design/icons";
-import { HeaderBarStyle, TopBarDropDown, TopBarUser } from "./style";
+import { HeaderBarStyle, TopBarDropDown, TopBarUser } from "../../layouts/headerLayout/style";
 import { Icon } from "../../../resources";
 import { useAuth } from "../../../hooks/useAuth"; // เปลี่ยนการ import
 import { useSelector } from "react-redux";
 import { TextSmall } from "../../text";
 import { logger } from "../../../utils/logger";
 
-const HeaderBar = ({ collapsed, toggle }: any) => {
-  const { logout } = useAuth(); // ใช้ logout จาก useAuth
-  const user = useSelector((state: any) => state.auth.user);
+interface HeaderBarProps {
+  collapsed: boolean;
+  toggle: () => void;
+}
 
-  const userId = user?.userID || "N/A";
-  const userName = user?.userName || "N/A";
-  const userFullName = user?.fullName || "N/A";
-  const roleName = user?.roleName || "N/A";
+const HeaderBar: React.FC<HeaderBarProps> = ({ collapsed, toggle }) => {
+  // ใช้ hook ที่เรา refactor แล้ว
+  const { 
+    logout, 
+    userID, 
+    userName, 
+    fullName, 
+    roleName 
+  } = useAuth();
 
   const handleLogout = () => {
     Modal.confirm({
-      title: "Confirm Logout",
+      title: "ยืนยันการออกจากระบบ",
       content: "คุณต้องการออกจากระบบใช่หรือไม่? 🤔",
       okText: "ออกจากระบบ",
       cancelText: "ยกเลิก",
       onOk: async () => {
         try {
-          logger.log("info", "User logging out", { userId, userName });
-
-          await logout(); // ใช้ logout function
+          logger.log("info", "User logging out", { userID, userName });
+          await logout();
         } catch (error) {
-          console.error("Logout Failed", error);
+          logger.error("Logout Failed", error);
         }
       },
     });
@@ -73,19 +72,21 @@ const HeaderBar = ({ collapsed, toggle }: any) => {
         style: { margin: "0 20px", color: "black" },
       })}
 
-      <TopBarUser
-        style={{ display: "flex", alignItems: "center", gap: "12px" }}
-      >
-        <Tooltip title="Profile">
-          <AvatarGenerator userName={userName} userID={userId} size="large" />
+      <TopBarUser>
+        <Tooltip title="โปรไฟล์">
+          <AvatarGenerator 
+            userName={userName || 'User'} 
+            userID={userID || '0'} 
+            size="large" 
+          />
         </Tooltip>
 
         <Space direction="horizontal" size="small">
-          <Typography.Text strong>{userId}</Typography.Text>
-          <Typography.Text>{userFullName}</Typography.Text>
+          <Typography.Text strong>{userID || 'N/A'}</Typography.Text>
+          <Typography.Text>{fullName || 'N/A'}</Typography.Text>
           <Divider type="vertical" />
           <Typography.Text keyboard type="success">
-            {roleName}
+            {roleName || 'N/A'}
           </Typography.Text>
         </Space>
       </TopBarUser>

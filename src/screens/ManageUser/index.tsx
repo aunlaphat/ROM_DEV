@@ -31,7 +31,7 @@ const { Content } = Layout;
 const { Search } = Input;
 const { Title } = Typography;
 
-export const ManageUser = () => {
+const ManageUser = () => {
   const [data, setData] = useState<User[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
@@ -287,3 +287,5 @@ export const ManageUser = () => {
     </Layout>
   );
 };
+
+export default ManageUser;
