@@ -3,32 +3,31 @@ import { Steps, Col, ConfigProvider, Form, Layout, Row, Select, Button, Table, M
 import Webcam from 'react-webcam';
 import { CameraOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { QrReader, QrReaderProps } from 'react-qr-reader';
-
-const orderOptions = [
-    { value: '1', label: 'SOA2409-12345' },
-    { value: '2', label: 'SOA2409-12346' },
-    { value: '3', label: 'SOA2409-12347' },
-    { value: '4', label: 'SOA2409-12348' },
-    { value: '5', label: 'SOA2409-12349' },
-    { value: '6', label: 'SOA2409-12350' },
-];
+import api from "../../utils/axios/axiosInstance"; 
 
 interface CustomQrReaderProps extends QrReaderProps {
     onScan: (result: string | null) => void;
     onError: (error: any) => void;
 }
 
-interface DataType {
+interface Order {
+    orderNo: string;
+    trackingNo: string;
+    data: OrderLine[];
+}
+
+interface OrderLine {
     key: string;
     sku: string;
-    name: string;
+    itemName: string;
     qty: number;
     receivedQty: number;
-    amount: string;
+    price: string;
     image: string | null;
 }
 
 const SaleReturn: React.FC = () => {
+    const [orderOptions, setOrderOptions] = useState<{ value: string; label: string }[]>([]);
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [showScanner, setShowScanner] = useState<boolean>(false);
     const [skuInput, setSkuInput] = useState<string>('');
@@ -44,6 +43,7 @@ const SaleReturn: React.FC = () => {
         step2: null,
     });
     const webcamRef = useRef<Webcam>(null);
+    const [data, setData] = useState<OrderLine[]>([]);
     
     const onChange = (current: number) => {
         setCurrentStep(current);
@@ -53,13 +53,67 @@ const SaleReturn: React.FC = () => {
     const toggleCamera = () => {
         setCameraFacingMode((prevMode) => (prevMode === 'user' ? 'environment' : 'user'));
     };
-    
-    
+
+    useEffect(() => {
+        const fetchOrderOptions = async () => {
+            try {
+                const response = await api.get('/api/import-order/get-order-tracking');
+                const options = response.data.data.map((item: any, index: number) => ({
+                    key: `${item.orderNo}-${index}`, // เพิ่ม index เพื่อให้คีย์เป็นเอกลักษณ์
+                    value: item.orderNo,
+                    label: item.orderNo,
+                }));
+                setOrderOptions(options);
+            } catch (error) {
+                console.error('Failed to fetch order options:', error);
+                notification.error({
+                    message: 'Error',
+                    description: 'Failed to fetch order options.',
+                });
+            }
+        };
+
+        fetchOrderOptions();
+    }, []);
    
-    const handleSelectChange = (value: string) => {
+    const handleSelectChange = async (value: string) => {
         setShowSteps(true);
         setCurrentStep(0);
         setShowTable(false);
+
+        try {
+            const response = await api.get(`/api/import-order/search-order-tracking?search=${value}`);
+          // ตรวจสอบว่ามีข้อมูล orderLines หรือไม่
+          if (response.data && response.data.data && response.data.data.length > 0 && response.data.data[0].orderLines) {
+            // กรองข้อมูล orderLines ที่มี SKU ขึ้นต้นด้วย "G"
+            const filteredOrderLines = response.data.data[0].orderLines.filter((item: any) => item.sku.startsWith('G'));
+            const orderData = filteredOrderLines.map((item: any, index: number) => ({
+                key: `${index + 1}`,
+                sku: item.sku,
+                itemName: item.itemName,
+                qty: item.qty,
+                receivedQty: 0,
+                price: item.price,
+                image: null,
+            }));
+            setData(orderData);
+            // setShowTable(true);
+        } else {
+            // กรณีไม่มีข้อมูล orderLines
+            setData([]);
+            setShowTable(false);
+            notification.warning({
+                message: 'คำเตือน',
+                description: 'ไม่พบข้อมูล Order Lines สำหรับ Order นี้',
+            });
+        }
+        } catch (error) {
+            console.error('Failed to fetch order data:', error);
+            notification.error({
+                message: 'Error',
+                description: 'Failed to fetch order data.',
+            });
+        }
     };
 
     const capturePhoto = () => {
@@ -82,31 +136,34 @@ const SaleReturn: React.FC = () => {
     };
 
     const handleNextStep = () => {
-        if (currentStep < 4) { // Assuming there are 5 steps
+        // if (currentStep < 4) { // Assuming there are 5 steps
+        //     setCurrentStep(prevStep => prevStep + 1);
+        //  } else {
+        //     setShowTable(true);
+        // }
+        if (currentStep < data.length + 1) {
             setCurrentStep(prevStep => prevStep + 1);
-         } else {
+        } else {
             setShowTable(true);
         }
     };
     
-
-
     const handleDelete = (recordKey: string) => {
         setData((prevData) => prevData.filter(item => item.key !== recordKey));
     };
 
     const columns = [
         { title: 'SKU', dataIndex: 'sku', key: 'sku' ,id:'sku'},
-        { title: 'Name', dataIndex: 'name', key: 'name' ,id:'name'},
+        { title: 'Name', dataIndex: 'itemName', key: 'itemName' ,id:'itemName'},
         { title: 'QTY', dataIndex: 'qty', key: 'qty' ,id:'qty'},
         { title: 'จำนวนรับเข้า', dataIndex: 'receivedQty', key: 'receivedQty' ,id:'receivedQty'},
-        { title: 'Amount', dataIndex: 'amount', key: 'amount',id:'amount' },
+        { title: 'Amount', dataIndex: 'price', key: 'price',id:'price' },
         {
             title: 'Return',
             id:'Return' ,
             dataIndex: 'Return',
             key: 'Return',
-            render: (_: any, record: DataType) => {
+            render: (_: any, record: OrderLine) => {
                 // Check if the current record has receivedQty equal to qty
                 const isConfirmed = record.receivedQty === record.qty;
                 return isConfirmed ? (
@@ -123,23 +180,23 @@ const SaleReturn: React.FC = () => {
         {
             title: 'Image',
             id:'Image',
-    dataIndex: 'image',
-    key: 'image',
-    render: (_: any, record: DataType) => {
-        // ตรวจสอบว่า record.image มีค่าหรือไม่
-        const stepImage = images[`step${parseInt(record.key, 10)+2}`]; // ปรับให้ตรงกับ key ของ record
-        return stepImage ? (
-            <img src={stepImage} alt="Return" style={{ width: '100px' }} />
-        ) : (
-            <Button
-                style={{ background: '#02C39A' }}
-                icon={<CameraOutlined />}
-                type="primary"
-                onClick={() => handleTakePhoto(record.key, record.sku)} // ใช้ sku แทน name
-            >
-                กดเพื่อถ่ายรูป
-            </Button>
-        );
+            dataIndex: 'image',
+            key: 'image',
+            render: (_: any, record: OrderLine) => {
+                // ตรวจสอบว่า record.image มีค่าหรือไม่
+                const stepImage = images[`step${parseInt(record.key, 10)+2}`]; // ปรับให้ตรงกับ key ของ record
+                return stepImage ? (
+                    <img src={stepImage} alt="Return" style={{ width: '100px' }} />
+                ) : (
+                    <Button
+                        style={{ background: '#02C39A' }}
+                        icon={<CameraOutlined />}
+                        type="primary"
+                        onClick={() => handleTakePhoto(record.key, record.sku)} // ใช้ sku แทน itemName
+                    >
+                        กดเพื่อถ่ายรูป
+                    </Button>
+                );
     }
     },
     
@@ -147,7 +204,7 @@ const SaleReturn: React.FC = () => {
         title: 'Action',
         id:'Action',
         key: 'action',
-        render: (_: any, record: DataType) => (
+        render: (_: any, record: OrderLine) => (
           <>
             <Button
               style={{
@@ -185,39 +242,9 @@ const SaleReturn: React.FC = () => {
       },
     ];
 
-    const [data, setData] = useState<DataType[]>([
-        {
-            key: '1',
-            sku: 'G090108-EF05',
-            name: 'Bewell Foot Rest EF-05',
-            qty: 3,
-            receivedQty: 0,
-            amount: '500',
-            image: null,
-        },
-        {
-            key: '2',
-            sku: 'G091116-PC08-GY',
-            name: 'Bewell Cooling Blanket Single PC-08(Gray)',
-            qty: 2,
-            receivedQty: 0,
-            amount: '600',
-            image: null,
-        },
-        {
-            key: '3',
-            sku: 'G091116-PC09-BL',
-            name: 'Bewell Cooling Blanket King PC-08(Blue)',
-            qty: 3,
-            receivedQty: 0,
-            amount: '700',
-            image: null,
-        },
-    ]);
-
     const handleTakePhoto = (recordKey: string, sku: string) => {
         setCurrentRecordKey(recordKey);
-        setSkuName(sku); // Use sku instead of name
+        setSkuName(sku); // Use sku instead of itemName
         setShowWebcam(true);
     };
     const handleBackStep = () => {
@@ -229,7 +256,7 @@ const SaleReturn: React.FC = () => {
     const handleRetakePhoto = (recordKey: string) => {
         setCurrentRecordKey(recordKey);
         const currentItem = data.find(item => item.key === recordKey);
-        setSkuName(currentItem?.sku || null); // Use sku instead of name
+        setSkuName(currentItem?.sku || null); // Use sku instead of itemName
         setShowWebcam(true);
     };
 
@@ -316,7 +343,6 @@ const SaleReturn: React.FC = () => {
 
     const handleSubmit = () => {
         const allReceived = data.every(item => item.receivedQty === item.qty);
-        
     
         if (allReceived ) {
             console.log('ข้อมูลที่ส่ง:', data);
@@ -395,22 +421,24 @@ const SaleReturn: React.FC = () => {
 
                     {showSteps && !showTable && (
                         <>
-                            <Steps  current={currentStep} onChange={onChange}
-                              style={{ marginTop: '20px', width: '100%' }}>
+                        <Steps current={currentStep} 
+                               onChange={onChange}
+                               style={{ marginTop: '20px', width: '100%' }}
+                        >
                         <Steps.Step title="ถ่ายก่อนเปิดสินค้า" />
                         <Steps.Step title="ถ่ายหลังเปิดสินค้า" />
                         {data.map((item, index) => (
-                <Steps.Step
-                    key={item.key}
-                    title={
-                        <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: 'normal' }}>
-                          
-                            <div style={{ color: '#1890FF'  }}>{item.sku}</div>
-                        </div>
-                    }
-                />
-            ))}
-                    </Steps>
+                        <Steps.Step
+                            key={item.key}
+                            title={
+                                <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: 'normal' }}>
+                                
+                                    <div style={{ color: '#1890FF'  }}>{item.sku}</div>
+                                </div>
+                            }
+                        />
+                        ))}
+                        </Steps>
 
                     <Row justify="center" align="middle" style={{ marginTop: 20 }}>
                         <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '20px' }}>
@@ -434,20 +462,19 @@ const SaleReturn: React.FC = () => {
                         <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
                         
                         <Button onClick={toggleCamera} style={{ marginTop: 10 }}>
-            เปลี่ยนกล้อง
-        </Button>
+                            เปลี่ยนกล้อง
+                        </Button>
                         {currentStep > 0 && (  // แสดงปุ่ม "ย้อนกลับ" เมื่อ currentStep > 0
-                <Button
-                id="back"
-                    style={{marginRight: '20px', width: '100px', color: '#35465B'}}
-                    type="default"
-                    onClick={handleBackStep}
-                >
-                    ย้อนกลับ
-                </Button>
-                   )}
-                            {!images[`step${currentStep + 1}`] ? (
-                                
+                        <Button
+                                id="back"
+                            style={{marginRight: '20px', width: '100px', color: '#35465B'}}
+                            type="default"
+                            onClick={handleBackStep}
+                        >
+                            ย้อนกลับ
+                        </Button>
+                        )}
+                        {!images[`step${currentStep + 1}`] ? (
                                 <Button
                                 id="Takepicture"
                                     type="primary"
@@ -455,7 +482,7 @@ const SaleReturn: React.FC = () => {
                                     style={{ display: 'flex', alignItems: 'center' }}>
                                     ถ่ายรูป
                                 </Button>
-                            ) : (
+                        ) : (
                                 <>
                                     <Button
                                     id="Retakepicture"
@@ -467,7 +494,6 @@ const SaleReturn: React.FC = () => {
                                         ถ่ายใหม่
                                     </Button>
                                     
-                                      
                                     <Button
                                     id="Next"
                                         style={{ width: '100px' }}
@@ -534,15 +560,7 @@ const SaleReturn: React.FC = () => {
                                     rowKey="key"
                                     style={{ marginTop: '50px' }}
                                 />
-                               
-
-
-                            
                             </>
-                            
-                        
-                        
-                        
                         )}
     
                         {showWebcam && (
