@@ -8,4 +8,17 @@ const api = axios.create({
   },
 });
 
+
+// เพิ่ม Interceptors เพื่อจัดการ Token หรือ Error Handling ได้
+// api.interceptors.request.use(
+//   (config) => {
+//     const token = localStorage.getItem("token"); // ตัวอย่างการดึง token
+//     if (token) {
+//       config.headers.Authorization = `Bearer ${token}`;
+//     }
+//     return config;
+//   },
+//   (error) => Promise.reject(error)
+// );
+
 export default api;
