@@ -3,36 +3,35 @@ import { Steps, Col, ConfigProvider, Form, Layout, Row, Select, Button, Table, M
 import Webcam from 'react-webcam';
 import { CameraOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { QrReader, QrReaderProps } from 'react-qr-reader';
-
-const orderOptions = [
-    { value: '1', label: '12345' },
-    { value: '2', label: '12346' },
-    { value: '3', label: '12347' },
-    { value: '4', label: '12348' },
-    { value: '5', label: '12349' },
-    { value: '6', label: '12350' },
-];
+import api from "../../../utils/axios/axiosInstance";
 
 interface CustomQrReaderProps extends QrReaderProps {
     onScan: (result: string | null) => void;
     onError: (error: any) => void;
 }
 
-interface DataType {
+interface Order {
+    orderNo: string;
+    trackingNo: string;
+    data: OrderLine[];
+}
+
+interface OrderLine {
     key: string;
     sku: string;
-    name: string;
+    itemName: string;
     qty: number;
     receivedQty: number;
-    amount: string;
+    price: string;
     image: string | null;
-   
 }
 
 const OtherReturn: React.FC = () => {
+    const [orderOptions, setOrderOptions] = useState<{ value: string; label: string }[]>([]);
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [showScanner, setShowScanner] = useState<boolean>(false);
     const [skuInput, setSkuInput] = useState<string>('');
+    const [current, setCurrent] = useState(0);
     const [currentStep, setCurrentStep] = useState(0);
     const [currentRecordKey, setCurrentRecordKey] = useState<string | null>(null);
     const [skuName, setSkuName] = useState<string | null>(null);
@@ -44,16 +43,78 @@ const OtherReturn: React.FC = () => {
         step2: null,
     });
     const webcamRef = useRef<Webcam>(null);
+    const [data, setData] = useState<OrderLine[]>([]);
 
     const onChange = (current: number) => {
         setCurrentStep(current);
     };
 
+    const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('environment');
 
-    const handleSelectChange = (value: string) => {
+    const toggleCamera = () => {
+        setCameraFacingMode((prevMode) => (prevMode === 'user' ? 'environment' : 'user'));
+    };
+
+    useEffect(() => {
+        const fetchOrderOptions = async () => {
+            try {
+                const response = await api.get('/api/import-order/get-order-tracking');
+                const options = response.data.data.map((item: any, index: number) => ({
+                    key: `${item.orderNo}-${index}`, // เพิ่ม index เพื่อให้คีย์เป็นเอกลักษณ์
+                    value: item.orderNo,
+                    label: item.orderNo,
+                }));
+                setOrderOptions(options);
+            } catch (error) {
+                console.error('Failed to fetch order options:', error);
+                notification.error({
+                    message: 'Error',
+                    description: 'Failed to fetch order options.',
+                });
+            }
+        };
+
+        fetchOrderOptions();
+    }, []);
+
+    const handleSelectChange = async (value: string) => {
         setShowSteps(true);
         setCurrentStep(0);
         setShowTable(false);
+
+        try {
+            const response = await api.get(`/api/import-order/search-order-tracking?search=${value}`);
+            // ตรวจสอบว่ามีข้อมูล orderLines หรือไม่
+            if (response.data && response.data.data && response.data.data.length > 0 && response.data.data[0].orderLines) {
+                // กรองข้อมูล orderLines ที่มี SKU ขึ้นต้นด้วย "G"
+                const filteredOrderLines = response.data.data[0].orderLines.filter((item: any) => item.sku.startsWith('G'));
+                const orderData = filteredOrderLines.map((item: any, index: number) => ({
+                    key: `${index + 1}`,
+                    sku: item.sku,
+                    itemName: item.itemName,
+                    qty: item.qty,
+                    receivedQty: 0,
+                    price: item.price,
+                    image: null,
+                }));
+                setData(orderData);
+                // setShowTable(true);
+            } else {
+                // กรณีไม่มีข้อมูล orderLines
+                setData([]);
+                setShowTable(false);
+                notification.warning({
+                    message: 'คำเตือน',
+                    description: 'ไม่พบข้อมูล Order Lines สำหรับ Order นี้',
+                });
+            }
+        } catch (error) {
+            console.error('Failed to fetch order data:', error);
+            notification.error({
+                message: 'Error',
+                description: 'Failed to fetch order data.',
+            });
+        }
     };
 
     const capturePhoto = () => {
@@ -89,16 +150,16 @@ const OtherReturn: React.FC = () => {
 
     const columns = [
         { title: 'SKU', dataIndex: 'sku', key: 'sku',id:'sku' },
-        { title: 'Name', dataIndex: 'name', key: 'name' ,id:'name'},
+        { title: 'Name', dataIndex: 'itemName', key: 'itemName' ,id:'itemName'},
         { title: 'QTY', dataIndex: 'qty', key: 'qty',id:'qty' },
         { title: 'จำนวนรับเข้า', dataIndex: 'receivedQty', key: 'receivedQty',id:'receivedQty' },
-        { title: 'Amount', dataIndex: 'amount', key: 'amount',id:'amount' },
+        { title: 'Amount', dataIndex: 'price', key: 'price',id:'price' },
         {
             title: 'Return',
             dataIndex: 'Return',
             id:'Return',
             key: 'Return',
-            render: (_: any, record: DataType) => {
+            render: (_: any, record: OrderLine) => {
                 // Check if the current record has receivedQty equal to qty
                 const isConfirmed = record.receivedQty === record.qty;
                 return isConfirmed ? (
@@ -117,7 +178,7 @@ const OtherReturn: React.FC = () => {
             dataIndex: 'image',
             id:'image',
             key: 'image',
-            render: (_: any, record: DataType) =>
+            render: (_: any, record: OrderLine) =>
                 record.image ? (
                     <img src={record.image} alt="Return" style={{ width: '100px' }} />
                 ) : (
@@ -125,7 +186,7 @@ const OtherReturn: React.FC = () => {
                         style={{ background: '#02C39A' }}
                         icon={<CameraOutlined />}
                         type="primary"
-                        onClick={() => handleTakePhoto(record.key, record.sku)} // Use sku instead of name
+                        onClick={() => handleTakePhoto(record.key, record.sku)} // Use sku instead of itemName
                     >
                         กดเพื่อถ่ายรูป
                     </Button>
@@ -135,7 +196,7 @@ const OtherReturn: React.FC = () => {
             title: 'Action',
             id:'Action',
             key: 'action',
-            render: (_: any, record: DataType) => (
+            render: (_: any, record: OrderLine) => (
               <>
                 <Button
                   style={{
@@ -174,54 +235,54 @@ const OtherReturn: React.FC = () => {
           
     ];
 
-    const [data, setData] = useState<DataType[]>([
+    // const [data, setData] = useState<OrderLine[]>([
 
-        {
-            key: '1',
-            sku: 'G090108-EF05',
-            name: 'Bewell Foot Rest EF-05',
-            qty: 3,
-            receivedQty: 0,
-            amount: '500',
-            image: null,
+    //     {
+    //         key: '1',
+    //         sku: 'G090108-EF05',
+    //         itemName: 'Bewell Foot Rest EF-05',
+    //         qty: 3,
+    //         receivedQty: 0,
+    //         price: '500',
+    //         image: null,
         
 
 
-        },
-        {
-            key: '2',
-            sku: 'G091116-PC08-GY',
-            name: 'Bewell Cooling Blanket Single PC-08(Gray)',
-            qty: 2,
-            receivedQty: 0,
-            amount: '600',
-            image: null,
+    //     },
+    //     {
+    //         key: '2',
+    //         sku: 'G091116-PC08-GY',
+    //         itemName: 'Bewell Cooling Blanket Single PC-08(Gray)',
+    //         qty: 2,
+    //         receivedQty: 0,
+    //         price: '600',
+    //         image: null,
           
-        },
-        {
-            key: '3',
-            sku: 'G091116-PC09-BL',
-            name: 'Bewell Cooling Blanket King PC-08(Blue)',
-            qty: 3,
-            receivedQty: 0,
-            amount: '700',
-            image: null,
+    //     },
+    //     {
+    //         key: '3',
+    //         sku: 'G091116-PC09-BL',
+    //         itemName: 'Bewell Cooling Blanket King PC-08(Blue)',
+    //         qty: 3,
+    //         receivedQty: 0,
+    //         price: '700',
+    //         image: null,
             
-        },
+    //     },
 
        
-    ]);
+    // ]);
 
     const handleTakePhoto = (recordKey: string, sku: string) => {
         setCurrentRecordKey(recordKey);
-        setSkuName(sku); // Use sku instead of name
+        setSkuName(sku); // Use sku instead of itemName
         setShowWebcam(true);
     };
 
     const handleRetakePhoto = (recordKey: string) => {
         setCurrentRecordKey(recordKey);
         const currentItem = data.find(item => item.key === recordKey);
-        setSkuName(currentItem?.sku || null); // Use sku instead of name
+        setSkuName(currentItem?.sku || null); // Use sku instead of itemName
         setShowWebcam(true);
     };
 
