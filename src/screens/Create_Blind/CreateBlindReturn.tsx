@@ -1,16 +1,26 @@
-import { Button, Radio, Select, Space, Col, ConfigProvider, Form, Layout, Row, Input, InputNumber, Table, notification, message, Tooltip } from "antd";
+import { Popconfirm, Button, Radio, Select, Space, Col, ConfigProvider, Form, Layout, Row, Input, InputNumber, Table, notification, message, Tooltip } from "antd";
 import { DeleteOutlined, PlusCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import type { RadioChangeEvent } from 'antd';
+import { debounce } from "lodash";
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
+import api from "../../utils/axios/axiosInstance"; 
+const { Option } = Select;
 
-interface TableDataItem {
-    key: string; // ค่าที่ใช้เป็น key
+
+interface DataItem {
+    key: number; // ค่าที่ใช้เป็น key
     SKU: string;
-    SKU_Name: string;
+    Name: string;
     QTY: number;
 }
 
+interface Product {
+    Key: string;
+    sku: string;
+    nameAlias: string;
+    size: string;
+  }
 
 const SKUName = [
     { Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", SKU: "G097171-ARM01-BL" },
@@ -32,16 +42,28 @@ const nameOptions = SKUName.map(item => ({
 
 const CreateBlind = () => {
     const [showInput, setShowInput] = useState(false);
-    const [selectedSKU, setSelectedSKU] = useState<string | undefined>(undefined);
+    // const [selectedSKU, setSelectedSKU] = useState<string | undefined>(undefined);
     const [value, setValue] = useState<number>(0);
-    const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
+    // const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
     const [form] = Form.useForm();
     const [form2] = Form.useForm();
     const [formValid, setFormValid] = useState(false);
     const [formskuValid, setFormskuValid] = useState(false);
-    const [qty, setQty] = useState<number | null>(null);
+    // const [qty, setQty] = useState<number | null>(null);
     const [key, setKey] = useState<null>(null);
-    const [tableData, setTableData] = useState<TableDataItem[]>([]); // ใช้ interface ที่กำหนด
+    const [tableData, setTableData] = useState<DataItem[]>([]); // ใช้ interface ที่กำหนด
+
+    const [skuOptions, setSkuOptions] = useState<Product[]>([]); // To store SKU options
+    const [nameOptions, setNameOptions] = useState<Product[]>([]); // To store Name Alias options
+    const [selectedSKU, setSelectedSKU] = useState<string | undefined>(undefined);
+    const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
+    const [price, setPrice] = useState<number | null>(null); 
+    const [qty, setQty] = useState<number | null>(null); 
+
+   const [loading, setLoading] = useState(false);
+   const [dataSource, setDataSource] = useState<DataItem[]>([]);
+
+
     const navigate = useNavigate();
     
     const onChange = (e: RadioChangeEvent) => {
@@ -54,89 +76,230 @@ const CreateBlind = () => {
         navigate('/Takepicture'); // เส้นทางนี้ควรตรงกับการตั้งค่า Route ใน App.js หรือไฟล์ routing ของคุณ
     };
 
-    const handleNameChange = (value: string) => {
-        const selectedOption = SKUName.find((item) => item.Name === value);
-        if (selectedOption) {
+    /*** SKU&NameAlias ***/
+
+    // ค้นหา Product (SKU หรือ NAMEALIAS)
+    const debouncedSearchSKU = debounce(async (value: string, searchType: string) => {
+        setLoading(true);
+        try {
+        const response = await api.get("/api/constants/search-product", {
+            params: {
+            keyword: value,
+            searchType,
+            offset: 0,
+            limit: 50,
+            },
+        });
+
+        const products = response.data.data;
+
+        if (searchType === "SKU") {
+            setSkuOptions(products.map((product: Product) => ({
+            sku: product.sku,
+            nameAlias: product.nameAlias,
+            size: product.size,
+            })));
+        } else if (searchType === "NAMEALIAS") {
+            setNameOptions(products.map((product: Product) => ({
+            sku: product.sku,
+            nameAlias: product.nameAlias,
+            size: product.size,
+            })));
+        }
+        } catch (error) {
+        console.error("Error fetching products:", error);
+        notification.error({
+            message: "Error",
+            description: "There was an error fetching product data.",
+        });
+        } finally {
+        setLoading(false);
+        }
+    }, 1000);
+
+    const handleSearchSKU = (value: string) => {
+        debouncedSearchSKU(value, "SKU");
+    };
+
+    const handleSearchNameAlias = (value: string) => {
+        debouncedSearchSKU(value, "NAMEALIAS");
+    };
+
+    // เมื่อเลือก Name Alias แล้วใช้ `/api/constants/get-sku` เพื่อหา SKU
+    const handleNameChange = async (value: string) => {
+        if (!value) {
+            // ถ้า value เป็น undefined หรือว่าง ให้เคลียร์ค่าในฟอร์ม
+            form.setFieldsValue({ SKU: "", SKU_Name: "" });
+            setSkuOptions([]);
+            setNameOptions([]);
+            return;
+        }
+
+        const [nameAlias, size] = value.split("+"); // แยกค่า nameAlias และ size โดยใช้ `+`
+
+        try {
+        setLoading(true);
+        const response = await api.get("/api/constants/get-sku", {
+            params: { nameAlias, size },
+        });
+
+        // เก็บผลลัพธ์จาก API เพื่อแสดงหลาย SKU
+        const products = response.data.data;
+
+        if (products.length > 0) {
+            setSkuOptions(products.map((product: Product) => ({
+            sku: product.sku,
+            nameAlias: product.nameAlias,
+            size: product.size,
+            })));
             form2.setFieldsValue({
-                SKU: selectedOption.SKU,
-                SKU_Name: selectedOption.Name,
+            SKU: products[0].sku, // ตั้งค่า SKU ตัวแรกที่พบ
             });
-            setSelectedName(value);
-            setSelectedSKU(selectedOption.SKU);
+        } else {
+            console.warn("No SKU found for:", nameAlias, size);
+            setSkuOptions([]); 
+            setNameOptions([]); 
+            form2.setFieldsValue({ SKU: "", SKU_Name: "" }); // เคลียร์ค่าในฟอร์ม
+        }
+        } catch (error) {
+        console.error("Error fetching SKU:", error);
+        } finally {
+        setLoading(false);
         }
     };
 
     const handleSKUChange = (value: string) => {
-        const selectedOption = SKUName.find((item) => item.SKU === value);
-        if (selectedOption) {
-            form2.setFieldsValue({
-                SKU: selectedOption.SKU,
-                SKU_Name: selectedOption.Name,
-            });
-            setSelectedSKU(value);
-            setSelectedName(selectedOption.Name);
+        const selected = skuOptions.find((option) => option.sku === value);
+        
+        if (selected) {
+        form2.setFieldsValue({
+            SKU: selected.sku,
+            SKU_Name: selected.nameAlias,
+        });
+        setSelectedSKU(selected.sku);
+        setSelectedName(selected.nameAlias);
+
+        // อัปเดต nameOptions ตาม SKU ที่เลือก
+        const filteredNameOptions = skuOptions
+        .filter((option) => option.sku === selected.sku) // กรองเฉพาะ SKU ที่ตรงกับที่เลือก
+        .map((option) => ({
+        ...option,  // คัดลอกค่าเดิม
+        Key: option.sku,  // เพิ่มคีย์ Key ที่ต้องการ
+        }));
+        setNameOptions(filteredNameOptions);  // อัปเดต nameOptions
+        } else { // เคลียร์ค่าเมื่อไม่มี SKU ที่ตรงกัน
+        setSkuOptions([]); 
+        setNameOptions([]); 
+        setSelectedSKU("");
+        setSelectedName("");
         }
     };
+
+    useEffect(() => {
+        if (selectedSKU) {
+            const selected = skuOptions.find((option) => option.sku === selectedSKU);
+            if (selected) {
+                form2.setFieldsValue({
+                    SKU: selected.sku,
+                    SKU_Name: selected.nameAlias,
+                });
+            }
+        }
+    }, [selectedSKU, skuOptions, form2]);
     
-
-
     const handleAdd = () => {
-        // ตรวจสอบว่า SKU ซ้ำหรือไม่
-        const isDuplicate = tableData.some(item => item.SKU === selectedSKU);
-        
-        if (isDuplicate) {
-            notification.warning({
-                message: "SKU ซ้ำ",
-                description: "SKU นี้ถูกเพิ่มไปแล้ว",
+        form2.validateFields()
+            .then((values) => {
+                // ตรวจสอบว่า SKU_Name มีค่าและมีเครื่องหมาย '+'
+                if (values.SKU_Name || values.SKU_Name.includes('+')) {
+                    const [nameAlias, size] = values.SKU_Name.split('+');
+                    // ตรวจสอบว่า SKU ที่กรอกมีอยู่ใน dataSource หรือไม่
+                    const isSKUExist = dataSource.some((item) => item.SKU === values.SKU);
+    
+                    if (isSKUExist) {
+                        // แสดงข้อความเตือนว่า SKU ซ้ำ
+                        notification.warning({
+                            message: "มีข้อผิดพลาด",
+                            description: "SKU นี้ถูกเพิ่มไปแล้วในรายการ!",
+                        });
+                        return; // ไม่ทำการเพิ่มข้อมูล
+                    }
+    
+                    // ถ้า SKU ยังไม่ซ้ำ เพิ่มข้อมูลใหม่
+                    const newData = {
+                        key: dataSource.length + 1,
+                        SKU: values.SKU,
+                        Name: nameAlias,
+                        QTY: values.QTY,
+                    };
+    
+                    setDataSource([...dataSource, newData]); // เพิ่มข้อมูลใหม่ไปยัง dataSource
+    
+                    // แสดงข้อความเมื่อเพิ่มข้อมูลสำเร็จ
+                    notification.success({
+                        message: "เพิ่มสำเร็จ",
+                        description: "ข้อมูลของคุณถูกเพิ่มเรียบร้อยแล้ว!",
+                    });
+    
+                    // รีเซ็ตฟอร์ม
+                    form2.resetFields(['SKU', 'SKU_Name', 'QTY']);
+                    setSkuOptions([]);
+                    setNameOptions([]);
+                    setSelectedSKU("");
+                    setSelectedName("");
+                } else {
+                    // แสดงข้อความเตือนหาก SKU_Name ไม่มีค่าหรือไม่มีเครื่องหมาย '+'
+                    notification.warning({
+                        message: "มีข้อผิดพลาด",
+                        description: "กรุณาเลือก SKU Name ที่ถูกต้อง!",
+                    });
+                }
+            })
+            .catch((info) => {
+                console.log("Validate Failed:", info);
+                notification.warning({
+                    message: "มีข้อสงสัย",
+                    description: "กรุณากรอกข้อมูลให้ครบก่อนเพิ่ม!",
+                });
             });
-            return;  // หยุดการทำงานหากพบว่า SKU ซ้ำ
-        }
-        
-        // หาก SKU ไม่ซ้ำ ให้เพิ่มข้อมูลใหม่
-        const newKey = selectedSKU!;
-        setTableData([...tableData, { SKU: selectedSKU!, SKU_Name: selectedName!, QTY: qty!, key: newKey }]);
-        
-        // รีเซ็ตฟอร์ม
-        form.resetFields(['SKU', 'QTY', 'SKU_Name']);
-        
-        notification.success({
-            message: "เพิ่มข้อมูลสำเร็จ",
-        });
     };
     
-    const handleDelete = (key: string) => {
-        setTableData(tableData.filter(item => item.key !== key));
+    // const handleDelete = (key: string) => {
+    //     setTableData(tableData.filter(item => item.key !== key));
+    //     notification.success({
+    //         message: "ลบข้อมูลสำเร็จ",
+    //         description: "ข้อมูลของคุณถูกลบออกเรียบร้อยแล้ว.",
+    //     });
+    // };
+
+    const handleDelete = (key: number) => {
+        setDataSource(dataSource.filter((item) => item.key !== key));
         notification.success({
-            message: "ลบข้อมูลสำเร็จ",
+          message: "ลบข้อมูลสำเร็จ",
+          description: "ข้อมูลของคุณถูกลบออกเรียบร้อยแล้ว.",
         });
-    };
+      };
 
    
     const columns = [
+        { title: "SKU", dataIndex: "SKU", id: "SKU" },
+        { title: "Name", dataIndex: "Name", id: "Name" },
+        { title: "QTY", dataIndex: "QTY", id: "QTY" },
         {
-            id:'SKU',
-            title: 'SKU',
-            dataIndex: 'SKU',
-        },
-        {
-            id:'Name',
-            title: 'Name',
-            dataIndex: 'SKU_Name',
-        },
-        {
-            id:'QTY',
-            title: 'QTY',
-            dataIndex: 'QTY',
-        },
-        {
-            id:'Action',
             title: "Action",
+            id:'Action',
             dataIndex: "Action",
-            render: (_: any, record: { key: string }) => (
+            render: (_: any, record: { key: number }) => (
+                <Popconfirm
+                title="คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?"
+                onConfirm={() => handleDelete(record.key)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดยืนยัน
+                okText="ใช่"
+                cancelText="ไม่"
+              >
                 <DeleteOutlined
-                    style={{ cursor: 'pointer', color: 'red', fontSize: '20px' }}
-                    onClick={() => handleDelete(record.key)}
+                  style={{ cursor: "pointer", color: "red", fontSize: "20px" }}
                 />
+              </Popconfirm>
             ),
         },
     ];
@@ -157,10 +320,18 @@ const CreateBlind = () => {
     };
 
     const handleSubmit = () => {
+        if (dataSource.length === 0) {
+            notification.warning({
+              message: "ไม่สามารถส่งข้อมูลได้",
+              description: "กรุณาเพิ่มข้อมูลในตารางก่อนส่ง!",
+            });
+            return; // หยุดการทำงานของฟังก์ชัน
+        }
+
         if (value === 2) {
             // กรณีเลือก "No"
             handleNavigateToTakepicture();
-        } else if (value === 1 && tableData.length === 0) {
+        } else if (value === 1 && dataSource.length === 0) {
             notification.warning({
                 message: "กรุณาเพิ่มข้อมูลในตาราง",
                 description: "กรุณากรอก SKU และจำนวนอย่างน้อย 1 รายการในตารางก่อนที่จะดำเนินการต่อ!",
@@ -168,6 +339,18 @@ const CreateBlind = () => {
         } else {
             handleNavigateToTakepicture();
         }
+
+            // ส่งข้อมูลและรีเซ็ตฟอร์มและตาราง
+            console.log("Table Data:", dataSource);
+        
+            form.resetFields();  // รีเซ็ตฟอร์มและตาราง
+            form2.resetFields();
+            setDataSource([]); // หรือปรับเป็นค่าเริ่มต้นที่คุณต้องการได้
+        
+            notification.success({
+              message: "ส่งข้อมูลสำเร็จ",
+              description: "ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!",
+            });
     };
     
     const handleFormValidation = () => {
@@ -308,25 +491,25 @@ const CreateBlind = () => {
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
-                                <Form.Item
-                                   id="TransportType"
-                                    label={<span style={{ color: '#657589' }}>Transport Type:</span>}
-                                    name="TransportType"
-                                    rules={[{ required: true, message: 'กรุณาเลือก Transport Type' }]}
-                                >
-                                    <Select
-                                        style={{ width: '100%', height: '40px' }}
-                                        showSearch
-                                        placeholder="Transport Type"
-                                        options={[
-                                            { value: '1', label: 'SPX Express' },
-                                            { value: '2', label: 'J&T Express' },
-                                            { value: '3', label: 'Flash Express' },
-                                            { value: '4', label: 'Shopee' },
-                                            { value: '5', label: 'NocNoc' },
-                                        ]}
+                            <Form.Item
+                                id="Logistic"
+                                label={
+                                <span style={{ color: "#657589" }}>
+                                    กรอก Logistic:&nbsp;
+                                    <Tooltip title="ผู้ให้บริการขนส่ง">
+                                    <QuestionCircleOutlined
+                                        style={{ color: "#657589" }}
                                     />
-                                </Form.Item>
+                                    </Tooltip>
+                                </span>
+                                }
+                                name="Logistic"
+                                rules={[
+                                { required: true, message: "กรอก Logistic" },
+                                ]}
+                            >
+                                <Input style={{ height: 40 }} />
+                            </Form.Item>
                             </Col>
                         </Row>
                     </Form>
@@ -357,36 +540,62 @@ const CreateBlind = () => {
         <Row gutter={16} style={{ marginTop: "20px", width: '100%' }}>
         <Col span={8}>
             <Form.Item
-             id="Sku" 
-                label={<span style={{ color: '#657589' }}>กรอก SKU:</span>}
+             id="SKU" 
+                label={<span style={{ color: '#657589' }}>SKU:</span>}
                 name="SKU"
                 rules={[{ required: true, message: "กรุณากรอก SKU" }]}
             >
                 <Select
-                    showSearch
-                    style={{ width: '100%', height: '40px' }}
-                    placeholder="เลือก SKU"
-                    value={selectedSKU}
-                    onChange={handleSKUChange}
-                    options={skuOptions}
-                />
+                      showSearch
+                      style={{ width: "100%", height: "40px" }}
+                      placeholder="Search by SKU"
+                      value={selectedSKU} // ใช้ค่าที่เลือก
+                      onSearch={handleSearchSKU} // ใช้สำหรับค้นหา SKU
+                      onChange={handleSKUChange} // เมื่อเลือก SKU
+                      loading={loading}
+                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
+                      virtual // ทำให้ค้นหาไวขึ้น
+                      dropdownStyle={{ minWidth: 200 }}
+                    >
+                      {skuOptions.map((option) => (
+                        <Option 
+                          key={`${option.sku}-${option.size}`} 
+                          value={option.sku}
+                        >
+                          {option.sku}
+                      </Option>
+                      ))}
+                </Select>
             </Form.Item>
         </Col>
         <Col span={8}>
             <Form.Item
-                id="SkuName" 
-                label={<span style={{ color: '#657589' }}>Name:</span>}
+                id="SKU_Name" 
+                label={<span style={{ color: '#657589' }}>SKU Name:</span>}
                 name="SKU_Name"
                 rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
             >
                 <Select
-                    showSearch
-                    style={{ width: '100%', height: '40px' }}
-                    placeholder="เลือก SKU Name"
-                    value={selectedName}
-                    onChange={handleNameChange}
-                    options={nameOptions}
-                />
+                      showSearch
+                      style={{ width: "100%", height: "40px" }}
+                      placeholder="Search by Product Name"
+                      value={selectedName} // ใช้ค่าที่เลือก
+                      onSearch={handleSearchNameAlias} // ใช้สำหรับค้นหา Name Alias
+                      onChange={handleNameChange} // เมื่อเลือก Name Alias
+                      loading={loading}
+                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
+                      virtual // ทำให้ค้นหาไวขึ้น
+                      dropdownStyle={{ minWidth: 300 }}
+                    >
+                      {nameOptions.map((option) => (
+                        <Option 
+                          key={`${option.nameAlias}-${option.size}`} 
+                          value={`${option.nameAlias}+${option.size}`}
+                        >
+                          {option.nameAlias}
+                        </Option>
+                      ))}
+                </Select>
             </Form.Item>
         </Col>
         <Col span={4}>
@@ -426,7 +635,7 @@ const CreateBlind = () => {
                             id="Table" 
                                 style={{ marginTop: '20px' }}
                                 columns={columns}
-                                dataSource={tableData}
+                                dataSource={dataSource}
                                 rowKey="SKU"
                                 pagination={false}
                             />
@@ -434,16 +643,37 @@ const CreateBlind = () => {
                         
                     </Form>
                     <Row align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}> 
-                    <Button
+                    {/* <Button
                         id="Confirm" 
-            type="primary"
-            onClick={handleSubmit}
-            disabled={(value === 2 && formValid === true ) ? false : (value === 1 && tableData.length > 0&& formValid === true ) ? false :true}
-            // disabled={tableData.length === 0 || !formValid || value === undefined}  // ปิดการใช้งานเมื่อไม่มีข้อมูลในตาราง, form ไม่ valid หรือไม่มีการเลือก value
-        >
-            ยืนยัน
-        </Button>
-    </Row>
+                        type="primary"
+                        onClick={handleSubmit}
+                        // disabled={
+                        //     (value === 2 && formValid === true ) 
+                        //     ? false 
+                        //     : (value === 1 && dataSource.length > 0&& formValid === true ) 
+                        //     ? false 
+                        //     :true
+                        // }
+                        // disabled={!((value === 2 && formValid) || (value === 1 && dataSource.length > 0 && formValid))}
+                        // disabled={tableData.length === 0 || !formValid || value === undefined}  // ปิดการใช้งานเมื่อไม่มีข้อมูลในตาราง, form ไม่ valid หรือไม่มีการเลือก value
+                    >
+                        ยืนยัน
+                    </Button> */}
+                    <Popconfirm
+                        id="popconfirmSubmit"
+                        title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
+                        onConfirm={handleSubmit} // เรียกใช้ฟังก์ชัน handleSubmit เมื่อกดยืนยัน
+                        okText="ใช่"
+                        cancelText="ไม่"
+                        >
+                        <Button
+                            id="Confirm"
+                            type="primary"
+                        >
+                            Submit
+                        </Button>
+                    </Popconfirm>
+                    </Row>
                 </Layout.Content>
             </Layout>
         </ConfigProvider>
