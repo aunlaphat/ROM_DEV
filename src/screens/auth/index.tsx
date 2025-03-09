@@ -19,16 +19,16 @@ export const Login = () => {
   const { setValue, getValues, control } = useForm();
 
   const onChange = () => {
-    const { username, password } = getValues();
-    const d = !username || !password;
+    const { userName, password } = getValues();
+    const d = !userName || !password;
     setDisabled(d);
   };
 
   const onSubmit = async () => {
     try {
-      const { username, password } = getValues();
+      const { userName, password } = getValues();
       setLoading(true);
-      await login({ username, password });
+      await login({ userName, password });
     } catch (error) {
       console.error("Login Error:", error);
     } finally {

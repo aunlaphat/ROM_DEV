@@ -3,7 +3,7 @@ export const LoginForm = () => {
     {
       key: "1",
       span: 24,
-      name: "username",
+      name: "userName",
       label: "ชื่อผู้ใช้ (username)",
       type: "INPUT",
       placeholder: "กรอกชื่อผู้ใช้",

@@ -1,138 +1,158 @@
+// src/redux/auth/reducer.tsx
 import { AuthActionTypes } from "./types";
 import { logger } from '../../utils/logger';
+import { AuthState, User } from "./interface";
 
-type User = {
-  userID: string;
-  userName: string;
-  fullNameTH: string;
-  nickName: string;
-  roleID: number;
-  roleName: string;
-  departmentNo: string;
-  platform: string;
-};
-
-type State = {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  loading: boolean;
-  error?: string;
-};
-
-const initialState: State = {
+// สร้าง initial state
+const initialState: AuthState = {
   user: null,
   token: localStorage.getItem("access_token") || null,
   isAuthenticated: false,
   loading: false,
+  error: null
 };
 
-export default function authReducer(state = initialState, action: any) {
+/**
+ * ฟังก์ชันสำหรับแปลงข้อมูล user ให้สอดคล้องกับแอพพลิเคชัน
+ * รองรับทั้งกรณีที่ backend ส่ง fullName และกรณีที่ frontend ใช้ fullNameTH
+ */
+const normalizeUser = (userData: any): User => {
+  return {
+    userID: userData.userID,
+    userName: userData.userName,
+    fullNameTH: userData.fullNameTH,
+    nickName: userData.nickName,
+    roleID: userData.roleID || userData.userRoleID,
+    roleName: userData.roleName,
+    departmentNo: userData.departmentNo,
+    platform: userData.platform
+  };
+};
+
+/**
+ * Auth Reducer
+ */
+export default function authReducer(state: AuthState = initialState, action: any): AuthState {
   switch (action.type) {
+    // Request actions
     case AuthActionTypes.AUTHEN_LOGIN_REQ:
-      logger.log('info', '[Auth] Processing login request');
-      return { ...state, loading: true };
-      
-    case AuthActionTypes.AUTHEN_LOGIN_SUCCESS:
-      logger.log('info', '[Auth] Login successful', {
-        user: action.users,
-        previousUser: state.user
-      });
-      return {
-        ...state,
-        isAuthenticated: true,
-        user: action.users,
-        loading: false,
-        error: null
-      };
-      
-    case AuthActionTypes.AUTHEN_CHECK_SUCCESS:
-      logger.log('info', '[Auth] Auth check successful', {
-        incomingUser: action.users,
-        currentUser: state.user
-      });
-      return {
-        ...state,
-        isAuthenticated: true,
-        user: {
-          ...action.users,
-          roleID: action.users.roleID || action.users.userRoleID,
-          userID: action.users.userID,
-          userName: action.users.userName,
-          roleName: action.users.roleName
-        },
-        loading: false,
-      };
-      
-    case AuthActionTypes.AUTHEN_LOGIN_FAIL:
-      logger.error('[Auth] Login failed', { message: action.message });
-      return {
-        ...state,
-        isAuthenticated: false,
-        user: null,
-        token: null,
-        loading: false,
-        error: action.message,
-      };
-      
     case AuthActionTypes.AUTHEN_LOGIN_LARK_REQ:
-      logger.log('info', '[Auth] Processing Lark login request');
-      return { ...state, loading: true };
-      
-    case AuthActionTypes.AUTHEN_LOGIN_LARK_SUCCESS:
-      logger.log('info', '[Auth] Lark login successful', { user: action.users });
-      return {
-        ...state,
-        loading: false,
-        isAuthenticated: true,
-        user: action.users,
-      };
-      
-    case AuthActionTypes.AUTHEN_LOGIN_LARK_FAIL:
-      logger.error('[Auth] Lark login failed', { message: action.message });
-      return {
-        ...state,
-        loading: false,
-        isAuthenticated: false,
-        error: action.message,
-      };
-      
-    case AuthActionTypes.AUTHEN_LOGOUT_SUCCESS:
-      logger.log('info', '[Auth] Logout successful');
-      return { ...state, loading: false, isAuthenticated: false, user: null };
-      
-    case AuthActionTypes.AUTHEN_LOGOUT_FAIL:
-      logger.error('[Auth] Logout failed', { message: action.message });
-      return { ...state, loading: false, error: action.message };
-      
     case AuthActionTypes.AUTHEN_CHECK_REQ:
-      logger.log('info', '[Auth] Processing auth check request');
+      logger.redux.action(action.type);
       return { 
         ...state, 
         loading: true,
         error: null
       };
       
-    case AuthActionTypes.AUTHEN_CHECK_SUCCESS:
-      logger.log('info', '[Auth] Auth check successful', { user: action.users });
+    // Success login actions (รวมทั้ง login ปกติและ Lark)
+    case AuthActionTypes.AUTHEN_LOGIN_SUCCESS:
+    case AuthActionTypes.AUTHEN_LOGIN_LARK_SUCCESS:
+      logger.redux.action(action.type, { 
+        userID: action.users?.userID,
+        userName: action.users?.userName
+      });
+      
+      // นำข้อมูล user มาแปลงเป็นรูปแบบที่แอพต้องการ
+      const normalizedUser = normalizeUser(action.users);
+      
+      logger.state.update('Auth State', {
+        isAuthenticated: true,
+        user: {
+          userID: normalizedUser.userID,
+          userName: normalizedUser.userName,
+          roleID: normalizedUser.roleID
+        }
+      });
+      
       return {
         ...state,
         isAuthenticated: true,
-        user: action.users,
+        user: normalizedUser,
         loading: false,
         error: null
       };
       
+    // Success check auth
+    case AuthActionTypes.AUTHEN_CHECK_SUCCESS:
+      logger.redux.action(action.type, {
+        userID: action.users?.userID,
+        userName: action.users?.userName
+      });
+      
+      // นำข้อมูล user มาแปลงเป็นรูปแบบที่แอพต้องการ
+      const checkedUser = normalizeUser(action.users);
+      
+      logger.state.update('Auth State (Check)', {
+        isAuthenticated: true,
+        user: {
+          userID: checkedUser.userID,
+          userName: checkedUser.userName
+        }
+      });
+      
+      return {
+        ...state,
+        isAuthenticated: true,
+        user: checkedUser,
+        loading: false,
+        error: null
+      };
+      
+    // Failure actions
+    case AuthActionTypes.AUTHEN_LOGIN_FAIL:
+    case AuthActionTypes.AUTHEN_LOGIN_LARK_FAIL:
     case AuthActionTypes.AUTHEN_CHECK_FAIL:
-      logger.error('[Auth] Auth check failed', { message: action.message });
+      logger.redux.action(action.type, { error: action.message });
+      
+      logger.state.error('Auth State Error', { 
+        message: action.message,
+        previousState: {
+          isAuthenticated: state.isAuthenticated,
+          hasUser: !!state.user
+        }
+      });
+      
       return {
         ...state,
         isAuthenticated: false,
         user: null,
+        token: null,
         loading: false,
         error: action.message
       };
       
+    // Logout success
+    case AuthActionTypes.AUTHEN_LOGOUT_SUCCESS:
+      logger.redux.action(action.type);
+      
+      logger.state.update('Auth State', {
+        isAuthenticated: false,
+        message: 'User logged out'
+      });
+      
+      return { 
+        ...state, 
+        loading: false, 
+        isAuthenticated: false, 
+        user: null,
+        token: null,
+        error: null
+      };
+      
+    // Logout failure - แต่ยังคงสถานะเดิม
+    case AuthActionTypes.AUTHEN_LOGOUT_FAIL:
+      logger.redux.action(action.type, { error: action.message });
+      
+      logger.state.error('Logout Failed', { message: action.message });
+      
+      return { 
+        ...state, 
+        loading: false, 
+        error: action.message
+      };
+      
+    // Default case
     default:
       return state;
   }

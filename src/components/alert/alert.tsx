@@ -1,6 +1,6 @@
 import { Modal, notification } from "antd";
 import { useSelector } from "react-redux";
-import { RootState } from "../../redux/store"; // ✅ ใช้ RootState จาก Redux
+import { RootState } from "../../redux/types"; // ✅ ใช้ RootState จาก Redux
 import { delay } from "../../function";
 import type { NotificationArgsProps } from "antd";
 import { useEffect } from "react";

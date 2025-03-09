@@ -17,7 +17,8 @@ const LOG_ICONS = {
   error: '❌',
   success: '✅',
   warning: '⚠️',
-  navigation: '🔄'
+  navigation: '🔄',
+  redux: '⚛️'  // Add Redux icon
 };
 
 // Utility functions
@@ -76,6 +77,49 @@ export const logger = {
     },
     error: (message: string, error?: any) => {
       logger.log('error', `${LOG_ICONS.state} State Error: ${message}`, error);
+    }
+  },
+  
+  // Redux specific logging
+  redux: {
+    action: (type: string, payload?: any) => {
+      logger.log('info', `${LOG_ICONS.redux} Redux Action: ${type}`, payload);
+    },
+    state: (newState: any) => {
+      logger.log('debug', `${LOG_ICONS.redux} Redux State`, newState);
+    }
+  },
+  
+  // Component logging
+  component: (component: string, message: string, data?: any) => {
+    logger.log('info', `[${component}] ${message}`, data);
+  },
+  
+  // Authentication logging
+  auth: {
+    login: (username: string, success: boolean, data?: any) => {
+      logger.log(
+        success ? 'success' : 'error',
+        `${LOG_ICONS.login} Auth: ${success ? 'Login Success' : 'Login Failed'} - ${username}`,
+        data
+      );
+    },
+    logout: (reason?: string) => {
+      logger.log('info', `${LOG_ICONS.logout} Auth: Logout`, { reason });
+    },
+    check: (isAuthenticated: boolean, data?: any) => {
+      logger.log(
+        isAuthenticated ? 'success' : 'info',
+        `${LOG_ICONS.auth} Auth Check: ${isAuthenticated ? 'Authenticated' : 'Not Authenticated'}`,
+        data
+      );
+    }
+  },
+  
+  // Navigation/routing logs
+  navigation: {
+    to: (path: string, data?: any) => {
+      logger.log('info', `${LOG_ICONS.navigation} Navigation: ${path}`, data);
     }
   }
 };
