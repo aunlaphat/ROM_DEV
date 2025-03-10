@@ -1,6 +1,6 @@
 import { Col, Row } from "antd";
 import styled from "styled-components";
-import { color } from "../resources";
+import { color } from  "../resources/color";
 
 export const RowComponent = styled(Row)`
   display: flex;

@@ -1,5 +1,6 @@
 import { Modal, notification } from "antd";
 import { useSelector } from "react-redux";
+import { RootState } from "../../redux/types"; // ✅ ใช้ RootState จาก Redux
 import { delay } from "../../function";
 import type { NotificationArgsProps } from "antd";
 import { useEffect } from "react";
@@ -17,22 +18,23 @@ interface ModalProps {
   type: ModalType;
 }
 
-const Alert = () => {
+const Alert: React.FC = () => {
   const [api, contextHolder] = notification.useNotification();
-  const alert = useSelector((state: any) => state.alert);
+  const alert = useSelector((state: RootState) => state.alert); // ✅ ใช้ RootState จาก Redux
 
   useEffect(() => {
-    if (alert.open) {
-      const delayRemoveAlert = () => {
-        delay(3000);
+    if (alert?.open) {
+      const delayRemoveAlert = async () => {
+        await delay(3000); // ✅ ใช้ await เพื่อรอให้ delay ทำงาน
       };
+
       const openNotification = (
         placement: NotificationPlacement,
         type: NotificationType
       ) => {
         api[type]({
-          message: `${alert.title}`,
-          description: `${alert.message}`,
+          message: alert.title || "แจ้งเตือน",
+          description: alert.message || "",
           placement,
         });
       };
@@ -44,9 +46,8 @@ const Alert = () => {
         onOk,
         type,
       }: ModalProps) => {
-        // Use the provided props to show the modal
         Modal[type]({
-          title: title, // Here you can specify the title property
+          title: title || "แจ้งเตือน", // ✅ กำหนดค่าเริ่มต้น
           content: content,
           onCancel: onCancel,
           onOk: onOk,
@@ -54,34 +55,27 @@ const Alert = () => {
       };
 
       const renderAlert = () => {
-        switch (alert.model) {
+        switch (alert?.model ?? "notification") { // ✅ ใช้ `??` ป้องกัน model เป็น `undefined`
           case "notification":
             delayRemoveAlert();
             openNotification("topLeft", alert.type as NotificationType);
             break;
           case "modal":
-            let content: any = {
-              type: alert.type,
-              content: alert.message,
-              onCancel: () => {
-                closeAlert();
-              },
-              onOk: () => {
-                closeAlert();
-              },
+            const content: ModalProps = {
+              type: (alert.type as ModalType) || "info",
+              content: alert.message || "",
+              onCancel: () => closeAlert(),
+              onOk: () => closeAlert(),
+              title: alert.title || "แจ้งเตือน",
             };
-            if (alert.title) {
-              content = { ...content, title: alert.title };
-            }
             return showModal(content);
           default:
             delayRemoveAlert();
-            notification.info({ message: "" });
+            notification.info({ message: "แจ้งเตือน", description: "" });
             break;
         }
       };
 
-      //   alert.open && renderAlert();
       renderAlert();
     }
   }, [alert]);

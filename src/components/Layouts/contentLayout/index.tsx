@@ -1,44 +1,43 @@
 import { Content } from "antd/es/layout/layout";
-import { Route, Routes } from "react-router-dom";
-import {
-  ROUTES_PATH,
-  ROUTES_PATH_NOPERMISSION,
-  ROUTES_PATH_WORKER,
-} from "../../../resources/routes";
 import { useSelector } from "react-redux";
+import { RoleID } from "../../../constants/roles";
+import { ROUTES } from "../../../resources/routes";
+import { logger } from "../../../utils/logger";
 
-const ContentLayout = ({ children }: any) => {
-  const user = useSelector((state: any) => state.authen);
+interface ContentLayoutProps {
+  children: React.ReactNode;
+}
 
-  const { userRoleID } = user.users || 2;
-  const renderRoute = () => {
-    const renderRoutes = (routes: any) => {
-      return Object.values(routes).map((item: any) => (
-        <Route path={item.PATH} key={item.KEY} Component={item.COMPONENT} />
-      ));
-    };
+// สร้าง `ROLE_ROUTES` ให้อ่านง่าย และลดโค้ดซ้ำซ้อน
+const ROLE_ROUTES: Record<RoleID, (typeof ROUTES)[keyof typeof ROUTES][]> = {
+  [RoleID.ADMIN]: Object.values(ROUTES),
+  [RoleID.TRADE_CONSIGN]: [ROUTES.ROUTE_MAIN],
+  [RoleID.ACCOUNTING]: [ROUTES.ROUTE_MAIN],
+  [RoleID.WAREHOUSE]: [ROUTES.ROUTE_MAIN],
+  [RoleID.VIEWER]: [ROUTES.ROUTE_MAIN],
+};
 
-    // if (userRoleID !== undefined) {
-      return <Routes>{renderRoutes(ROUTES_PATH)}</Routes>;
-    // }
-  };
+const ContentLayout: React.FC<ContentLayoutProps> = ({ children }) => {
+  const auth = useSelector((state: any) => state.auth);
+  const roleID: RoleID | undefined = auth?.user?.roleID;
+
+  const userRoutes = roleID ? ROLE_ROUTES[roleID] ?? [] : [];
+
+  if (!roleID) {
+    logger.log(
+      "warn",
+      "⚠️ No valid roleID found in user data, rendering empty routes."
+    );
+  } else {
+    logger.log("info", `🔹 Routes Loaded for Role ${roleID}:`, userRoutes);
+  }
 
   return (
     <Content
       className="site-layout-background"
-      style={{
-        // margin: "24px 16px",
-        padding: 24,
-        minHeight: 280,
-      }}
+      style={{ padding: 24, minHeight: 280 }}
     >
-      {/* {renderRoute()} */}
-      <Routes>
-        {Object.values(ROUTES_PATH).map((item: any) => (
-          <Route path={item.PATH} key={item.KEY} Component={item.COMPONENT} />
-        ))}
-      </Routes>
-      {/* {children} */}
+      {children}
     </Content>
   );
 };

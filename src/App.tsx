@@ -2,57 +2,56 @@ import "./App.css";
 import { ConfigProvider } from "antd";
 import thTH from "antd/lib/locale/th_TH";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import LayoutPage from "./components/Layouts";
 import { Provider } from "react-redux";
 import store from "./redux/store";
-import { ROUTES_PATH, ROUTE_NOT_AUTHEN } from "./resources/routes";
+import { ROUTES, ROUTES_NO_AUTH } from "./resources/routes";
 import Loading from "./components/loading";
 import Alert from "./components/alert/alert";
+import LayoutPage from "./components/Layouts";
+import { AuthProvider } from './hooks/useAuth'; // เพิ่ม AuthProvider
+import CreateReturnOrderMKP from './screens/Orders/Marketplace';
+import { Login } from "./screens/auth";
 
 const App = () => {
-    console.log("🔍 Debugging Available Routes...");
-    console.log("✅ ROUTES_PATH:", ROUTES_PATH);
-    console.log("✅ ROUTE_NOT_AUTHEN:", ROUTE_NOT_AUTHEN);
-  
-    return (
-      <Provider store={store}>
-        <ConfigProvider locale={thTH}>
-          <Loading>
-            <Alert />
+  return (
+    <Provider store={store}>
+      <ConfigProvider locale={thTH}>
+        <Loading>
+          <Alert />
+          <AuthProvider>
             <Router>
               <Routes>
-                {/* 🔓 Debug Log: ตรวจสอบ Routes ที่ไม่ต้องล็อกอิน */}
-                {Object.values(ROUTE_NOT_AUTHEN)?.map((item) => {
-                  return (
-                    <Route
-                      path={item?.PATH}
-                      key={item?.KEY}
-                      element={item?.ELEMENT ? item.ELEMENT() : <div>❌ Error: No Component</div>}
-                    />
-                  );
-                })}
-  
-                {/* 🔐 Debug Log: ตรวจสอบ Routes ที่ต้องล็อกอิน */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/orders/marketplace" element={<CreateReturnOrderMKP />} />
+                {/* Public Routes */}
+                {Object.values(ROUTES_NO_AUTH).map((route) => (
+                  <Route
+                    key={route.KEY}
+                    path={route.PATH}
+                    element={<route.ELEMENT />}
+                  />
+                ))}
+
+                {/* Protected Routes */}
                 <Route path="/*" element={<LayoutPage />}>
-                  {Object.values(ROUTES_PATH)?.map((item) => {
-                    return (
+                  <Route path="home" element={<ROUTES.ROUTE_MAIN.COMPONENT />} />
+                  {Object.values(ROUTES)
+                    .filter(route => route.KEY !== "home") // ไม่รวม home route เพราะกำหนดแล้ว
+                    .map((route) => (
                       <Route
-                        path={item?.PATH}
-                        key={item?.KEY}
-                        element={item?.ELEMENT ? item.ELEMENT() : <div>❌ Error: No Component</div>}
+                        key={route.KEY}
+                        path={route.PATH.replace('/', '')} // ตัด / ออกเพราะอยู่ใน nested route
+                        element={<route.COMPONENT />}
                       />
-                    );
-                  })}
+                    ))}
                 </Route>
-  
-                {/* ❌ ถ้าไม่มีเส้นทางนี้ให้แสดง 404 */}
-                <Route path="*" element={<div>❌ 404 Not Found</div>} />
               </Routes>
             </Router>
-          </Loading>
-        </ConfigProvider>
-      </Provider>
-    );
-  };
-  
+          </AuthProvider>
+        </Loading>
+      </ConfigProvider>
+    </Provider>
+  );
+};
+
 export default App;

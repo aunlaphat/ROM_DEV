@@ -1,120 +1,133 @@
-import axios from "axios";
-//import { env } from "../utils/env/config";
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { getCookies } from "../store/useCookies";
+import { logger } from '../utils/logger';
 
-// export const MODE_API: any = {
-//   DEVELOPMENT: env.url_dev,
-//   PRODUCTION: env.url_prd,
-// };
-
-export const CONNECT_API = process.env.REACT_APP_BACKEND_URL; // .env
-
-const api = axios.create({
-  baseURL: CONNECT_API,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  timeout: 10000,
+/**
+ * Axios Instance พร้อม Configuration
+ * - baseURL: จาก Environment Variables
+ * - timeout: 10 วินาที
+ * - withCredentials: ส่ง cookies ในการร้องขอข้ามโดเมน
+ * - headers: ตั้งค่า Content-Type เป็น JSON
+ */
+const axiosInstance = axios.create({
+  baseURL: process.env.REACT_APP_BACKEND_URL,
+  timeout: 10000, // ⏳ Timeout 10 วินาที
+  withCredentials: true, // 🍪 ใช้ Cookies สำหรับ Authentication
+  headers: { "Content-Type": "application/json" } // 📌 Default Header เป็น JSON
 });
 
-const apiupload = axios.create({
-  baseURL: CONNECT_API,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "multipart/form-data",
-  },
-  timeout: 10000,
+/**
+ * Interceptor สำหรับการส่งคำขอ
+ * - เพิ่ม Authorization header ถ้ามี Token
+ * - บันทึก Log ทุกคำขอ
+ */
+axiosInstance.interceptors.request.use((config) => {
+  // ดึง Token จาก Cookie หรือ localStorage
+  const token = getCookies("jwt") || localStorage.getItem("access_token");
+  
+  // เพิ่ม Authorization header ถ้ามี token
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  
+  // ใช้ logger แทน console.log
+  logger.api.request(config.url || 'unknown', {
+    method: config.method,
+    data: config.data
+  });
+  
+  return config;
 });
 
-export const GET = async (path: string, header?: any) => {
-  try {
-    const response = await api.get(`${path}`, header);
-    let data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
-  }
-};
-
-export const POST = async (path: string, data: any, header?: any) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
-  try {
-    const response = await api.post(`${path}`, data, header ? header : config);
-    data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
-  }
-};
-
-export const PATCH = async (path: string, data: any) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
-  try {
-    const response = await api.patch(`${path}`, data, config);
-    data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
-  }
-};
-
-export const PUT = async (path: string, data: any, header?: any) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
-  try {
-    const response = await api.put(`${path}`, data, header ? header : config);
-    data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
-  }
-};
-
-export const DELETE = async (path: string, data: any, header?: any) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
-  try {
-    const response = await api.delete(`${path}`, {
-      headers: header ? header : config,
-      data,
+/**
+ * Interceptor สำหรับการรับการตอบกลับ
+ * - บันทึก Log การตอบกลับที่สำเร็จ
+ * - จัดการข้อผิดพลาดและบันทึก Log
+ */
+axiosInstance.interceptors.response.use(
+  (response: AxiosResponse) => {
+    // ใช้ logger แทน console.log
+    logger.api.success(response.config.url || 'unknown', {
+      status: response.status,
+      data: response.data
     });
-    data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
+    return response;
+  },
+  (error) => {
+    // ใช้ logger.api.error แทน console.error
+    logger.api.error(error.config?.url || 'unknown', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    
+    // ตรวจสอบสถานะ 401 Unauthorized (Token หมดอายุหรือไม่ถูกต้อง)
+    if (error.response?.status === 401) {
+      // อาจจะเรียก action logout หรือเปลี่ยนเส้นทางไปยังหน้า login
+      // แต่ต้องระวังการเรียกวนซ้ำ (infinite loop)
+      logger.error('Unauthorized API request - Token may be invalid or expired');
+    }
+    
+    return Promise.reject(error);
   }
-};
+);
 
-export const UPLOAD = async (
-  path: string,
-  formdata: FormData,
-  header?: any
-) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getCookies("jwt")}` },
-  };
-  try {
-    const response = await apiupload.post(
-      `${path}`,
-      formdata,
-      header ? header : config
-    );
-    let data = await response.data;
-    return data;
-  } catch (error: any) {
-    console.log(error.response);
-    throw error.response;
-  }
-};
+export default axiosInstance;
+
+/**
+ * ส่งคำขอ POST ไปยัง API
+ * @param url เส้นทาง API endpoint
+ * @param data ข้อมูลที่จะส่ง
+ * @param config การตั้งค่าเพิ่มเติมสำหรับ Axios
+ */
+export const POST = (url: string, data: any, config?: AxiosRequestConfig) => 
+  axiosInstance.post(url, data, { ...config });
+
+/**
+ * ส่งคำขอ GET ไปยัง API
+ * @param url เส้นทาง API endpoint
+ * @param config การตั้งค่าเพิ่มเติมสำหรับ Axios
+ */
+export const GET = (url: string, config?: AxiosRequestConfig) => 
+  axiosInstance.get(url, { ...config });
+
+/**
+ * ส่งคำขอ PATCH ไปยัง API (ใช้สำหรับอัพเดทบางส่วน)
+ * @param url เส้นทาง API endpoint
+ * @param data ข้อมูลที่จะส่ง
+ * @param config การตั้งค่าเพิ่มเติมสำหรับ Axios
+ */
+export const PATCH = (url: string, data: any, config?: AxiosRequestConfig) => 
+  axiosInstance.patch(url, data, { ...config });
+
+/**
+ * ส่งคำขอ PUT ไปยัง API (ใช้สำหรับอัพเดททั้งหมด)
+ * @param url เส้นทาง API endpoint
+ * @param data ข้อมูลที่จะส่ง
+ * @param config การตั้งค่าเพิ่มเติมสำหรับ Axios
+ */
+export const PUT = (url: string, data: any, config?: AxiosRequestConfig) => 
+  axiosInstance.put(url, data, { ...config });
+
+/**
+ * ส่งคำขอ DELETE ไปยัง API
+ * @param url เส้นทาง API endpoint
+ * @param config การตั้งค่าเพิ่มเติมสำหรับ Axios
+ */
+export const DELETE = (url: string, config?: AxiosRequestConfig) => 
+  axiosInstance.delete(url, { ...config });
+
+/**
+ * ส่งคำขอ POST พร้อม FormData ไปยัง API (ใช้สำหรับอัพโหลดไฟล์)
+ * @param url เส้นทาง API endpoint
+ * @param formData ข้อมูล FormData ที่จะส่ง
+ * @param config การตั้งค่าเพิ่มเติมสำหรับ Axios
+ */
+export const UPLOAD = (url: string, formData: FormData, config?: AxiosRequestConfig) => 
+  axiosInstance.post(url, formData, { 
+    ...config,
+    headers: {
+      ...config?.headers,
+      'Content-Type': 'multipart/form-data'
+    }
+  });
