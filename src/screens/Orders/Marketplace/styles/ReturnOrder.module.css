@@ -1,0 +1,162 @@
+/* src/screens/Orders/Marketplace/styles/ReturnOrder.module.css */
+
+/* Container styles */
+.returnOrderContainer {
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 24px;
+    min-height: 80vh;
+  }
+  
+  /* Card styles */
+  .card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    background-color: #ffffff;
+  }
+  
+  .cardTitle {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f0f0f0;
+    background-color: #fafafa;
+  }
+  
+  .cardContent {
+    padding: 24px;
+  }
+  
+  /* Preview section styles */
+  .previewHeader {
+    background-color: #f6ffed;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+    text-align: center;
+    border: 1px solid #b7eb8f;
+  }
+  
+  .previewStatistics {
+    margin-bottom: 24px;
+  }
+  
+  .previewSection {
+    background-color: #ffffff;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  
+  .previewSectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background-color: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .previewActions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  /* Table styles for preview */
+  .previewTable :global(.ant-table-thead > tr > th) {
+    background-color: #fafafa;
+    color: #333333;
+    font-weight: 600;
+  }
+  
+  .previewTable :global(.ant-table-summary) {
+    background-color: #f6ffed;
+  }
+  
+  /* Form styles */
+  .searchForm {
+    max-width: 600px;
+    margin: 40px auto;
+    background: #fff;
+    padding: 36px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  /* Step indicators */
+  .stepsContainer {
+    background: #fff;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .progressIndicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background-color: #1890ff;
+    transition: width 0.3s ease;
+  }
+  
+  /* Animation for content changes */
+  .fadeIn {
+    animation: fadeInAnimation 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeInAnimation {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Statistic card styles */
+  .statisticCard {
+    text-align: center;
+    height: 100%;
+    border: 1px solid #f0f0f0;
+    transition: all 0.3s ease;
+  }
+  
+  .statisticCard:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+  }
+  
+  /* Section header styles */
+  .sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  /* Table summary styles */
+  .summaryRow {
+    background-color: #fafafa;
+    font-weight: bold;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .returnOrderContainer {
+      padding: 16px;
+    }
+  
+    .cardContent {
+      padding: 16px;
+    }
+  
+    .searchForm {
+      padding: 24px;
+    }
+  }

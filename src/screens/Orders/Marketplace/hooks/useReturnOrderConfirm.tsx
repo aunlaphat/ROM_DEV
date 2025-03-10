@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { Modal, message } from 'antd';
 import { OrderData } from '../../../../redux/orders/types/state';
 import { getRoleName } from '../utils/validation';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Custom hook สำหรับจัดการการยืนยัน Return Order
@@ -50,13 +51,16 @@ export const useReturnOrderConfirm = (
 
           console.log(`[ReturnOrder] Confirming return order: ${JSON.stringify(confirmPayload)}`);
           setHasConfirmedOrder(true);
-          updateStatus(confirmPayload);
           
+          // แสดง loading indicator ระหว่างอัพเดตสถานะ
           message.loading({
             content: 'กำลังอัพเดตสถานะ...',
             key: 'confirmStatus',
             duration: 0
           });
+          
+          // เรียก API สำหรับอัพเดตสถานะ
+          updateStatus(confirmPayload);
         }
       });
     } catch (error: any) {

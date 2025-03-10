@@ -1,18 +1,13 @@
 import React from "react";
 import { AvatarGenerator } from "../../avatar/AvatarGenerator";
 import {
-  Button,
   Dropdown,
   MenuProps,
-  Tag,
   Modal,
-  notification,
-  Card,
-  Divider,
   Space,
   Typography,
   Tooltip,
-  Avatar,
+  Divider,
 } from "antd";
 import {
   MenuUnfoldOutlined,
@@ -25,19 +20,12 @@ import {
   TopBarUser,
 } from "../../Layouts/headerLayout/style";
 import { Icon } from "../../../resources/icon";
-import { useAuth } from "../../../hooks/useAuth"; // เปลี่ยนการ import
-import { useSelector } from "react-redux";
-import { TextSmall } from "../../text";
+import { useAuth } from "../../../hooks/useAuth";
 import { logger } from "../../../utils/logger";
 
 const HeaderBar = ({ collapsed, toggle }: any) => {
-  const { logout } = useAuth(); // ใช้ logout จาก useAuth
-  const user = useSelector((state: any) => state.auth.user);
-
-  const userId = user?.userID || "N/A";
-  const userName = user?.userName || "N/A";
-  const userFullName = user?.fullName || "N/A";
-  const roleName = user?.roleName || "N/A";
+  // ใช้ข้อมูลทั้งหมดจาก useAuth Context แทนที่จะใช้ useSelector โดยตรง
+  const { logout, userID, userName, fullNameTH, roleName } = useAuth();
 
   const handleLogout = () => {
     Modal.confirm({
@@ -47,9 +35,8 @@ const HeaderBar = ({ collapsed, toggle }: any) => {
       cancelText: "ยกเลิก",
       onOk: async () => {
         try {
-          logger.log("info", "User logging out", { userId, userName });
-
-          await logout(); // ใช้ logout function
+          logger.log("info", "User logging out", { userID, userName });
+          await logout();
         } catch (error) {
           console.error("Logout Failed", error);
         }
@@ -81,15 +68,15 @@ const HeaderBar = ({ collapsed, toggle }: any) => {
         style={{ display: "flex", alignItems: "center", gap: "12px" }}
       >
         <Tooltip title="Profile">
-          <AvatarGenerator userName={userName} userID={userId} size="large" />
+          <AvatarGenerator userName={userName} userID={userID} size="large" />
         </Tooltip>
 
         <Space direction="horizontal" size="small">
-          <Typography.Text strong>{userId}</Typography.Text>
-          <Typography.Text>{userFullName}</Typography.Text>
+          <Typography.Text strong>{userID || "N/A"}</Typography.Text>
+          <Typography.Text>{fullNameTH || "N/A"}</Typography.Text>
           <Divider type="vertical" />
           <Typography.Text keyboard type="success">
-            {roleName}
+            {roleName || "N/A"}
           </Typography.Text>
         </Space>
       </TopBarUser>

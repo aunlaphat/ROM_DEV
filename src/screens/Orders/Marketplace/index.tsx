@@ -14,10 +14,13 @@ import { useReturnOrderNavigation } from "./hooks/useReturnOrderNavigation";
 
 // Utils
 import { isCreateReturnOrderDisabled, isCreateSRDisabled, validateStepTransition as validateStepTransitionUtil } from "./utils/validation";
+import { useNavigate } from "react-router-dom";
+import { closeLoading, openLoading } from "../../../components/alert/useAlert";
 
 const CreateReturnOrderMKP: React.FC = () => {
   const [form] = Form.useForm();
   const auth = useAuth();
+  const navigate = useNavigate();
   
   // สร้าง state เพื่อติดตามสถานะการส่ง action
   const [hasSearched, setHasSearched] = useState(false);
@@ -176,20 +179,31 @@ const CreateReturnOrderMKP: React.FC = () => {
       setHasConfirmedOrder(false);
       setStepLoading(false); // รีเซ็ต loading state
       
+      // แสดง global loading (ใช้ openLoading จาก alert)
+      openLoading();
+      
       // ปิด message loading และแสดงข้อความสำเร็จ
       message.success({
         content: 'อัพเดตสถานะสำเร็จ',
         key: 'confirmStatus', // ใช้ key เดียวกับ message.loading
-        duration: 3,
+        duration: 2, // ลดเวลาลง เพื่อให้ redirect เร็วขึ้น
       });
       
       notification.success({
         message: 'อัพเดตสถานะสำเร็จ',
-        description: 'การคืนสินค้าถูกดำเนินการเรียบร้อยแล้ว',
-        duration: 3,
+        description: 'การคืนสินค้าถูกดำเนินการเรียบร้อยแล้ว กำลังนำทางไปยังหน้า Draft & Confirm',
+        duration: 2,
       });
+
+      // เพิ่ม delay เล็กน้อยก่อน redirect เพื่อให้ผู้ใช้เห็น notification
+      setTimeout(() => {
+        // ปิด loading ก่อน navigate เพื่อป้องกันปัญหา
+        closeLoading();
+        // Redirect ไปยัง Draft&Confirm
+        navigate('/Draft&Confirm');
+      }, 2000); // delay 2 วินาที
     }
-  }, [hasConfirmedOrder, loading, setStepLoading]);
+  }, [hasConfirmedOrder, loading, setStepLoading, navigate]);
 
   // ตรวจสอบความถูกต้องในการเปลี่ยนขั้นตอน (wrapper function)
   const validateStepTransition = (fromStep: string, toStep: string): boolean => {
