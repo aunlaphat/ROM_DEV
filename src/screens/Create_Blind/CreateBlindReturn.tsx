@@ -72,8 +72,12 @@ const CreateBlind = () => {
         setShowInput(e.target.value === 1);
     };
 
-    const handleNavigateToTakepicture = () => {
-        navigate('/Takepicture'); // เส้นทางนี้ควรตรงกับการตั้งค่า Route ใน App.js หรือไฟล์ routing ของคุณ
+    // const handleNavigateToTakepicture = () => {
+    //     navigate('/Takepicture'); // เส้นทางนี้ควรตรงกับการตั้งค่า Route ใน App.js หรือไฟล์ routing ของคุณ
+    // };
+
+    const handleNavigateToTakepicture = (orderNumber: string, dataSource: DataItem[], value: number) => {
+        navigate('/Takepicture', { state: { orderNumber, dataSource, value } });
     };
 
     /*** SKU&NameAlias ***/
@@ -320,38 +324,51 @@ const CreateBlind = () => {
     };
 
     const handleSubmit = () => {
-        if (dataSource.length === 0) {
-            notification.warning({
-              message: "ไม่สามารถส่งข้อมูลได้",
-              description: "กรุณาเพิ่มข้อมูลในตารางก่อนส่ง!",
-            });
-            return; // หยุดการทำงานของฟังก์ชัน
-        }
+        form.validateFields()
+        .then((values) => {
+            if (value === 1) {
+                form2.validateFields()
+                    .then((values2) => {
+                        if (dataSource.length === 0) {
+                            notification.warning({
+                                message: "กรุณาเพิ่มข้อมูลในตาราง",
+                                description: "กรุณากรอกรายการสินค้าอย่างน้อย 1 รายการก่อนส่งข้อมูล !",
+                            });
+                            return; // หยุดการทำงานของฟังก์ชัน
+                        }
+                    })
+                    .catch((info) => {
+                        console.log("Validate Failed:", info);
+                        notification.warning({
+                            message: "กรุณาเพิ่มข้อมูลในตาราง",
+                            description: "กรุณากรอกรายการสินค้าอย่างน้อย 1 รายการก่อนส่งข้อมูล !",
+                        });
+                    });
+            } else {
+                // ส่งข้อมูลและรีเซ็ตฟอร์มและตาราง
+                console.log("Table Data:", dataSource);
+                
+                form.resetFields();  // รีเซ็ตฟอร์มและตาราง
+                form2.resetFields();
+                setDataSource([]); // หรือปรับเป็นค่าเริ่มต้นที่คุณต้องการได้
+                
+                notification.success({
+                    message: "ส่งข้อมูลสำเร็จ",
+                    description: "ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!",
+                });
 
-        if (value === 2) {
-            // กรณีเลือก "No"
-            handleNavigateToTakepicture();
-        } else if (value === 1 && dataSource.length === 0) {
+                // handleNavigateToTakepicture(); // ไปหน้าต่อไป
+                handleNavigateToTakepicture(values.Ordernumber, dataSource, value);
+            }
+        })
+        .catch((info) => {
+            console.log("Validate Failed:", info);
             notification.warning({
-                message: "กรุณาเพิ่มข้อมูลในตาราง",
-                description: "กรุณากรอก SKU และจำนวนอย่างน้อย 1 รายการในตารางก่อนที่จะดำเนินการต่อ!",
+                message: "คำเตือน",
+                description: "กรุณากรอกข้อมูลให้ครบก่อนส่งข้อมูล !",
             });
-        } else {
-            handleNavigateToTakepicture();
-        }
-
-            // ส่งข้อมูลและรีเซ็ตฟอร์มและตาราง
-            console.log("Table Data:", dataSource);
-        
-            form.resetFields();  // รีเซ็ตฟอร์มและตาราง
-            form2.resetFields();
-            setDataSource([]); // หรือปรับเป็นค่าเริ่มต้นที่คุณต้องการได้
-        
-            notification.success({
-              message: "ส่งข้อมูลสำเร็จ",
-              description: "ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!",
-            });
-    };
+        });
+};
     
     const handleFormValidation = () => {
         // alert('test1');
@@ -485,7 +502,7 @@ const CreateBlind = () => {
                                   id="Ordernumber"
                                     label={<span style={{ color: '#657589' }}>กรอกเลข Order</span>}
                                     name="Ordernumber"
-
+                                    rules={[{ required: true, message: "กรอกเลข Order" }]}
                                 >
                                     <Input style={{ height: 40 }} placeholder="กรอกเลข Order" />
                                 </Form.Item>

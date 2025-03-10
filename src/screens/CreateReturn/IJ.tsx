@@ -1,28 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { notification, Form, Input, InputNumber, DatePicker, Button, Row, Col, Table, ConfigProvider, Layout, Select, Modal, message, Popconfirm, Divider, Tooltip } from 'antd';
 import moment from 'moment';
 import { DeleteOutlined, LeftOutlined, PlusCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { Name } from 'ajv';
-
-const handleError = (error: any) => {
-    notification.warning({
-        message: "กรุณากรอกข้อมูลให้ครบ",
-
-    });
-};
+import { debounce } from "lodash";
+import api from "../../utils/axios/axiosInstance"; 
+const { Option } = Select;
 
 interface FormValues {
     SKU: string;
     QTY: number;
     SKU_Name: string;
 }
-interface User {
-    ID: number;
-    Name: string;
-    role: 'Warehouse' | 'Accounting';
+
+// interface DataItem {
+//     key: number;
+//     SKU: string; 
+//     Name: string;
+//     QTY: number;
+//   }
+  
+interface Product {
+    Key: string;
+    sku: string;
+    nameAlias: string;
+    size: string;
 }
 
+interface Warehouse {
+    Key: string;
+    WarehouseID: number;
+    WarehouseName: string;
+    Location: string;
+}
+
+// interface User {
+//     ID: number;
+//     Name: string;
+//     role: 'Warehouse' | 'Accounting';
+// }
 
 interface DataSourceItem extends FormValues {
     key: number;
@@ -30,35 +47,42 @@ interface DataSourceItem extends FormValues {
     location_form?: string;
     warehouse_to?: string;
 }
-const SKUName = [
-    { Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", SKU: "G097171-ARM01-BL" },
-    { Name: "Bewell Sport armband size M For", SKU: "G097171-ARM01-GY" },
-    { Name: "Sport armband size L", SKU: "G097171-ARM02-BL" },
-    { Name: "Bewell Sport armband size M with light", SKU: "G097171-ARM03-GR" },
-];
+// const SKUName = [
+//     { Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", SKU: "G097171-ARM01-BL" },
+//     { Name: "Bewell Sport armband size M For", SKU: "G097171-ARM01-GY" },
+//     { Name: "Sport armband size L", SKU: "G097171-ARM02-BL" },
+//     { Name: "Bewell Sport armband size M with light", SKU: "G097171-ARM03-GR" },
+// ];
 
-const MockUser: User[] = [
-    { ID: 1, Name: "User 1", role: "Warehouse" },
-    { ID: 2, Name: "User 2", role: "Accounting" },
+// const MockUser: User[] = [
+//     { ID: 1, Name: "User 1", role: "Warehouse" },
+//     { ID: 2, Name: "User 2", role: "Accounting" },
 
-];
-
+// ];
 
 // สร้าง options สำหรับ SKU
-const skuOptions = SKUName.map(item => ({
-    value: item.SKU,  // SKU เป็นค่า value
-    label: item.SKU   // SKU เป็น label เพื่อแสดงใน dropdown
-}));
+// const skuOptions = SKUName.map(item => ({
+//     value: item.SKU,  // SKU เป็นค่า value
+//     label: item.SKU   // SKU เป็น label เพื่อแสดงใน dropdown
+// }));
 
-// สร้าง options สำหรับ SKU Name
-const nameOptions = SKUName.map(item => ({
-    value: item.Name, // Name เป็นค่า value
-    label: item.Name  // Name เป็น label เพื่อแสดงใน dropdown
-}));
+// // สร้าง options สำหรับ SKU Name
+// const nameOptions = SKUName.map(item => ({
+//     value: item.Name, // Name เป็นค่า value
+//     label: item.Name  // Name เป็น label เพื่อแสดงใน dropdown
+// }));
 
 const IJPage: React.FC = () => {
     const [selectedSKU, setSelectedSKU] = useState<string | undefined>(undefined);
     const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
+    const [skuOptions, setSkuOptions] = useState<Product[]>([]); // To store SKU options
+    const [nameOptions, setNameOptions] = useState<Product[]>([]); // To store Name Alias options
+    const [qty, setQty] = useState<number | null>(null);  // Allow null
+
+    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+
+    const [loading, setLoading] = useState(false);
+
     const [form] = Form.useForm();
     const [dataSource, setDataSource] = useState<DataSourceItem[]>([]);
     const [formValid, setFormValid] = useState(false);
@@ -68,7 +92,6 @@ const IJPage: React.FC = () => {
     const [ij, setIJ] = useState<string>('');
     const [remark, setRemark] = useState<string>('');
     const [submittedRemark, setSubmittedRemark] = useState<string>('');
-    const [qty, setQty] = useState<number | null>(null);  // Allow null
 
     const handleIJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setIJ(e.target.value);
@@ -78,6 +101,12 @@ const IJPage: React.FC = () => {
         setRemark(e.target.value);
     };
 
+    const handleError = (error: any) => {
+        notification.warning({
+            message: "กรุณากรอกข้อมูลให้ครบ",
+    
+        });
+    };
 
     const onChange = () => {
         const values = form.getFieldsValue();
@@ -86,14 +115,138 @@ const IJPage: React.FC = () => {
         // Set form validity based on required fields
         setFormValid(Date && SKU && QTY);
     };
+    // ค้นหา Product (SKU หรือ NAMEALIAS)
+    const debouncedSearchSKU = debounce(async (value: string, searchType: string) => {
+        setLoading(true);
+        try {
+        const response = await api.get("/api/constants/search-product", {
+            params: {
+            keyword: value,
+            searchType,
+            offset: 0,
+            limit: 5,
+            },
+        });
 
+        const products = response.data.data;
+
+        if (searchType === "SKU") {
+            setSkuOptions(products.map((product: Product) => ({
+            sku: product.sku,
+            nameAlias: product.nameAlias,
+            size: product.size,
+            })));
+        } else if (searchType === "NAMEALIAS") {
+            setNameOptions(products.map((product: Product) => ({
+            sku: product.sku,
+            nameAlias: product.nameAlias,
+            size: product.size,
+            })));
+        }
+        } catch (error) {
+        console.error("Error fetching products:", error);
+        notification.error({
+            message: "Error",
+            description: "There was an error fetching product data.",
+        });
+        } finally {
+        setLoading(false);
+        }
+    }, 1000);
+
+    const handleSearchSKU = (value: string) => {
+        debouncedSearchSKU(value, "SKU");
+    };
+
+    const handleSearchNameAlias = (value: string) => {
+        debouncedSearchSKU(value, "NAMEALIAS");
+    };
+
+    // เมื่อเลือก Name Alias แล้วใช้ `/api/constants/get-sku` เพื่อหา SKU
+    const handleNameChange = async (value: string) => {
+        const [nameAlias, size] = value.split("+"); // แยกค่า nameAlias และ size โดยใช้ `+`
+
+        try {
+        setLoading(true);
+        const response = await api.get("/api/constants/get-sku", {
+            params: { nameAlias, size },
+        });
+
+        // เก็บผลลัพธ์จาก API เพื่อแสดงหลาย SKU
+        const products = response.data.data;
+
+        if (products.length > 0) {
+            setSkuOptions(products.map((product: Product) => ({
+            sku: product.sku,
+            nameAlias: product.nameAlias,
+            size: product.size,
+            })));
+            form.setFieldsValue({
+            SKU: products[0].sku, // ตั้งค่า SKU ตัวแรกที่พบ
+            });
+        } else {
+            console.warn("No SKU found for:", nameAlias, size);
+            setSkuOptions([]); 
+            setNameOptions([]); 
+            form.setFieldsValue({ SKU: "", SKU_Name: "" }); // เคลียร์ค่าในฟอร์ม
+        }
+        } catch (error) {
+        console.error("Error fetching SKU:", error);
+        } finally {
+        setLoading(false);
+        }
+    };
+
+    const handleSKUChange = (value: string) => {
+        const selected = skuOptions.find((option) => option.sku === value);
+        
+        if (selected) {
+        form.setFieldsValue({
+            SKU: selected.sku,
+            SKU_Name: selected.nameAlias,
+        });
+        setSelectedSKU(selected.sku);
+        setSelectedName(selected.nameAlias);
+
+        // อัปเดต nameOptions ตาม SKU ที่เลือก
+        const filteredNameOptions = skuOptions
+        .filter((option) => option.sku === selected.sku) // กรองเฉพาะ SKU ที่ตรงกับที่เลือก
+        .map((option) => ({
+        ...option,  // คัดลอกค่าเดิม
+        Key: option.sku,  // เพิ่มคีย์ Key ที่ต้องการ
+        }));
+        setNameOptions(filteredNameOptions);  // อัปเดต nameOptions
+        } else { // เคลียร์ค่าเมื่อไม่มี SKU ที่ตรงกัน
+        setSkuOptions([]); 
+        setNameOptions([]); 
+        setSelectedSKU("");
+        setSelectedName("");
+        }
+    };
+
+    useEffect(() => {
+        const fetchWarehouses = async () => {
+            try {
+                const response = await api.get('/api/constants/get-warehouse');
+                setWarehouses(response.data.data);
+            } catch (error) {
+                console.error('Failed to fetch warehouses:', error);
+                notification.error({
+                    message: 'Error',
+                    description: 'Failed to fetch warehouses.',
+                });
+            }
+        };
+
+        fetchWarehouses();
+    }, []);
 
     const handleAdd = () => {
         // ตรวจสอบการกรอกข้อมูลที่จำเป็น เช่น วันที่คืน, ประเภทการขนส่ง, SKU, ชื่อสินค้า, และ QTY
-        form.validateFields(['Date', 'TransportType', 'SKU', 'SKU_Name', 'QTY'])
+        form.validateFields(['Date', 'Logistic', 'SKU', 'SKU_Name', 'QTY'])
             .then((values) => {
                 // ถ้าข้อมูลในฟิลด์เหล่านี้ไม่ครบ จะมีข้อความเตือนขึ้น
-                if (!values.Date || !values.TransportType || !values.SKU || !values.SKU_Name || !values.QTY) {
+                if (!values.Date || !values.Logistic || !values.SKU || !values.SKU_Name || !values.QTY) {
                     notification.warning({
                         message: "มีข้อสงสัย",
                         description: "กรุณากรอกข้อมูลที่จำเป็นให้ครบก่อนเพิ่ม!",
@@ -183,7 +336,10 @@ const IJPage: React.FC = () => {
                 <Select
                     style={{ width: '100%' }}
                     onChange={(value) => handleChange(value, record.key, "warehouse_form")}
-                    options={Warehouse}
+                    options={warehouses.map(warehouse => ({
+                        value: warehouse.WarehouseID,
+                        label: warehouse.WarehouseName,
+                    }))}
                     dropdownStyle={{ minWidth: 120 }}
                     dropdownMatchSelectWidth={false}
                     maxTagTextLength={50} // กำหนดความยาวสูงสุดของข้อความในตัวเลือก
@@ -200,7 +356,10 @@ const IJPage: React.FC = () => {
                 <Select
                     style={{ width: '100%' }}
                     onChange={(value) => handleChange(value, record.key, "location_form")}
-                    options={Location}
+                    options={warehouses.map(warehouse => ({
+                        value: warehouse.Location,
+                        label: warehouse.Location,
+                    }))}
                     dropdownStyle={{ minWidth: 120 }}
                     dropdownMatchSelectWidth={false}
                     maxTagTextLength={50} // กำหนดความยาวสูงสุดของข้อความในตัวเลือก
@@ -216,7 +375,10 @@ const IJPage: React.FC = () => {
                 <Select
                     style={{ width: '100%' }}
                     onChange={(value) => handleChange(value, record.key, "warehouse_to")}
-                    options={Warehouseto}
+                    options={warehouses.map(warehouse => ({
+                        value: warehouse.WarehouseID,
+                        label: warehouse.WarehouseName,
+                    }))}
                     dropdownStyle={{ minWidth: 100 }}
                     dropdownMatchSelectWidth={false}
                     maxTagTextLength={50} // กำหนดความยาวสูงสุดของข้อความในตัวเลือก
@@ -252,40 +414,40 @@ const IJPage: React.FC = () => {
 
     const [selectedValue, setSelectedValue] = useState<string | undefined>();
 
-    const handleSelectChange = (value: string) => {
-        const selectedOption = SKUName.find((val) => val.SKU === value);
+    // const handleSelectChange = (value: string) => {
+    //     const selectedOption = SKUName.find((val) => val.SKU === value);
 
-        if (selectedOption) {
-            form.setFieldsValue({
-                SKU: selectedOption.SKU,
-                SKU_Name: selectedOption.Name,
-            });
-            setSelectedValue(value);
-        }
-    };
-    const handleSKUChange = (value: string) => {
-        const selectedOption = SKUName.find((val) => val.SKU === value);
-        if (selectedOption) {
-            form.setFieldsValue({
-                SKU: selectedOption.SKU,
-                SKU_Name: selectedOption.Name,
-            });
-            setSelectedSKU(value);
-            setSelectedName(selectedOption.Name); // อัปเดต selectedName
-        }
-    };
+    //     if (selectedOption) {
+    //         form.setFieldsValue({
+    //             SKU: selectedOption.SKU,
+    //             SKU_Name: selectedOption.Name,
+    //         });
+    //         setSelectedValue(value);
+    //     }
+    // };
+    // const handleSKUChange = (value: string) => {
+    //     const selectedOption = SKUName.find((val) => val.SKU === value);
+    //     if (selectedOption) {
+    //         form.setFieldsValue({
+    //             SKU: selectedOption.SKU,
+    //             SKU_Name: selectedOption.Name,
+    //         });
+    //         setSelectedSKU(value);
+    //         setSelectedName(selectedOption.Name); // อัปเดต selectedName
+    //     }
+    // };
 
-    const handleNameChange = (value: string) => {
-        const selectedOption = SKUName.find((val) => val.Name === value);
-        if (selectedOption) {
-            form.setFieldsValue({
-                SKU: selectedOption.SKU,
-                SKU_Name: selectedOption.Name,
-            });
-            setSelectedName(value);
-            setSelectedSKU(selectedOption.SKU); // อัปเดต selectedSKU
-        }
-    };
+    // const handleNameChange = (value: string) => {
+    //     const selectedOption = SKUName.find((val) => val.Name === value);
+    //     if (selectedOption) {
+    //         form.setFieldsValue({
+    //             SKU: selectedOption.SKU,
+    //             SKU_Name: selectedOption.Name,
+    //         });
+    //         setSelectedName(value);
+    //         setSelectedSKU(selectedOption.SKU); // อัปเดต selectedSKU
+    //     }
+    // };
 
 
 
@@ -476,37 +638,32 @@ const IJPage: React.FC = () => {
                                         </Form.Item>
                                     </Col>
                                     <Col span={8}>
-                                        <Form.Item
-                                         id="TransportType"
-                                            label={<span style={{ color: '#657589' }}>Transport Type:</span>}
-                                            name="TransportType"
-                                            rules={[{ required: true, message: "กรุณาเลือก Transport Type" }]}
-                                        >
-                                            <Select
-                                                style={{ width: '100%', height: '40px' }}
-                                                showSearch
-                                                placeholder="TransportType"
-                                                optionFilterProp="label"
-                                                onChange={onChange}
-                                                onSearch={onSearch}
-                                                options={[
-                                                    { value: 'SPX Express', label: 'SPX Express' },
-                                                    { value: 'J&T Express', label: 'J&T Express' },
-                                                    { value: 'Flash Express', label: 'Flash Express' },
-                                                    { value: 'Shopee', label: 'Shopee' },
-                                                    { value: 'NocNoc', label: 'NocNoc' },
-
-                                                ]}
-                                                disabled={formDisabled}
+                                    <Form.Item
+                                        id="Logistic"
+                                        label={
+                                        <span style={{ color: "#657589" }}>
+                                            กรอก Logistic:&nbsp;
+                                            <Tooltip title="ผู้ให้บริการขนส่ง">
+                                            <QuestionCircleOutlined
+                                                style={{ color: "#657589" }}
                                             />
-                                        </Form.Item>
+                                            </Tooltip>
+                                        </span>
+                                        }
+                                        name="Logistic"
+                                        rules={[
+                                        { required: true, message: "กรอก Logistic" },
+                                        ]}
+                                    >
+                                        <Input style={{ height: 40 }} />
+                                    </Form.Item>
                                     </Col>
                                 </Row>
                                 <Divider style={{ color: '#657589', fontSize: '22px', marginTop: 30, marginBottom: 30 }} orientation="left"> SKU Information </Divider>
                                 <Row gutter={16} >
                                     <Col span={8}>
                                         <Form.Item
-                                        id="Sku"
+                                        id="SKU"
                                             label={<span style={{ color: '#657589' }}>กรอก SKU:</span>}
                                             name="SKU"
                                             rules={[{ required: true, message: "กรุณากรอก SKU" }]}
@@ -514,19 +671,32 @@ const IJPage: React.FC = () => {
                                             <Select
                                                 showSearch
                                                 style={{ width: '100%', height: '40px' }}
-                                                placeholder="Search to Select"
-                                                optionFilterProp="label"
+                                                dropdownStyle={{ minWidth: 200 }}
+                                                listHeight={160}
+                                                placeholder="Search by SKU"
+                                                // optionFilterProp="label"
                                                 value={selectedSKU} // แสดง SKU ที่ถูกเลือก
+                                                onSearch={handleSearchSKU}
                                                 onChange={handleSKUChange}
-                                                options={skuOptions} // แสดง SKU ใน dropdown
-                                                disabled={formDisabled}
-
-                                            />
+                                                loading={loading}
+                                                virtual
+                                                // options={skuOptions} // แสดง SKU ใน dropdown
+                                                // disabled={formDisabled}
+                                            >
+                                                {skuOptions.map((option) => (
+                                                    <Option 
+                                                    key={`${option.sku}-${option.size}`} 
+                                                    value={option.sku}
+                                                    >
+                                                    {option.sku}
+                                                    </Option>
+                                                ))}
+                                            </Select>
                                         </Form.Item>
                                     </Col>
                                     <Col span={8}>
                                         <Form.Item
-                                          id="SkuName"
+                                          id="SKU_Name"
                                             label={<span style={{ color: '#657589' }}>Name:</span>}
                                             name="SKU_Name"
                                             rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
@@ -534,20 +704,36 @@ const IJPage: React.FC = () => {
                                             <Select
                                                 showSearch
                                                 style={{ width: '100%', height: '40px' }}
-                                                placeholder="Search to Select"
-                                                optionFilterProp="label"
+                                                dropdownStyle={{ minWidth: 300 }}
+                                                listHeight={160}
+                                                placeholder="Search by Product Name"
+                                                // optionFilterProp="label"
                                                 value={selectedName} // แสดง SKU Name ที่ถูกเลือก
+                                                onSearch={handleSearchNameAlias}
                                                 onChange={handleNameChange}
-                                                options={nameOptions} // แสดง SKU Name ใน dropdown
-                                                disabled={formDisabled}
-                                            />
+                                                loading={loading}
+                                                virtual // ทำให้ค้นหาไวขึ้น
+                                                // options={nameOptions} // แสดง SKU Name ใน dropdown
+                                                // disabled={formDisabled}
+                                            >
+                                                {nameOptions.map((option) => (
+                                                    <Option 
+                                                    key={`${option.nameAlias}-${option.size}`} 
+                                                    value={`${option.nameAlias}+${option.size}`}
+                                                    >
+                                                    {option.nameAlias}
+                                                    </Option>
+                                                ))}
+                                            </Select>
                                         </Form.Item>
                                     </Col>
                                     <Col span={4}>
-                                        <Form.Item label={<span style={{ color: '#657589' }}>QTY:</span>}
+                                        <Form.Item 
                                              id="qty"
-                                           name="QTY"
-                                            rules={[{ required: true, message: "กรุณากรอก QTY" }]}>
+                                             name="QTY"
+                                             label={<span style={{ color: '#657589' }}>QTY:</span>}
+                                             rules={[{ required: true, message: "กรุณากรอก QTY" }]}
+                                        >
                                             <InputNumber
                                                 min={1}
                                                 max={100}
