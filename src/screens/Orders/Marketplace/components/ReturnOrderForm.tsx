@@ -24,6 +24,7 @@ import OrderDetailsSection from "./OrderDetailsSection";
 import OrderItemsSection from "./OrderItemsSection";
 import ReturnOrderSteps from "./ReturnOrderSteps";
 import PreviewSection from "./PreviewSection";
+import IntegratedPreviewSection from "./IntegratedPreviewSection";
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -258,7 +259,10 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
 
   // ฟังก์ชันคำนวณจำนวนสินค้าที่คืนทั้งหมด - แก้ไขโดยระบุประเภทข้อมูล
   const getTotalReturnItems = (): number => {
-    return Object.values(returnItems).reduce((sum: number, qty: number) => sum + qty, 0);
+    return Object.values(returnItems).reduce(
+      (sum: number, qty: number) => sum + qty,
+      0
+    );
   };
 
   // ฟังก์ชันคำนวณมูลค่าสินค้าที่คืนทั้งหมด - แก้ไขโดยระบุประเภทข้อมูล
@@ -266,7 +270,8 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
     if (!orderData?.lines) return 0;
 
     return orderData.lines.reduce(
-      (sum: number, item: OrderLineItem) => sum + Math.abs(item.price) * (returnItems[item.sku] || 0),
+      (sum: number, item: OrderLineItem) =>
+        sum + Math.abs(item.price) * (returnItems[item.sku] || 0),
       0
     );
   };
@@ -452,9 +457,23 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
                   {currentStep === "preview" && orderData && (
                     <Col span={24}>
                       <Divider style={{ margin: "12px 0 24px" }} />
-                      <PreviewSection
+                      <IntegratedPreviewSection
                         orderData={orderData}
                         returnItems={returnItems}
+                        form={form}
+                        onEdit={(step) => {
+                          if (step === "create") {
+                            // กลับไปขั้นตอนการสร้างคำสั่ง
+                            const backBtn = renderBackButton();
+                            if (!backBtn.disabled) {
+                              backBtn.onClick();
+                            }
+                          }
+                        }}
+                        onNext={handleNext}
+                        loading={loading}
+                        stepLoading={stepLoading}
+                        getReturnQty={getReturnQty} // เพิ่ม prop นี้เพื่อให้ IntegratedPreviewSection สามารถเรียกใช้ฟังก์ชันเดียวกันกับที่ใช้ใน component นี้
                       />
                     </Col>
                   )}
@@ -462,7 +481,10 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
                   {/* ปุ่มดำเนินการ */}
                   <Col span={24}>
                     <Divider style={{ margin: "24px 0" }} />
-                    <Row justify="end">{renderActionButtons()}</Row>
+                    <Row justify="end">
+                      {/* ถ้าเป็นหน้า preview ไม่ต้องแสดงปุ่มซ้ำ */}
+                      {currentStep !== "preview" && renderActionButtons()}
+                    </Row>
                   </Col>
                 </Row>
               </Layout.Content>

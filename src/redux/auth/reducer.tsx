@@ -14,19 +14,52 @@ const initialState: AuthState = {
 
 /**
  * ฟังก์ชันสำหรับแปลงข้อมูล user ให้สอดคล้องกับแอพพลิเคชัน
- * รองรับทั้งกรณีที่ backend ส่ง fullName และกรณีที่ frontend ใช้ fullNameTH
+ * รองรับทั้งกรณีที่ backend ส่งข้อมูลไม่ครบหรือส่งมาในชื่อฟิลด์ที่ต่างกัน
  */
 const normalizeUser = (userData: any): User => {
-  return {
-    userID: userData.userID,
-    userName: userData.userName,
-    fullNameTH: userData.fullNameTH,
-    nickName: userData.nickName,
-    roleID: userData.roleID || userData.userRoleID,
-    roleName: userData.roleName,
-    departmentNo: userData.departmentNo,
-    platform: userData.platform
+  // บันทึก raw data เพื่อช่วยในการแก้ไขปัญหา
+  logger.log('debug', '[Auth Reducer] Normalizing user data', {
+    originalData: userData
+  });
+  
+  if (!userData) {
+    logger.error('[Auth Reducer] No user data to normalize');
+    return {
+      userID: '',
+      userName: '',
+      fullNameTH: '',
+      nickName: '',
+      roleID: 0,
+      roleName: '',
+      departmentNo: '',
+      platform: ''
+    };
+  }
+
+  const normalized = {
+    userID: userData.userID || '',
+    userName: userData.userName || '',
+    // ใช้หลายฟิลด์ที่อาจเป็นชื่อของผู้ใช้
+    fullNameTH: userData.fullNameTH || '',
+    nickName: userData.nickName || '',
+    roleID: userData.roleID || userData.userRoleID || 0,
+    roleName: userData.roleName || '',
+    departmentNo: userData.departmentNo || '',
+    platform: userData.platform || ''
   };
+  
+  // บันทึกข้อมูลที่ normalize แล้ว
+  logger.log('debug', '[Auth Reducer] User data normalized', {
+    normalizedData: {
+      userID: normalized.userID,
+      userName: normalized.userName,
+      fullNameTH: normalized.fullNameTH,
+      roleID: normalized.roleID,
+      roleName: normalized.roleName
+    }
+  });
+  
+  return normalized;
 };
 
 /**
@@ -61,6 +94,7 @@ export default function authReducer(state: AuthState = initialState, action: any
         user: {
           userID: normalizedUser.userID,
           userName: normalizedUser.userName,
+          fullNameTH: normalizedUser.fullNameTH,
           roleID: normalizedUser.roleID
         }
       });
@@ -87,7 +121,8 @@ export default function authReducer(state: AuthState = initialState, action: any
         isAuthenticated: true,
         user: {
           userID: checkedUser.userID,
-          userName: checkedUser.userName
+          userName: checkedUser.userName,
+          fullNameTH: checkedUser.fullNameTH
         }
       });
       

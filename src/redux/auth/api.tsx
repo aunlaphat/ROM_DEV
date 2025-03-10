@@ -69,16 +69,35 @@ export function* login(action: { type: AuthActionTypes; payload: LoginRequest })
 
     // แปลงข้อมูลผู้ใช้ให้ตรงกับที่ frontend ต้องการ
     const { user } = authResponse.data.data;
+    
+    // ตรวจสอบและบันทึก response จาก API เพื่อดูข้อมูลที่ส่งกลับมา
+    logger.log('debug', '[Auth] User data received', {
+      rawUserData: user,
+      hasFullNameTH: !!user.fullNameTH
+    });
+    
+    // แก้ไข: ตรวจสอบข้อมูลชื่อผู้ใช้และจัดการกรณีที่อาจเป็น undefined
     const normalizedUser = {
-      userID: user.userID,
-      userName: user.userName,
-      fullNameTH: user.fullNameTH,
-      nickName: user.nickName,
-      roleID: user.roleID,
-      roleName: user.roleName,
-      departmentNo: user.departmentNo,
-      platform: user.platform
+      userID: user.userID || '',
+      userName: user.userName || '',
+      fullNameTH: user.fullNameTH || '',
+      nickName: user.nickName || '',
+      roleID: user.roleID || 0,
+      roleName: user.roleName || '',
+      departmentNo: user.departmentNo || '',
+      platform: user.platform || ''
     };
+    
+    // บันทึก log ข้อมูลที่ normalize แล้ว
+    logger.log('debug', '[Auth] Normalized user data', {
+      normalizedUser: {
+        userID: normalizedUser.userID,
+        userName: normalizedUser.userName,
+        fullNameTH: normalizedUser.fullNameTH,
+        roleID: normalizedUser.roleID,
+        roleName: normalizedUser.roleName
+      }
+    });
 
     // อัปเดต Redux state
     logger.redux.action(AuthActionTypes.AUTHEN_LOGIN_SUCCESS, { userID: normalizedUser.userID });
@@ -86,11 +105,14 @@ export function* login(action: { type: AuthActionTypes; payload: LoginRequest })
       type: AuthActionTypes.AUTHEN_LOGIN_SUCCESS, 
       users: normalizedUser
     });
+    
+    // สร้างข้อความต้อนรับที่ปลอดภัย
+    const welcomeName = normalizedUser.fullNameTH || normalizedUser.userName || 'ผู้ใช้งาน';
 
     // แสดงข้อความแจ้งเตือน
     notification.success({ 
       message: "Login Successful! 🎉",
-      description: `ยินดีต้อนรับ คุณ ${normalizedUser.fullNameTH} 👋`,
+      description: `ยินดีต้อนรับ คุณ ${welcomeName} 👋`,
       placement: "topLeft",
     });
 
@@ -183,16 +205,34 @@ export function* loginLark(action: { type: AuthActionTypes; payload: LarkLoginRe
     
     // แปลงข้อมูลผู้ใช้ให้ตรงกับที่ frontend ต้องการ
     const { user } = authResponse.data.data;
+    
+    // ตรวจสอบและบันทึก response จาก API เพื่อดูข้อมูลที่ส่งกลับมา
+    logger.log('debug', '[Auth] Lark user data received', {
+      rawUserData: user,
+      hasFullNameTH: !!user.fullNameTH
+    });
+    
+    // แก้ไข: ตรวจสอบข้อมูลชื่อผู้ใช้และจัดการกรณีที่อาจเป็น undefined
     const normalizedUser = {
-      userID: user.userID,
-      userName: user.userName,
-      fullNameTH: user.fullNameTH,
-      nickName: user.nickName,
-      roleID: user.roleID,
-      roleName: user.roleName,
-      departmentNo: user.departmentNo,
-      platform: user.platform
+      userID: user.userID || '',
+      userName: user.userName || '',
+      fullNameTH: user.fullNameTH || '',
+      nickName: user.nickName || '',
+      roleID: user.roleID || 0,
+      roleName: user.roleName || '',
+      departmentNo: user.departmentNo || '',
+      platform: user.platform || ''
     };
+    
+    // บันทึก log ข้อมูลที่ normalize แล้ว
+    logger.log('debug', '[Auth] Normalized Lark user data', {
+      normalizedUser: {
+        userID: normalizedUser.userID,
+        userName: normalizedUser.userName,
+        fullNameTH: normalizedUser.fullNameTH,
+        roleID: normalizedUser.roleID
+      }
+    });
 
     // อัปเดต Redux state
     logger.redux.action(AuthActionTypes.AUTHEN_LOGIN_LARK_SUCCESS, { userID: normalizedUser.userID });
@@ -200,11 +240,14 @@ export function* loginLark(action: { type: AuthActionTypes; payload: LarkLoginRe
       type: AuthActionTypes.AUTHEN_LOGIN_LARK_SUCCESS, 
       users: normalizedUser
     });
+    
+    // สร้างข้อความต้อนรับที่ปลอดภัย
+    const welcomeName = normalizedUser.fullNameTH || normalizedUser.userName || 'ผู้ใช้งาน';
 
     // แสดงข้อความแจ้งเตือน
     notification.success({ 
       message: "Lark Login Successful! 🎉",
-      description: `ยินดีต้อนรับ คุณ ${normalizedUser.fullNameTH} 👋`,
+      description: `ยินดีต้อนรับ คุณ ${welcomeName} 👋`,
       placement: "topLeft",
     });
 
@@ -334,24 +377,41 @@ export function* checkAuthen(): Generator<Effect, void, any> {
       user: response.data.data.user
     });
 
+    // แก้ไข: ตรวจสอบว่า user มีจริงหรือไม่
     const { user } = response.data.data;
+    
+    if (!user) {
+      throw new Error('No user data returned from API');
+    }
 
     // Log authenticated user
     logger.auth.check(true, {
       user: {
-        userID: user.userID,
-        userName: user.userName,
-        roleID: user.roleID,
-        roleName: user.roleName
+        userID: user.userID || '',
+        userName: user.userName || '',
+        roleID: user.roleID || 0,
+        roleName: user.roleName || ''
       },
       timestamp: new Date().toISOString()
     });
+    
+    // แก้ไข: เพิ่มการ normalize ข้อมูลผู้ใช้
+    const normalizedUser = {
+      userID: user.userID || '',
+      userName: user.userName || '',
+      fullNameTH: user.fullNameTH || '',
+      nickName: user.nickName || '',
+      roleID: user.roleID || 0,
+      roleName: user.roleName || '',
+      departmentNo: user.departmentNo || '',
+      platform: user.platform || ''
+    };
 
     // Update Redux state
-    logger.redux.action(AuthActionTypes.AUTHEN_CHECK_SUCCESS, { userID: user.userID });
+    logger.redux.action(AuthActionTypes.AUTHEN_CHECK_SUCCESS, { userID: normalizedUser.userID });
     yield put({
       type: AuthActionTypes.AUTHEN_CHECK_SUCCESS,
-      users: user
+      users: normalizedUser
     });
 
   } catch (error: any) {
