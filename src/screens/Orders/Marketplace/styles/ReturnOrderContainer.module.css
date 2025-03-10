@@ -1,0 +1,207 @@
+/* src/screens/Orders/Marketplace/styles/ReturnOrderContainer.module.css */
+
+/* 
+  สไตล์สำหรับหน้า Create Return Order MKP 
+  เพื่อปรับแต่งการวางองค์ประกอบให้เหมาะสมกับ layout
+*/
+
+.returnOrderMainContainer {
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 24px;
+    min-height: calc(100vh - 170px); /* ปรับให้เหมาะกับ layout */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .createReturnHeader {
+    margin-bottom: 24px;
+    text-align: center;
+    background-color: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  .createReturnHeaderTitle {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1890ff;
+    margin-bottom: 8px;
+  }
+  
+  .createReturnHeaderSubtitle {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 14px;
+  }
+  
+  .stepProgress {
+    margin-bottom: 24px;
+  }
+  
+  .orderFormContainer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* ปรับแต่งการแสดงผล Card ต่างๆ */
+  .orderFormCard {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  
+  .orderFormCardTitle {
+    background-color: #fafafa;
+    padding: 16px 24px;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .orderFormCardContent {
+    padding: 24px;
+  }
+  
+  /* ปรับแต่งการแสดงผลในหน้าจอขนาดต่างๆ */
+  @media (max-width: 1200px) {
+    .returnOrderMainContainer {
+      padding: 16px;
+    }
+  }
+  
+  @media (max-width: 992px) {
+    .returnOrderMainContainer {
+      padding: 12px;
+    }
+    
+    .createReturnHeader {
+      padding: 16px;
+    }
+    
+    .createReturnHeaderTitle {
+      font-size: 20px;
+    }
+    
+    .orderFormCardContent {
+      padding: 16px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .returnOrderMainContainer {
+      padding: 8px;
+    }
+    
+    .createReturnHeader {
+      padding: 12px;
+    }
+    
+    .createReturnHeaderTitle {
+      font-size: 18px;
+    }
+    
+    .orderFormCardContent {
+      padding: 12px;
+    }
+  }
+  
+  /* Utility classes */
+  .panelShadow {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.3s;
+  }
+  
+  .panelShadow:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+  
+  .flexRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .flexColumn {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .alignCenter {
+    align-items: center;
+  }
+  
+  .justifyBetween {
+    justify-content: space-between;
+  }
+  
+  .justifyCenter {
+    justify-content: center;
+  }
+  
+  .gap8 {
+    gap: 8px;
+  }
+  
+  .gap16 {
+    gap: 16px;
+  }
+  
+  .textCenter {
+    text-align: center;
+  }
+  
+  .textRight {
+    text-align: right;
+  }
+  
+  .mb16 {
+    margin-bottom: 16px;
+  }
+  
+  .mb24 {
+    margin-bottom: 24px;
+  }
+  
+  .mb32 {
+    margin-bottom: 32px;
+  }
+  
+  .p16 {
+    padding: 16px;
+  }
+  
+  .p24 {
+    padding: 24px;
+  }
+  
+  .rounded8 {
+    border-radius: 8px;
+  }
+  
+  .bgWhite {
+    background-color: white;
+  }
+  
+  .bgLight {
+    background-color: #fafafa;
+  }
+  
+  .bgSuccess {
+    background-color: #f6ffed;
+  }
+  
+  .borderSuccess {
+    border: 1px solid #b7eb8f;
+  }
+  
+  /* เพิ่มเติมสำหรับแสดงขั้นตอนที่กำลังทำอยู่ */
+  .currentStepHighlight {
+    background-color: rgba(24, 144, 255, 0.05);
+    border-left: 4px solid #1890ff;
+  }

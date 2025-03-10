@@ -1,20 +1,45 @@
 /* src/screens/Orders/Marketplace/styles/ReturnOrder.module.css */
 
-/* Container styles */
-.returnOrderContainer {
+/* ===============================
+   Container และ Layout ทั่วไป
+   =============================== */
+   .returnOrderContainer {
     background-color: #f5f5f5;
     border-radius: 8px;
     padding: 24px;
     min-height: 80vh;
   }
   
-  /* Card styles */
+  /* Animation สำหรับการเปลี่ยนเนื้อหา */
+  .fadeIn {
+    animation: fadeInAnimation 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeInAnimation {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* ===============================
+     Card Styles
+     =============================== */
   .card {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     border-radius: 8px;
     overflow: hidden;
     margin-bottom: 24px;
     background-color: #ffffff;
+    transition: all 0.3s ease;
+  }
+  
+  .card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
   
   .cardTitle {
@@ -27,7 +52,34 @@
     padding: 24px;
   }
   
-  /* Preview section styles */
+  /* สไตล์ของ Statistic Card */
+  .statisticCard {
+    text-align: center;
+    height: 100%;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .statisticCard:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+  }
+  
+  /* ===============================
+     Section Header Styles
+     =============================== */
+  .sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  /* ===============================
+     Preview Section Styles
+     =============================== */
   .previewHeader {
     background-color: #f6ffed;
     border-radius: 8px;
@@ -46,6 +98,7 @@
     border-radius: 8px;
     margin-bottom: 24px;
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
   
   .previewSectionHeader {
@@ -61,6 +114,7 @@
     margin-top: 24px;
     display: flex;
     justify-content: center;
+    gap: 16px;
   }
   
   /* Table styles for preview */
@@ -74,7 +128,15 @@
     background-color: #f6ffed;
   }
   
-  /* Form styles */
+  /* Table summary styles */
+  .summaryRow {
+    background-color: #fafafa;
+    font-weight: bold;
+  }
+  
+  /* ===============================
+     Search Form Styles
+     =============================== */
   .searchForm {
     max-width: 600px;
     margin: 40px auto;
@@ -84,79 +146,315 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
   
-  /* Step indicators */
+  /* ===============================
+     Steps Container Styles
+     =============================== */
   .stepsContainer {
     background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     padding: 24px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 24px;
     position: relative;
     overflow: hidden;
   }
   
-  .progressIndicator {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 4px;
-    background-color: #1890ff;
-    transition: width 0.3s ease;
+  /* Progress Bar */
+  .progressBarContainer {
+    height: 6px;
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    margin-bottom: 24px;
+    overflow: hidden;
   }
   
-  /* Animation for content changes */
-  .fadeIn {
-    animation: fadeInAnimation 0.3s ease-in-out;
-  }
-  
-  @keyframes fadeInAnimation {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  /* Statistic card styles */
-  .statisticCard {
-    text-align: center;
+  .progressBarFill {
     height: 100%;
-    border: 1px solid #f0f0f0;
-    transition: all 0.3s ease;
+    transition: width 0.4s cubic-bezier(0.08, 0.82, 0.17, 1);
   }
   
-  .statisticCard:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-3px);
-  }
-  
-  /* Section header styles */
-  .sectionHeader {
+  /* Steps Content */
+  .stepsContentWrapper {
     display: flex;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 8px 4px;
+    scrollbar-width: thin;
+    position: relative;
+  }
+  
+  .stepsContentWrapper::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .stepsContentWrapper::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+  }
+  
+  .stepsContentWrapper::-webkit-scrollbar-track {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Individual Step Item */
+  .stepItem {
+    flex: 1;
+    min-width: 140px;
+    max-width: 200px;
+    padding: 12px 8px;
+    position: relative;
+    border-radius: 8px;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+  
+  .stepItem:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  }
+  
+  .stepItemActive {
+    background-color: rgba(24, 144, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+  }
+  
+  .stepItemWaiting {
+    opacity: 0.75;
+  }
+  
+  .stepItemCompleted {
+    background-color: rgba(82, 196, 26, 0.05);
+  }
+  
+  .stepContent {
+    display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 8px;
-    margin-bottom: 16px;
+    text-align: center;
+    position: relative;
   }
   
-  /* Table summary styles */
-  .summaryRow {
-    background-color: #fafafa;
-    font-weight: bold;
+  /* Step Indicators */
+  .stepIndicatorActive,
+  .stepIndicatorWait,
+  .stepIndicatorFinish {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s;
   }
   
-  /* Responsive styles */
+  .stepIndicatorActive {
+    background-color: #1890ff;
+    color: white;
+    animation: pulseAnimation 2s infinite;
+  }
+  
+  .stepIndicatorWait {
+    background-color: #f5f5f5;
+    color: rgba(0, 0, 0, 0.45);
+    border: 1px solid #d9d9d9;
+  }
+  
+  .stepIndicatorFinish {
+    background-color: #52c41a;
+    color: white;
+  }
+  
+  @keyframes pulseAnimation {
+    0% {
+      box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(24, 144, 255, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+    }
+  }
+  
+  /* Step Info */
+  .stepInfo {
+    width: 100%;
+    padding: 4px 0;
+  }
+  
+  .stepTitle {
+    font-weight: 500;
+    margin-bottom: 4px;
+    white-space: nowrap;
+  }
+  
+  .activeStepTitle {
+    color: #1890ff;
+    font-size: 16px;
+  }
+  
+  .stepSubtitle {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+    margin-bottom: 4px;
+  }
+  
+  .stepStatus {
+    font-size: 12px;
+    height: 20px;
+  }
+  
+  /* Connectors between steps */
+  .stepConnector {
+    position: absolute;
+    right: -16px;
+    top: 30px;
+    color: rgba(0, 0, 0, 0.25);
+    z-index: 1;
+  }
+  
+  /* Tooltip for step help text */
+  .tooltipHelp {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.3);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  
+  /* Mobile Step Description - only visible on mobile */
+  .mobileStepDescription {
+    margin-top: 8px;
+    padding-top: 8px;
+    text-align: center;
+    border-top: 1px dashed #f0f0f0;
+    display: none;
+  }
+  
+  /* Mobile Progress Indicator - only visible on mobile */
+  .mobileProgressIndicator {
+    margin-top: 16px;
+    display: none;
+  }
+  
+  .mobileProgressText {
+    margin-bottom: 8px;
+    text-align: center;
+    font-size: 14px;
+  }
+  
+  .mobileProgressBarContainer {
+    height: 4px;
+    background-color: #f0f0f0;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  
+  .mobileProgressBarFill {
+    height: 100%;
+    transition: width 0.4s cubic-bezier(0.08, 0.82, 0.17, 1);
+  }
+  
+  /* ===============================
+     Responsive Styles
+     =============================== */
+  @media (max-width: 1200px) {
+    .stepsContentWrapper {
+      padding: 12px 0;
+    }
+    
+    .stepItem {
+      min-width: 130px;
+    }
+  }
+  
+  @media (max-width: 992px) {
+    .stepsContainer {
+      padding: 16px;
+    }
+    
+    .stepItem {
+      min-width: 120px;
+    }
+    
+    .stepIndicatorActive,
+    .stepIndicatorWait,
+    .stepIndicatorFinish {
+      width: 28px;
+      height: 28px;
+    }
+    
+    .search-container {
+      padding: 32px !important;
+    }
+  }
+  
   @media (max-width: 768px) {
     .returnOrderContainer {
       padding: 16px;
     }
-  
+    
     .cardContent {
       padding: 16px;
     }
-  
+    
     .searchForm {
       padding: 24px;
+    }
+    
+    .stepsContainer {
+      padding: 16px 12px;
+    }
+    
+    .stepItem {
+      min-width: 110px;
+    }
+    
+    .stepStatus {
+      display: none;
+    }
+    
+    .mobileStepDescription {
+      display: block;
+    }
+    
+    .mobileProgressIndicator {
+      display: block;
+    }
+    
+    .search-container {
+      padding: 24px !important;
+    }
+    
+    /* Adjust font sizes for mobile */
+    h2.ant-typography {
+      font-size: 24px !important;
+    }
+    
+    .ant-input-search-button {
+      width: 100px !important;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .stepsContentWrapper {
+      justify-content: flex-start;
+      margin: 0 -8px;
+      padding: 0 8px;
+    }
+    
+    .stepItem {
+      min-width: 100px;
+    }
+    
+    .previewActions {
+      flex-direction: column;
+      gap: 8px;
     }
   }

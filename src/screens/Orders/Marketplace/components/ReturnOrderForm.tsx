@@ -1,3 +1,6 @@
+// src/screens/Orders/Marketplace/components/ReturnOrderForm.tsx
+// ตัวอย่างการปรับปรุง ReturnOrderForm.tsx ให้ใช้ layout และ styles ใหม่
+
 import React from "react";
 import {
   Layout,
@@ -12,6 +15,8 @@ import {
   Divider,
   Typography,
   Tooltip,
+  Card,
+  Tag,
 } from "antd";
 import {
   LeftOutlined,
@@ -19,23 +24,20 @@ import {
   ArrowRightOutlined,
   CheckOutlined,
   QuestionCircleOutlined,
+  FileTextOutlined,
+  NumberOutlined,
+  InfoCircleOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import OrderDetailsSection from "./OrderDetailsSection";
 import OrderItemsSection from "./OrderItemsSection";
 import ReturnOrderSteps from "./ReturnOrderSteps";
 import PreviewSection from "./PreviewSection";
 import IntegratedPreviewSection from "./IntegratedPreviewSection";
+import styles from "../styles/ReturnOrderContainer.module.css"; // นำเข้า CSS module ใหม่
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
-
-// สร้าง interface สำหรับ OrderLineItem เพื่อให้มี type ที่ชัดเจน
-interface OrderLineItem {
-  sku: string;
-  price: number;
-  qty: number;
-  itemName: string;
-}
 
 interface ReturnOrderFormProps {
   currentStep: "search" | "create" | "sr" | "preview" | "confirm";
@@ -130,6 +132,7 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
             onClick={handleSearch}
             loading={loading || stepLoading}
             disabled={!selectedSalesOrder}
+            size="large"
           >
             ค้นหา
           </Button>
@@ -151,6 +154,7 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
               onClick={handleCreateReturnOrder}
               loading={loading || stepLoading}
               disabled={isCreateReturnOrderDisabled()}
+              size="large"
             >
               สร้างคำสั่งคืนสินค้า
             </Button>
@@ -180,6 +184,7 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
                 loading={loading || stepLoading}
                 disabled={!validateStepTransition("sr", "preview")}
                 icon={<ArrowRightOutlined />}
+                size="large"
               >
                 ดำเนินการต่อ
               </Button>
@@ -190,6 +195,7 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
                 onClick={handleCreateSr}
                 loading={loading || stepLoading}
                 disabled={isCreateSRDisabled()}
+                size="large"
               >
                 สร้างเลข SR
               </Button>
@@ -218,6 +224,7 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
               loading={loading || stepLoading}
               disabled={!validateStepTransition("preview", "confirm")}
               icon={<ArrowRightOutlined />}
+              size="large"
             >
               ดำเนินการต่อ
             </Button>
@@ -243,6 +250,7 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
               onClick={handleConfirm}
               loading={loading || stepLoading}
               icon={<CheckOutlined />}
+              size="large"
             >
               ยืนยันคำสั่งคืนสินค้า
             </Button>
@@ -257,252 +265,215 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
     }
   };
 
-  // ฟังก์ชันคำนวณจำนวนสินค้าที่คืนทั้งหมด - แก้ไขโดยระบุประเภทข้อมูล
-  const getTotalReturnItems = (): number => {
-    return Object.values(returnItems).reduce(
-      (sum: number, qty: number) => sum + qty,
-      0
-    );
-  };
-
-  // ฟังก์ชันคำนวณมูลค่าสินค้าที่คืนทั้งหมด - แก้ไขโดยระบุประเภทข้อมูล
-  const getTotalReturnAmount = (): number => {
-    if (!orderData?.lines) return 0;
-
-    return orderData.lines.reduce(
-      (sum: number, item: OrderLineItem) =>
-        sum + Math.abs(item.price) * (returnItems[item.sku] || 0),
-      0
-    );
-  };
-
   return (
     <Spin
       spinning={loading || stepLoading}
       tip={stepLoading ? "กำลังดำเนินการ..." : "กำลังโหลดข้อมูล..."}
     >
-      <Layout className="return-order-container">
-        <Content
-          style={{
-            margin: "24px",
-            padding: 24,
-            background: "#f5f5f5",
-            borderRadius: "8px",
-            minHeight: "80vh",
-          }}
-        >
-          {/* ส่วนหัวและขั้นตอน */}
-          <Row gutter={[0, 24]}>
-            <Col span={24}>
-              <div
-                style={{
-                  background: "#fff",
-                  padding: "16px 24px",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                }}
-              >
-                <Title level={3} style={{ marginBottom: 12, color: "#1890ff" }}>
-                  ระบบคืนสินค้า - {getStepTitle()}
-                </Title>
-                <Text type="secondary">{getStepDescription()}</Text>
-              </div>
-            </Col>
-            <Col span={24}>
-              <ReturnOrderSteps
-                currentStep={currentStep}
-                orderData={orderData}
-                getStepStatus={getStepStatus}
-              />
-            </Col>
-          </Row>
+      <div className={styles.returnOrderMainContainer}>
+        {/* ส่วนหัวและขั้นตอน */}
+        <div className={styles.createReturnHeader}>
+          <Title level={3} className={styles.createReturnHeaderTitle}>
+            ระบบคืนสินค้า - {getStepTitle()}
+          </Title>
+          <Text type="secondary" className={styles.createReturnHeaderSubtitle}>
+            {getStepDescription()}
+          </Text>
+        </div>
+        
+        <div className={styles.stepProgress}>
+          <ReturnOrderSteps
+            currentStep={currentStep}
+            orderData={orderData}
+            getStepStatus={getStepStatus}
+          />
+        </div>
 
-          <Divider style={{ margin: "24px 0" }} />
+        {/* ขั้นตอนค้นหา */}
+        {currentStep === "search" && (
+          <div className={`${styles.orderFormCard} ${styles.panelShadow}`}>
+            <div className={`${styles.p24} ${styles.textCenter}`}>
+              <Space direction="vertical" size="large" style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+                <div>
+                  <Title level={2} style={{ color: "#1890ff", marginBottom: 16 }}>
+                    <SearchOutlined /> ค้นหาคำสั่งซื้อที่ต้องการคืน
+                  </Title>
+                  <Text type="secondary" style={{ fontSize: '16px' }}>
+                    คุณสามารถค้นหาด้วยเลข SO หรือ Order Number เพื่อเริ่มกระบวนการคืนสินค้า
+                  </Text>
+                </div>
 
-          {/* ขั้นตอนค้นหา */}
-          {currentStep === "search" && (
-            <div
-              className="search-container"
-              style={{
-                maxWidth: "600px",
-                margin: "40px auto",
-                background: "#fff",
-                padding: "36px",
-                borderRadius: "8px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              }}
-            >
-              <Title
-                level={4}
-                style={{ textAlign: "center", marginBottom: 24 }}
-              >
-                ค้นหาคำสั่งซื้อ
-                <Tooltip title="กรอกเลข SO ที่ขึ้นต้นด้วย SO หรือเลข Order">
-                  <QuestionCircleOutlined
-                    style={{ fontSize: "16px", marginLeft: 8 }}
-                  />
-                </Tooltip>
-              </Title>
+                {/* ตัวอย่างการค้นหา */}
+                <Card 
+                  bordered={false} 
+                  className={styles.bgLight}
+                  style={{ marginBottom: 32 }}
+                >
+                  <Space direction="vertical" size="small">
+                    <Text strong>ตัวอย่างเลขที่ใช้ค้นหา:</Text>
+                    <Space>
+                      <Tag icon={<FileTextOutlined />} color="blue">SO12345678</Tag>
+                      <Text type="secondary">หรือ</Text>
+                      <Tag icon={<NumberOutlined />} color="cyan">OR98765432</Tag>
+                    </Space>
+                  </Space>
+                </Card>
 
-              <Form layout="vertical" form={form} style={{ marginTop: "20px" }}>
-                <Row gutter={16} justify="center">
-                  <Col span={18}>
-                    <Form.Item
-                      label={
-                        <span style={{ fontWeight: 500 }}>
-                          กรอกเลข SO/Order
-                        </span>
-                      }
-                      name="selectedSalesOrder"
-                      rules={[
-                        { required: true, message: "กรุณากรอกเลข SO/Order!" },
-                      ]}
-                    >
-                      <Input
-                        size="large"
-                        placeholder="เช่น SO12345678 หรือ OR98765432"
-                        value={selectedSalesOrder}
-                        onChange={handleInputChange}
-                        disabled={loading}
-                        prefix={<SearchOutlined style={{ color: "#1890ff" }} />}
-                        onPressEnter={handleSearch}
-                      />
-                    </Form.Item>
-                  </Col>
-                </Row>
-
-                <Row justify="center" style={{ marginTop: 16 }}>
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<SearchOutlined />}
-                    onClick={handleSearch}
-                    loading={loading || stepLoading}
-                    disabled={!selectedSalesOrder}
-                    style={{ width: "120px" }}
+                <Form layout="vertical" form={form}>
+                  <Form.Item
+                    name="selectedSalesOrder"
+                    rules={[{ required: true, message: "กรุณากรอกเลข SO หรือ Order!" }]}
                   >
-                    ค้นหา
-                  </Button>
-                </Row>
-              </Form>
-            </div>
-          )}
-
-          {/* ขั้นตอนที่ไม่ใช่การค้นหา */}
-          {currentStep !== "search" && orderData && (
-            <Form layout="vertical" form={form}>
-              <Layout.Content
-                style={{
-                  padding: "24px",
-                  background: "#fff",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                }}
-              >
-                {/* แสดงข้อมูลรายการคืนสินค้า */}
-                <Row gutter={[16, 16]}>
-                  <Col span={24}>
-                    <OrderDetailsSection
-                      orderData={orderData}
-                      loading={loading}
+                    <Input.Search
+                      size="large"
+                      placeholder="กรอกเลข SO หรือ Order Number"
+                      value={selectedSalesOrder}
+                      onChange={handleInputChange}
+                      onSearch={handleSearch}
+                      disabled={loading}
+                      style={{
+                        width: "100%",
+                        height: "56px",
+                        fontSize: "16px"
+                      }}
+                      enterButton={
+                        <Button 
+                          type="primary" 
+                          size="large"
+                          style={{ height: "56px", width: "120px" }}
+                          icon={<SearchOutlined />}
+                          loading={loading || stepLoading}
+                        >
+                          ค้นหา
+                        </Button>
+                      }
                     />
-                  </Col>
+                  </Form.Item>
+                </Form>
 
-                  <Col span={24}>
-                    <OrderItemsSection
-                      orderData={orderData}
-                      getReturnQty={getReturnQty}
-                      updateReturnQty={updateReturnQty}
-                      loading={loading}
-                      currentStep={currentStep}
-                    />
-                  </Col>
+                <Card
+                  title={
+                    <Space>
+                      <InfoCircleOutlined style={{ color: "#1890ff" }} />
+                      <Text strong>คำแนะนำในการค้นหา</Text>
+                    </Space>
+                  }
+                  bordered={false}
+                  className={styles.bgLight}
+                >
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} md={12}>
+                      <Space align="start">
+                        <CheckCircleOutlined style={{ color: "#52c41a" }} />
+                        <div>
+                          <Text strong>เลข SO</Text>
+                          <br />
+                          <Text type="secondary">ขึ้นต้นด้วย SO ตามด้วยตัวเลข 8 หลัก</Text>
+                        </div>
+                      </Space>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Space align="start">
+                        <CheckCircleOutlined style={{ color: "#52c41a" }} />
+                        <div>
+                          <Text strong>Order Number</Text>
+                          <br />
+                          <Text type="secondary">ขึ้นต้นด้วย OR ตามด้วยตัวเลข 8 หลัก</Text>
+                        </div>
+                      </Space>
+                    </Col>
+                  </Row>
+                </Card>
 
-                  {/* แสดงข้อมูลสรุป */}
-                  {getTotalReturnItems() > 0 && currentStep !== "preview" && (
-                    <Col span={24}>
-                      <div
-                        style={{
-                          background: "#f6f8fa",
-                          padding: "16px",
-                          borderRadius: "8px",
-                          marginTop: "12px",
-                        }}
-                      >
-                        <Row justify="space-between" align="middle">
-                          <Col>
-                            <Text strong>สรุปรายการสินค้าที่จะคืน:</Text>
-                          </Col>
-                          <Col>
-                            <Space>
-                              <Text>
-                                จำนวนสินค้า:{" "}
-                                <Text strong>{getTotalReturnItems()} ชิ้น</Text>
-                              </Text>
-                              <Divider type="vertical" />
-                              <Text>
-                                มูลค่ารวม:{" "}
-                                <Text strong style={{ color: "#52c41a" }}>
-                                  ฿{getTotalReturnAmount().toLocaleString()}
-                                </Text>
-                              </Text>
-                            </Space>
-                          </Col>
-                        </Row>
+                {error && (
+                  <Alert
+                    message="ไม่พบข้อมูลที่ค้นหา"
+                    description={
+                      <div>
+                        <Text>กรุณาตรวจสอบว่า:</Text>
+                        <ul>
+                          <li>เลขที่คุณกรอกถูกต้องและครบถ้วน</li>
+                          <li>Order อยู่ในสถานะที่สามารถคืนสินค้าได้</li>
+                        </ul>
+                        <Text type="secondary">
+                          หากยังมีปัญหา กรุณาติดต่อเจ้าหน้าที่
+                        </Text>
                       </div>
-                    </Col>
-                  )}
+                    }
+                    type="error"
+                    showIcon
+                    action={
+                      <Button size="small" onClick={handleCancel}>
+                        ลองใหม่
+                      </Button>
+                    }
+                  />
+                )}
+              </Space>
+            </div>
+          </div>
+        )}
 
-                  {/* ขั้นตอนตรวจสอบข้อมูล */}
-                  {currentStep === "preview" && orderData && (
-                    <Col span={24}>
-                      <Divider style={{ margin: "12px 0 24px" }} />
-                      <IntegratedPreviewSection
-                        orderData={orderData}
-                        returnItems={returnItems}
-                        form={form}
-                        onEdit={(step) => {
-                          if (step === "create") {
-                            // กลับไปขั้นตอนการสร้างคำสั่ง
-                            const backBtn = renderBackButton();
-                            if (!backBtn.disabled) {
-                              backBtn.onClick();
-                            }
-                          }
-                        }}
-                        onNext={handleNext}
-                        loading={loading}
-                        stepLoading={stepLoading}
-                        getReturnQty={getReturnQty} // เพิ่ม prop นี้เพื่อให้ IntegratedPreviewSection สามารถเรียกใช้ฟังก์ชันเดียวกันกับที่ใช้ใน component นี้
-                      />
-                    </Col>
-                  )}
+        {/* ขั้นตอนที่ไม่ใช่การค้นหา */}
+        {currentStep !== "search" && orderData && (
+          <Form layout="vertical" form={form} className={styles.orderFormContainer}>
+            {/* แสดงข้อมูลรายการคืนสินค้า */}
+            <OrderDetailsSection
+              orderData={orderData}
+              loading={loading}
+            />
 
-                  {/* ปุ่มดำเนินการ */}
-                  <Col span={24}>
-                    <Divider style={{ margin: "24px 0" }} />
-                    <Row justify="end">
-                      {/* ถ้าเป็นหน้า preview ไม่ต้องแสดงปุ่มซ้ำ */}
-                      {currentStep !== "preview" && renderActionButtons()}
-                    </Row>
-                  </Col>
-                </Row>
-              </Layout.Content>
-            </Form>
-          )}
-        </Content>
+            <OrderItemsSection
+              orderData={orderData}
+              getReturnQty={getReturnQty}
+              updateReturnQty={updateReturnQty}
+              loading={loading}
+              currentStep={currentStep}
+            />
+
+            {/* ขั้นตอนตรวจสอบข้อมูล */}
+            {currentStep === "preview" && orderData && (
+              <div className={styles.mb24}>
+                <IntegratedPreviewSection
+                  orderData={orderData}
+                  returnItems={returnItems}
+                  form={form}
+                  onEdit={(step) => {
+                    if (step === "create") {
+                      // กลับไปขั้นตอนการสร้างคำสั่ง
+                      const backBtn = renderBackButton();
+                      if (!backBtn.disabled) {
+                        backBtn.onClick();
+                      }
+                    }
+                  }}
+                  onNext={handleNext}
+                  loading={loading}
+                  stepLoading={stepLoading}
+                  getReturnQty={getReturnQty}
+                />
+              </div>
+            )}
+
+            {/* ปุ่มดำเนินการ */}
+            {currentStep !== "preview" && (
+              <div className={`${styles.orderFormCard} ${styles.panelShadow}`}>
+                <div className={`${styles.p24} ${styles.textCenter}`}>
+                  {renderActionButtons()}
+                </div>
+              </div>
+            )}
+          </Form>
+        )}
 
         {/* แสดงข้อผิดพลาด */}
-        {error && (
+        {error && currentStep !== "search" && (
           <Alert
             message="เกิดข้อผิดพลาด"
             description={error}
             type="error"
             showIcon
-            style={{
-              margin: "16px 24px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            }}
+            style={{ marginTop: 16 }}
             action={
               <Button size="small" danger onClick={handleCancel}>
                 ลองใหม่
@@ -510,7 +481,7 @@ const ReturnOrderForm: React.FC<ReturnOrderFormProps> = ({
             }
           />
         )}
-      </Layout>
+      </div>
     </Spin>
   );
 };

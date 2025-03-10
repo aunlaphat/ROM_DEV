@@ -1,22 +1,26 @@
 // src/screens/Orders/Marketplace/components/ReturnOrderSteps.tsx
 
-import React from "react";
-import { Steps, Badge, Tooltip, Space, Typography, theme } from "antd";
+import React, { useMemo } from "react";
+import { theme, Typography, Space, Tooltip, Badge } from "antd";
 import {
   SearchOutlined,
   FormOutlined,
   NumberOutlined,
   CheckCircleOutlined,
   EyeOutlined,
-  RightOutlined,
+  ArrowRightOutlined,
+  CheckOutlined,
+  ClockCircleOutlined,
+  InfoCircleOutlined
 } from "@ant-design/icons";
 import { ReturnOrderState } from "../types";
+import styles from "../styles/ReturnOrder.module.css";
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 const { useToken } = theme;
 
 interface ReturnOrderStepsProps {
-  currentStep: "search" | "create" | "sr" | "confirm" | "preview";
+  currentStep: "search" | "create" | "sr" | "preview" | "confirm";
   orderData: ReturnOrderState["orderData"];
   getStepStatus: (stepKey: string) => "process" | "finish" | "wait";
 }
@@ -28,167 +32,191 @@ const ReturnOrderSteps: React.FC<ReturnOrderStepsProps> = ({
 }) => {
   const { token } = useToken();
 
-  // ฟังก์ชันสร้างชื่อขั้นตอนและคำอธิบาย
-  const renderStepTitle = (title: string, subTitle?: string) => (
-    <Space direction="vertical" size={0}>
-      <Text strong>{title}</Text>
-      {subTitle && (
-        <Text type="secondary" style={{ fontSize: "12px" }}>
-          {subTitle}
-        </Text>
-      )}
-    </Space>
-  );
+  // คำนวณเปอร์เซ็นต์ความคืบหน้า
+  const progress = useMemo(() => {
+    const stepOrder = ['search', 'create', 'sr', 'preview', 'confirm'];
+    const currentIndex = stepOrder.indexOf(currentStep);
+    return ((currentIndex + 1) / stepOrder.length) * 100;
+  }, [currentStep]);
 
-  // สร้างข้อมูลขั้นตอน
-  const steps = [
+  // ข้อมูล steps ที่ปรับปรุงแล้ว
+  const steps = useMemo(() => [
     {
       key: "search",
-      title: renderStepTitle("ค้นหา", "Search Order"),
+      title: "ค้นหา",
+      subtitle: "Search Order",
       icon: <SearchOutlined />,
-      description: (
-        <Badge
-          status={currentStep === "search" ? "processing" : "success"}
-          text="ค้นหา Order ที่ต้องการคืนสินค้า"
-          style={{
-            whiteSpace: "nowrap",
-          }}
-        />
-      ),
-      disabled: currentStep === "confirm" && !!orderData?.head.srNo,
+      description: "ค้นหา Order ที่ต้องการคืนสินค้า",
+      help: "กรอกเลข SO หรือ Order Number เพื่อค้นหาข้อมูลคำสั่งซื้อที่ต้องการคืน"
     },
     {
       key: "create",
-      title: renderStepTitle("สร้างคำสั่ง", "Create Return"),
+      title: "สร้างคำสั่งคืน",
+      subtitle: "Create Return",
       icon: <FormOutlined />,
-      description: (
-        <Badge
-          status={
-            getStepStatus("create") === "process"
-              ? "processing"
-              : getStepStatus("create") === "finish"
-              ? "success"
-              : "default"
-          }
-          text="ระบุข้อมูลและเลือกสินค้าที่ต้องการคืน"
-          style={{
-            whiteSpace: "nowrap",
-          }}
-        />
-      ),
-      disabled: currentStep === "confirm" && !!orderData?.head.srNo,
+      description: "ระบุข้อมูลและเลือกสินค้าที่ต้องการคืน",
+      help: "กรอกข้อมูลการคืนและเลือกรายการสินค้าที่ต้องการคืน โดยระบุจำนวนในแต่ละรายการ"
     },
     {
       key: "sr",
-      title: renderStepTitle("สร้าง SR", "Generate SR"),
+      title: "สร้าง SR",
+      subtitle: "Generate SR",
       icon: <NumberOutlined />,
-      description: (
-        <Tooltip
-          title={
-            orderData?.head.srNo
-              ? `SR Number: ${orderData.head.srNo}`
-              : "รอการสร้าง SR"
-          }
-        >
-          <Badge
-            status={
-              orderData?.head.srNo
-                ? "success"
-                : getStepStatus("sr") === "process"
-                ? "processing"
-                : "default"
-            }
-            text={
-              orderData?.head.srNo ? (
-                <Space size={4}>
-                  <Text type="success" style={{ fontWeight: "bold" }}>
-                    {orderData.head.srNo}
-                  </Text>
-                  <CheckCircleOutlined style={{ color: token.colorSuccess }} />
-                </Space>
-              ) : (
-                "สร้างเลข SR Number"
-              )
-            }
-            style={{
-              whiteSpace: "nowrap",
-            }}
-          />
-        </Tooltip>
-      ),
+      description: orderData?.head.srNo 
+        ? `SR: ${orderData.head.srNo}` 
+        : "สร้างเลข SR Number",
+      help: "เลข SR (Sale Return) เป็นเลขอ้างอิงสำหรับการคืนสินค้า ซึ่งจะถูกสร้างโดยระบบ"
     },
     {
       key: "preview",
-      title: renderStepTitle("ตรวจสอบ", "Preview"),
+      title: "ตรวจสอบ",
+      subtitle: "Review",
       icon: <EyeOutlined />,
-      description: (
-        <Badge
-          status={
-            getStepStatus("preview") === "process"
-              ? "processing"
-              : getStepStatus("preview") === "finish"
-              ? "success"
-              : "default"
-          }
-          text="ตรวจสอบข้อมูลก่อนยืนยัน"
-          style={{
-            whiteSpace: "nowrap",
-          }}
-        />
-      ),
+      description: "ตรวจสอบข้อมูลก่อนยืนยัน",
+      help: "ตรวจสอบความถูกต้องของข้อมูลการคืนสินค้าทั้งหมด ก่อนที่จะยืนยันการคืน"
     },
     {
       key: "confirm",
-      title: renderStepTitle("ยืนยัน", "Confirm"),
+      title: "ยืนยัน",
+      subtitle: "Confirm",
       icon: <CheckCircleOutlined />,
-      description: (
-        <Badge
-          status={
-            getStepStatus("confirm") === "process" ? "processing" : "default"
-          }
-          text="ยืนยันและเสร็จสิ้น"
-          style={{
-            whiteSpace: "nowrap",
-          }}
-        />
-      ),
+      description: "ยืนยันและเสร็จสิ้น",
+      help: "ยืนยันการคืนสินค้าเพื่อเสร็จสิ้นกระบวนการ"
     },
-  ];
+  ], [orderData]);
+
+  // สร้าง indicator สถานะของ step
+  const renderStepIndicator = (status: "process" | "finish" | "wait", index: number) => {
+    if (status === "finish") {
+      return (
+        <div className={styles.stepIndicatorFinish}>
+          <CheckOutlined />
+        </div>
+      );
+    }
+    
+    if (status === "process") {
+      return (
+        <div className={styles.stepIndicatorActive}>
+          <span>{index + 1}</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className={styles.stepIndicatorWait}>
+        <span>{index + 1}</span>
+      </div>
+    );
+  };
 
   return (
-    <div
-      style={{
-        background: "#fff",
-        padding: "24px",
-        borderRadius: "8px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-        position: "relative",
-        overflow: "auto",
-      }}
-    >
-      <Steps
-        type="navigation"
-        current={steps.findIndex((s) => s.key === currentStep)}
-        items={steps}
-        responsive={true}
-        style={{
-          padding: "8px 0",
-        }}
-        className="return-order-steps"
-      />
+    <div className={styles.stepsContainer}>
+      {/* Progress Bar */}
+      <div className={styles.progressBarContainer}>
+        <div 
+          className={styles.progressBarFill} 
+          style={{ 
+            width: `${progress}%`,
+            backgroundColor: progress === 100 ? token.colorSuccess : token.colorPrimary 
+          }}
+        />
+      </div>
 
-      {/* แถบความคืบหน้า */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          height: "4px",
-          backgroundColor: token.colorPrimary,
-          width: `${(steps.findIndex((s) => s.key === currentStep) + 1) * 20}%`,
-          transition: "width 0.3s ease",
-        }}
-      />
+      {/* Steps Content */}
+      <div className={styles.stepsContentWrapper}>
+        {steps.map((step, index) => {
+          const status = getStepStatus(step.key);
+          const isActive = currentStep === step.key;
+          const isCompleted = status === "finish";
+          const isWaiting = status === "wait";
+          
+          return (
+            <div 
+              key={step.key}
+              className={`${styles.stepItem} ${isActive ? styles.stepItemActive : ''} ${isCompleted ? styles.stepItemCompleted : ''} ${isWaiting ? styles.stepItemWaiting : ''}`}
+            >
+              <Tooltip 
+                title={
+                  <div>
+                    <div>{step.description}</div>
+                    <div className={styles.tooltipHelp}>
+                      <InfoCircleOutlined /> {step.help}
+                    </div>
+                  </div>
+                }
+                placement="bottom"
+              >
+                <div className={styles.stepContent}>
+                  {/* Step Indicator */}
+                  {renderStepIndicator(status, index)}
+                  
+                  {/* Step Info */}
+                  <div className={styles.stepInfo}>
+                    <div className={styles.stepTitle}>
+                      <Space align="center" size={4}>
+                        {step.icon}
+                        <Text strong={isActive} className={isActive ? styles.activeStepTitle : ''}>
+                          {step.title}
+                        </Text>
+                      </Space>
+                    </div>
+                    <div className={styles.stepSubtitle}>
+                      {step.subtitle}
+                    </div>
+                  </div>
+                  
+                  {/* Step Status */}
+                  <div className={styles.stepStatus}>
+                    {status === "process" && (
+                      <Badge status="processing" text="กำลังดำเนินการ" />
+                    )}
+                    {status === "finish" && (
+                      <Badge status="success" text="เสร็จสิ้น" />
+                    )}
+                    {status === "wait" && (
+                      <Badge status="default" text="รอดำเนินการ" />
+                    )}
+                  </div>
+                  
+                  {/* Connector */}
+                  {index < steps.length - 1 && (
+                    <div className={styles.stepConnector}>
+                      <ArrowRightOutlined />
+                    </div>
+                  )}
+                </div>
+              </Tooltip>
+              
+              {/* Current Step Description (Mobile Only) */}
+              {isActive && (
+                <div className={styles.mobileStepDescription}>
+                  <Text type="secondary">{step.description}</Text>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      
+      {/* Mobile Progress Indicator
+      <div className={styles.mobileProgressIndicator}>
+        <div className={styles.mobileProgressText}>
+          <Space align="center">
+            <ClockCircleOutlined />
+            <span>ขั้นตอนที่ {steps.findIndex(s => s.key === currentStep) + 1} จาก {steps.length}</span>
+          </Space>
+        </div>
+        <div className={styles.mobileProgressBarContainer}>
+          <div 
+            className={styles.mobileProgressBarFill} 
+            style={{ 
+              width: `${progress}%`,
+              backgroundColor: progress === 100 ? token.colorSuccess : token.colorPrimary 
+            }}
+          />
+        </div>
+      </div> */}
     </div>
   );
 };

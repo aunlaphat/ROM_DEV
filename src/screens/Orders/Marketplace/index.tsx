@@ -199,8 +199,8 @@ const CreateReturnOrderMKP: React.FC = () => {
       setTimeout(() => {
         // ปิด loading ก่อน navigate เพื่อป้องกันปัญหา
         closeLoading();
-        // Redirect ไปยัง Draft&Confirm
-        navigate('/Draft&Confirm');
+        // Redirect ไปยัง /draft-and-confirm
+        navigate('/draft-and-confirm');
       }, 2000); // delay 2 วินาที
     }
   }, [hasConfirmedOrder, loading, setStepLoading, navigate]);
