@@ -3,6 +3,7 @@ import { Steps, Col, ConfigProvider, Form, Layout, Row, Select, Button, Table, M
 import Webcam from 'react-webcam';
 import { CameraOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { QrReader, QrReaderProps } from 'react-qr-reader';
+import { useLocation } from 'react-router-dom';
 import api from "../../../utils/axios/axiosInstance";
 
 interface CustomQrReaderProps extends QrReaderProps {
@@ -27,6 +28,9 @@ interface OrderLine {
 }
 
 const OtherReturn: React.FC = () => {
+    const location = useLocation();
+    const { orderNumber, dataSource, value } = location.state || {};
+
     const [orderOptions, setOrderOptions] = useState<{ value: string; label: string }[]>([]);
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [showScanner, setShowScanner] = useState<boolean>(false);
@@ -44,6 +48,23 @@ const OtherReturn: React.FC = () => {
     });
     const webcamRef = useRef<Webcam>(null);
     const [data, setData] = useState<OrderLine[]>([]);
+
+    // useEffect(() => {
+    //     if (orderNumber && value === 1) {
+    //         setData(dataSource.map((item, index) => ({
+    //             key: `${index + 1}`,
+    //             sku: item.SKU,
+    //             itemName: item.Name,
+    //             qty: item.QTY,
+    //             receivedQty: 0,
+    //             price: "", // Add price if needed
+    //             image: null,
+    //         })));
+    //         setShowSteps(true);
+    //     } else if (orderNumber && value === 2) {
+    //         setShowSteps(true);
+    //     }
+    // }, [orderNumber, dataSource, value]);
 
     const onChange = (current: number) => {
         setCurrentStep(current);

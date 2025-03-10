@@ -49,10 +49,49 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
       //   roles: [RoleID.ADMIN, RoleID.TRADE_CONSIGN],
       // },
       {
+        title: ROUTES.ROUTE_CREATEBLINDRETURN.LABEL,
+        key: ROUTES.ROUTE_CREATEBLINDRETURN.PATH,
+        icon: Icon.Edit1(),
+        link: ROUTES.ROUTE_CREATEBLINDRETURN.PATH,
+        role: [
+          RoleID.ADMIN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.TRADE_CONSIGN,
+          RoleID.VIEWER,
+        ],
+      },
+      {
+        title: ROUTES.ROUTE_IJ.LABEL,
+        key: ROUTES.ROUTE_IJ.PATH,
+        icon: Icon.Edit1(),
+        link: ROUTES.ROUTE_IJ.PATH,
+        role: [
+          RoleID.ADMIN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.TRADE_CONSIGN,
+          RoleID.VIEWER,
+        ],
+      },
+      {
         title: ROUTES.ROUTE_CREATERETURNORDERMKP.LABEL,
         key: ROUTES.ROUTE_CREATERETURNORDERMKP.PATH,
         icon: Icon.Edit1(),
         link: ROUTES.ROUTE_CREATERETURNORDERMKP.PATH,
+        roles: [
+          RoleID.ADMIN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.TRADE_CONSIGN,
+          RoleID.VIEWER,
+        ],
+      },
+      {
+        title: ROUTES.ROUTE_CREATETRADERETURN.LABEL, // สร้างรายการคืนจากหน้าสาขา (Offline)
+        key: ROUTES.ROUTE_CREATETRADERETURN.PATH,
+        icon: Icon.Edit1(),
+        link: ROUTES.ROUTE_CREATETRADERETURN.PATH,
         roles: [
           RoleID.ADMIN,
           RoleID.ACCOUNTING,
@@ -87,6 +126,45 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
           RoleID.VIEWER,
         ],
       },
+    {
+        title: ROUTES.ROUTE_IMPORTORDER.LABEL,
+        key: ROUTES.ROUTE_IMPORTORDER.PATH,
+        icon: Icon.BoxArrow(),
+        link: ROUTES.ROUTE_IMPORTORDER.PATH,
+        roles: [
+          RoleID.ADMIN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.TRADE_CONSIGN,
+          RoleID.VIEWER,
+        ],
+    },
+    {
+        title: ROUTES.ROUTE_SALERETURN.LABEL, // รับเข้าการคืนสินค้าของรายการสินค้าที่มีการกรอกข้อมูลเข้าระบบมา => Sale Return
+        key: ROUTES.ROUTE_SALERETURN.PATH,
+        icon: Icon.Return(),
+        link: ROUTES.ROUTE_SALERETURN.PATH,
+        roles: [
+          RoleID.ADMIN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.TRADE_CONSIGN,
+          RoleID.VIEWER,
+        ],
+    },
+    {
+        title: ROUTES.ROUTE_OTHERRETURN.LABEL, // รับเข้าการคืนสินค้าของรายการสินค้าที่ไม่ทราบที่มา => Other Return
+        key: ROUTES.ROUTE_OTHERRETURN.PATH,
+        icon: Icon.Return(),
+        link: ROUTES.ROUTE_OTHERRETURN.PATH,
+        roles: [
+          RoleID.ADMIN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.TRADE_CONSIGN,
+          RoleID.VIEWER,
+        ],
+    },
       {
         title: ROUTES.ROUTE_REPORT.LABEL, // รายงาน
         key: ROUTES.ROUTE_REPORT.PATH,
@@ -234,6 +312,7 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
   //     link: ROUTES_PATH.ROUTE_REPORT.PATH,
   //     role: [1, 2],
   //   },
+
   //   {
   //     title: ROUTES_PATH.ROUTE_MANAGEUSER.LABEL,
   //     key: ROUTES_PATH.ROUTE_MANAGEUSER.PATH,
@@ -249,10 +328,6 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
   //   //   role: [1, 2],
   //   // },
    
-    
-   
-   
-    
   //   // {
   //   //   title: "จัดการผู้ใช้งาน",
   //   //   key: "/management_user",
@@ -262,6 +337,7 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
   //   //   subItems: [],
   //   // },
   // ];
+  
   /**
    * กรองเมนูตาม RoleID ของผู้ใช้
    */
