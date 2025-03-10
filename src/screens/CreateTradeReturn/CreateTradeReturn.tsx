@@ -5,8 +5,7 @@ import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import Popup from "reactjs-popup";
 import icon from "../../assets/images/document-text.png";
-import axios from "axios";
-import api from "../../utils/axios/axiosInstance"; // นำเข้า axios instance
+import api from "../../utils/axios/axiosInstance"; 
 
 const { Option } = Select;
 
@@ -33,6 +32,7 @@ interface DataItem {
   SKU: string; 
   Name: string;
   QTY: number;
+  Price: number;
 }
 
 interface Product {
@@ -452,31 +452,6 @@ const CreateTradeReturn = () => {
     }
   };
 
-  const handleSubmit = () => {
-    if (dataSource.length === 0) {
-      notification.warning({
-        message: "ไม่สามารถส่งข้อมูลได้",
-        description: "กรุณาเพิ่มข้อมูลในตารางก่อนส่ง!",
-      });
-      return; // หยุดการทำงานของฟังก์ชัน
-    }
-
-    // ส่งข้อมูลและรีเซ็ตฟอร์มและตาราง
-    console.log("Table Data:", dataSource);
-
-    form.resetFields();  // รีเซ็ตฟอร์มและตาราง
-    formaddress.resetFields(); // รีเซ็ตฟอร์ม address
-    setSelectedAccount(null);
-    setSelectedInvoice(null);
-    setInvoiceNames([]);
-    setDataSource([]); // หรือปรับเป็นค่าเริ่มต้นที่คุณต้องการได้
-
-    notification.success({
-      message: "ส่งข้อมูลสำเร็จ",
-      description: "ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!",
-    });
-  };
-
   // handle value Invoice_Name ของ New Invoice Address
   useEffect(() => {
     if (formaddress && (selectedInvoice || selectedAccount)) {
@@ -671,6 +646,78 @@ const CreateTradeReturn = () => {
 
     // Set form validity based on required fields
     setFormValid(Date && SKU && QTY);
+  };
+
+   const handleSubmit = async () => {
+      try {
+          // ตรวจสอบว่ามีข้อมูลในตารางอย่างน้อยหนึ่งรายการ
+          if (dataSource.length === 0) {
+              notification.warning({
+                  message: "ไม่สามารถส่งข้อมูลได้",
+                  description: "กรุณาเพิ่มข้อมูลในตารางก่อนส่ง!",
+              });
+              return; // หยุดการทำงานของฟังก์ชัน
+          }
+  
+          // ดึงค่าจากฟอร์ม
+          const values = await form.validateFields();
+  
+          // เตรียมข้อมูลสำหรับส่งไปยัง API
+          const requestData = {
+              OrderNo: values.Doc,
+              SoNo: values.Doc, // ใช้ Doc เป็น SoNo
+              SrNo: "", // กำหนดค่า SrNo ตามที่ต้องการ
+              ChannelID: 2, // กำหนดค่า ChannelID ตามที่ต้องการ
+              CustomerID: selectedAccount?.customerID,
+              TrackingNo: values.Tracking,
+              Logistic: values.Logistic,
+              // WarehouseID: "", // กำหนดค่า WarehouseID ตามที่ต้องการ
+              // SoStatus: "", // กำหนดค่า SoStatus ตามที่ต้องการ
+              // MkpStatus: "", // กำหนดค่า MkpStatus ตามที่ต้องการ
+              // ReturnDate: new Date().toISOString(), // กำหนดค่า ReturnDate เป็นวันที่ปัจจุบัน
+              StatusReturnID: 3, // กำหนดค่า StatusReturnID ตามที่ต้องการ
+              // StatusConfID: "", // กำหนดค่า StatusConfID ตามที่ต้องการ
+              // ConfirmBy: "", // กำหนดค่า ConfirmBy ตามที่ต้องการ
+              CreateBy: "", // กำหนดค่า CreateBy ตามที่ต้องการ
+              BeforeReturnOrderLines: dataSource.map(item => ({
+                  SKU: item.SKU,
+                  ItemName: item.Name,
+                  ReturnQTY: item.QTY, // กำหนดค่า ReturnQTY ตามที่ต้องการ
+                  Price: item.Price,
+                  TrackingNo: values.Tracking,
+              })),
+          };
+  
+          // ส่งข้อมูลไปยัง API
+          const response = await api.post('/api/trade-return/create-trade', requestData);
+  
+          // ตรวจสอบผลลัพธ์จาก API
+          if (response.status === 201) {
+              notification.success({
+                  message: "ส่งข้อมูลสำเร็จ",
+                  description: "ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!",
+              });
+  
+              // รีเซ็ตฟอร์มและตาราง
+              form.resetFields();
+              formaddress.resetFields();
+              setSelectedAccount(null);
+              setSelectedInvoice(null);
+              setInvoiceNames([]);
+              setDataSource([]);
+          } else {
+              notification.error({
+                  message: "เกิดข้อผิดพลาด",
+                  description: "ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+              });
+          }
+      } catch (error) {
+          console.error("Error submitting data:", error);
+          notification.error({
+              message: "เกิดข้อผิดพลาด",
+              description: "ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+          });
+      }
   };
 
   return (
@@ -893,19 +940,19 @@ const CreateTradeReturn = () => {
                     id="SKU"
                     label={<span style={{ color: "#657589" }}>กรอก SKU :</span>}
                     name="SKU"
-                    rules={[{ required: true, message: "กรุณากรอก SKU" }]}
+                    // rules={[{ required: true, message: "กรุณากรอก SKU" }]}
                   >
                     <Select
                       showSearch
                       style={{ width: "100%", height: "40px" }}
+                      dropdownStyle={{ minWidth: 200 }}
+                      listHeight={160}
                       placeholder="Search by SKU"
                       value={selectedSKU} // ใช้ค่าที่เลือก
                       onSearch={handleSearchSKU} // ใช้สำหรับค้นหา SKU
                       onChange={handleSKUChange} // เมื่อเลือก SKU
                       loading={loading}
-                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
                       virtual // ทำให้ค้นหาไวขึ้น
-                      dropdownStyle={{ minWidth: 200 }}
                     >
                       {skuOptions.map((option) => (
                         <Option 
@@ -926,19 +973,19 @@ const CreateTradeReturn = () => {
                       <span style={{ color: "#657589" }}>กรอก SKU Name:</span>
                     }
                     name="SKU_Name"
-                    rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
+                    // rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
                   >
                     <Select
                       showSearch
                       style={{ width: "100%", height: "40px" }}
+                      dropdownStyle={{ minWidth: 300 }}
+                      listHeight={160}
                       placeholder="Search by Product Name"
                       value={selectedName} // ใช้ค่าที่เลือก
                       onSearch={handleSearchNameAlias} // ใช้สำหรับค้นหา Name Alias
                       onChange={handleNameChange} // เมื่อเลือก Name Alias
                       loading={loading}
-                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
                       virtual // ทำให้ค้นหาไวขึ้น
-                      dropdownStyle={{ minWidth: 300 }}
                     >
                       {nameOptions.map((option) => (
                         <Option 
@@ -956,7 +1003,7 @@ const CreateTradeReturn = () => {
                     id="qty"
                     label={<span style={{ color: "#657589" }}>QTY:</span>}
                     name="QTY"
-                    rules={[{ required: true, message: "กรุณากรอก QTY" }]}
+                    // rules={[{ required: true, message: "กรุณากรอก QTY" }]}
                   >
                     <InputNumber
                       min={1}
@@ -977,7 +1024,7 @@ const CreateTradeReturn = () => {
                     id="price"
                     label={<span style={{ color: "#657589" }}>Price:</span>}
                     name="Price"
-                    rules={[{ required: true, message: "กรุณากรอก Price" }]}
+                    // rules={[{ required: true, message: "กรุณากรอก Price" }]}
                   >
                     <InputNumber
                       min={1}
