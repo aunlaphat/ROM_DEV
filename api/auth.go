@@ -28,14 +28,14 @@ func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 // Generate JWT token from user claims
 func (app *Application) GenerateToken(tokenData response.Login) string {
 	claims := map[string]interface{}{
-		"userID":     tokenData.UserID,
-		"userName":   tokenData.UserName,
-		"fullNameTH": tokenData.FullNameTH,
-		"nickName":   tokenData.NickName,
-		"roleID":     tokenData.RoleID,
-		"roleName":   tokenData.RoleName,
-		"department": tokenData.DepartmentNo,
-		"platform":   tokenData.Platform,
+		"userID":       tokenData.UserID,
+		"userName":     tokenData.UserName,
+		"fullNameTH":   tokenData.FullNameTH,
+		"nickName":     tokenData.NickName,
+		"roleID":       tokenData.RoleID,
+		"roleName":     tokenData.RoleName,
+		"departmentNo": tokenData.DepartmentNo,
+		"platform":     tokenData.Platform,
 	}
 
 	_, tokenString, _ := app.TokenAuth.Encode(claims)
@@ -156,11 +156,11 @@ func (app *Application) CheckAuthen(c *gin.Context) {
 		"user": gin.H{
 			"userID":       claims["userID"],
 			"userName":     claims["userName"],
-			"fullName":     claims["fullNameTH"],
+			"fullNameTH":   claims["fullNameTH"],
 			"nickName":     claims["nickName"],
 			"roleID":       claims["roleID"],
 			"roleName":     claims["roleName"],
-			"departmentNo": claims["department"],
+			"departmentNo": claims["departmentNo"],
 			"platform":     claims["platform"],
 		},
 	}, http.StatusOK)
