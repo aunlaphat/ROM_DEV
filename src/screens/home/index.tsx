@@ -24,7 +24,6 @@ import {
 } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import type { ColumnsType } from "antd/es/table";
-import { Icon } from "../../resources/icon";
 
 const { Content } = Layout;
 const { RangePicker } = DatePicker;
@@ -82,7 +81,7 @@ const ijReturnColumns: ColumnsType<any> = [
   { title: "Warehouse", dataIndex: "warehouse" },
 ];
 
-const Home: React.FC = () => {
+export const Home: React.FC = () => {
   const [dateRange, setDateRange] = useState([]);
   const [searchValue, setSearchValue] = useState("");
   const user = useSelector((state: any) => state.auth.user);
@@ -233,5 +232,3 @@ const Home: React.FC = () => {
     </ConfigProvider>
   );
 };
-
-export default Home;

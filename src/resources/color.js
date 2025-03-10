@@ -1,4 +1,3 @@
-// src/resources/color.ts (เปลี่ยนจาก .js เป็น .ts)
 export const color = {
   theme: "#2c4e98",
   secondTheme: "#f7941d",
@@ -12,6 +11,3 @@ export const color = {
   yellow: "#F4D35E",
   reset: "#ffc107",
 };
-
-// ส่งออก type สำหรับ color keys
-export type ColorKeys = keyof typeof color;

@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { RoleID } from "../../../constants/roles";
 import { ROUTES } from "../../../resources/routes";
 import { logger } from "../../../utils/logger";
-import { Icon } from "../../../resources";
+import { Icon } from "../../../resources/icon";
 import logo from "../../../assets/images/logo_org.png";
 import { ScrollMenu } from "../../Layouts/siderLayout/style";
 
@@ -26,7 +26,13 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
         key: ROUTES.ROUTE_MAIN.PATH,
         icon: Icon.Home(),
         link: ROUTES.ROUTE_MAIN.PATH,
-        roles: [RoleID.ADMIN, RoleID.TRADE_CONSIGN, RoleID.ACCOUNTING, RoleID.WAREHOUSE, RoleID.VIEWER],
+        roles: [
+          RoleID.ADMIN,
+          RoleID.TRADE_CONSIGN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.VIEWER,
+        ],
       },
       // {
       //   title: ROUTES.ROUTE_RETURNORDER.LABEL,
@@ -47,28 +53,52 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
         key: ROUTES.ROUTE_CREATERETURNORDERMKP.PATH,
         icon: Icon.Edit1(),
         link: ROUTES.ROUTE_CREATERETURNORDERMKP.PATH,
-        roles: [RoleID.ADMIN, RoleID.ACCOUNTING, RoleID.WAREHOUSE, RoleID.TRADE_CONSIGN, RoleID.VIEWER],
+        roles: [
+          RoleID.ADMIN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.TRADE_CONSIGN,
+          RoleID.VIEWER,
+        ],
       },
       {
         title: ROUTES.ROUTE_DRAFTANDCONFIRM.LABEL, // รายการรออนุมัติ MKP
         key: ROUTES.ROUTE_DRAFTANDCONFIRM.PATH,
         icon: Icon.Draft(),
         link: ROUTES.ROUTE_DRAFTANDCONFIRM.PATH,
-        roles: [RoleID.ADMIN, RoleID.ACCOUNTING, RoleID.WAREHOUSE, RoleID.TRADE_CONSIGN, RoleID.VIEWER],
+        roles: [
+          RoleID.ADMIN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.TRADE_CONSIGN,
+          RoleID.VIEWER,
+        ],
       },
       {
         title: ROUTES.ROUTE_CONFIRMRETURNTRADE.LABEL, // รายการรออนุมัติ Trade
         key: ROUTES.ROUTE_CONFIRMRETURNTRADE.PATH,
         icon: Icon.Confirm(),
         link: ROUTES.ROUTE_CONFIRMRETURNTRADE.PATH,
-        roles: [RoleID.ADMIN, RoleID.ACCOUNTING, RoleID.WAREHOUSE, RoleID.TRADE_CONSIGN, RoleID.VIEWER],
+        roles: [
+          RoleID.ADMIN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.TRADE_CONSIGN,
+          RoleID.VIEWER,
+        ],
       },
       {
         title: ROUTES.ROUTE_REPORT.LABEL, // รายงาน
         key: ROUTES.ROUTE_REPORT.PATH,
         icon: Icon.Report(),
         link: ROUTES.ROUTE_REPORT.PATH,
-        roles: [RoleID.ADMIN, RoleID.ACCOUNTING, RoleID.WAREHOUSE, RoleID.TRADE_CONSIGN, RoleID.VIEWER],
+        roles: [
+          RoleID.ADMIN,
+          RoleID.ACCOUNTING,
+          RoleID.WAREHOUSE,
+          RoleID.TRADE_CONSIGN,
+          RoleID.VIEWER,
+        ],
       },
       {
         title: ROUTES.ROUTE_MANAGEUSER.LABEL, // จัดการผู้ใช้งาน
@@ -107,7 +137,12 @@ const SiderLayout = ({ collapsed, collapsedWidth }: any) => {
       }}
     >
       <div className="logo">
-        <img src={logo} alt="Logo" className="avatar" style={{ width: "90%" }} />
+        <img
+          src={logo}
+          alt="Logo"
+          className="avatar"
+          style={{ width: "90%" }}
+        />
       </div>
       <Divider />
       <ScrollMenu>

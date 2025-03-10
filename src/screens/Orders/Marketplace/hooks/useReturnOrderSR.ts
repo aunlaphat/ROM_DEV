@@ -28,6 +28,9 @@ export const useReturnOrderSR = (
         console.log(`[ReturnOrder] Generating SR for order: ${orderData.head.orderNo}`);
         setHasGeneratedSr(true);
         generateSr(orderData.head.orderNo);
+        
+        // ไม่ต้อง setStepLoading(false) ที่นี่ เพราะจะกำหนดใน useEffect ที่ติดตาม hasGeneratedSr
+        // เมื่อ state orderData.head.srNo มีค่า และ loading เป็น false แล้ว
       }).catch((error) => {
         setStepLoading(false);
         setHasGeneratedSr(false);

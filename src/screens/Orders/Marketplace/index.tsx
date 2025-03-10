@@ -1,6 +1,6 @@
 // src/screens/Orders/Marketplace/index.tsx
 import React, { useEffect, useState } from "react";
-import { Form, notification } from "antd";
+import { Form, message, notification } from "antd";
 import ReturnOrderForm from "./components/ReturnOrderForm";
 import { useAuth } from "../../../hooks/useAuth";
 import { useOrder } from "../../../hooks/useOrder";
@@ -28,7 +28,7 @@ const CreateReturnOrderMKP: React.FC = () => {
   const [selectedSalesOrder, setSelectedSalesOrder] = useState('');
 
   // ใช้ custom hook ที่แก้ไขแล้ว
-  const { 
+  const {
     orderData, 
     returnOrder, 
     searchResult,
@@ -159,6 +159,7 @@ const CreateReturnOrderMKP: React.FC = () => {
     if (hasGeneratedSr && !loading && orderData?.head.srNo) {
       setStep('preview');
       setHasGeneratedSr(false);
+      setStepLoading(false); // เพิ่มบรรทัดนี้เพื่อรีเซ็ต loading state
       
       // แสดงแจ้งเตือนเมื่อสร้าง SR สำเร็จ
       notification.success({
@@ -167,21 +168,28 @@ const CreateReturnOrderMKP: React.FC = () => {
         duration: 5,
       });
     }
-  }, [hasGeneratedSr, loading, orderData, setStep]);
+  }, [hasGeneratedSr, loading, orderData, setStep, setStepLoading]);
 
   // ติดตามการเปลี่ยนแปลงของสถานะจากการยืนยัน order
   useEffect(() => {
     if (hasConfirmedOrder && !loading) {
       setHasConfirmedOrder(false);
+      setStepLoading(false); // รีเซ็ต loading state
       
-      // แสดงแจ้งเตือนเมื่ออัพเดตสถานะสำเร็จ
+      // ปิด message loading และแสดงข้อความสำเร็จ
+      message.success({
+        content: 'อัพเดตสถานะสำเร็จ',
+        key: 'confirmStatus', // ใช้ key เดียวกับ message.loading
+        duration: 3,
+      });
+      
       notification.success({
         message: 'อัพเดตสถานะสำเร็จ',
         description: 'การคืนสินค้าถูกดำเนินการเรียบร้อยแล้ว',
         duration: 3,
       });
     }
-  }, [hasConfirmedOrder, loading]);
+  }, [hasConfirmedOrder, loading, setStepLoading]);
 
   // ตรวจสอบความถูกต้องในการเปลี่ยนขั้นตอน (wrapper function)
   const validateStepTransition = (fromStep: string, toStep: string): boolean => {
