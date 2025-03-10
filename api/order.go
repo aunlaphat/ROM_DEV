@@ -5,7 +5,9 @@ import (
 	"boilerplate-backend-go/middleware"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -20,8 +22,10 @@ func (app *Application) OrderRoute(apiRouter *gin.RouterGroup) {
 	orderAuth := order.Group("/")
 	orderAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
 	orderAuth.POST("/create", app.CreateBeforeReturnOrder)
+	orderAuth.POST("/generate-sr/:orderNo", app.GenerateSrNoFromAX)
 	orderAuth.POST("/update-sr/:orderNo", app.UpdateSrNo)
 	orderAuth.POST("/update-status/:orderNo", app.UpdateOrderStatus)
+	orderAuth.POST("/cancel", app.CancelOrder)
 
 	// Frontend อัปเดต IsEdited = true เมื่อมีการแก้ไขข้อมูล (เช่น เปลี่ยน QTY, ลบรายการ, หรือเพิ่มสินค้าใหม่)
 	orderAuth.PATCH("/mark-edited/:orderNo", app.MarkOrderAsEdited)
@@ -138,14 +142,21 @@ func (app *Application) UpdateSrNo(c *gin.Context) {
 		return
 	}
 
+	var req struct {
+		SrNo string `json:"srNo" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleResponse(c, false, "⚠️ SrNo is required", nil, http.StatusBadRequest)
+		return
+	}
+
 	userID, exists := c.Get("UserID")
 	if !exists {
-		app.Logger.Warn("⚠️ Unauthorized - Missing UserID")
 		handleResponse(c, false, "⚠️ Unauthorized - Missing UserID", nil, http.StatusUnauthorized)
 		return
 	}
 
-	resp, err := app.Service.Order.UpdateSrNo(c.Request.Context(), orderNo, userID.(string))
+	resp, err := app.Service.Order.UpdateSrNo(c.Request.Context(), orderNo, req.SrNo, userID.(string))
 	if err != nil {
 		handleError(c, err)
 		return
@@ -193,7 +204,7 @@ func (app *Application) UpdateOrderStatus(c *gin.Context) {
 	app.Logger.Info("🔄 Updating Order Status...",
 		zap.String("OrderNo", orderNo),
 		zap.String("RequestedBy", userID.(string)),
-		zap.Int("RoleID", roleID.(int)),
+		zap.Int("RoleID", roleIDInt),
 	)
 
 	resp, err := app.Service.Order.UpdateOrderStatus(c.Request.Context(), orderNo, userID.(string), roleIDInt)
@@ -232,4 +243,82 @@ func (app *Application) MarkOrderAsEdited(c *gin.Context) {
 	}
 
 	handleResponse(c, true, "⭐ Order marked as edited ⭐", nil, http.StatusOK)
+}
+
+// CancelOrder godoc
+// @Summary Cancel an existing return order
+// @Description Cancels an order by updating its status and recording the cancellation reason
+// @ID cancel-order
+// @Tags Return Order MKP
+// @Accept json
+// @Produce json
+// @Param request body request.CancelOrder true "Cancel Order Data"
+// @Success 200 {object} Response{data=response.CancelOrderResponse}
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response "Unauthorized"
+// @Failure 500 {object} Response
+// @Router /order/cancel [post]
+func (app *Application) CancelOrder(c *gin.Context) {
+	var req request.CancelOrder
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleValidationError(c, err)
+		return
+	}
+
+	userID, exists := c.Get("UserID")
+	if !exists {
+		app.Logger.Warn("⚠️ Unauthorized - Missing UserID")
+		handleResponse(c, false, "⚠️ Unauthorized - Missing UserID", nil, http.StatusUnauthorized)
+		return
+	}
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		app.Logger.Warn("❌ Invalid UserID format in token", zap.Any("UserID", userID))
+		handleResponse(c, false, "❌ Unauthorized - Invalid UserID format", nil, http.StatusUnauthorized)
+		return
+	}
+
+	app.Logger.Info("🛑 Canceling Order...",
+		zap.String("RefID", req.RefID),
+		zap.String("SourceTable", req.SourceTable),
+		zap.String("CancelReason", req.CancelReason),
+		zap.String("CanceledBy", userIDStr),
+	)
+
+	resp, err := app.Service.Order.CancelOrder(c.Request.Context(), req, userIDStr)
+	if err != nil {
+		app.Logger.Error("❌ Failed to cancel order", zap.Error(err))
+		handleError(c, err)
+		return
+	}
+
+	handleResponse(c, true, "⭐ Order canceled successfully ⭐", resp, http.StatusOK)
+}
+
+// GenerateSrNoFromAX godoc
+// @Summary Generate SrNo from AX system
+// @Description Calls AX API to generate a new SrNo for the order
+// @ID generate-sr-no-from-ax
+// @Tags Return Order MKP
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order Number"
+// @Success 200 {object} Response{data=string}
+// @Failure 400 {object} Response
+// @Failure 500 {object} Response
+// @Router /order/generate-sr/{orderNo} [post]
+func (app *Application) GenerateSrNoFromAX(c *gin.Context) {
+	orderNo := c.Param("orderNo")
+	if orderNo == "" {
+		handleResponse(c, false, "⚠️ OrderNo is required", nil, http.StatusBadRequest)
+		return
+	}
+
+	// เรียก AX API เพื่อขอ SrNo
+	srNo := fmt.Sprintf("SR-%s-%d", orderNo, time.Now().Unix())
+
+	// ส่งค่า SrNo กลับไปให้ frontend
+	handleResponse(c, true, "⭐ SrNo generated from AX successfully ⭐", srNo, http.StatusOK)
 }

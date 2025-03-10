@@ -1,7 +1,7 @@
 package service
 
 import (
-	entity "boilerplate-backend-go/Entity"
+	"boilerplate-backend-go/entity"
 	"boilerplate-backend-go/errors"
 	"context"
 	"database/sql"

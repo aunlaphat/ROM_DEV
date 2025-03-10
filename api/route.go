@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,12 +23,13 @@ func Routes(router *gin.Engine, app *Application) {
 	if allowedOrigin == "" {
 		allowedOrigin = "http://localhost:3000" // Default
 	}
+	fmt.Println("🔥 CORS Allowed Origin:", allowedOrigin) // ✅ Debug จุดนี้
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{allowedOrigin},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-		AllowHeaders:     []string{"X-PINGOTHER", "Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposeHeaders:    []string{"Link"},
+		AllowHeaders:     []string{"Authorization", "Content-Type"},
+		ExposeHeaders:    []string{"Authorization", "Set-Cookie"},
 		AllowCredentials: true,
 		MaxAge:           300, // 5 minutes
 	}))
@@ -52,4 +54,5 @@ func Routes(router *gin.Engine, app *Application) {
 	app.TradeReturnRoute(apiRouter)
 	app.BeforeReturnRoute(apiRouter)
 	app.Constants(apiRouter)
+	app.DraftConfirmRoute(apiRouter)
 }

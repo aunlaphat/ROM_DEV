@@ -1,7 +1,7 @@
 package repository
 
 import (
-	entity "boilerplate-backend-go/Entity"
+	"boilerplate-backend-go/entity"
 	"context"
 	"database/sql"
 	"fmt"

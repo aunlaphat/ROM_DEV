@@ -2,17 +2,28 @@ package entity
 
 import "time"
 
-type User struct {
-	UserID       string  `db:"UserID"`
-	UserName     string  `db:"UserName"`
-	Password     string  `db:"Password"`
-	NickName     *string `db:"NickName"`
-	FullNameTH   *string `db:"FullNameTH"`
-	DepartmentNo string  `db:"DepartmentNo"`
-	RoleID       *int    `db:"RoleID"`
-	RoleName     *string `db:"RoleName"`
-	Description  *string `db:"Description"`
-	// Permission   string `db:"Permission"`
+type ROM_V_User struct {
+	UserID       string `db:"UserID"`       // รหัสพนักงานจาก ERP
+	UserName     string `db:"UserName"`     // ชื่อผู้ใช้
+	Password     string `db:"Password"`     // (MD5 Hash) ใช้สำหรับยืนยันตัวตน
+	NickName     string `db:"NickName"`     // ชื่อเล่น
+	FullNameTH   string `db:"FullNameTH"`   // ชื่อเต็มภาษาไทย
+	DepartmentNo string `db:"DepartmentNo"` // รหัสแผนก
+}
+
+type ROM_V_UserDetail struct {
+	UserID        string `db:"UserID"`        // รหัสผู้ใช้
+	Password      string `db:"Password"`      // (MD5 Hash) ใช้สำหรับยืนยันตัวตน
+	UserName      string `db:"UserName"`      // ชื่อผู้ใช้
+	NickName      string `db:"NickName"`      // ชื่อเล่น
+	FullNameTH    string `db:"FullNameTH"`    // ชื่อเต็มภาษาไทย
+	DepartmentNo  string `db:"DepartmentNo"`  // รหัสแผนก
+	RoleID        int    `db:"RoleID"`        // รหัสบทบาท
+	RoleName      string `db:"RoleName"`      // ชื่อบทบาท
+	WarehouseID   int    `db:"WarehouseID"`   // คลังสินค้า
+	WarehouseName string `db:"WarehouseName"` // ชื่อคลังสินค้า
+	Description   string `db:"Description"`   // รายละเอียดบทบาท
+	IsActive      bool   `db:"IsActive"`      // สถานะการใช้งานบัญชี
 }
 
 type ROM_V_OrderHeadDetail struct {
@@ -56,14 +67,14 @@ type InvoiceInformation struct {
 }
 
 type Province struct {
-	ProvinceCode    int    `db:"ProvinceCode" json:"provinceCode"`
-	ProvicesTH      string `db:"ProvicesTH" json:"provicesTH"`
+	ProvinceCode int    `db:"ProvinceCode" json:"provinceCode"`
+	ProvicesTH   string `db:"ProvicesTH" json:"provicesTH"`
 }
 
 type District struct {
-	ProvinceCode    int    `db:"ProvinceCode" json:"provinceCode"`
-	DistrictCode    int    `db:"DistrictCode" json:"districtCode"`
-	DistrictTH      string `db:"DistrictTH" json:"districtTH"`
+	ProvinceCode int    `db:"ProvinceCode" json:"provinceCode"`
+	DistrictCode int    `db:"DistrictCode" json:"districtCode"`
+	DistrictTH   string `db:"DistrictTH" json:"districtTH"`
 }
 
 type SubDistrict struct {

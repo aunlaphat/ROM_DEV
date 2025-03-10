@@ -363,48 +363,15 @@ type UpdateOrderStatusResponse struct {
 	ConfirmDate    time.Time `json:"confirmDate" db:"ConfirmDate"`
 }
 
-/********** MKP (Online) ***************/
-
-type SaleOrderResponse struct {
-	SoNo        string                  `json:"soNo" db:"SoNo"`
-	OrderNo     string                  `json:"orderNo" db:"OrderNo"`
-	StatusMKP   string                  `json:"statusMKP" db:"StatusMKP"`
-	SalesStatus string                  `json:"salesStatus" db:"SalesStatus"`
-	CreateDate  *time.Time              `json:"createDate" db:"CreateDate"`
-	OrderLines  []SaleOrderLineResponse `json:"orderLines"`
-}
-
-type SaleOrderLineResponse struct {
-	SoNo     string  `json:"soNo" db:"SoNo"`
-	OrderNo  string  `json:"orderNo" db:"OrderNo"`
-	SKU      string  `json:"sku" db:"SKU"`
-	ItemName string  `json:"itemName" db:"ItemName"`
-	QTY      int     `json:"qty" db:"QTY"`
-	Price    float64 `json:"price" db:"Price"`
-}
-
-type UpdateSaleReturnResponse struct {
-	OrderNo    string    `json:"orderNo" db:"OrderNo"`
-	SrNo       string    `json:"srNo" db:"SrNo"`
-	UpdateBy   string    `json:"updateBy" db:"UpdateBy"`
-	UpdateDate time.Time `json:"updateDate" db:"UpdateDate"`
-}
-
-type ConfirmSaleReturnResponse struct {
-	OrderNo     string    `json:"orderNo" db:"OrderNo"`
-	ConfirmBy   string    `json:"confirmBy" db:"ConfirmBy"`
-	ConfirmDate time.Time `json:"confirmDate" db:"ConfirmDate"`
-}
-
-type CancelSaleReturnResponse struct {
-	RefID        string    `json:"refId" db:"RefID"`
-	CancelStatus bool      `json:"cancelStatus" db:"CancelStatus"`
-	Remark       string    `json:"remark" db:"Remark"`
+type CancelOrderResponse struct {
+	RefID        string    `json:"refID" db:"RefID"`
+	SourceTable  string    `json:"sourceTable" db:"SourceTable"`
+	CancelReason string    `json:"cancelReason" db:"CancelReason"`
 	CancelBy     string    `json:"cancelBy" db:"CancelBy"`
 	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
 }
 
-type ListDraftConfirmOrdersResponse struct {
+type OrderHeadResponse struct {
 	OrderNo     string    `json:"orderNo" db:"OrderNo"`
 	SoNo        string    `json:"soNo" db:"SoNo"`
 	SrNo        string    `json:"srNo" db:"SrNo"`
@@ -416,21 +383,33 @@ type ListDraftConfirmOrdersResponse struct {
 	WarehouseID int       `json:"warehouseId" db:"WarehouseID"`
 }
 
-type DraftHeadResponse struct {
-	OrderNo    string              `db:"OrderNo"`
-	SoNo       string              `db:"SoNo"`
-	SrNo       string              `db:"SrNo"`
-	OrderLines []DraftLineResponse `db:"OrderLines"`
+type DraftConfirmResponse struct {
+	OrderNo string             `json:"orderNo" db:"OrderNo"`
+	SoNo    string             `json:"soNo" db:"SoNo"`
+	SrNo    string             `json:"srNo" db:"SrNo"`
+	Items   []DraftConfirmItem `json:"items"`
 }
 
-type DraftLineResponse struct {
-	SKU      string  `db:"SKU"`
-	ItemName string  `db:"ItemName"`
-	QTY      int     `db:"QTY"`
-	Price    float64 `db:"Price"`
+type DraftConfirmItem struct {
+	OrderNo  string  `json:"orderNo" db:"OrderNo"`
+	SKU      string  `json:"sku" db:"SKU"`
+	ItemName string  `json:"itemName" db:"ItemName"`
+	QTY      int     `json:"qty" db:"QTY"`
+	Price    float64 `json:"price" db:"Price"`
 }
 
-type CodeRResponse struct {
+type ListCodeRResponse struct {
 	SKU       string `json:"sku" db:"SKU"`
-	NameAlias string `json:"nameAlias" db:"NameAlias"`
+	NAMEALIAS string `json:"nameAlias" db:"NAMEALIAS"`
+}
+
+type AddItemResponse struct {
+	OrderNo    string    `json:"orderNo" db:"OrderNo"`
+	SKU        string    `json:"sku" db:"SKU"`
+	ItemName   string    `json:"itemName" db:"ItemName"`
+	QTY        int       `json:"qty" db:"QTY"`
+	ReturnQTY  int       `json:"returnQty" db:"ReturnQTY"`
+	Price      float64   `json:"price" db:"Price"`
+	CreateBy   string    `json:"createBy" db:"CreateBy"`
+	CreateDate time.Time `json:"createDate" db:"CreateDate"`
 }
