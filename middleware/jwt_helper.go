@@ -2,7 +2,7 @@ package middleware
 
 import "github.com/gin-gonic/gin"
 
-// ✅ Helper Function ดึง JWT Claims ตาม Source (Header หรือ Cookie)
+// Helper Function ดึง JWT Claims ตาม Source (Header หรือ Cookie)
 func GetJWTClaims(c *gin.Context) map[string]interface{} {
 	source, exists := c.Get("jwt_source")
 	if !exists {

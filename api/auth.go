@@ -15,17 +15,15 @@ import (
 
 func (app *Application) AuthRoute(apiRouter *gin.RouterGroup) {
 	auth := apiRouter.Group("/auth")
-	auth.POST("/login", app.Login)              // Standard Login
-	auth.POST("/login-lark", app.LoginFromLark) // Login via Lark
-	auth.POST("/logout", app.Logout)            // Logout
+	auth.POST("/login", app.Login)
+	auth.POST("/login-lark", app.LoginFromLark)
+	auth.POST("/logout", app.Logout)
 
-	// Protected Routes (ต้องใช้ JWT)
 	protected := auth.Group("/")
 	protected.Use(middleware.JWTMiddleware(app.TokenAuth))
-	protected.GET("/", app.CheckAuthen) // ตรวจสอบ Authentication
+	protected.GET("/", app.CheckAuthen)
 }
 
-// Generate JWT token from user claims
 func (app *Application) GenerateToken(tokenData response.Login) string {
 	claims := map[string]interface{}{
 		"userID":       tokenData.UserID,
@@ -40,7 +38,6 @@ func (app *Application) GenerateToken(tokenData response.Login) string {
 
 	_, tokenString, _ := app.TokenAuth.Encode(claims)
 
-	// ✅ Debug Mode - แสดง Token ใน Console
 	fmt.Println("🔑 Debug JWT:", tokenString)
 
 	return tokenString
@@ -74,13 +71,11 @@ func (app *Application) Login(c *gin.Context) {
 	token := app.GenerateToken(user)
 	app.Logger.Info("✅ Login successful", zap.String("username", user.UserName))
 
-	// ✅ ตรวจสอบว่า Token ถูกสร้างหรือไม่
 	if token == "" {
 		handleResponse(c, false, "Failed to generate token", nil, http.StatusInternalServerError)
 		return
 	}
 
-	// ✅ แก้ไข `Set-Cookie` ให้ทำงานใน `localhost`
 	c.SetCookie("jwt", token, 4*3600, "/", "", false, true) // Secure: false for localhost
 
 	handleResponse(c, true, "Login Success", token, http.StatusOK)
@@ -141,16 +136,13 @@ func (app *Application) CheckAuthen(c *gin.Context) {
 	source, _ := c.Get("jwt_source")
 	claims := middleware.GetJWTClaims(c)
 
-	// ❌ ถ้าไม่มี Claims => Unauthorized
 	if claims == nil {
 		handleResponse(c, false, "Unauthorized - No claims found", nil, http.StatusUnauthorized)
 		return
 	}
 
-	// ✅ Debug Log - แสดง Claims ทั้งหมด
 	app.Logger.Info("✅ User authenticated", zap.Any("claims", claims))
 
-	// ✅ คืนค่า Response ที่อ่านง่ายขึ้น
 	handleResponse(c, true, "User authenticated", gin.H{
 		"source": source,
 		"user": gin.H{
