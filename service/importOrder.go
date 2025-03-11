@@ -19,7 +19,7 @@ type ImportOrderService interface {
 	SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
 	SearchOrderORTrackingNo(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
 	GetOrderTracking(ctx context.Context) ([]response.ImportItem, error)
-	UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error
+	UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) (string, error)
 	GetSummaryImportOrder(ctx context.Context, orderNo string) ([]response.ImportOrderSummary, error)
 	ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error)
 
@@ -85,31 +85,33 @@ var (
 	mu        sync.Mutex
 )
 
-func (srv service) UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error {
+func (srv service) UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) (string, error) {
 	srv.logger.Info("[ Starting upload photo process ]", zap.String("OrderNo", orderNo), zap.String("ImageTypeID", imageTypeID), zap.String("SKU", sku), zap.String("Filename", filename))
 
-	// *️⃣ สร้าง path สำหรับบันทึกไฟล์
+	// สร้าง path สำหรับบันทึกไฟล์
 	dirPath := filepath.Join("uploads/images", orderNo, imageTypeID)
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		srv.logger.Error("[ Failed to create directory ]", zap.Error(err))
-		return errors.InternalError("[ Failed to create directory: %v ]", err)
+		return "", errors.InternalError("[ Failed to create directory: %v ]", err)
 	}
 
+	// สร้างไฟล์ใหม่
 	filePath := filepath.Join(dirPath, filename)
 	out, err := os.Create(filePath)
 	if err != nil {
 		srv.logger.Error("[ Failed to create file ]", zap.Error(err))
-		return errors.InternalError("[ Failed to create file: %v ]", err)
+		return "", errors.InternalError("[ Failed to create file: %v ]", err)
 	}
 	defer out.Close()
 
+	// คัดลอกข้อมูลจากไฟล์ที่ได้รับ
 	_, err = io.Copy(out, file)
 	if err != nil {
 		srv.logger.Error("[ Failed to save file ]", zap.Error(err))
-		return errors.InternalError("[ Failed to save file: %v ]", err)
+		return "", errors.InternalError("[ Failed to save file: %v ]", err)
 	}
 
-	// *️⃣ บันทึกข้อมูลรูปภาพในหน่วยความจำ
+	// บันทึกข้อมูลภาพ
 	if imageTypeID == "3" {
 		mu.Lock()
 		defer mu.Unlock()
@@ -121,7 +123,9 @@ func (srv service) UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID,
 	}
 
 	srv.logger.Info("[ Successfully upload photo process ]", zap.String("OrderNo", orderNo), zap.String("ImageTypeID", imageTypeID), zap.String("SKU", sku), zap.String("Filename", filename))
-	return nil
+
+	// ส่งคืน path ของไฟล์ที่ถูกบันทึก
+	return filePath, nil
 }
 
 func (srv service) GetSummaryImportOrder(ctx context.Context, orderNo string) ([]response.ImportOrderSummary, error) {

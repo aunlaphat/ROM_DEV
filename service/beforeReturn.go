@@ -154,18 +154,18 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 		return fmt.Errorf("[ Not found: %s", req.Identifier)
 	}
 
-	// *️⃣ ตรวจสอบ sku ที่เพิ่มมาว่าตรงกับใน BeforeReturn ที่กรอกเข้ามาไหม หากมีจึงจะสามารถเพิ่มได้ เพราะของหน้าคลังต้องตรงกับข้อมูลที่กรอกเข้าระบบ
-	for _, line := range req.ImportLines {
-		exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, req.Identifier, line.SKU)
-		if err != nil {
-			srv.logger.Error("[ Failed to check SKU existence", zap.String("SKU", line.SKU), zap.Error(err))
-			return errors.InternalError("[ failed to check SKU existence: %v ]", err)
-		}
-		if !exists {
-			srv.logger.Warn("[ SKU does not exist in BeforeReturnOrderLine from Identifier ]", zap.Error(err))
-			return errors.ValidationError("[ SKU %s does not exist in BeforeReturnOrderLine from Identifier %s: %v ]", line.SKU, req.Identifier, err)
-		}
-	}
+	// // *️⃣ ตรวจสอบ sku ที่เพิ่มมาว่าตรงกับใน BeforeReturn ที่กรอกเข้ามาไหม หากมีจึงจะสามารถเพิ่มได้ เพราะของหน้าคลังต้องตรงกับข้อมูลที่กรอกเข้าระบบ
+	// for _, line := range req.ImportLines {
+	// 	exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, req.Identifier, line.SKU)
+	// 	if err != nil {
+	// 		srv.logger.Error("[ Failed to check SKU existence", zap.String("SKU", line.SKU), zap.Error(err))
+	// 		return errors.InternalError("[ failed to check SKU existence: %v ]", err)
+	// 	}
+	// 	if !exists {
+	// 		srv.logger.Warn("[ SKU does not exist in BeforeReturnOrderLine from Identifier ]", zap.Error(err))
+	// 		return errors.ValidationError("[ SKU %s does not exist in BeforeReturnOrderLine from Identifier %s: %v ]", line.SKU, req.Identifier, err)
+	// 	}
+	// }
 
 	// 1. *️⃣อัปเดตสถานะใน BeforeReturnOrder
 	if err := srv.beforeReturnRepo.UpdateBefToWaiting(ctx, req, updateBy); err != nil {

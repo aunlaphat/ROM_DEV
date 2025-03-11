@@ -241,7 +241,6 @@ type ConfirmReceipt struct {
 	StatusCheckID  string    `db:"StatusCheckID"`
 	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
 	UpdateDate     time.Time `json:"updateDate" db:"UpdateDate"`
-	// Images     []ImageResponse `json:"images"`
 }
 
 type ConfirmReturnResponse struct {

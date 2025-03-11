@@ -160,24 +160,26 @@ func (app *Application) GetOrderTracking(c *gin.Context) {
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
 // @Router  /import-order/upload-photo [post]
+// UploadPhotoHandler godoc
 func (app *Application) UploadPhotoHandler(c *gin.Context) {
 	orderNo := c.PostForm("orderNo")
 	imageTypeID := c.PostForm("imageTypeID")
 	sku := c.PostForm("sku")
 
+	// ตรวจสอบข้อมูลที่ได้รับ
 	if orderNo == "" || imageTypeID == "" {
 		app.Logger.Warn("[ OrderNo and ImageTypeID are required ]")
 		handleError(c, Status.BadRequestError("[ OrderNo and ImageTypeID are required ]"))
 		return
 	}
 
-	// *️⃣ หาก ImageTypeID เป็น 3 แต่ SKU ไม่ได้ถูกส่งมา
 	if imageTypeID == "3" && sku == "" {
 		app.Logger.Warn("[ SKU is required for 3 imageTypeID ]")
 		handleError(c, Status.BadRequestError("[ SKU is required for 3 imageTypeID ]"))
 		return
 	}
 
+	// รับไฟล์
 	header, err := c.FormFile("file")
 	if err != nil {
 		app.Logger.Error("[ Failed to get file from request ]", zap.Error(err))
@@ -185,23 +187,25 @@ func (app *Application) UploadPhotoHandler(c *gin.Context) {
 		return
 	}
 
-	// เปิดไฟล์เพื่ออ่านข้อมูล
+	// เปิดไฟล์
 	file, err := header.Open()
 	if err != nil {
 		app.Logger.Error("[ Failed to open file ]", zap.Error(err))
 		handleError(c, Status.InternalError("[ Failed to open file ]"))
 		return
 	}
-	defer file.Close() // ปิดไฟล์เมื่อใช้งานเสร็จ
+	defer file.Close()
 
-	err = app.Service.ImportOrder.UploadPhotoHandler(c.Request.Context(), orderNo, imageTypeID, sku, file, header.Filename)
+	// อัปโหลดไฟล์และเก็บไว้ในระบบ
+	filePath, err := app.Service.ImportOrder.UploadPhotoHandler(c.Request.Context(), orderNo, imageTypeID, sku, file, header.Filename)
 	if err != nil {
 		app.Logger.Error("[ Failed to upload ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
 
-	handleResponse(c, true, "[ File uploaded successfully ]", nil, http.StatusOK)
+	// ส่ง response กลับไปยัง client
+	handleResponse(c, true, "[ File uploaded successfully ]", map[string]string{"filePath": filePath}, http.StatusOK)
 }
 
 // @Summary 	Get Sum detail of Import Order
