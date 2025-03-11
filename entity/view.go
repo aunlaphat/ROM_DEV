@@ -12,7 +12,6 @@ type ROM_V_User struct {
 }
 
 type ROM_V_UserDetail struct {
-	test
 	UserID        string `db:"UserID"`        // รหัสผู้ใช้
 	Password      string `db:"Password"`      // (MD5 Hash) ใช้สำหรับยืนยันตัวตน
 	UserName      string `db:"UserName"`      // ชื่อผู้ใช้
