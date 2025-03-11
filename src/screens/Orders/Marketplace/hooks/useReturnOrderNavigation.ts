@@ -1,5 +1,5 @@
 // src/screens/Orders/Marketplace/hooks/useReturnOrderNavigation.ts
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { FormInstance } from 'antd/lib/form';
 import { notification, Modal } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -15,12 +15,20 @@ export const useReturnOrderNavigation = (
   currentStep: string,
   form: FormInstance,
   loading: boolean,
+  srCreated: boolean,
   setStep: (step: any) => void,
   setSelectedSalesOrder: (value: string) => void,
   setReturnItems: (value: { [key: string]: number }) => void,
-  setStepLoading: (value: boolean) => void
+  setStepLoading: (value: boolean) => void,
+  returnItems: { [key: string]: number } // เพิ่มพารามิเตอร์นี้
 ) => {
   const navigate = useNavigate();
+
+  // Log when step changes
+  useEffect(() => {
+    console.log(`[Navigation] Step changed to: ${currentStep}`);
+    console.log(`[Navigation] Current returnItems:`, returnItems);
+  }, [currentStep, returnItems]);
 
   // จัดการปุ่มย้อนกลับ
   const handleBack = useCallback(() => {
@@ -28,12 +36,15 @@ export const useReturnOrderNavigation = (
     const currentIndex = steps.indexOf(currentStep);
     const prevStep = steps[currentIndex - 1];
 
+    console.log(`[Navigation] Attempting to go back from ${currentStep} to ${prevStep}`);
+
     if (!prevStep) {
       navigate("/home");
       return;
     }
 
     if (validateStepTransition(currentStep, prevStep, orderData, returnOrder)) {
+      console.log(`[Navigation] Going back to ${prevStep} with returnItems:`, returnItems);
       setStep(prevStep as any);
       if (prevStep === 'search') {
         form.resetFields();
@@ -46,7 +57,7 @@ export const useReturnOrderNavigation = (
         description: 'กรุณาตรวจสอบข้อมูลให้ครบถ้วน'
       });
     }
-  }, [currentStep, form, navigate, setStep, orderData, returnOrder, setSelectedSalesOrder, setReturnItems]);
+  }, [currentStep, form, navigate, setStep, orderData, returnOrder, setSelectedSalesOrder, setReturnItems, returnItems]);
 
   // จัดการการยกเลิก
   const handleCancel = useCallback(() => {
@@ -76,8 +87,11 @@ export const useReturnOrderNavigation = (
 
       if (!nextStep) return;
 
+      console.log(`[Navigation] Checking transition from ${currentStep} to ${nextStep}`);
+      console.log(`[Navigation] ReturnItems:`, returnItems);
+      
       if (validateStepTransition(currentStep, nextStep, orderData, returnOrder)) {
-        console.log(`[ReturnOrder] Navigating to next step: ${nextStep}`);
+        console.log(`[Navigation] Moving to next step: ${nextStep}`);
         setStep(nextStep as any);
       } else {
         notification.warning({
@@ -86,11 +100,11 @@ export const useReturnOrderNavigation = (
         });
       }
     } catch (error) {
-      console.error('[ReturnOrder] Next step error:', error);
+      console.error('[Navigation] Next step error:', error);
     } finally {
       setStepLoading(false);
     }
-  }, [currentStep, setStep, orderData, returnOrder, setStepLoading]);
+  }, [currentStep, setStep, orderData, returnOrder, setStepLoading, returnItems]);
 
   // Render ปุ่มย้อนกลับ
   const renderBackButton = useCallback(() => {
@@ -123,15 +137,23 @@ export const useReturnOrderNavigation = (
         if (currentStep === "search" || currentStep === "create") return "wait";
         return currentStep === "sr" ? "process" : "finish";
       case "preview":
-        if (currentStep === "search" || currentStep === "create" || currentStep === "sr") return "wait";
+        if (currentStep === "search" || currentStep === "create" || currentStep === "sr") {
+          // ใช้เงื่อนไขเพิ่มเติม: ถ้า sr step เสร็จแล้ว แต่ยังไม่ได้อยู่ที่ preview
+          if (currentStep === "sr" && orderData?.head.srNo && srCreated) {
+            return "process"; // เตรียมไปขั้นตอน preview
+          }
+          return "wait";
+        }
         return currentStep === "preview" ? "process" : "finish";
       case "confirm":
-        if (!orderData?.head.srNo) return "wait";
-        return currentStep === "confirm" ? "process" : "finish";
+        if (currentStep === "confirm") return "process";
+        // อนุญาตให้ "confirm" เป็น active ถ้ามี srNo และ currentStep = preview
+        if (currentStep === "preview" && orderData?.head.srNo) return "wait";
+        return "wait";
       default:
         return "wait";
     }
-  }, [currentStep, orderData]);
+  }, [currentStep, orderData?.head.srNo, srCreated]);
 
   return {
     handleBack,

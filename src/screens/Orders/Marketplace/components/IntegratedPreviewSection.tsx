@@ -14,6 +14,7 @@ import {
   Badge,
   Button,
   Tooltip,
+  Empty
 } from "antd";
 import {
   FileTextOutlined,
@@ -37,7 +38,8 @@ interface IntegratedPreviewSectionProps {
   onNext: () => void;
   loading: boolean;
   stepLoading: boolean;
-  getReturnQty: (sku: string) => number; // เพิ่ม prop นี้เพื่อใช้ฟังก์ชันที่มีอยู่แล้ว
+  getReturnQty: (sku: string) => number;
+  isConfirmStep?: boolean;
 }
 
 const IntegratedPreviewSection: React.FC<IntegratedPreviewSectionProps> = ({
@@ -48,24 +50,35 @@ const IntegratedPreviewSection: React.FC<IntegratedPreviewSectionProps> = ({
   onNext,
   loading,
   stepLoading,
-  getReturnQty, // รับ prop มาใช้
+  getReturnQty,
+  isConfirmStep = false,
 }) => {
   // ดึงข้อมูลจากฟอร์ม
   const formValues = form.getFieldsValue();
 
-  // แปลงข้อมูลสำหรับตาราง โดยใช้ getReturnQty แทน returnItems โดยตรง
+  // ฟังก์ชันสำหรับป้องกันกรณีการอ่าน returnQty ผิดพลาด
+  const safeGetReturnQty = (sku: string): number => {
+    try {
+      const qty = getReturnQty(sku);
+      return typeof qty === 'number' ? qty : 0;
+    } catch (error) {
+      console.error(`Error getting return qty for ${sku}:`, error);
+      // Fallback to returnItems directly
+      return returnItems[sku] || 0;
+    }
+  };
+
+  // แปลงข้อมูลสำหรับตาราง - ใช้ safeGetReturnQty แทน getReturnQty
   const returnItemsList = useMemo(() => {
     if (!orderData?.lines) return [];
 
-    // สร้างรายการให้แสดงเฉพาะสินค้าที่ returnQty > 0 โดยใช้ getReturnQty
     return orderData.lines
-      .filter((item) => {
-        const qty = getReturnQty(item.sku);
+      .filter(item => {
+        const qty = safeGetReturnQty(item.sku);
         return qty > 0;
       })
-      .map((item) => {
-        const returnQty = getReturnQty(item.sku);
-        
+      .map(item => {
+        const returnQty = safeGetReturnQty(item.sku);
         return {
           key: item.sku,
           sku: item.sku,
@@ -75,38 +88,52 @@ const IntegratedPreviewSection: React.FC<IntegratedPreviewSectionProps> = ({
           totalPrice: Math.abs(item.price) * returnQty,
         };
       });
-  }, [orderData, getReturnQty]);
+  }, [orderData, safeGetReturnQty]);
 
-  // ตรวจสอบข้อมูลที่ได้รับและข้อมูลที่แสดงผล
+  // ฟังก์ชันสำหรับคำนวณราคารวมทั้งหมด - ใช้ safeGetReturnQty
+  const calculateTotalAmount = () => {
+    if (!orderData?.lines) return 0;
+
+    return orderData.lines.reduce((sum, item) => {
+      const qty = safeGetReturnQty(item.sku);
+      return sum + Math.abs(item.price) * qty;
+    }, 0);
+  };
+
+  // ฟังก์ชันสำหรับคำนวณจำนวนสินค้าที่คืนทั้งหมด - ใช้ safeGetReturnQty
+  const calculateTotalItems = () => {
+    if (!orderData?.lines) return 0;
+
+    return orderData.lines.reduce(
+      (sum, item) => sum + safeGetReturnQty(item.sku),
+      0
+    );
+  };
+
+  // คำนวณค่ารวมใหม่
+  const finalTotalAmount = calculateTotalAmount();
+  const finalTotalItems = calculateTotalItems();
+  const totalTypes = returnItemsList.length;
+
+  // เพิ่ม Debugging
   useEffect(() => {
+    console.log(`IntegratedPreviewSection mounted in ${isConfirmStep ? 'confirm' : 'preview'} step`);
+    console.log("OrderData:", orderData);
+    console.log("ReturnItems received:", returnItems);
+    
     if (orderData?.lines) {
       console.log("OrderData lines:", orderData.lines.length);
       
-      // ตรวจสอบ returnItems ที่ได้รับ
-      console.log("ReturnItems:", returnItems);
-      
-      // ตรวจสอบว่า getReturnQty ทำงานถูกต้องหรือไม่
+      // ตรวจสอบว่า safeGetReturnQty ทำงานถูกต้องหรือไม่
       const returnItemsCheck = orderData.lines.map(item => ({
         sku: item.sku,
-        returnQty: getReturnQty(item.sku)
+        returnQty: safeGetReturnQty(item.sku),
       }));
-      console.log("Items with returnQty via getReturnQty:", returnItemsCheck.filter(item => item.returnQty > 0));
       
-      // ตรวจสอบรายการที่จะแสดงในตาราง
-      console.log("Items for table:", returnItemsList);
+      console.log("Items with returnQty:", returnItemsCheck.filter(item => item.returnQty > 0));
+      console.log("Final values - Total Amount:", finalTotalAmount, "Total Items:", finalTotalItems);
     }
-  }, [orderData, returnItems, getReturnQty, returnItemsList]);
-
-  // คำนวณค่าต่าง ๆ
-  const totalAmount = useMemo(() => {
-    return returnItemsList.reduce((sum, item) => sum + item.totalPrice, 0);
-  }, [returnItemsList]);
-
-  const totalItems = useMemo(() => {
-    return returnItemsList.reduce((sum, item) => sum + item.returnQty, 0);
-  }, [returnItemsList]);
-
-  const totalTypes = returnItemsList.length;
+  }, [orderData, returnItems, safeGetReturnQty, isConfirmStep, finalTotalAmount, finalTotalItems]);
 
   // ค้นหาชื่อคลังสินค้าและขนส่ง
   const getWarehouseName = (id: string) => {
@@ -118,27 +145,6 @@ const IntegratedPreviewSection: React.FC<IntegratedPreviewSectionProps> = ({
     const transport = TRANSPORT_TYPES.find((t) => t.value === id);
     return transport ? transport.label : id;
   };
-
-  // ฟังก์ชันสำหรับคำนวณราคารวมทั้งหมด - ใช้ getReturnQty โดยตรง
-  const calculateTotalAmount = () => {
-    if (!orderData?.lines) return 0;
-    
-    return orderData.lines.reduce((sum, item) => {
-      const qty = getReturnQty(item.sku);
-      return sum + (Math.abs(item.price) * qty);
-    }, 0);
-  };
-
-  // ฟังก์ชันสำหรับคำนวณจำนวนสินค้าที่คืนทั้งหมด - ใช้ getReturnQty โดยตรง
-  const calculateTotalItems = () => {
-    if (!orderData?.lines) return 0;
-    
-    return orderData.lines.reduce((sum, item) => sum + getReturnQty(item.sku), 0);
-  };
-
-  // คำนวณค่ารวมใหม่โดยใช้ getReturnQty
-  const finalTotalAmount = calculateTotalAmount();
-  const finalTotalItems = calculateTotalItems();
 
   return (
     <div className="integrated-preview-section">
@@ -185,7 +191,7 @@ const IntegratedPreviewSection: React.FC<IntegratedPreviewSectionProps> = ({
           <Card size="small" style={{ textAlign: "center", height: "100%" }}>
             <Statistic
               title="จำนวนสินค้าที่คืน"
-              value={finalTotalItems}  // ใช้ค่าที่คำนวณใหม่
+              value={finalTotalItems}
               suffix="ชิ้น"
               prefix={<ShoppingCartOutlined />}
               valueStyle={{ color: "#fa8c16" }}
@@ -196,7 +202,7 @@ const IntegratedPreviewSection: React.FC<IntegratedPreviewSectionProps> = ({
           <Card size="small" style={{ textAlign: "center", height: "100%" }}>
             <Statistic
               title="มูลค่ารวม"
-              value={finalTotalAmount}  // ใช้ค่าที่คำนวณใหม่
+              value={finalTotalAmount}
               prefix={<DollarOutlined />}
               suffix="บาท"
               precision={2}
@@ -282,7 +288,7 @@ const IntegratedPreviewSection: React.FC<IntegratedPreviewSectionProps> = ({
         </Descriptions>
       </Card>
 
-      {/* ส่วนแสดงข้อมูลสินค้าที่คืน - ให้แสดงทุกรายการที่มีการคืน */}
+      {/* ส่วนแสดงข้อมูลสินค้าที่คืน */}
       <Card
         title={
           <div
@@ -295,7 +301,10 @@ const IntegratedPreviewSection: React.FC<IntegratedPreviewSectionProps> = ({
             <Space>
               <CheckCircleOutlined />
               <span>รายการสินค้าที่จะคืน</span>
-              <Badge count={totalTypes} style={{ backgroundColor: "#1890ff" }} />
+              <Badge
+                count={totalTypes}
+                style={{ backgroundColor: "#1890ff" }}
+              />
             </Space>
             <Button
               type="link"
@@ -308,111 +317,105 @@ const IntegratedPreviewSection: React.FC<IntegratedPreviewSectionProps> = ({
           </div>
         }
       >
-        {/* สร้างตารางแสดงรายการสินค้าด้วยตัวเอง ไม่ใช้ returnItemsList */}
-        <Table
-          columns={[
-            {
-              title: "SKU",
-              dataIndex: "sku",
-              width: "15%",
-              render: (sku) => (
-                <Text copyable style={{ fontFamily: "monospace" }}>
-                  {sku}
-                </Text>
-              ),
-            },
-            {
-              title: "ชื่อสินค้า",
-              dataIndex: "itemName",
-              width: "35%",
-              ellipsis: true,
-            },
-            {
-              title: "จำนวนที่คืน",
-              dataIndex: "returnQty",
-              width: "15%",
-              align: "center",
-              render: (qty) => <Tag color="blue">{qty} ชิ้น</Tag>,
-            },
-            {
-              title: "ราคาต่อชิ้น",
-              dataIndex: "price",
-              width: "15%",
-              align: "right",
-              render: (price) => `฿${price.toLocaleString()}`,
-            },
-            {
-              title: "ราคารวม",
-              dataIndex: "totalPrice",
-              width: "20%",
-              align: "right",
-              render: (total) => (
-                <Text strong style={{ color: "#52c41a" }}>
-                  ฿{total.toLocaleString()}
-                </Text>
-              ),
-            },
-          ]}
-          dataSource={
-            orderData?.lines
-              ? orderData.lines
-                .filter((item) => getReturnQty(item.sku) > 0) // กรองเฉพาะรายการที่มีการคืน
-                .map((item) => {
-                  const qtyToReturn = getReturnQty(item.sku);
-                  return {
-                    key: item.sku,
-                    sku: item.sku,
-                    itemName: item.itemName,
-                    returnQty: qtyToReturn,
-                    price: Math.abs(item.price),
-                    totalPrice: Math.abs(item.price) * qtyToReturn,
-                  };
-                })
-              : []
-          }
-          pagination={false}
-          summary={() => (
-            <Table.Summary.Row style={{ backgroundColor: "#fafafa" }}>
-              <Table.Summary.Cell index={0} colSpan={2}>
-                <Text strong>รวมทั้งหมด</Text>
-              </Table.Summary.Cell>
-              <Table.Summary.Cell index={2} align="center">
-                <Text strong>{finalTotalItems} ชิ้น</Text>
-              </Table.Summary.Cell>
-              <Table.Summary.Cell index={3} align="right">
-                <Text></Text>
-              </Table.Summary.Cell>
-              <Table.Summary.Cell index={4} align="right">
-                <Text strong style={{ color: "#52c41a", fontSize: "16px" }}>
-                  ฿{finalTotalAmount.toLocaleString()}
-                </Text>
-              </Table.Summary.Cell>
-            </Table.Summary.Row>
-          )}
-        />
+        {returnItemsList.length > 0 ? (
+          <Table
+            columns={[
+              {
+                title: "SKU",
+                dataIndex: "sku",
+                width: "15%",
+                render: (sku) => (
+                  <Text copyable style={{ fontFamily: "monospace" }}>
+                    {sku}
+                  </Text>
+                ),
+              },
+              {
+                title: "ชื่อสินค้า",
+                dataIndex: "itemName",
+                width: "35%",
+                ellipsis: true,
+              },
+              {
+                title: "จำนวนที่คืน",
+                dataIndex: "returnQty",
+                width: "15%",
+                align: "center",
+                render: (qty) => <Tag color="blue">{qty} ชิ้น</Tag>,
+              },
+              {
+                title: "ราคาต่อชิ้น",
+                dataIndex: "price",
+                width: "15%",
+                align: "right",
+                render: (price) => `฿${price.toLocaleString()}`,
+              },
+              {
+                title: "ราคารวม",
+                dataIndex: "totalPrice",
+                width: "20%",
+                align: "right",
+                render: (total) => (
+                  <Text strong style={{ color: "#52c41a" }}>
+                    ฿{total.toLocaleString()}
+                  </Text>
+                ),
+              },
+            ]}
+            dataSource={returnItemsList}
+            pagination={false}
+            summary={() => (
+              <Table.Summary.Row style={{ backgroundColor: "#fafafa" }}>
+                <Table.Summary.Cell index={0} colSpan={2}>
+                  <Text strong>รวมทั้งหมด</Text>
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={2} align="center">
+                  <Text strong>{finalTotalItems} ชิ้น</Text>
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={3} align="right">
+                  <Text></Text>
+                </Table.Summary.Cell>
+                <Table.Summary.Cell index={4} align="right">
+                  <Text strong style={{ color: "#52c41a", fontSize: "16px" }}>
+                    ฿{finalTotalAmount.toLocaleString()}
+                  </Text>
+                </Table.Summary.Cell>
+              </Table.Summary.Row>
+            )}
+          />
+        ) : (
+          <Empty 
+            description="ไม่พบรายการสินค้าที่ต้องการคืน" 
+            image={Empty.PRESENTED_IMAGE_SIMPLE} 
+          />
+        )}
       </Card>
 
-      {/* ปุ่มดำเนินการ */}
-      <div style={{ marginTop: 24, display: "flex", justifyContent: "center" }}>
-        <Space size="middle">
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={() => onEdit("sr")}
-            disabled={loading || stepLoading}
-          >
-            ย้อนกลับ
-          </Button>
-          <Button
-            type="primary"
-            icon={<CheckCircleOutlined />}
-            onClick={onNext}
-            loading={loading || stepLoading}
-            size="large"
-          >
-            ยืนยันข้อมูลและดำเนินการต่อ
-          </Button>
-        </Space>
-      </div>
+      {/* ไม่แสดงปุ่มดำเนินการต่อใน confirm step เพราะเราจะแสดงปุ่มยืนยันส่วนกลางแทน */}
+      {!isConfirmStep && (
+        <div
+          style={{ marginTop: 24, display: "flex", justifyContent: "center" }}
+        >
+          <Space size="middle">
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={() => onEdit("sr")}
+              disabled={loading || stepLoading}
+            >
+              ย้อนกลับ
+            </Button>
+            <Button
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={onNext}
+              loading={loading || stepLoading}
+              size="large"
+            >
+              ยืนยันข้อมูลและดำเนินการต่อ
+            </Button>
+          </Space>
+        </div>
+      )}
     </div>
   );
 };

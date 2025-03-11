@@ -115,31 +115,31 @@ const orderReducer = (state: OrderState = initialState, action: any): OrderState
 
     // แก้ไขกรณี UPDATE_SR_SUCCESS
     case OrderActionTypes.UPDATE_SR_SUCCESS:
-      logger.redux.action(action.type, {
-        orderNo: action.payload.orderNo,
-        srNo: action.payload.srNo
-      });
+  logger.redux.action(action.type, {
+    orderNo: action.payload.orderNo,
+    srNo: action.payload.srNo
+  });
 
-      return {
-        ...state,
-        returnOrder: state.returnOrder ? {
-          ...state.returnOrder,
-          srNo: action.payload.srNo
-        } : null,
-        // เพิ่มการอัพเดทค่า srNo ใน orderData
-        orderData: state.orderData ? {
-          ...state.orderData,
-          srNo: action.payload.srNo,
-          head: {
-            ...state.orderData.head,
-            srNo: action.payload.srNo
-          }
-        } : null,
-        srCreated: true,
-        loading: false,
-        error: null,
-        currentStep: 'preview'
-      };
+  return {
+    ...state,
+    returnOrder: state.returnOrder ? {
+      ...state.returnOrder,
+      srNo: action.payload.srNo
+    } : null,
+    // เพิ่มการอัพเดทค่า srNo ใน orderData
+    orderData: state.orderData ? {
+      ...state.orderData,
+      srNo: action.payload.srNo,
+      head: {
+        ...state.orderData.head,
+        srNo: action.payload.srNo
+      }
+    } : null,
+    srCreated: true,
+    loading: false,
+    error: null,
+    currentStep: 'preview' // คงไว้ แต่ให้เป็นเพียงที่เดียวที่เปลี่ยน step
+  };
 
     // แก้ไขกรณี UPDATE_STATUS_SUCCESS
     case OrderActionTypes.UPDATE_STATUS_SUCCESS:

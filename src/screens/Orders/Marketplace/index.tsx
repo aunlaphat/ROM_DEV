@@ -13,7 +13,11 @@ import { useReturnOrderConfirm } from "./hooks/useReturnOrderConfirm";
 import { useReturnOrderNavigation } from "./hooks/useReturnOrderNavigation";
 
 // Utils
-import { isCreateReturnOrderDisabled, isCreateSRDisabled, validateStepTransition as validateStepTransitionUtil } from "./utils/validation";
+import {
+  isCreateReturnOrderDisabled,
+  isCreateSRDisabled,
+  validateStepTransition as validateStepTransitionUtil,
+} from "./utils/validation";
 import { useNavigate } from "react-router-dom";
 import { closeLoading, openLoading } from "../../../components/alert/useAlert";
 
@@ -21,28 +25,29 @@ const CreateReturnOrderMKP: React.FC = () => {
   const [form] = Form.useForm();
   const auth = useAuth();
   const navigate = useNavigate();
-  
+
   // สร้าง state เพื่อติดตามสถานะการส่ง action
   const [hasSearched, setHasSearched] = useState(false);
   const [hasCreatedOrder, setHasCreatedOrder] = useState(false);
   const [hasGeneratedSr, setHasGeneratedSr] = useState(false);
   const [hasConfirmedOrder, setHasConfirmedOrder] = useState(false);
   const [stepLoading, setStepLoading] = useState(false);
-  const [selectedSalesOrder, setSelectedSalesOrder] = useState('');
+  const [selectedSalesOrder, setSelectedSalesOrder] = useState("");
 
   // ใช้ custom hook ที่แก้ไขแล้ว
   const {
-    orderData, 
-    returnOrder, 
+    orderData,
+    returnOrder,
     searchResult,
-    currentStep, 
-    loading, 
+    currentStep,
+    loading,
     error,
+    srCreated,
     searchOrder,
     createReturnOrder,
     updateStatus,
     setStep,
-    generateSr
+    generateSr,
   } = useOrder();
 
   // Custom hooks สำหรับการจัดการข้อมูล Return Items
@@ -51,8 +56,17 @@ const CreateReturnOrderMKP: React.FC = () => {
     setReturnItems,
     getReturnQty,
     updateReturnQty,
-    calculateTotalAmount
+    calculateTotalAmount,
   } = useReturnItemsManager(orderData);
+
+  // Debug logging for returnItems in various steps
+  useEffect(() => {
+    console.log(`[Main] Current step: ${currentStep}, ReturnItems:`, {
+      count: Object.keys(returnItems).length,
+      withValues: Object.entries(returnItems).filter(([_, qty]) => qty > 0).length,
+      orderNo: orderData?.head.orderNo
+    });
+  }, [currentStep, returnItems, orderData]);
 
   // จัดการการเปลี่ยนแปลงข้อมูลช่องค้นหา
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,10 +87,11 @@ const CreateReturnOrderMKP: React.FC = () => {
         [isSoNo ? "soNo" : "orderNo"]: selectedSalesOrder.trim(),
       };
 
+      console.log(`[Main] Searching for ${isSoNo ? 'SO' : 'Order'}: ${selectedSalesOrder}`);
       setHasSearched(true);
       searchOrder(searchPayload);
     } catch (error) {
-      console.error('[ReturnOrder] Search error:', error);
+      console.error("[Main] Search error:", error);
       setHasSearched(false);
     } finally {
       setStepLoading(false);
@@ -111,34 +126,40 @@ const CreateReturnOrderMKP: React.FC = () => {
     setHasConfirmedOrder
   );
 
-  // Custom hook สำหรับการนำทาง
-  const {
-    handleCancel,
-    handleNext,
-    renderBackButton,
-    getStepStatus
-  } = useReturnOrderNavigation(
-    orderData,
-    returnOrder,
-    currentStep,
-    form,
-    loading,
-    setStep,
-    setSelectedSalesOrder,
-    setReturnItems,
-    setStepLoading
-  );
+  // Custom hook สำหรับการนำทาง - Pass returnItems to navigation hook
+  const { handleCancel, handleNext, renderBackButton, getStepStatus } =
+    useReturnOrderNavigation(
+      orderData,
+      returnOrder,
+      currentStep,
+      form,
+      loading,
+      srCreated,
+      setStep,
+      setSelectedSalesOrder,
+      setReturnItems,
+      setStepLoading,
+      returnItems // ส่ง returnItems ไปยัง hook
+    );
+
+  useEffect(() => {
+    // เชื่อม redux loading state กับ component loading state
+    if (loading !== stepLoading) {
+      setStepLoading(loading);
+    }
+  }, [loading, stepLoading]);
 
   // ติดตามการเปลี่ยนแปลงของสถานะจากการค้นหา
   useEffect(() => {
     if (hasSearched && !loading && searchResult) {
-      setStep('create');
+      console.log('[Main] Search successful, moving to create step');
+      setStep("create");
       setHasSearched(false);
-      
+
       // แสดงแจ้งเตือนเมื่อค้นหาสำเร็จ
       notification.success({
         message: "ค้นหาสำเร็จ",
-        description: "พบข้อมูลคำสั่งซื้อ กรุณากรอกข้อมูลสำหรับการคืนสินค้า"
+        description: "พบข้อมูลคำสั่งซื้อ กรุณากรอกข้อมูลสำหรับการคืนสินค้า",
       });
     }
   }, [hasSearched, loading, searchResult, setStep]);
@@ -146,52 +167,61 @@ const CreateReturnOrderMKP: React.FC = () => {
   // ติดตามการเปลี่ยนแปลงของสถานะจากการสร้าง order
   useEffect(() => {
     if (hasCreatedOrder && !loading && returnOrder) {
-      setStep('sr');
-      setHasCreatedOrder(false);
+      console.log('[Main] Order created successfully, moving to SR step');
+      console.log('[Main] ReturnItems status:', {
+        count: Object.keys(returnItems).length,
+        withValues: Object.entries(returnItems).filter(([_, qty]) => qty > 0).length
+      });
       
+      setStep("sr");
+      setHasCreatedOrder(false);
+
       // แสดงแจ้งเตือนเมื่อสร้าง order สำเร็จ
       notification.success({
         message: "สร้างคำสั่งคืนสินค้าสำเร็จ",
-        description: "กรุณาดำเนินการขั้นตอนถัดไป"
+        description: "กรุณาดำเนินการขั้นตอนถัดไป",
       });
     }
-  }, [hasCreatedOrder, loading, returnOrder, setStep]);
+  }, [hasCreatedOrder, loading, returnOrder, setStep, returnItems]);
 
   // ติดตามการเปลี่ยนแปลงของสถานะจากการสร้าง SR
   useEffect(() => {
     if (hasGeneratedSr && !loading && orderData?.head.srNo) {
-      setStep('preview');
-      setHasGeneratedSr(false);
-      setStepLoading(false); // เพิ่มบรรทัดนี้เพื่อรีเซ็ต loading state
+      console.log('[Main] SR generated successfully:', orderData.head.srNo);
       
-      // แสดงแจ้งเตือนเมื่อสร้าง SR สำเร็จ
+      // ไม่ต้องเรียก setStep('preview') เพราะจะถูกจัดการโดย reducer เมื่อ UPDATE_SR_SUCCESS
+      setHasGeneratedSr(false);
+
+      // ให้แสดง notification ที่นี่ได้
       notification.success({
         message: "สร้างเลข SR สำเร็จ",
         description: `SR Number: ${orderData.head.srNo}`,
         duration: 5,
       });
     }
-  }, [hasGeneratedSr, loading, orderData, setStep, setStepLoading]);
+  }, [hasGeneratedSr, loading, orderData?.head.srNo]);
 
   // ติดตามการเปลี่ยนแปลงของสถานะจากการยืนยัน order
   useEffect(() => {
     if (hasConfirmedOrder && !loading) {
+      console.log('[Main] Order confirmed successfully, preparing to navigate');
       setHasConfirmedOrder(false);
       setStepLoading(false); // รีเซ็ต loading state
-      
+
       // แสดง global loading (ใช้ openLoading จาก alert)
       openLoading();
-      
+
       // ปิด message loading และแสดงข้อความสำเร็จ
       message.success({
-        content: 'อัพเดตสถานะสำเร็จ',
-        key: 'confirmStatus', // ใช้ key เดียวกับ message.loading
+        content: "อัพเดตสถานะสำเร็จ",
+        key: "confirmStatus", // ใช้ key เดียวกับ message.loading
         duration: 2, // ลดเวลาลง เพื่อให้ redirect เร็วขึ้น
       });
-      
+
       notification.success({
-        message: 'อัพเดตสถานะสำเร็จ',
-        description: 'การคืนสินค้าถูกดำเนินการเรียบร้อยแล้ว กำลังนำทางไปยังหน้า Draft & Confirm',
+        message: "อัพเดตสถานะสำเร็จ",
+        description:
+          "การคืนสินค้าถูกดำเนินการเรียบร้อยแล้ว กำลังนำทางไปยังหน้า Draft & Confirm",
         duration: 2,
       });
 
@@ -200,19 +230,28 @@ const CreateReturnOrderMKP: React.FC = () => {
         // ปิด loading ก่อน navigate เพื่อป้องกันปัญหา
         closeLoading();
         // Redirect ไปยัง /draft-and-confirm
-        navigate('/draft-and-confirm');
+        navigate("/draft-and-confirm");
       }, 2000); // delay 2 วินาที
     }
   }, [hasConfirmedOrder, loading, setStepLoading, navigate]);
 
   // ตรวจสอบความถูกต้องในการเปลี่ยนขั้นตอน (wrapper function)
-  const validateStepTransition = (fromStep: string, toStep: string): boolean => {
+  const validateStepTransition = (
+    fromStep: string,
+    toStep: string
+  ): boolean => {
     return validateStepTransitionUtil(fromStep, toStep, orderData, returnOrder);
   };
 
   // ตรวจสอบการ disable ปุ่ม Create Return Order (wrapper function)
   const isCreateReturnOrderDisabledWrapper = (): boolean => {
-    return isCreateReturnOrderDisabled(orderData, returnItems, form, loading, stepLoading);
+    return isCreateReturnOrderDisabled(
+      orderData,
+      returnItems,
+      form,
+      loading,
+      stepLoading
+    );
   };
 
   // ตรวจสอบการ disable ปุ่ม Create SR (wrapper function)

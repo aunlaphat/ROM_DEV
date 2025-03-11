@@ -17,6 +17,7 @@ import {
   markOrderEditedSuccess,
   markOrderEditedFailure,
   setCurrentStep,
+  updateSr,
 } from "./action";
 import { GET, POST, PATCH } from "../../services";
 import { logger } from "../../utils/logger";
@@ -156,13 +157,9 @@ export function* generateSrSaga(action: {
 
     const { orderNo } = action.payload;
 
-    // เรียก API endpoint ให้ตรงกับ backend (POST /order/generate-sr/:orderNo)
+    // เรียก API endpoint สร้าง SR Number
     logger.api.request(`/order/generate-sr/${orderNo}`);
-
-    // Fixed: Added empty object as second parameter to POST
-    const response = yield call(() =>
-      POST(`/order/generate-sr/${orderNo}`, {})
-    );
+    const response = yield call(() => POST(`/order/generate-sr/${orderNo}`, {}));
 
     if (!response.data.success) {
       throw new Error(response.data.message || "Generate SR failed");
@@ -174,40 +171,19 @@ export function* generateSrSaga(action: {
     // ส่ง action เมื่อสร้าง SR สำเร็จ
     yield put(generateSrSuccess(srNo));
 
-    // เรียก API บันทึกเลข SR ลงฐานข้อมูลโดยตรง (ไม่ต้องผ่าน saga อีกรอบ)
-    logger.api.request(`/order/update-sr/${orderNo}`, { srNo });
-    const updateResponse = yield call(() =>
-      POST(`/order/update-sr/${orderNo}`, { srNo })
-    );
+    // เรียก action updateSr แทนการเรียก API โดยตรง
+    // ให้ flow ทำงานตามปกติโดยผ่าน saga ของ updateSr
+    yield put(updateSr({ orderNo, srNo }));
 
-    if (!updateResponse.data.success) {
-      throw new Error(updateResponse.data.message || "Update SR failed");
-    }
-
-    logger.api.success(`/order/update-sr/${orderNo}`, updateResponse.data.data);
-
-    // ส่ง action เมื่ออัพเดท SR สำเร็จ
-    yield put(updateSrSuccess(updateResponse.data.data));
-
-    // เปลี่ยนขั้นตอนเป็น preview
-    yield put(setCurrentStep("preview"));
-
-    // แสดงข้อความแจ้งเตือน (เพียงครั้งเดียว)
-    // notification.success({
-    //   message: "สร้างและบันทึก SR สำเร็จ",
-    //   description: `หมายเลข SR: ${srNo} ถูกสร้างและบันทึกเรียบร้อยแล้ว`,
-    // });
   } catch (error: any) {
-    logger.error("Generate/Update SR Error", error);
-
-    // ส่ง action เมื่อสร้าง SR ล้มเหลว
+    logger.error("Generate SR Error", error);
     yield put(generateSrFailure(error.message));
-
+    
     // แสดงข้อความแจ้งเตือน
-    // notification.error({
-    //   message: "สร้าง/บันทึก SR ไม่สำเร็จ",
-    //   description: error.response?.data?.message || error.message,
-    // });
+    notification.error({
+      message: "สร้าง SR ไม่สำเร็จ",
+      description: error.response?.data?.message || error.message,
+    });
   } finally {
     closeLoading();
     logger.perf.end("Generate SR");
@@ -228,9 +204,7 @@ export function* updateSrSaga(action: {
     // เรียก API endpoint ให้ตรงกับ backend (POST /order/update-sr/:orderNo)
     logger.api.request(`/order/update-sr/${orderNo}`, { srNo });
 
-    const response = yield call(() =>
-      POST(`/order/update-sr/${orderNo}`, { srNo })
-    );
+    const response = yield call(() => POST(`/order/update-sr/${orderNo}`, { srNo }));
 
     if (!response.data.success) {
       throw new Error(response.data.message || "Update SR failed");
@@ -242,13 +216,12 @@ export function* updateSrSaga(action: {
     yield put(updateSrSuccess(response.data.data));
 
     // แสดงข้อความแจ้งเตือน
-    // notification.success({
-    //   message: "อัพเดท SR สำเร็จ",
-    //   description: `หมายเลข SR: ${srNo} ถูกบันทึกเรียบร้อยแล้ว`,
-    // });
+    notification.success({
+      message: "อัพเดท SR สำเร็จ",
+      description: `หมายเลข SR: ${srNo} ถูกบันทึกเรียบร้อยแล้ว`,
+    });
 
-    // เปลี่ยนขั้นตอนเป็น preview
-    yield put(setCurrentStep("preview"));
+    // ให้ reducer จัดการการเปลี่ยน step เอง ไม่ต้องเรียก setCurrentStep ที่นี่
   } catch (error: any) {
     logger.error("Update SR Error", error);
 
@@ -256,10 +229,10 @@ export function* updateSrSaga(action: {
     yield put(updateSrFailure(error.message));
 
     // แสดงข้อความแจ้งเตือน
-    // notification.error({
-    //   message: "อัพเดท SR ไม่สำเร็จ",
-    //   description: error.response?.data?.message || error.message,
-    // });
+    notification.error({
+      message: "อัพเดท SR ไม่สำเร็จ",
+      description: error.response?.data?.message || error.message,
+    });
   } finally {
     closeLoading();
     logger.perf.end("Update SR");

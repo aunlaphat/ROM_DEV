@@ -214,11 +214,11 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   }
   
-  .stepItemActive {
+  /* .stepItemActive {
     background-color: rgba(24, 144, 255, 0.1);
     transform: translateY(-2px);
     box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
-  }
+  } */
   
   .stepItemWaiting {
     opacity: 0.75;
