@@ -47,13 +47,14 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
   const [qty, setQty] = useState<number | null>(null);
   const [price, setPrice] = useState<number | null>(null);
   const [loadingCodeR, setLoadingCodeR] = useState<boolean>(false);
+  const [newlyAddedItems, setNewlyAddedItems] = useState<string[]>([]);
 
   // Fetch CodeR list when modal is opened
   useEffect(() => {
     if (visible && activeTabKey === "1") {
-      console.log('Modal opened - Fetching CodeR list');
+      console.log("Modal opened - Fetching CodeR list");
       setLoadingCodeR(true);
-      
+
       // Wrap in setTimeout to ensure it runs after Redux is ready
       setTimeout(() => {
         fetchCodeR();
@@ -65,23 +66,23 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
   // Debug CodeR list
   useEffect(() => {
     if (codeRList) {
-      console.log('CodeR List State:', {
+      console.log("CodeR List State:", {
         type: typeof codeRList,
         isArray: Array.isArray(codeRList),
         length: codeRList.length,
-        sample: codeRList[0]
+        sample: codeRList[0],
       });
     } else {
-      console.log('CodeR List is null or undefined');
+      console.log("CodeR List is null or undefined");
     }
   }, [codeRList]);
 
   // Handle code selection change - also update name
   const handleCodeChange = (value: string) => {
     setCodeR(value);
-    
+
     // Find matching name for selected code
-    const selectedItem = (codeRList || []).find(item => item.sku === value);
+    const selectedItem = (codeRList || []).find((item) => item.sku === value);
     if (selectedItem) {
       setNameR(selectedItem.nameAlias);
     }
@@ -90,9 +91,11 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
   // Handle name selection change - also update code
   const handleNameChange = (value: string) => {
     setNameR(value);
-    
+
     // Find matching code for selected name
-    const selectedItem = (codeRList || []).find(item => item.nameAlias === value);
+    const selectedItem = (codeRList || []).find(
+      (item) => item.nameAlias === value
+    );
     if (selectedItem) {
       setCodeR(selectedItem.sku);
     }
@@ -128,6 +131,9 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
         returnQty: qty,
         price: price,
       });
+
+      // เก็บ SKU ที่เพิ่งเพิ่มเข้าไปในรายการ
+      setNewlyAddedItems((prev) => [...prev, codeR]);
       resetFormFields();
     } else {
       message.warning("Please fill in all fields");
@@ -230,11 +236,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                   id="So/Inv"
                   label={<span style={{ color: "#657589" }}>SO/INV</span>}
                 >
-                  <Input
-                    style={{ height: 40 }}
-                    value={order.soNo}
-                    disabled
-                  />
+                  <Input style={{ height: 40 }} value={order.soNo} disabled />
                 </Form.Item>
               </Col>
               <Col span={6}>
@@ -276,7 +278,9 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                       value={codeR}
                       onChange={handleCodeChange}
                       showSearch
-                      placeholder={loadingCodeR ? "กำลังโหลดข้อมูล..." : "เลือกโค้ด R"}
+                      placeholder={
+                        loadingCodeR ? "กำลังโหลดข้อมูล..." : "เลือกโค้ด R"
+                      }
                       filterOption={(input, option) =>
                         (option?.label?.toString() || "")
                           .toLowerCase()
@@ -286,7 +290,10 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                         loadingCodeR ? (
                           <Spin size="small" />
                         ) : safeCodeRList.length === 0 ? (
-                          <Empty description="ไม่พบข้อมูล" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                          <Empty
+                            description="ไม่พบข้อมูล"
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          />
                         ) : null
                       }
                       onFocus={() => {
@@ -308,14 +315,18 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                 <Col span={5}>
                   <Form.Item
                     id="NameR"
-                    label={<span style={{ color: "#657589" }}>ชื่อของโค้ด R</span>}
+                    label={
+                      <span style={{ color: "#657589" }}>ชื่อของโค้ด R</span>
+                    }
                   >
                     <Select
                       style={{ height: 40 }}
                       value={nameR}
                       onChange={handleNameChange}
                       showSearch
-                      placeholder={loadingCodeR ? "กำลังโหลดข้อมูล..." : "เลือกชื่อโค้ด R"}
+                      placeholder={
+                        loadingCodeR ? "กำลังโหลดข้อมูล..." : "เลือกชื่อโค้ด R"
+                      }
                       filterOption={(input, option) =>
                         (option?.label?.toString() || "")
                           .toLowerCase()
@@ -325,7 +336,10 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                         loadingCodeR ? (
                           <Spin size="small" />
                         ) : safeCodeRList.length === 0 ? (
-                          <Empty description="ไม่พบข้อมูล" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                          <Empty
+                            description="ไม่พบข้อมูล"
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          />
                         ) : null
                       }
                       onFocus={() => {
@@ -398,10 +412,17 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
           </Form>
 
           {/* Items table - เพิ่มความสูงให้กับตาราง */}
-          <div style={{ marginTop: 16, height: 'calc(65vh - 250px)', overflow: 'auto' }}>
-            <OrderItemsTable 
+          <div
+            style={{
+              marginTop: 16,
+              height: "calc(65vh - 250px)",
+              overflow: "auto",
+            }}
+          >
+            <OrderItemsTable
               items={selectedOrderItems || []}
               isDraftMode={activeTabKey === "1"}
+              newlyAddedItems={newlyAddedItems}
             />
           </div>
         </Spin>

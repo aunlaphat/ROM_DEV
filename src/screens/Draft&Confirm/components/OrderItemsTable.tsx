@@ -4,15 +4,19 @@ import type { ColumnType } from 'antd/es/table';
 import { DeleteOutlined } from "@ant-design/icons";
 import { OrderItem } from "../../../redux/draftConfirm/types";
 import { useDraftConfirm } from "../../../redux/draftConfirm/hook";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/types";
 
 interface OrderItemsTableProps {
   items: OrderItem[];
   isDraftMode: boolean;
+  newlyAddedItems?: string[];
 }
 
 export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
   items,
   isDraftMode,
+  newlyAddedItems = [],
 }) => {
   const { removeItem } = useDraftConfirm();
 
@@ -69,8 +73,9 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
       baseColumns.push({
         title: "Action",
         key: "action",
-        render: (_: any, record: OrderItem) =>
-          record.type === "addon" ? (
+        render: (_: unknown, record: OrderItem) =>
+          // ตรวจสอบจาก newlyAddedItems
+          newlyAddedItems.includes(record.sku) ? (
             <Popconfirm
               title="Are you sure to delete this item?"
               onConfirm={() => handleDelete(record.sku)}
