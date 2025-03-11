@@ -9,6 +9,6 @@ export const env = {
   url_prd: process.env.REACT_APP_URL_PRD,
   key_storage: process.env.REACT_APP_KEY_STORAGE ?? "",
   key_hash: process.env.REACT_APP_KEY_HASH,
-  api_base_url: process.env.REACT_APP_URL_DEV || "http://localhost:8080", // ใช้ค่า dev หรือ default 8000
+  api_base_url: process.env.REACT_APP_URL_DEV || "http://localhost:8080", 
 };
 

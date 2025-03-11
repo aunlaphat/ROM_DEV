@@ -4,7 +4,10 @@ import Webcam from 'react-webcam';
 import { CameraOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { QrReader, QrReaderProps } from 'react-qr-reader';
 import api from "../../utils/axios/axiosInstance"; 
+import { useSelector } from 'react-redux';
+import { RootState } from "../../redux/types";
 
+// เก็บในไฟล์ type.ts ทำเป็น export แทน
 interface CustomQrReaderProps extends QrReaderProps {
     onScan: (result: string | null) => void;
     onError: (error: any) => void;
@@ -24,12 +27,16 @@ interface OrderLine {
     receivedQty: number;
     price: string;
     image: string | null;
+    filePath: string;
 }
 
 const SaleReturn: React.FC = () => {
     const [orderOptions, setOrderOptions] = useState<{ value: string; label: string }[]>([]);
+    const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null); // ประกาศ selectedOrderNo
+   
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [showScanner, setShowScanner] = useState<boolean>(false);
+   
     const [skuInput, setSkuInput] = useState<string>('');
     const [currentStep, setCurrentStep] = useState(0);
     const [currentRecordKey, setCurrentRecordKey] = useState<string | null>(null);
@@ -54,6 +61,11 @@ const SaleReturn: React.FC = () => {
         setCameraFacingMode((prevMode) => (prevMode === 'user' ? 'environment' : 'user'));
     };
 
+    // ดึงข้อมูลผู้ใช้ที่เข้าสู่ระบบ
+    const auth = useSelector((state: RootState) => state.auth);
+    const userID = auth?.user?.userID;
+
+    const token = localStorage.getItem("access_token");
     useEffect(() => {
         const fetchOrderOptions = async () => {
             try {
@@ -77,6 +89,7 @@ const SaleReturn: React.FC = () => {
     }, []);
    
     const handleSelectChange = async (value: string) => {
+        setSelectedOrderNo(value); // กำหนดค่า selectedOrderNo
         setShowSteps(true);
         setCurrentStep(0);
         setShowTable(false);
@@ -136,12 +149,21 @@ const SaleReturn: React.FC = () => {
     };
 
     const handleNextStep = () => {
-        // if (currentStep < 4) { // Assuming there are 5 steps
-        //     setCurrentStep(prevStep => prevStep + 1);
-        //  } else {
-        //     setShowTable(true);
-        // }
-        if (currentStep < data.length + 1) {
+        if (currentStep < data.length + 2) {
+            if (currentStep >= 2) { // ตรวจสอบว่าอยู่ในขั้นตอนที่ 3 (SKU) หรือไม่
+                const recordKey = data[currentStep - 2].key; // คำนวณ recordKey จาก currentStep
+                const imageSrc = images[`step${currentStep + 1}`];
+                if (imageSrc) {
+                    setData(prevData => {
+                        return prevData.map(record => {
+                            if (record.key === recordKey) {
+                                return { ...record, image: imageSrc };
+                            }
+                            return record;
+                        });
+                    });
+                }
+            }
             setCurrentStep(prevStep => prevStep + 1);
         } else {
             setShowTable(true);
@@ -245,6 +267,7 @@ const SaleReturn: React.FC = () => {
     const handleTakePhoto = (recordKey: string, sku: string) => {
         setCurrentRecordKey(recordKey);
         setSkuName(sku); // Use sku instead of itemName
+        console.log("CurrentRecordKey (take photo):", recordKey);
         setShowWebcam(true);
     };
     const handleBackStep = () => {
@@ -257,11 +280,13 @@ const SaleReturn: React.FC = () => {
         setCurrentRecordKey(recordKey);
         const currentItem = data.find(item => item.key === recordKey);
         setSkuName(currentItem?.sku || null); // Use sku instead of itemName
+        console.log("CurrentRecordKey (retake photo):", recordKey);
         setShowWebcam(true);
     };
 
     const handleCapturePhoto = () => {
         if (webcamRef.current && currentRecordKey) {
+            console.log("CurrentRecordKey:", currentRecordKey);
             const imageSrc = webcamRef.current.getScreenshot();
             if (imageSrc) {
                 setData((prevData) =>
@@ -269,9 +294,9 @@ const SaleReturn: React.FC = () => {
                         item.key === currentRecordKey ? { ...item, image: imageSrc } : item
                     )
                 );
-                setSkuName(data.find(item => item.key === currentRecordKey)?.sku || null);
+                console.log("Data after capture:", data);
             }
-            setShowWebcam(false); // Close webcam after capturing photo
+            setShowWebcam(false);
         }
     };
     
@@ -341,30 +366,172 @@ const SaleReturn: React.FC = () => {
         console.log(error);
     };
 
-    const handleSubmit = () => {
-        const allReceived = data.every(item => item.receivedQty === item.qty);
+    const handleSubmit = async () => {
+      const allReceived = data.every(item => item.receivedQty === item.qty);
     
-        if (allReceived ) {
-            console.log('ข้อมูลที่ส่ง:', data);
-            setData([]); // ลบข้อมูลในตาราง
-            notification.success({
-                message: 'ส่งข้อมูลสำเร็จ',
-                description: 'ข้อมูลถูกส่งเรียบร้อยแล้ว',
-                placement: 'topRight',
-            });
-        } else {
-            let warningMessage = 'กรุณายืนยันจำนวนรับเข้าทั้งหมดก่อนส่งข้อมูล';
-            if (!allReceived ) {
-                warningMessage += '\nกรุณาถ่ายรูปให้ครบก่อนส่งข้อมูล';
+      if (allReceived) {
+        try {
+          // ดึงโทเค็นจาก Local Storage
+          const token = localStorage.getItem('access_token');
+    
+          const base64ToFile = async (base64String: string, filename: string): Promise<File> => {
+            const res = await fetch(base64String);
+            const blob = await res.blob();
+            console.log("Blob from base64ToFile:", blob); // เพิ่มบรรทัดนี้
+            return new File([blob], filename, { type: 'image/jpeg' }); // เปลี่ยน type ตามประเภทรูปภาพ
+          };
+    
+          const uploadImage = async (image: string, imageTypeID: number, sku: string | null) => {
+            try {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // แปลงวันที่และเวลาเป็นสตริงที่ใช้ได้ในชื่อไฟล์
+                let filename = '';
+            
+                if (imageTypeID === 1) {
+                  filename = `beforeopen_${timestamp}.jpg`;
+                } else if (imageTypeID === 2) {
+                  filename = `afteropen_${timestamp}.jpg`;
+                } else if (imageTypeID === 3 && sku) {
+                  filename = `${sku}_${timestamp}.jpg`;
+                } else {
+                  filename = `image_${timestamp}.jpg`; // กรณีที่ไม่ตรงกับเงื่อนไขใดๆ
+                }
+            
+                const file = await base64ToFile(image, filename);
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('orderNo', selectedOrderNo!);
+                formData.append('imageTypeID', imageTypeID.toString());
+                if (sku) {
+                    formData.append('sku', sku);
+                }
+
+
+        console.log("FormData:", formData); // เพิ่มบรรทัดนี้
+        
+                const response = await api.post('/api/import-order/upload-photo', formData, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                console.log("Response data from uploadImage:", response.data); // เพิ่มบรรทัดนี้
+                console.log("Response from uploadImage: ", response); //add this line.
+        
+                if (response.data && response.data.data && response.data.data.filePath) {
+                    return response.data.data.filePath; // แก้ไขบรรทัดนี้
+                } else {
+                    console.error("filePath not found in response:", response);
+                    return null; // หรือ throw error
+                }
+            } catch (error) {
+                console.error("Error uploading image:", error);
+                return null;
             }
+        };
     
-            notification.warning({
-                message: 'ข้อมูลไม่ครบถ้วน',
-                description: warningMessage,
-                placement: 'topRight',
+          // อัปโหลดภาพและบันทึกพาธสำหรับแต่ละภาพ
+          const step1ImagePath = images.step1 ? await uploadImage(images.step1, 1, null) : null;
+          const step2ImagePath = images.step2 ? await uploadImage(images.step2, 2, null) : null;
+          const itemImages = await Promise.all(
+            data.map(async (item) => {
+                console.log("Images for item:", item.key, item.image); // แก้ไขบรรทัดนี้
+                if (item.image) { // ใช้ item.image แทน images[item.key]
+                    const filePath = await uploadImage(item.image, 3, item.sku);
+                    return { ...item, filePath };
+                }
+                return item;
+            })
+        );
+
+        console.log("itemImages:", itemImages);
+    
+          // เตรียมข้อมูลสำหรับส่งไปยัง API
+          const requestData = {
+            Identifier: selectedOrderNo, // ใช้ OrderNo หรือ TrackingNo ที่เลือก
+            ImportLines: [
+              ...itemImages.map(item => ({
+                SKU: item.sku,
+                QTY: item.qty,
+                ReturnQTY: item.receivedQty,
+                Price: item.price,
+                ImageTypeID: 3, // กำหนดค่า ImageTypeID สำหรับภาพที่มี SKU
+                FilePath: item.filePath,
+              })),
+              {
+                SKU: null,
+                QTY: null,
+                ReturnQTY: null,
+                Price: null,
+                ImageTypeID: 1, // กำหนดค่า ImageTypeID สำหรับภาพ step 1
+                FilePath: step1ImagePath,
+              },
+              {
+                SKU: null,
+                QTY: null,
+                ReturnQTY: null,
+                Price: null,
+                ImageTypeID: 2, // กำหนดค่า ImageTypeID สำหรับภาพ step 2
+                FilePath: step2ImagePath,
+              },
+            ],
+            CreateBy: userID, // เพิ่ม userID ที่เข้าสู่ระบบในฟิลด์ CreateBy
+          };
+    
+          console.log(requestData);
+          // ส่งข้อมูลไปยัง API
+          const response = await api.post(`/api/import-order/confirm-receipt/${selectedOrderNo}`, requestData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+    
+          // ตรวจสอบผลลัพธ์จาก API
+          if (response.status === 200) {
+            notification.success({
+              message: 'ส่งข้อมูลสำเร็จ',
+              description: 'ข้อมูลถูกส่งเรียบร้อยแล้ว',
+              placement: 'topRight',
             });
+    
+            // รีเซ็ตฟอร์มและตาราง
+            setData([]);
+            setSelectedOrderNo(null);
+            setShowTable(false);
+            setShowSteps(false);
+            setCurrentStep(0);
+            setImages({
+              step1: null,
+              step2: null,
+            });
+          } else {
+            notification.error({
+              message: 'เกิดข้อผิดพลาด',
+              description: 'ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+              placement: 'topRight',
+            });
+          }
+        } catch (error) {
+          console.error("Error submitting data:", error);
+          notification.error({
+            message: "เกิดข้อผิดพลาด",
+            description: "ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+            placement: 'topRight',
+          });
         }
+      } else {
+        let warningMessage = 'กรุณายืนยันจำนวนรับเข้าทั้งหมดก่อนส่งข้อมูล';
+        if (!allReceived) {
+          warningMessage += '\nกรุณาถ่ายรูปให้ครบก่อนส่งข้อมูล';
+        }
+    
+        notification.warning({
+          message: 'ข้อมูลไม่ครบถ้วน',
+          description: warningMessage,
+          placement: 'topRight',
+        });
+      }
     };
+
     const handleKeyDown = (event: { key: string; }) => {
         if (event.key === 'Enter' && skuInput.trim()) {
             handleConfirmReceived();
