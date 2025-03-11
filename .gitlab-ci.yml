@@ -10,6 +10,8 @@ build-test:
   script:
     - echo "$ENV_TEST" > .env
     - cat .env
+    - go mod tidy
+    - go mod verify
     - go build -o main .
     - ls
   cache:
