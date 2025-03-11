@@ -1,23 +1,23 @@
 package request
 
 type Login struct {
-	UserID   string `json:"userID" db:"UserID" example:"DC65060"`
-	Password string `json:"password" db:"Password" example:"xxxxxxxx"`
+	UserID   string `json:"userID" db:"UserID"`
+	Password string `json:"password" db:"Password"`
 }
 
 type LoginWeb struct {
-	UserName string `json:"userName" db:"UserName" example:"eknarin.ler"`
-	Password string `json:"password" db:"Password" example:"EKna1234"` // change password lastest in 17 January 2025
+	UserName string `json:"userName" db:"UserName"`
+	Password string `json:"password" db:"Password"`
 }
 
 type LoginLark struct {
-	UserID   string `json:"userID" db:"UserID" example:"DC65060"`
-	UserName string `json:"userName" db:"UserName" example:"eknarin.ler"`
+	UserID   string `json:"userID" db:"UserID"`
+	UserName string `json:"userName" db:"UserName"`
 }
 
 type LoginJWT struct {
-	UserID   string `json:"userID" db:"UserID" example:"DC53002"`
-	UserName string `json:"userName" db:"UserName" example:"string"`
+	UserID   string `json:"userID" db:"UserID"`
+	UserName string `json:"userName" db:"UserName"`
 }
 
 type AddUserRequest struct {
