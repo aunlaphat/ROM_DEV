@@ -179,12 +179,12 @@ func (app *Application) CreateTradeReturn(c *gin.Context) {
 		return
 	}
 
-	// *️⃣ Validate request ที่ส่งมา
-	if err := utils.ValidateCreateTradeReturn(req); err != nil {
-		app.Logger.Warn("[ Validation failed ]", zap.Error(err))
-		handleError(c, Status.BadRequestError("[ Validation failed: %v ]", err))
-		return
-	}
+	// // *️⃣ Validate request ที่ส่งมา
+	// if err := utils.ValidateCreateTradeReturn(req); err != nil {
+	// 	app.Logger.Warn("[ Validation failed ]", zap.Error(err))
+	// 	handleError(c, Status.BadRequestError("[ Validation failed: %v ]", err))
+	// 	return
+	// }
 
 	// *️⃣ ดึง userID จาก JWT token
 	userID, exists := c.Get("UserID")
@@ -240,7 +240,7 @@ func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 		app.Logger.Warn("[ Validation failed ]", zap.Error(err))
 		handleError(c, Status.BadRequestError("[ Validation failed: %v ]", err))
 		return
-	} 
+	}
 
 	// *️⃣ ดึง userID จาก JWT token
 	userID, exists := c.Get("UserID")

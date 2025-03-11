@@ -33,15 +33,15 @@ func ValidateCreateReturnOrder(req req.CreateReturnOrder) error {
 		if *line.QTY <= 0 {
 			validate = append(validate, fmt.Sprintf("quantity must be greater than 0 for line %d", i+1))
 		}
-		if line.ReturnQTY < 0 {
-			validate = append(validate, fmt.Sprintf("return quantity cannot be negative for line %d", i+1))
-		}
-		if line.ReturnQTY > *line.QTY {
-			validate = append(validate, fmt.Sprintf("return quantity cannot be greater than quantity for line %d", i+1))
-		}
-		if line.Price < 0 {
-			validate = append(validate, fmt.Sprintf("price cannot be negative for line %d", i+1))
-		}
+		// if line.ReturnQTY < 0 {
+		// 	validate = append(validate, fmt.Sprintf("return quantity cannot be negative for line %d", i+1))
+		// }
+		// if line.ReturnQTY > *line.QTY {
+		// 	validate = append(validate, fmt.Sprintf("return quantity cannot be greater than quantity for line %d", i+1))
+		// }
+		// if line.Price < 0 {
+		// 	validate = append(validate, fmt.Sprintf("price cannot be negative for line %d", i+1))
+		// }
 	}
 
 	// หากพบข้อผิดพลาด ให้ส่งคืนข้อผิดพลาดทั้งหมด
@@ -76,9 +76,9 @@ func ValidateCreateTradeReturn(req req.BeforeReturnOrder) error {
 	if req.ChannelID == 0 {
 		validate = append(validate, "invalid channel ID")
 	}
-	if req.WarehouseID == 0 {
-		validate = append(validate, "invalid warehouse ID")
-	}
+	// if req.WarehouseID == 0 {
+	// 	validate = append(validate, "invalid warehouse ID")
+	// }
 
 	// ตรวจสอบรายการคืน
 	if len(req.BeforeReturnOrderLines) == 0 {
@@ -92,18 +92,18 @@ func ValidateCreateTradeReturn(req req.BeforeReturnOrder) error {
 		if line.QTY <= 0 {
 			validate = append(validate, fmt.Sprintf("quantity must be greater than 0 for line %d", i+1))
 		}
-		if line.ReturnQTY < 0 {
-			validate = append(validate, fmt.Sprintf("return quantity cannot be negative for line %d", i+1))
-		}
-		if line.ReturnQTY > line.QTY {
-			validate = append(validate, fmt.Sprintf("return quantity cannot be greater than quantity for line %d", i+1))
-		}
-		if line.Price < 0 {
-			validate = append(validate, fmt.Sprintf("price cannot be negative for line %d", i+1))
-		}
-		if line.AlterSKU != nil && *line.AlterSKU == "" {
-			validate = append(validate, fmt.Sprintf("alter SKU cannot be empty if provided for line %d", i+1))
-		}
+		// if line.ReturnQTY < 0 {
+		// 	validate = append(validate, fmt.Sprintf("return quantity cannot be negative for line %d", i+1))
+		// }
+		// if line.ReturnQTY > line.QTY {
+		// 	validate = append(validate, fmt.Sprintf("return quantity cannot be greater than quantity for line %d", i+1))
+		// }
+		// if line.Price < 0 {
+		// 	validate = append(validate, fmt.Sprintf("price cannot be negative for line %d", i+1))
+		// }
+		// if line.AlterSKU != nil && *line.AlterSKU == "" {
+		// 	validate = append(validate, fmt.Sprintf("alter SKU cannot be empty if provided for line %d", i+1))
+		// }
 	}
 
 	// หากพบข้อผิดพลาด ให้ส่งคืนข้อผิดพลาดทั้งหมด
@@ -131,15 +131,15 @@ func ValidateCreateTradeReturnLine(lines []req.OrderLines) error {
 		if line.QTY <= 0 {
 			validate = append(validate, fmt.Sprintf("quantity must be greater than 0 for line %d", i+1))
 		}
-		if line.ReturnQTY < 0 {
-			validate = append(validate, fmt.Sprintf("return quantity cannot be negative for line %d", i+1))
-		}
-		if line.ReturnQTY > line.QTY {
-			validate = append(validate, fmt.Sprintf("return quantity cannot be greater than quantity for line %d", i+1))
-		}
-		if line.Price < 0 {
-			validate = append(validate, fmt.Sprintf("price cannot be negative for line %d", i+1))
-		}
+		// if line.ReturnQTY < 0 {
+		// 	validate = append(validate, fmt.Sprintf("return quantity cannot be negative for line %d", i+1))
+		// }
+		// if line.ReturnQTY > line.QTY {
+		// 	validate = append(validate, fmt.Sprintf("return quantity cannot be greater than quantity for line %d", i+1))
+		// }
+		// if line.Price < 0 {
+		// 	validate = append(validate, fmt.Sprintf("price cannot be negative for line %d", i+1))
+		// }
 		// if line.AlterSKU != nil && *line.AlterSKU == "" {
 		// 	validate = append(validate, fmt.Sprintf("alter SKU cannot be empty if provided for line %d", i+1))
 		// }

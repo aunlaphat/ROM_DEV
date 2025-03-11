@@ -59,7 +59,7 @@
                     "200": {
                         "description": "JWT token",
                         "schema": {
-                            "$ref": "#/definitions/response.User"
+                            "$ref": "#/definitions/response.Login"
                         }
                     },
                     "400": {
@@ -105,7 +105,7 @@
                     "200": {
                         "description": "JWT token",
                         "schema": {
-                            "$ref": "#/definitions/response.User"
+                            "$ref": "#/definitions/response.Login"
                         }
                     },
                     "400": {
@@ -1140,6 +1140,353 @@
                 }
             }
         },
+        "/draft-confirm/add-item/{orderNo}": {
+            "post": {
+                "description": "Adds an item to an existing draft order",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm MKP"
+                ],
+                "summary": "Add Item to Draft Order",
+                "operationId": "add-item-to-draft",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Item Data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.AddItem"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.AddItemResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/list-codeR": {
+            "get": {
+                "description": "Retrieves a list of CodeR (SKU starting with 'R')",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm MKP"
+                ],
+                "summary": "Get List of CodeR",
+                "operationId": "get-list-codeR",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.ListCodeRResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/order/details": {
+            "get": {
+                "description": "Retrieves details of an order including items",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm MKP"
+                ],
+                "summary": "Get Order Details with Items",
+                "operationId": "get-order-with-items",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "StatusConfID (1 = Draft, 2 = Confirm)",
+                        "name": "statusConfID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.DraftConfirmResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/orders": {
+            "get": {
+                "description": "Retrieves all orders filtered by StatusConfID and Date Range",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm MKP"
+                ],
+                "summary": "Get Draft or Confirm Orders",
+                "operationId": "get-orders",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "StatusConfID (1 = Draft, 2 = Confirm)",
+                        "name": "statusConfID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start Date (YYYY-MM-DD)",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End Date (YYYY-MM-DD)",
+                        "name": "endDate",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.OrderHeadResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/remove-item/{orderNo}/{sku}": {
+            "delete": {
+                "description": "Removes an item from a draft order",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm MKP"
+                ],
+                "summary": "Remove Item from Draft Order",
+                "operationId": "remove-item-from-draft",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU",
+                        "name": "sku",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/draft-confirm/update-status/{orderNo}": {
+            "patch": {
+                "description": "Updates a draft order to confirm status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Draft \u0026 Confirm MKP"
+                ],
+                "summary": "Confirm Draft Order",
+                "operationId": "confirm-draft-order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.UpdateOrderStatusResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/import-order/confirm-receipt/{identifier}": {
             "post": {
                 "description": "Confirm a trade return order based on the provided identifier (OrderNo or TrackingNo) and input lines for ReturnOrderLine.",
@@ -1649,6 +1996,334 @@
                 }
             }
         },
+        "/manage-users": {
+            "get": {
+                "description": "Retrieve user data filtered by isActive, with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Get list of users",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Filter by Active Status (true/false)",
+                        "name": "isActive",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.UserResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/manage-users/add": {
+            "post": {
+                "description": "Add a user with role assignment",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Add a new user",
+                "parameters": [
+                    {
+                        "description": "User details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.AddUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.AddUserResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/manage-users/delete/{userID}": {
+            "delete": {
+                "description": "Remove user from the system but keep data in the database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Delete a user (Soft Delete)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/manage-users/edit/{userID}": {
+            "patch": {
+                "description": "Update role and warehouse of a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Edit user details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated user details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.EditUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.EditUserResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/manage-users/{userID}": {
+            "get": {
+                "description": "Retrieve details of a specific user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Get user details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.UserResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/order/cancel": {
+            "post": {
+                "description": "Cancels an order by updating its status and recording the cancellation reason",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order MKP"
+                ],
+                "summary": "Cancel an existing return order",
+                "operationId": "cancel-order",
+                "parameters": [
+                    {
+                        "description": "Cancel Order Data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CancelOrder"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/response.CancelOrderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/order/create": {
             "post": {
                 "description": "Creates a new return order including order head and order lines",
@@ -1701,6 +2376,63 @@
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/order/generate-sr/{orderNo}": {
+            "post": {
+                "description": "Calls AX API to generate a new SrNo for the order",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order MKP"
+                ],
+                "summary": "Generate SrNo from AX system",
+                "operationId": "generate-sr-no-from-ax",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order Number",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/api.Response"
                         }
@@ -2855,47 +3587,6 @@
                     }
                 }
             }
-        },
-        "/user/{username}": {
-            "get": {
-                "description": "Get user credentials by userName",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Get User Credentials",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "UserName",
-                        "name": "username",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "User credentials",
-                        "schema": {
-                            "$ref": "#/definitions/response.UserRole"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/gin.H"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/gin.H"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -3014,9 +3705,53 @@
                 }
             }
         },
-        "gin.H": {
+        "request.AddItem": {
             "type": "object",
-            "additionalProperties": {}
+            "properties": {
+                "createBy": {
+                    "type": "string"
+                },
+                "itemName": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQTY": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.AddUserRequest": {
+            "type": "object",
+            "required": [
+                "roleID",
+                "userID",
+                "warehouseID"
+            ],
+            "properties": {
+                "roleID": {
+                    "description": "รหัส Role",
+                    "type": "integer"
+                },
+                "userID": {
+                    "description": "รหัสผู้ใช้",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "description": "คลังสินค้า",
+                    "type": "string"
+                }
+            }
         },
         "request.BeforeReturnOrder": {
             "type": "object",
@@ -3140,6 +3875,20 @@
                 },
                 "updateDate": {
                     "description": "วันที่แก้ไขล่าสุด",
+                    "type": "string"
+                }
+            }
+        },
+        "request.CancelOrder": {
+            "type": "object",
+            "properties": {
+                "cancelReason": {
+                    "type": "string"
+                },
+                "refID": {
+                    "type": "string"
+                },
+                "sourceTable": {
                     "type": "string"
                 }
             }
@@ -3329,6 +4078,26 @@
                 }
             }
         },
+        "request.EditUserRequest": {
+            "type": "object",
+            "required": [
+                "userID"
+            ],
+            "properties": {
+                "roleID": {
+                    "description": "รหัส Role ใหม่",
+                    "type": "integer"
+                },
+                "userID": {
+                    "description": "รหัสผู้ใช้ที่ต้องการแก้ไข",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "description": "คลังสินค้าใหม่",
+                    "type": "string"
+                }
+            }
+        },
         "request.ImportLinesActual": {
             "type": "object",
             "properties": {
@@ -3512,6 +4281,56 @@
                 }
             }
         },
+        "response.AddItemResponse": {
+            "type": "object",
+            "properties": {
+                "createBy": {
+                    "type": "string"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "itemName": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "returnQty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.AddUserResponse": {
+            "type": "object",
+            "properties": {
+                "createdBy": {
+                    "description": "ผู้สร้าง",
+                    "type": "string"
+                },
+                "roleID": {
+                    "description": "รหัส Role ที่เพิ่มให้",
+                    "type": "integer"
+                },
+                "userID": {
+                    "description": "รหัสพนักงานที่เพิ่ม",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "description": "รหัสคลังสินค้า",
+                    "type": "string"
+                }
+            }
+        },
         "response.BeforeReturnOrderItem": {
             "type": "object",
             "properties": {
@@ -3627,6 +4446,26 @@
                 }
             }
         },
+        "response.CancelOrderResponse": {
+            "type": "object",
+            "properties": {
+                "cancelBy": {
+                    "type": "string"
+                },
+                "cancelDate": {
+                    "type": "string"
+                },
+                "cancelReason": {
+                    "type": "string"
+                },
+                "refID": {
+                    "type": "string"
+                },
+                "sourceTable": {
+                    "type": "string"
+                }
+            }
+        },
         "response.ConfirmReceipt": {
             "type": "object",
             "properties": {
@@ -3739,6 +4578,46 @@
                 }
             }
         },
+        "response.DraftConfirmItem": {
+            "type": "object",
+            "properties": {
+                "itemName": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.DraftConfirmResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.DraftConfirmItem"
+                    }
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "srNo": {
+                    "type": "string"
+                }
+            }
+        },
         "response.DraftTradeDetail": {
             "type": "object",
             "properties": {
@@ -3782,6 +4661,39 @@
                     "type": "integer"
                 },
                 "warehouseName": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.EditUserResponse": {
+            "type": "object",
+            "properties": {
+                "roleID": {
+                    "description": "Role ID เดิม",
+                    "type": "integer"
+                },
+                "roleName": {
+                    "description": "ชื่อ Role เดิม",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "description": "เวลาที่อัปเดตล่าสุด",
+                    "type": "string"
+                },
+                "updatedBy": {
+                    "description": "ผู้ที่ทำการแก้ไข",
+                    "type": "string"
+                },
+                "userID": {
+                    "description": "รหัสพนักงานที่แก้ไข",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "description": "รหัสคลังสินค้าเดิม",
+                    "type": "integer"
+                },
+                "warehouseName": {
+                    "description": "ชื่อคลังสินค้าเดิม",
                     "type": "string"
                 }
             }
@@ -3868,6 +4780,46 @@
                 }
             }
         },
+        "response.ListCodeRResponse": {
+            "type": "object",
+            "properties": {
+                "nameAlias": {
+                    "type": "string"
+                },
+                "sku": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.Login": {
+            "type": "object",
+            "properties": {
+                "departmentNo": {
+                    "type": "string"
+                },
+                "fullNameTH": {
+                    "type": "string"
+                },
+                "nickName": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "roleID": {
+                    "type": "integer"
+                },
+                "roleName": {
+                    "type": "string"
+                },
+                "userID": {
+                    "type": "string"
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
+        },
         "response.OrderDetail": {
             "type": "object",
             "properties": {
@@ -3904,6 +4856,38 @@
                 "statusMKP": {
                     "description": "สถานะในตลาด",
                     "type": "string"
+                }
+            }
+        },
+        "response.OrderHeadResponse": {
+            "type": "object",
+            "properties": {
+                "channelId": {
+                    "type": "integer"
+                },
+                "createDate": {
+                    "type": "string"
+                },
+                "customerId": {
+                    "type": "string"
+                },
+                "logistic": {
+                    "type": "string"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "soNo": {
+                    "type": "string"
+                },
+                "srNo": {
+                    "type": "string"
+                },
+                "trackingNo": {
+                    "type": "string"
+                },
+                "warehouseId": {
+                    "type": "integer"
                 }
             }
         },
@@ -4187,57 +5171,63 @@
                 }
             }
         },
-        "response.User": {
+        "response.UserResponse": {
             "type": "object",
             "properties": {
+                "createdAt": {
+                    "description": "เวลาสร้างบัญชี",
+                    "type": "string"
+                },
                 "departmentNo": {
-                    "type": "string"
-                },
-                "fullNameTH": {
-                    "type": "string"
-                },
-                "nickName": {
-                    "type": "string"
-                },
-                "platform": {
-                    "type": "string"
-                },
-                "roleID": {
-                    "type": "integer"
-                },
-                "userID": {
-                    "type": "string"
-                },
-                "userName": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.UserRole": {
-            "type": "object",
-            "properties": {
-                "departmentNo": {
+                    "description": "รหัสแผนก",
                     "type": "string"
                 },
                 "description": {
+                    "description": "คำอธิบาย Role",
                     "type": "string"
                 },
                 "fullNameTH": {
+                    "description": "ชื่อเต็มภาษาไทย",
+                    "type": "string"
+                },
+                "isActive": {
+                    "description": "สถานะบัญชี (Active/Inactive)",
+                    "type": "boolean"
+                },
+                "lastLoginAt": {
+                    "description": "เวลาล็อกอินล่าสุด (optional)",
                     "type": "string"
                 },
                 "nickName": {
+                    "description": "ชื่อเล่น",
                     "type": "string"
                 },
                 "roleID": {
+                    "description": "รหัสบทบาท",
                     "type": "integer"
                 },
                 "roleName": {
+                    "description": "ชื่อบทบาท",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "description": "เวลาล่าสุดที่มีการอัปเดต (optional)",
                     "type": "string"
                 },
                 "userID": {
+                    "description": "รหัสพนักงาน",
                     "type": "string"
                 },
                 "userName": {
+                    "description": "ชื่อผู้ใช้",
+                    "type": "string"
+                },
+                "warehouseID": {
+                    "description": "รหัสคลังสินค้า",
+                    "type": "integer"
+                },
+                "warehouseName": {
+                    "description": "ชื่อคลังสินค้า",
                     "type": "string"
                 }
             }

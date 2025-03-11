@@ -78,8 +78,38 @@ definitions:
         description: ชื่อคลังสินค้า
         type: string
     type: object
-  gin.H:
-    additionalProperties: {}
+  request.AddItem:
+    properties:
+      createBy:
+        type: string
+      itemName:
+        type: string
+      orderNo:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      returnQTY:
+        type: integer
+      sku:
+        type: string
+    type: object
+  request.AddUserRequest:
+    properties:
+      roleID:
+        description: รหัส Role
+        type: integer
+      userID:
+        description: รหัสผู้ใช้
+        type: string
+      warehouseID:
+        description: คลังสินค้า
+        type: string
+    required:
+    - roleID
+    - userID
+    - warehouseID
     type: object
   request.BeforeReturnOrder:
     properties:
@@ -169,6 +199,15 @@ definitions:
         type: string
       updateDate:
         description: วันที่แก้ไขล่าสุด
+        type: string
+    type: object
+  request.CancelOrder:
+    properties:
+      cancelReason:
+        type: string
+      refID:
+        type: string
+      sourceTable:
         type: string
     type: object
   request.ConfirmToReturnRequest:
@@ -302,6 +341,20 @@ definitions:
         example: 12345678TH
         type: string
     type: object
+  request.EditUserRequest:
+    properties:
+      roleID:
+        description: รหัส Role ใหม่
+        type: integer
+      userID:
+        description: รหัสผู้ใช้ที่ต้องการแก้ไข
+        type: string
+      warehouseID:
+        description: คลังสินค้าใหม่
+        type: string
+    required:
+    - userID
+    type: object
   request.ImportLinesActual:
     properties:
       actualQty:
@@ -430,6 +483,40 @@ definitions:
       srNo:
         type: string
     type: object
+  response.AddItemResponse:
+    properties:
+      createBy:
+        type: string
+      createDate:
+        type: string
+      itemName:
+        type: string
+      orderNo:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      returnQty:
+        type: integer
+      sku:
+        type: string
+    type: object
+  response.AddUserResponse:
+    properties:
+      createdBy:
+        description: ผู้สร้าง
+        type: string
+      roleID:
+        description: รหัส Role ที่เพิ่มให้
+        type: integer
+      userID:
+        description: รหัสพนักงานที่เพิ่ม
+        type: string
+      warehouseID:
+        description: รหัสคลังสินค้า
+        type: string
+    type: object
   response.BeforeReturnOrderItem:
     properties:
       alterSKU:
@@ -505,6 +592,19 @@ definitions:
         type: string
       warehouseId:
         type: integer
+    type: object
+  response.CancelOrderResponse:
+    properties:
+      cancelBy:
+        type: string
+      cancelDate:
+        type: string
+      cancelReason:
+        type: string
+      refID:
+        type: string
+      sourceTable:
+        type: string
     type: object
   response.ConfirmReceipt:
     properties:
@@ -583,6 +683,32 @@ definitions:
       orderNo:
         type: string
     type: object
+  response.DraftConfirmItem:
+    properties:
+      itemName:
+        type: string
+      orderNo:
+        type: string
+      price:
+        type: number
+      qty:
+        type: integer
+      sku:
+        type: string
+    type: object
+  response.DraftConfirmResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/response.DraftConfirmItem'
+        type: array
+      orderNo:
+        type: string
+      soNo:
+        type: string
+      srNo:
+        type: string
+    type: object
   response.DraftTradeDetail:
     properties:
       channelId:
@@ -614,6 +740,30 @@ definitions:
       warehouseId:
         type: integer
       warehouseName:
+        type: string
+    type: object
+  response.EditUserResponse:
+    properties:
+      roleID:
+        description: Role ID เดิม
+        type: integer
+      roleName:
+        description: ชื่อ Role เดิม
+        type: string
+      updatedAt:
+        description: เวลาที่อัปเดตล่าสุด
+        type: string
+      updatedBy:
+        description: ผู้ที่ทำการแก้ไข
+        type: string
+      userID:
+        description: รหัสพนักงานที่แก้ไข
+        type: string
+      warehouseID:
+        description: รหัสคลังสินค้าเดิม
+        type: integer
+      warehouseName:
+        description: ชื่อคลังสินค้าเดิม
         type: string
     type: object
   response.ImageResponse:
@@ -669,6 +819,32 @@ definitions:
       sku:
         type: string
     type: object
+  response.ListCodeRResponse:
+    properties:
+      nameAlias:
+        type: string
+      sku:
+        type: string
+    type: object
+  response.Login:
+    properties:
+      departmentNo:
+        type: string
+      fullNameTH:
+        type: string
+      nickName:
+        type: string
+      platform:
+        type: string
+      roleID:
+        type: integer
+      roleName:
+        type: string
+      userID:
+        type: string
+      userName:
+        type: string
+    type: object
   response.OrderDetail:
     properties:
       OrderHeadDetail:
@@ -695,6 +871,27 @@ definitions:
       statusMKP:
         description: สถานะในตลาด
         type: string
+    type: object
+  response.OrderHeadResponse:
+    properties:
+      channelId:
+        type: integer
+      createDate:
+        type: string
+      customerId:
+        type: string
+      logistic:
+        type: string
+      orderNo:
+        type: string
+      soNo:
+        type: string
+      srNo:
+        type: string
+      trackingNo:
+        type: string
+      warehouseId:
+        type: integer
     type: object
   response.OrderLineDetail:
     properties:
@@ -885,40 +1082,49 @@ definitions:
       updateDate:
         type: string
     type: object
-  response.User:
+  response.UserResponse:
     properties:
+      createdAt:
+        description: เวลาสร้างบัญชี
+        type: string
       departmentNo:
-        type: string
-      fullNameTH:
-        type: string
-      nickName:
-        type: string
-      platform:
-        type: string
-      roleID:
-        type: integer
-      userID:
-        type: string
-      userName:
-        type: string
-    type: object
-  response.UserRole:
-    properties:
-      departmentNo:
+        description: รหัสแผนก
         type: string
       description:
+        description: คำอธิบาย Role
         type: string
       fullNameTH:
+        description: ชื่อเต็มภาษาไทย
+        type: string
+      isActive:
+        description: สถานะบัญชี (Active/Inactive)
+        type: boolean
+      lastLoginAt:
+        description: เวลาล็อกอินล่าสุด (optional)
         type: string
       nickName:
+        description: ชื่อเล่น
         type: string
       roleID:
+        description: รหัสบทบาท
         type: integer
       roleName:
+        description: ชื่อบทบาท
+        type: string
+      updatedAt:
+        description: เวลาล่าสุดที่มีการอัปเดต (optional)
         type: string
       userID:
+        description: รหัสพนักงาน
         type: string
       userName:
+        description: ชื่อผู้ใช้
+        type: string
+      warehouseID:
+        description: รหัสคลังสินค้า
+        type: integer
+      warehouseName:
+        description: ชื่อคลังสินค้า
         type: string
     type: object
 info:
@@ -960,7 +1166,7 @@ paths:
         "200":
           description: JWT token
           schema:
-            $ref: '#/definitions/response.User'
+            $ref: '#/definitions/response.Login'
         "400":
           description: Bad Request
           schema:
@@ -990,7 +1196,7 @@ paths:
         "200":
           description: JWT token
           schema:
-            $ref: '#/definitions/response.User'
+            $ref: '#/definitions/response.Login'
         "400":
           description: Bad Request
           schema:
@@ -1646,6 +1852,223 @@ paths:
       summary: Search Province by keyword
       tags:
       - Constants
+  /draft-confirm/add-item/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Adds an item to an existing draft order
+      operationId: add-item-to-draft
+      parameters:
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: Item Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AddItem'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.AddItemResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Add Item to Draft Order
+      tags:
+      - Draft & Confirm MKP
+  /draft-confirm/list-codeR:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of CodeR (SKU starting with 'R')
+      operationId: get-list-codeR
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.ListCodeRResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get List of CodeR
+      tags:
+      - Draft & Confirm MKP
+  /draft-confirm/order/details:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves details of an order including items
+      operationId: get-order-with-items
+      parameters:
+      - description: StatusConfID (1 = Draft, 2 = Confirm)
+        in: query
+        name: statusConfID
+        required: true
+        type: integer
+      - description: Order Number
+        in: query
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.DraftConfirmResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Order Details with Items
+      tags:
+      - Draft & Confirm MKP
+  /draft-confirm/orders:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all orders filtered by StatusConfID and Date Range
+      operationId: get-orders
+      parameters:
+      - description: StatusConfID (1 = Draft, 2 = Confirm)
+        in: query
+        name: statusConfID
+        required: true
+        type: integer
+      - description: Start Date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        type: string
+      - description: End Date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.OrderHeadResponse'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Draft or Confirm Orders
+      tags:
+      - Draft & Confirm MKP
+  /draft-confirm/remove-item/{orderNo}/{sku}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes an item from a draft order
+      operationId: remove-item-from-draft
+      parameters:
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: SKU
+        in: path
+        name: sku
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Remove Item from Draft Order
+      tags:
+      - Draft & Confirm MKP
+  /draft-confirm/update-status/{orderNo}:
+    patch:
+      consumes:
+      - application/json
+      description: Updates a draft order to confirm status
+      operationId: confirm-draft-order
+      parameters:
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UpdateOrderStatusResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Confirm Draft Order
+      tags:
+      - Draft & Confirm MKP
   /import-order/confirm-receipt/{identifier}:
     post:
       consumes:
@@ -1970,6 +2393,208 @@ paths:
       summary: Validate SKU
       tags:
       - Import Order
+  /manage-users:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve user data filtered by isActive, with pagination
+      parameters:
+      - description: Filter by Active Status (true/false)
+        in: query
+        name: isActive
+        type: boolean
+      - description: Limit (default 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.UserResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get list of users
+      tags:
+      - User Management
+  /manage-users/{userID}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve details of a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.UserResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get user details
+      tags:
+      - User Management
+  /manage-users/add:
+    post:
+      consumes:
+      - application/json
+      description: Add a user with role assignment
+      parameters:
+      - description: User details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AddUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.AddUserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Add a new user
+      tags:
+      - User Management
+  /manage-users/delete/{userID}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove user from the system but keep data in the database
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Delete a user (Soft Delete)
+      tags:
+      - User Management
+  /manage-users/edit/{userID}:
+    patch:
+      consumes:
+      - application/json
+      description: Update role and warehouse of a user
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Updated user details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.EditUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.EditUserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Edit user details
+      tags:
+      - User Management
+  /order/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels an order by updating its status and recording the cancellation
+        reason
+      operationId: cancel-order
+      parameters:
+      - description: Cancel Order Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CancelOrder'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.CancelOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Cancel an existing return order
+      tags:
+      - Return Order MKP
   /order/create:
     post:
       consumes:
@@ -2008,6 +2633,41 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Create a new return order
+      tags:
+      - Return Order MKP
+  /order/generate-sr/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Calls AX API to generate a new SrNo for the order
+      operationId: generate-sr-no-from-ax
+      parameters:
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Generate SrNo from AX system
       tags:
       - Return Order MKP
   /order/mark-edited/{orderNo}:
@@ -2721,31 +3381,4 @@ paths:
       summary: Search Return Orders with StatusCheckID = 1 by Date Range
       tags:
       - Trade Return
-  /user/{username}:
-    get:
-      description: Get user credentials by userName
-      parameters:
-      - description: UserName
-        in: path
-        name: username
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User credentials
-          schema:
-            $ref: '#/definitions/response.UserRole'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/gin.H'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/gin.H'
-      summary: Get User Credentials
-      tags:
-      - User
 swagger: "2.0"
