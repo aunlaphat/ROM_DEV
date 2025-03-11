@@ -1,9 +1,9 @@
 package service
 
 import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
+	request "boilerplate-back-go-2411/dto/request"
+	response "boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/errors"
 	"context"
 	"database/sql"
 	"fmt"

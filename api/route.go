@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "boilerplate-backend-go/docs"
+	_ "boilerplate-back-go-2411/docs"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"

@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"boilerplate-backend-go/errors"
+	"boilerplate-back-go-2411/errors"
 	"context"
 	"fmt"
 )

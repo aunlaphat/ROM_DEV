@@ -1,4 +1,4 @@
-module boilerplate-backend-go
+module boilerplate-back-go-2411
 
 go 1.22.0
 

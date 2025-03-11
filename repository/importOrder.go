@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/dto/response"
+	"boilerplate-back-go-2411/dto/request"
+	"boilerplate-back-go-2411/dto/response"
 	"context"
 	"database/sql"
 	"fmt"

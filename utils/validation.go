@@ -1,7 +1,7 @@
 package utils
 
 import (
-	req "boilerplate-backend-go/dto/request"
+	req "boilerplate-back-go-2411/dto/request"
 	"fmt"
 	"strings"
 )

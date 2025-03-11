@@ -1,13 +1,13 @@
 package api
 
 import (
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/dto/response"
-	Status "boilerplate-backend-go/errors"
-	"boilerplate-backend-go/middleware"
-	"boilerplate-backend-go/utils"
+	"boilerplate-back-go-2411/dto/request"
+	"boilerplate-back-go-2411/dto/response"
+	Status "boilerplate-back-go-2411/errors"
+	"boilerplate-back-go-2411/middleware"
+	"boilerplate-back-go-2411/utils"
 
-	// "boilerplate-backend-go/utils"
+	// "boilerplate-back-go-2411/utils"
 	// "encoding/json"
 	// "fmt"
 	"net/http"

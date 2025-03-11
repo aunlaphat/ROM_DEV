@@ -1,12 +1,12 @@
 package api
 
 import (
-	Errors "boilerplate-backend-go/errors"
+	Errors "boilerplate-back-go-2411/errors"
 	"errors"
 	"fmt"
 	"net/http"
 
-	// "boilerplate-backend-go/errors"
+	// "boilerplate-back-go-2411/errors"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"

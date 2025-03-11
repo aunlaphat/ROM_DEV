@@ -1,9 +1,9 @@
 package repository
 
 import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/utils"
+	request "boilerplate-back-go-2411/dto/request"
+	response "boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/utils"
 	"context"
 	"database/sql"
 	"errors"

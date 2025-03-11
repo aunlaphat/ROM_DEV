@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/middleware"
+	"boilerplate-back-go-2411/dto/request"
+	"boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/middleware"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

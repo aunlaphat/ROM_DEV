@@ -1,8 +1,8 @@
 package api
 
 import (
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/middleware"
+	"boilerplate-back-go-2411/dto/request"
+	"boilerplate-back-go-2411/middleware"
 	"database/sql"
 	"errors"
 	"fmt"

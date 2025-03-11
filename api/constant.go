@@ -2,7 +2,7 @@ package api
 
 //for dropdown
 import (
-	Status "boilerplate-backend-go/errors"
+	Status "boilerplate-back-go-2411/errors"
 	"database/sql"
 	"errors"
 	"net/http"

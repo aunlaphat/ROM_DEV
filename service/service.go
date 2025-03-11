@@ -1,8 +1,8 @@
 package service
 
 import (
-	"boilerplate-backend-go/logs"
-	"boilerplate-backend-go/repository"
+	"boilerplate-back-go-2411/logs"
+	"boilerplate-back-go-2411/repository"
 
 	"github.com/jmoiron/sqlx"
 )

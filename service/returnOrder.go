@@ -1,10 +1,10 @@
 package service
 
 import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
-	"boilerplate-backend-go/utils"
+	request "boilerplate-back-go-2411/dto/request"
+	response "boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/errors"
+	"boilerplate-back-go-2411/utils"
 	"context"
 
 	"go.uber.org/zap"

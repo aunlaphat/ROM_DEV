@@ -1,7 +1,7 @@
 package api
 
 import (
-	"boilerplate-backend-go/utils"
+	"boilerplate-back-go-2411/utils"
 	"context"
 	"errors"
 	"fmt"

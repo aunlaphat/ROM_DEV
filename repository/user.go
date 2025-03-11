@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/entity"
-	"boilerplate-backend-go/errors"
+	"boilerplate-back-go-2411/dto/request"
+	"boilerplate-back-go-2411/entity"
+	"boilerplate-back-go-2411/errors"
 )
 
 type UserRepository interface {
