@@ -49,3 +49,53 @@ export const FETCHUSERBYID = USER.LIST; // Note: should be used with specific ID
 export const ADDUSER = USER.ADD;
 export const EDITUSER = USER.EDIT(""); // Note: requires ID
 export const DELETEUSER = USER.DELETE(""); // Note: requires ID
+
+// endpoints - Trade Return (offline)
+export const TRADE = {
+  SEARCHDATEWAITING: `/trade-return/search-waiting`,
+  SEARCHDATECONFIRM: `/trade-return/search-confirm`,
+  GETWAITING: `/trade-return/get-waiting`,
+  GETCONFIRM: `/trade-return/get-confirm`,
+  GETORDERLINE: (OrderNo: string) => `/return-order/get-lines/${OrderNo}`,
+};
+
+// Export individual endpoints for backward compatibility
+export const SEARCHDATEWAITING = TRADE.SEARCHDATEWAITING;
+export const SEARCHDATECONFIRM = TRADE.SEARCHDATECONFIRM;
+export const FETCHWAITING = TRADE.GETWAITING;
+export const FETCHCONFIRM = TRADE.GETCONFIRM;
+export const FETCHORDERLINE = TRADE.GETORDERLINE;
+
+// endpoints - Import Order Return to Ware House
+export const IMPORTORDER = {
+  GETORDERTRACK: `/import-order/get-order-tracking`,
+  SEARCHORDERTRACK: (value: string) => `/import-order/search-order-tracking?search=${value}`,
+};
+
+// Export individual endpoints for backward compatibility
+export const FETCHORDERTRACK = IMPORTORDER.GETORDERTRACK;
+export const SEARCHORDERTRACK = IMPORTORDER.SEARCHORDERTRACK;
+
+// endpoints - Constants
+export const CONSTANT = {
+  GETCUSTOMER: `/constants/get-customer-id`,
+  GETCUSTOMERINFO: (value: string) => `/constants/get-customer-info?customerID=${value}`,
+  SEARCHINVOICE: `/constants/search-invoice-names`,
+  GETPROVINCES: `/constants/get-provinces`,
+  GETDISTRICT: (province: number) => `/constants/get-district?provinceCode=${province}`,
+  GETSUBDISTRICT: (district: number) => `/constants/get-sub-district?districtCode=${district}`,
+  GETPOSTALCODE: (subDistrict: number) => `/constants/get-postal-code?subdistrictCode=${subDistrict}`,
+  SEARCHPRODUCT: `/constants/search-product`,
+  GETSKU: `/constants/get-sku`
+};
+
+// Export individual endpoints for backward compatibility
+export const FETCHCUSTOMER = CONSTANT.GETCUSTOMER;
+export const FETCHCUSTOMERINFO = CONSTANT.GETCUSTOMERINFO;
+export const SEARCHINVOICE = CONSTANT.SEARCHINVOICE;
+export const FETCHPROVINCES = CONSTANT.GETPROVINCES;
+export const FETCHDISTRICT = CONSTANT.GETDISTRICT;
+export const FETCHSUBDISTRICT = CONSTANT.GETSUBDISTRICT;
+export const FETCHPOSTALCODE = CONSTANT.GETPOSTALCODE;
+export const SEARCHPRODUCT = CONSTANT.SEARCHPRODUCT;
+export const FETCHSKU = CONSTANT.GETSKU;

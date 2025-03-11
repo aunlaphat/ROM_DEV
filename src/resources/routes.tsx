@@ -7,16 +7,10 @@ import { Login } from "../screens/auth";
 import { NotFound } from "../screens/NotFound";
 import CreateReturnOrderMKP from "../screens/Orders/Marketplace";
 import { DraftAndConfirm } from "../screens/Draft&Confirm";
-// import { ConfirmReturnTrade } from "../screens/ConfirmReturnTrade";
 import { Report } from "../screens/Report";
 import { ManageUser } from "../screens/ManageUser";
-
 import ImportOrder from "../screens/Return_import/Import_Return_Order";
 import ReturnOrder from "../screens/Return/Returnorder";
-
-// import CreateReturn from "../screens/CreateReturn/CreateReturn"; // หน้าเลือก SR/IJ
-// import SRPage from "../screens/CreateReturn/SR";
-
 import IJPage from "../screens/CreateReturn/IJ";
 import CreateTradeReturn from "../screens/CreateTradeReturn/CreateTradeReturn";
 import ConfirmReturnTrade from "../screens/ConfirmReturnTrade/ConfirmReturnTrade";
@@ -24,11 +18,6 @@ import OtherReturn from "../screens/SaleReturn/SR/OtherReturn";
 import SaleReturn from "../screens/SaleReturn/Sale_Return";
 import CreateBlindReturn from "../screens/Create_Blind/CreateBlindReturn";
 import TakePicture from "../screens/Create_Blind/Takepicture";
-
-// import Report from "../screens/Report/Report";
-// import DraftandConfirm from "../screens/Draft&Confirm/Draft&Confirm";
-// import ManageUser from "../screens/ManageUser/Manageuser";
-
 
 export const ROUTE_LOGIN = process.env.REACT_APP_FRONTEND_URL + "/";
 
@@ -43,13 +32,9 @@ type RouteType = {
 export type RoutesType = {
   ROUTE_MAIN: RouteType;
   ROUTE_NOTFOUND: RouteType;
-
   ROUTE_IMPORTORDER: RouteType;
   ROUTE_RETURNORDER: RouteType;
-  // ROUTE_CREATERETURN: RouteType;
-
   ROUTE_CREATERETURNORDERMKP: RouteType;
-
   ROUTE_IJ: RouteType;
   ROUTE_CREATETRADERETURN: RouteType;
   ROUTE_CONFIRMRETURNTRADE: RouteType;
@@ -57,7 +42,6 @@ export type RoutesType = {
   ROUTE_OTHERRETURN: RouteType;
   ROUTE_CREATEBLINDRETURN: RouteType;
   ROUTE_TAKEPICTURE: RouteType;
-
   ROUTE_REPORT: RouteType;
   ROUTE_DRAFTANDCONFIRM: RouteType;
   ROUTE_MANAGEUSER: RouteType;
@@ -92,59 +76,52 @@ export const ROUTES: RoutesType = {
     COMPONENT: ReturnOrder,
     ELEMENT: () => <ReturnOrder />,
   },
-  // ROUTE_CREATERETURN: {
-  //   KEY: "createReturn",
-  //   PATH: "/create-return",
-  //   LABEL: "สร้างรายการคืนสินค้า",
-  //   COMPONENT: CreateReturn,
-  //   ELEMENT: () => <CreateReturn />,
-  // },
   ROUTE_CREATERETURNORDERMKP: {
     KEY: "createReturnOrderMKP",
     PATH: "/create-return-order-mkp",
-    LABEL: "Create Return Order MKP",
+    LABEL: "ออนไลน์",
     COMPONENT: CreateReturnOrderMKP,
     ELEMENT: () => <CreateReturnOrderMKP />,
   },
   ROUTE_IJ: {
     KEY: "ij",
     PATH: "/ij",
-    LABEL: "IJ",
+    LABEL: "ภายในบริษัท",
     COMPONENT: IJPage,
     ELEMENT: () => <IJPage />,
   },
   ROUTE_CREATETRADERETURN: {
     KEY: "createTradeReturn",
     PATH: "/create-trade-return",
-    LABEL: "สร้างรายการคืนสินค้าสำหรับฝ่ายค้าขาย",
+    LABEL: "หน้าสาขา",
     COMPONENT: CreateTradeReturn,
     ELEMENT: () => <CreateTradeReturn />,
   },
   ROUTE_CONFIRMRETURNTRADE: {
     KEY: "confirmReturnTrade",
     PATH: "/confirm-return-trade",
-    LABEL: "Confirm Return Trade",
+    LABEL: "Confirm Trade Return",
     COMPONENT: ConfirmReturnTrade,
     ELEMENT: () => <ConfirmReturnTrade />,
   },
   ROUTE_OTHERRETURN: {
     KEY: "otherReturn",
     PATH: "/other-return",
-    LABEL: "การคืนสินค้าอื่นๆ",
+    LABEL: "สินค้าอื่น ๆ",
     COMPONENT: OtherReturn,
     ELEMENT: () => <OtherReturn />,
   },
   ROUTE_SALERETURN: {
     KEY: "saleReturn",
     PATH: "/sale-return",
-    LABEL: "การคืนสินค้าฝ่ายขาย",
+    LABEL: "สินค้าทั่วไป",
     COMPONENT: SaleReturn,
     ELEMENT: () => <SaleReturn />,
   },
   ROUTE_CREATEBLINDRETURN: {
     KEY: "createBlindReturn",
     PATH: "/create-blind-return",
-    LABEL: "สร้างรายการคืนสินค้าสำหรับการตรวจสอบ",
+    LABEL: "หน้าคลังสินค้า",
     COMPONENT: CreateBlindReturn,
     ELEMENT: () => <CreateBlindReturn />,
   },

@@ -6,51 +6,18 @@ import * as XLSX from "xlsx";
 import Popup from "reactjs-popup";
 import icon from "../../assets/images/document-text.png";
 import api from "../../utils/axios/axiosInstance"; 
-
+import { useSelector } from 'react-redux';
+import { RootState } from "../../redux/types";
+import { Address, Customer, DataItem, Product } from '../../types/types';
 const { Option } = Select;
-
-interface Address {
-  provicesTH: string;
-  provinceCode: number;
-  districtTH: string;
-  districtCode: number;
-  subdistrictTH: string;
-  subdistrictCode: number;
-  zipCode: number;
-}
-
-interface Customer {
-  Key: number;
-  customerID: string;
-  customerName: string;
-  address: string;
-  taxID: string;
-}
-
-interface DataItem {
-  key: number;
-  SKU: string; 
-  Name: string;
-  QTY: number;
-  Price: number;
-}
-
-interface Product {
-  Key: string;
-  sku: string;
-  nameAlias: string;
-  size: string;
-}
 
 const CreateTradeReturn = () => {
   const [isSaving, setIsSaving] = useState(false);
-  const [invoiceAddress, setInvoiceAddress] = useState("");
   const [open, setOpen] = useState(false);
-  const [form] = Form.useForm(); // หลัก
+  const [form] = Form.useForm(); 
   const [formValid, setFormValid] = useState(false);
-  const [formaddress] = Form.useForm(); // ใช้ใน modal
+  const [formaddress] = Form.useForm(); 
   const [dataSource, setDataSource] = useState<DataItem[]>([]);
-  const [isInvoiceEnabled, setIsInvoiceEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [provinces, setProvinces] = useState<Address[]>([]);
@@ -64,18 +31,23 @@ const CreateTradeReturn = () => {
   const [selectedDistrict, setSelectedDistrict] = useState<string>(""); 
   const [selectedSubDistrict, setSelectedSubDistrict] = useState<string>(""); 
 
-  const [customerAccounts, setCustomerAccounts] = useState<Customer[]>([]); // เก็บข้อมูล customer accounts
-  const [selectedAccount, setSelectedAccount] = useState<Customer | null>(null); // เก็บข้อมูล customer ที่เลือก
-  const [invoiceNames, setInvoiceNames] = useState<any[]>([]); // เก็บข้อมูล invoice names
-  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null); // เก็บข้อมูล invoice ที่เลือก
+  const [customerAccounts, setCustomerAccounts] = useState<Customer[]>([]); 
+  const [selectedAccount, setSelectedAccount] = useState<Customer | null>(null); 
+  const [invoiceNames, setInvoiceNames] = useState<any[]>([]); 
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null); 
 
-  const [skuOptions, setSkuOptions] = useState<Product[]>([]); // To store SKU options
-  const [nameOptions, setNameOptions] = useState<Product[]>([]); // To store Name Alias options
+  const [skuOptions, setSkuOptions] = useState<Product[]>([]); 
+  const [nameOptions, setNameOptions] = useState<Product[]>([]); 
   const [selectedSKU, setSelectedSKU] = useState<string | undefined>(undefined);
   const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
   const [price, setPrice] = useState<number | null>(null); 
   const [qty, setQty] = useState<number | null>(null); 
 
+  // ดึงข้อมูลผู้ใช้ที่เข้าสู่ระบบ
+  const auth = useSelector((state: RootState) => state.auth);
+  const userID = auth?.user?.userID;
+
+  const token = localStorage.getItem("access_token");
   /*** Customer&Invoice ***/
   useEffect(() => {
     const fetchCustomerAccounts = async () => {
@@ -648,77 +620,77 @@ const CreateTradeReturn = () => {
     setFormValid(Date && SKU && QTY);
   };
 
-   const handleSubmit = async () => {
+     const handleSubmit = async () => {
       try {
-          // ตรวจสอบว่ามีข้อมูลในตารางอย่างน้อยหนึ่งรายการ
-          if (dataSource.length === 0) {
-              notification.warning({
-                  message: "ไม่สามารถส่งข้อมูลได้",
-                  description: "กรุณาเพิ่มข้อมูลในตารางก่อนส่ง!",
-              });
-              return; // หยุดการทำงานของฟังก์ชัน
-          }
-  
-          // ดึงค่าจากฟอร์ม
-          const values = await form.validateFields();
-  
-          // เตรียมข้อมูลสำหรับส่งไปยัง API
-          const requestData = {
-              OrderNo: values.Doc,
-              SoNo: values.Doc, // ใช้ Doc เป็น SoNo
-              SrNo: "", // กำหนดค่า SrNo ตามที่ต้องการ
-              ChannelID: 2, // กำหนดค่า ChannelID ตามที่ต้องการ
-              CustomerID: selectedAccount?.customerID,
-              TrackingNo: values.Tracking,
-              Logistic: values.Logistic,
-              // WarehouseID: "", // กำหนดค่า WarehouseID ตามที่ต้องการ
-              // SoStatus: "", // กำหนดค่า SoStatus ตามที่ต้องการ
-              // MkpStatus: "", // กำหนดค่า MkpStatus ตามที่ต้องการ
-              // ReturnDate: new Date().toISOString(), // กำหนดค่า ReturnDate เป็นวันที่ปัจจุบัน
-              StatusReturnID: 3, // กำหนดค่า StatusReturnID ตามที่ต้องการ
-              // StatusConfID: "", // กำหนดค่า StatusConfID ตามที่ต้องการ
-              // ConfirmBy: "", // กำหนดค่า ConfirmBy ตามที่ต้องการ
-              CreateBy: "", // กำหนดค่า CreateBy ตามที่ต้องการ
-              BeforeReturnOrderLines: dataSource.map(item => ({
-                  SKU: item.SKU,
-                  ItemName: item.Name,
-                  ReturnQTY: item.QTY, // กำหนดค่า ReturnQTY ตามที่ต้องการ
-                  Price: item.Price,
-                  TrackingNo: values.Tracking,
-              })),
-          };
-  
-          // ส่งข้อมูลไปยัง API
-          const response = await api.post('/api/trade-return/create-trade', requestData);
-  
-          // ตรวจสอบผลลัพธ์จาก API
-          if (response.status === 201) {
-              notification.success({
-                  message: "ส่งข้อมูลสำเร็จ",
-                  description: "ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!",
-              });
-  
-              // รีเซ็ตฟอร์มและตาราง
-              form.resetFields();
-              formaddress.resetFields();
-              setSelectedAccount(null);
-              setSelectedInvoice(null);
-              setInvoiceNames([]);
-              setDataSource([]);
-          } else {
-              notification.error({
-                  message: "เกิดข้อผิดพลาด",
-                  description: "ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
-              });
-          }
-      } catch (error) {
-          console.error("Error submitting data:", error);
-          notification.error({
-              message: "เกิดข้อผิดพลาด",
-              description: "ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+        // ตรวจสอบว่ามีข้อมูลในตารางอย่างน้อยหนึ่งรายการ
+        if (dataSource.length === 0) {
+          notification.warning({
+            message: "ไม่สามารถส่งข้อมูลได้",
+            description: "กรุณาเพิ่มข้อมูลในตารางก่อนส่ง!",
           });
+          return; // หยุดการทำงานของฟังก์ชัน
+        }
+    
+        // ดึงค่าจากฟอร์ม
+        const values = await form.validateFields();
+    
+        // เตรียมข้อมูลสำหรับส่งไปยัง API
+        const requestData = {
+          OrderNo: values.Doc,
+          SoNo: values.Doc, // ใช้ Doc เป็น SoNo
+          ChannelID: 2, // กำหนดค่า ChannelID ตามที่ต้องการ
+          CustomerID: selectedAccount?.customerID,
+          TrackingNo: values.Tracking,
+          Logistic: values.Logistic,
+          StatusReturnID: 3, // กำหนดค่า StatusReturnID ตามที่ต้องการ
+          CreateBy: userID, // เพิ่ม userID ที่เข้าสู่ระบบในฟิลด์ CreateBy
+          BeforeReturnOrderLines: dataSource.map(item => ({
+            SKU: item.SKU,
+            ItemName: item.Name,
+            ReturnQTY: item.QTY, // กำหนดค่า ReturnQTY ตามที่ต้องการ
+            Price: item.Price,
+            TrackingNo: values.Tracking,
+          })),
+        };
+    
+        // ดึงโทเค็นจาก Local Storage
+        const token = localStorage.getItem('access_token');
+    
+        // ส่งข้อมูลไปยัง API
+        const response = await api.post('/api/trade-return/create-trade', requestData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+    
+        // ตรวจสอบผลลัพธ์จาก API
+        if (response.status === 200) {
+          notification.success({
+            message: "ส่งข้อมูลสำเร็จ",
+            description: "ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!",
+          });
+    
+          // รีเซ็ตฟอร์มและตาราง
+          form.resetFields();
+          formaddress.resetFields();
+          setSelectedAccount(null);
+          setSelectedInvoice(null);
+          setInvoiceNames([]);
+          setDataSource([]);
+        } else {
+          notification.error({
+            message: "เกิดข้อผิดพลาด",
+            description: "ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+          });
+        }
+      } catch (error) {
+        console.error("Error submitting data:", error);
+        notification.error({
+          message: "เกิดข้อผิดพลาด",
+          description: "ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+        });
       }
-  };
+    };
 
   return (
     <ConfigProvider>
