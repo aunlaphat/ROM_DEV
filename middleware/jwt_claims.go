@@ -49,8 +49,8 @@ func JWTMiddleware(tokenAuth *jwtauth.JWTAuth) gin.HandlerFunc {
 		c.Set("UserID", userID)
 		c.Set("RoleID", roleID)
 
-		// ✅ Debug พิมพ์ค่า UserID & RoleID ออกมา
-		fmt.Printf("🔍 Debug JWT Claims: UserID=%s, RoleID=%d\n", userID, roleID)
+		// ✅ Debug Mode - แสดง Claims ทั้งหมด
+		fmt.Printf("🔍 JWT Debug - UserID=%s, RoleID=%d, Claims=%v\n", userID, roleID, claims)
 
 		// ✅ เซ็ตค่า Claims ตามแหล่งที่มา
 		if source == "header" {
@@ -100,7 +100,7 @@ func parseToken(c *gin.Context, tokenAuth *jwtauth.JWTAuth, tokenString string) 
 func getUserIDFromClaims(claims map[string]interface{}) (string, error) {
 	userID, exists := claims["userID"].(string)
 	if !exists {
-		return "", errors.New("unauthorized - missing userID in token")
+		return "", errors.New("unauthorized - missing UserID in token")
 	}
 	return userID, nil
 }

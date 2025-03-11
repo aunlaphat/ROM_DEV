@@ -8,78 +8,45 @@ definitions:
       success:
         type: boolean
     type: object
-  entity.District:
+  request.AddItem:
     properties:
-      districtCode:
+      itemName:
+        type: string
+      orderNo:
+        type: string
+      price:
+        type: number
+      qty:
         type: integer
-      districtTH:
-        type: string
-      provinceCode:
+      returnQTY:
         type: integer
-    type: object
-  entity.InvoiceInformation:
-    properties:
-      address:
-        type: string
-      customerID:
-        type: string
-      customerName:
-        description: ใช้เป็น CustomerName and InvoiceName
-        type: string
-      taxID:
-        type: string
-    type: object
-  entity.Province:
-    properties:
-      provicesTH:
-        type: string
-      provinceCode:
-        type: integer
-    type: object
-  entity.ROM_V_ProductAll:
-    properties:
-      barcode:
-        description: บาร์โค้ดของสินค้า
-        type: string
-      nameAlias:
-        description: ชื่อย่อของสินค้า
-        type: string
-      size:
-        description: ขนาดของสินค้า
-        type: string
-      sizeID:
-        description: รหัสขนาดของสินค้า
-        type: string
       sku:
-        description: รหัสสินค้า
-        type: string
-      type:
-        description: ประเภทของสินค้า
         type: string
     type: object
-  entity.SubDistrict:
+  request.AddUserRequest:
     properties:
-      districtCode:
+      roleID:
+        description: รหัส Role
         type: integer
-      subdistrictCode:
-        type: integer
-      subdistrictTH:
-        type: string
-    type: object
-  entity.Warehouse:
-    properties:
-      location:
-        description: ที่ตั้งของคลังสินค้า
+      userID:
+        description: รหัสผู้ใช้
         type: string
       warehouseID:
-        description: รหัสคลังสินค้า (PK - Auto Increment)
-        type: integer
-      warehouseName:
-        description: ชื่อคลังสินค้า
+        description: คลังสินค้า
         type: string
+    required:
+    - roleID
+    - userID
+    - warehouseID
     type: object
-  gin.H:
-    additionalProperties: {}
+  request.CancelOrder:
+    properties:
+      cancelReason:
+        type: string
+      refID:
+        type: string
+      sourceTable:
+        type: string
     type: object
   request.BeforeReturnOrder:
     properties:
@@ -260,58 +227,19 @@ definitions:
     - returnQty
     - sku
     type: object
-  request.CreateReturnOrder:
+  request.EditUserRequest:
     properties:
-      ReturnOrderLine:
-        items:
-          $ref: '#/definitions/request.ReturnOrderLine'
-        type: array
-      axStatusId:
-        example: 1
+      roleID:
+        description: รหัส Role ใหม่
         type: integer
-      channelId:
-        example: 2
-        type: integer
-      description:
-        example: ""
+      userID:
+        description: รหัสผู้ใช้ที่ต้องการแก้ไข
         type: string
-      optStatusId:
-        example: 1
-        type: integer
-      orderNo:
-        example: ORD0001
+      warehouseID:
+        description: คลังสินค้าใหม่
         type: string
-      platfId:
-        example: 1
-        type: integer
-      platfStatusId:
-        example: 1
-        type: integer
-      reason:
-        type: string
-      soNo:
-        example: SO0001
-        type: string
-      srNo:
-        example: SR0001
-        type: string
-      statusCheckId:
-        example: 1
-        type: integer
-      trackingNo:
-        example: 12345678TH
-        type: string
-    type: object
-  request.ImportLinesActual:
-    properties:
-      actualQty:
-        type: integer
-      price:
-        type: number
-      sku:
-        type: string
-      statusDelete:
-        type: boolean
+    required:
+    - userID
     type: object
   request.LoginLark:
     properties:
@@ -332,10 +260,16 @@ definitions:
         example: eknarin.ler
         type: string
     type: object
-  request.OrderLines:
+  response.AddItemResponse:
     properties:
+      createBy:
+        type: string
+      createDate:
+        type: string
       itemName:
         type: string
+      orderNo:
+        type: string
       price:
         type: number
       qty:
@@ -345,89 +279,19 @@ definitions:
       sku:
         type: string
     type: object
-  request.ReturnOrderLine:
+  response.AddUserResponse:
     properties:
-      price:
-        example: 199.99
-        type: number
-      qty:
-        example: 5
-        type: integer
-      returnQTY:
-        example: 5
-        type: integer
-      sku:
-        example: SKU12345
+      createdBy:
+        description: ผู้สร้าง
         type: string
-    type: object
-  request.TradeReturnLine:
-    properties:
-      tradeReturnLine:
-        items:
-          $ref: '#/definitions/request.OrderLines'
-        type: array
-    type: object
-  request.TradeReturnLineRequest:
-    properties:
-      filePath:
-        description: CreateDate *time.Time `json:"createDate" db:"CreateDate"` //
-          MSSQL GetDate()
+      roleID:
+        description: รหัส Role ที่เพิ่มให้
+        type: integer
+      userID:
+        description: รหัสพนักงานที่เพิ่ม
         type: string
-      imageTypeID:
-        description: เข้า Images
-        type: integer
-      price:
-        type: number
-      qty:
-        description: ItemName  string  `json:"itemName" db:"ItemName"`
-        type: integer
-      returnQty:
-        type: integer
-      sku:
-        type: string
-    type: object
-  request.UpdateReturnOrder:
-    properties:
-      axStatusId:
-        example: 1
-        type: integer
-      cancelId:
-        example: 1
-        type: integer
-      channelId:
-        example: 2
-        type: integer
-      checkBy:
-        example: dev03
-        type: string
-      description:
-        example: ""
-        type: string
-      optStatusId:
-        example: 1
-        type: integer
-      platfId:
-        example: 1
-        type: integer
-      platfStatusId:
-        example: 1
-        type: integer
-      reason:
-        example: CHANGE PRODUCTS
-        type: string
-      srNo:
-        example: SR0001
-        type: string
-      statusCheckId:
-        example: 1
-        type: integer
-      trackingNo:
-        example: 12345678TH
-        type: string
-    type: object
-  request.UpdateToReturn:
-    properties:
-      srNo:
+      warehouseID:
+        description: รหัสคลังสินค้า
         type: string
     type: object
   response.BeforeReturnOrderItem:
@@ -506,118 +370,20 @@ definitions:
       warehouseId:
         type: integer
     type: object
-  response.ConfirmReceipt:
+  response.CancelOrderResponse:
     properties:
-      identifier:
+      cancelBy:
         type: string
-      statusCheckID:
+      cancelDate:
         type: string
-      statusReturnID:
+      cancelReason:
         type: string
-      updateBy:
+      refID:
         type: string
-      updateDate:
+      sourceTable:
         type: string
     type: object
-  response.ConfirmToReturnOrder:
-    properties:
-      orderNo:
-        type: string
-      statusCheckID:
-        type: string
-      statusReturnID:
-        type: string
-      updateBy:
-        type: string
-      updateDate:
-        type: string
-    type: object
-  response.CreateReturnOrder:
-    properties:
-      ReturnOrderLine:
-        items:
-          $ref: '#/definitions/response.ReturnOrderLine'
-        type: array
-      axStatusId:
-        example: 1
-        type: integer
-      channelId:
-        example: 2
-        type: integer
-      createBy:
-        type: string
-      createDate:
-        type: string
-      description:
-        example: ""
-        type: string
-      optStatusId:
-        example: 1
-        type: integer
-      orderNo:
-        example: ORD0001
-        type: string
-      platfId:
-        example: 1
-        type: integer
-      platfStatusId:
-        example: 1
-        type: integer
-      reason:
-        type: string
-      soNo:
-        example: SO0001
-        type: string
-      srNo:
-        example: SR0001
-        type: string
-      statusCheckId:
-        example: 1
-        type: integer
-      trackingNo:
-        example: 12345678TH
-        type: string
-    type: object
-  response.DeleteReturnOrder:
-    properties:
-      orderNo:
-        type: string
-    type: object
-  response.DraftTradeDetail:
-    properties:
-      channelId:
-        example: 2
-        type: integer
-      createBy:
-        type: string
-      createDate:
-        type: string
-      orderNo:
-        example: ORD0001
-        type: string
-      reason:
-        type: string
-      soNo:
-        example: SO0001
-        type: string
-      srNo:
-        example: SR0001
-        type: string
-      statusCheckId:
-        example: 1
-        type: integer
-      trackingNo:
-        example: 12345678TH
-        type: string
-    type: object
-  response.ImageResponse:
-    properties:
-      filePath:
-        type: string
-      imageID:
-        type: integer
-    type: object
-  response.ImportOrderLineResponse:
+  response.DraftConfirmItem:
     properties:
       itemName:
         type: string
@@ -629,146 +395,90 @@ definitions:
         type: integer
       sku:
         type: string
-      trackingNo:
-        type: string
     type: object
-  response.ImportOrderResponse:
+  response.DraftConfirmResponse:
     properties:
-      createDate:
-        type: string
-      orderLines:
+      items:
         items:
-          $ref: '#/definitions/response.ImportOrderLineResponse'
+          $ref: '#/definitions/response.DraftConfirmItem'
         type: array
       orderNo:
-        type: string
-      soNo:
-        type: string
-      trackingNo:
-        type: string
-    type: object
-  response.ImportOrderSummary:
-    properties:
-      orderNo:
-        type: string
-      photo:
-        type: string
-      sku:
-        type: string
-    type: object
-  response.OrderDetail:
-    properties:
-      OrderHeadDetail:
-        description: json => OrderHeadDetail[ OrderLineDetail[ {},{},..] ]
-        items:
-          $ref: '#/definitions/response.OrderHeadDetail'
-        type: array
-    type: object
-  response.OrderHeadDetail:
-    properties:
-      OrderLineDetail:
-        items:
-          $ref: '#/definitions/response.OrderLineDetail'
-        type: array
-      orderNo:
-        description: เลขที่ใบสั่งซื้อ
-        type: string
-      salesStatus:
-        description: สถานะการขาย
-        type: string
-      soNo:
-        description: เลขที่ใบสั่งขาย
-        type: string
-      statusMKP:
-        description: สถานะในตลาด
-        type: string
-    type: object
-  response.OrderLineDetail:
-    properties:
-      itemName:
-        description: ชื่อสินค้า
-        type: string
-      price:
-        description: ราคาต่อหน่วย
-        type: number
-      qty:
-        description: จำนวนสินค้า
-        type: integer
-      sku:
-        description: รหัสสินค้า
-        type: string
-    type: object
-  response.ReturnOrder:
-    properties:
-      ReturnOrderLine:
-        items:
-          $ref: '#/definitions/response.ReturnOrderLine'
-        type: array
-      axStatusId:
-        type: integer
-      cancelId:
-        type: integer
-      channelId:
-        type: integer
-      checkBy:
-        type: string
-      checkDate:
-        type: string
-      createBy:
-        type: string
-      createDate:
-        type: string
-      description:
-        type: string
-      optStatusId:
-        type: integer
-      orderNo:
-        type: string
-      platfId:
-        type: integer
-      platfStatusId:
-        type: integer
-      reason:
         type: string
       soNo:
         type: string
       srNo:
         type: string
-      statusCheckId:
+    type: object
+  response.EditUserResponse:
+    properties:
+      roleID:
+        description: Role ID เดิม
         type: integer
-      trackingNo:
+      roleName:
+        description: ชื่อ Role เดิม
         type: string
-      updateBy:
+      updatedAt:
+        description: เวลาที่อัปเดตล่าสุด
         type: string
-      updateDate:
+      updatedBy:
+        description: ผู้ที่ทำการแก้ไข
+        type: string
+      userID:
+        description: รหัสพนักงานที่แก้ไข
+        type: string
+      warehouseID:
+        description: รหัสคลังสินค้าเดิม
+        type: integer
+      warehouseName:
+        description: ชื่อคลังสินค้าเดิม
         type: string
     type: object
-  response.ReturnOrderLine:
+  response.ListCodeRResponse:
     properties:
-      actualQTY:
+      nameAlias:
+        type: string
+      sku:
+        type: string
+    type: object
+  response.Login:
+    properties:
+      departmentNo:
+        type: string
+      fullNameTH:
+        type: string
+      nickName:
+        type: string
+      platform:
+        type: string
+      roleID:
         type: integer
-      alterSKU:
+      roleName:
         type: string
-      createBy:
+      userID:
         type: string
+      userName:
+        type: string
+    type: object
+  response.OrderHeadResponse:
+    properties:
+      channelId:
+        type: integer
       createDate:
+        type: string
+      customerId:
+        type: string
+      logistic:
         type: string
       orderNo:
         type: string
-      price:
-        type: number
-      qty:
-        type: integer
-      returnQTY:
-        type: integer
-      sku:
+      soNo:
+        type: string
+      srNo:
         type: string
       trackingNo:
         type: string
-      updateBy:
-        type: string
-      updateDate:
-        type: string
+      warehouseId:
+        type: integer
     type: object
   response.SearchOrderItem:
     properties:
@@ -870,40 +580,49 @@ definitions:
       updateDate:
         type: string
     type: object
-  response.User:
+  response.UserResponse:
     properties:
+      createdAt:
+        description: เวลาสร้างบัญชี
+        type: string
       departmentNo:
-        type: string
-      fullNameTH:
-        type: string
-      nickName:
-        type: string
-      platform:
-        type: string
-      roleID:
-        type: integer
-      userID:
-        type: string
-      userName:
-        type: string
-    type: object
-  response.UserRole:
-    properties:
-      departmentNo:
+        description: รหัสแผนก
         type: string
       description:
+        description: คำอธิบาย Role
         type: string
       fullNameTH:
+        description: ชื่อเต็มภาษาไทย
+        type: string
+      isActive:
+        description: สถานะบัญชี (Active/Inactive)
+        type: boolean
+      lastLoginAt:
+        description: เวลาล็อกอินล่าสุด (optional)
         type: string
       nickName:
+        description: ชื่อเล่น
         type: string
       roleID:
+        description: รหัสบทบาท
         type: integer
       roleName:
+        description: ชื่อบทบาท
+        type: string
+      updatedAt:
+        description: เวลาล่าสุดที่มีการอัปเดต (optional)
         type: string
       userID:
+        description: รหัสพนักงาน
         type: string
       userName:
+        description: ชื่อผู้ใช้
+        type: string
+      warehouseID:
+        description: รหัสคลังสินค้า
+        type: integer
+      warehouseName:
+        description: ชื่อคลังสินค้า
         type: string
     type: object
 info:
@@ -945,7 +664,7 @@ paths:
         "200":
           description: JWT token
           schema:
-            $ref: '#/definitions/response.User'
+            $ref: '#/definitions/response.Login'
         "400":
           description: Bad Request
           schema:
@@ -975,7 +694,7 @@ paths:
         "200":
           description: JWT token
           schema:
-            $ref: '#/definitions/response.User'
+            $ref: '#/definitions/response.Login'
         "400":
           description: Bad Request
           schema:
@@ -998,14 +717,161 @@ paths:
       summary: User Logout
       tags:
       - Authentication
-  /before-return-order/delete-line/{orderNo}/{sku}:
+  /draft-confirm/add-item/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Adds an item to an existing draft order
+      operationId: add-item-to-draft
+      parameters:
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: Item Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AddItem'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.AddItemResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Add Item to Draft Order
+      tags:
+      - Draft & Confirm MKP
+  /draft-confirm/list-codeR:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of CodeR (SKU starting with 'R')
+      operationId: get-list-codeR
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.ListCodeRResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get List of CodeR
+      tags:
+      - Draft & Confirm MKP
+  /draft-confirm/order/details:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves details of an order including items
+      operationId: get-order-with-items
+      parameters:
+      - description: StatusConfID (1 = Draft, 2 = Confirm)
+        in: query
+        name: statusConfID
+        required: true
+        type: integer
+      - description: Order Number
+        in: query
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.DraftConfirmResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Order Details with Items
+      tags:
+      - Draft & Confirm MKP
+  /draft-confirm/orders:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all orders filtered by StatusConfID and Date Range
+      operationId: get-orders
+      parameters:
+      - description: StatusConfID (1 = Draft, 2 = Confirm)
+        in: query
+        name: statusConfID
+        required: true
+        type: integer
+      - description: Start Date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        type: string
+      - description: End Date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.OrderHeadResponse'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get Draft or Confirm Orders
+      tags:
+      - Draft & Confirm MKP
+  /draft-confirm/remove-item/{orderNo}/{sku}:
     delete:
       consumes:
       - application/json
-      description: Delete an order line
-      operationId: delete-BeforeReturnOrderLine
+      description: Removes an item from a draft order
+      operationId: remove-item-from-draft
       parameters:
-      - description: Order No
+      - description: Order Number
         in: path
         name: orderNo
         required: true
@@ -1019,59 +885,39 @@ paths:
       - application/json
       responses:
         "200":
-          description: Before ReturnOrderLine Deleted
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  type: string
-              type: object
-        "404":
-          description: Order Not Found
+          description: OK
           schema:
             $ref: '#/definitions/api.Response'
-        "422":
-          description: Validation Error
+        "400":
+          description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Delete Order line
+      summary: Remove Item from Draft Order
       tags:
-      - Before Return Order
-  /before-return-order/get-orders:
-    get:
+      - Draft & Confirm MKP
+  /draft-confirm/update-status/{orderNo}:
+    patch:
       consumes:
       - application/json
-      description: Get all Before Return Order with pagination
-      operationId: Get-BefReturnOrder-Paginated
+      description: Updates a draft order to confirm status
+      operationId: confirm-draft-order
       parameters:
-      - default: 1
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 4
-        description: Page size
-        in: query
-        name: limit
-        type: integer
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Get Paginated Orders
+          description: OK
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.OrderDetail'
-                  type: array
+                data:
+                  $ref: '#/definitions/response.UpdateOrderStatusResponse'
               type: object
         "400":
           description: Bad Request
@@ -1085,583 +931,120 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Get Paginated Before Return Order
+      summary: Confirm Draft Order
       tags:
-      - Before Return Order
-  /before-return-order/search:
+      - Draft & Confirm MKP
+  /manage-users:
     get:
       consumes:
       - application/json
-      description: Get details of an order by its SoNo
-      operationId: SearchOrderDetail-BefReturnOrder
+      description: Retrieve user data filtered by isActive, with pagination
       parameters:
-      - description: soNo
+      - description: Filter by Active Status (true/false)
         in: query
-        name: soNo
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Orders retrieved by SoNo
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.OrderDetail'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: not found endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Before Return Order by SoNo
-      tags:
-      - Before Return Order
-  /constants/get-district:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a list of districts by province code
-      operationId: get-district-by-province
-      parameters:
-      - description: Province code
-        in: query
-        name: provinceCode
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of districts
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.District'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get District by ProvinceCode
-      tags:
-      - Constants
-  /constants/get-postal-code:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve postal code by subdistrict code
-      operationId: get-postalcode-by-subdistrict
-      parameters:
-      - description: Subdistrict code
-        in: query
-        name: subdistrictCode
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Postal code
-          schema:
-            type: string
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Postal Code by SubdistrictCode
-      tags:
-      - Constants
-  /constants/get-product:
-    get:
-      consumes:
-      - application/json
-      description: Get paginated products
-      operationId: get-productAll-paginated
-      parameters:
-      - default: 1
-        description: Page number
-        in: query
-        name: page
-        required: true
-        type: integer
-      - default: 4
-        description: Limit per page
+        name: isActive
+        type: boolean
+      - description: Limit (default 100)
         in: query
         name: limit
-        required: true
         type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Paginated Product List
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                ' total':
-                  type: integer
-                result:
-                  items:
-                    $ref: '#/definitions/entity.ROM_V_ProductAll'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get ProductAll with Pagination
-      tags:
-      - Constants
-  /constants/get-sub-district:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a list of subdistricts by district code
-      operationId: get-subdistrict-by-district
-      parameters:
-      - description: District code
-        in: query
-        name: districtCode
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of subdistricts
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.SubDistrict'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Subdistrict by DistrictCode
-      tags:
-      - Constants
-  /constants/get-warehouse:
-    get:
-      consumes:
-      - application/json
-      description: Get Warehouse
-      operationId: get-warehouse
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Warehouse
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.Warehouse'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: SubDistrict not found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Warehouse
-      tags:
-      - Constants
-  /constants/search-customer:
-    get:
-      consumes:
-      - application/json
-      description: Search for customers by CustomerID or InvoiceName with pagination
-        support (limit and offset)
-      operationId: search-customer
-      parameters:
-      - description: Search keyword
-        in: query
-        name: keyword
-        required: true
-        type: string
-      - description: Search by 'CustomerID' or 'InvoiceName'
-        in: query
-        name: searchType
-        required: true
-        type: string
-      - default: 0
-        description: Offset for pagination (default is 0)
+      - description: Offset (default 0)
         in: query
         name: offset
         type: integer
-      - default: 4
-        description: Limit for number of customers to return (default is 4)
-        in: query
-        name: limit
-        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: Search Results
+          description: OK
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
-                result:
+                data:
                   items:
-                    $ref: '#/definitions/entity.InvoiceInformation'
+                    $ref: '#/definitions/response.UserResponse'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
-        "404":
-          description: No matching customer found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Search Customer by CustomerID or InvoiceName
+      summary: Get list of users
       tags:
-      - Constants
-  /constants/search-product:
+      - User Management
+  /manage-users/{userID}:
     get:
       consumes:
       - application/json
-      description: Search for products by SKU or NAMEALIAS with pagination support
-        (limit and offset)
-      operationId: search-product
+      description: Retrieve details of a specific user
       parameters:
-      - description: Search keyword
-        in: query
-        name: keyword
+      - description: User ID
+        in: path
+        name: userID
         required: true
         type: string
-      - description: Search by 'SKU' or 'NAMEALIAS'
-        in: query
-        name: searchType
-        required: true
-        type: string
-      - default: 0
-        description: Offset for pagination (default is 0)
-        in: query
-        name: offset
-        type: integer
-      - default: 4
-        description: Limit for number of products to return (default is 4)
-        in: query
-        name: limit
-        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: Search Results
+          description: OK
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.ROM_V_ProductAll'
-                  type: array
+                data:
+                  $ref: '#/definitions/response.UserResponse'
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
         "404":
-          description: No matching products found
+          description: Not Found
           schema:
             $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Search Product by Keyword
+      summary: Get user details
       tags:
-      - Constants
-  /constants/search-province:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve the list of provinces by keyword
-      operationId: search-province
-      parameters:
-      - description: Province search keyword
-        in: query
-        name: keyword
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of provinces
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/entity.Province'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Search Province by keyword
-      tags:
-      - Constants
-  /import-order/confirm-receipt/{identifier}:
+      - User Management
+  /manage-users/add:
     post:
       consumes:
       - application/json
-      description: Confirm a trade return order based on the provided identifier (OrderNo
-        or TrackingNo) and input lines for ReturnOrderLine.
-      operationId: confirm-trade-return
+      description: Add a user with role assignment
       parameters:
-      - description: OrderNo or TrackingNo
-        in: path
-        name: identifier
-        required: true
-        type: string
-      - description: Trade return request details
+      - description: User details
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.ConfirmTradeReturnRequest'
+          $ref: '#/definitions/request.AddUserRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: Trade return order confirmed successfully
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/api.Response'
             - properties:
-                result:
-                  $ref: '#/definitions/response.ConfirmReceipt'
+                data:
+                  $ref: '#/definitions/response.AddUserResponse'
               type: object
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Confirm Receipt from Ware House
+      summary: Add a new user
       tags:
-      - Import Order
-  /import-order/create-confirm-wh:
-    post:
-      consumes:
-      - multipart/form-data
-      description: Upload multiple images and data for a specific SoNo
-      operationId: Import-Order
-      parameters:
-      - description: Sale Order Number
-        in: formData
-        name: soNo
-        required: true
-        type: string
-      - description: Type of the image (1, 2, or 3)
-        in: formData
-        name: imageTypeID
-        required: true
-        type: integer
-      - description: SKU (Optional)
-        in: formData
-        name: skus
-        type: string
-      - description: Files to upload
-        in: formData
-        name: files
-        required: true
-        type: file
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successful
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  $ref: '#/definitions/response.ImageResponse'
-              type: object
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Import order
-      tags:
-      - Import Order
-  /import-order/search:
-    get:
+      - User Management
+  /manage-users/delete/{userID}:
+    delete:
       consumes:
       - application/json
-      description: Retrieve the details of an order by its OrderNo or TrackingNo
-      operationId: search-orderNo-or-trackingNo
+      description: Remove user from the system but keep data in the database
       parameters:
-      - description: OrderNo or TrackingNo
-        in: query
-        name: search
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Order retrieved successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  $ref: '#/definitions/response.ImportOrderResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: OrderNo or TrackingNo not found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Search order by OrderNo or TrackingNo
-      tags:
-      - Import Order
-  /import-order/summary/{orderNo}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve the details of Receipt
-      operationId: GetSummary-ImportOrder
-      parameters:
-      - description: Order No
+      - description: User ID
         in: path
-        name: orderNo
+        name: userID
         required: true
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get All
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.ImportOrderSummary'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found Endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Sum detail of Import Order
-      tags:
-      - Import Order
-  /import-order/upload-photo:
-    post:
-      consumes:
-      - multipart/form-data
-      description: Upload a photo for a return order
-      operationId: upload-photo
-      parameters:
-      - description: Order No
-        in: formData
-        name: orderNo
-        required: true
-        type: string
-      - description: ImageTypeID (1, 2, 3)
-        in: formData
-        name: imageTypeID
-        required: true
-        type: string
-      - description: SKU (required if imageTypeID is '3')
-        in: formData
-        name: sku
-        type: string
-      - description: Photo file
-        in: formData
-        name: file
-        required: true
-        type: file
       produces:
       - application/json
       responses:
@@ -1673,48 +1056,86 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Upload Photo
+      summary: Delete a user (Soft Delete)
       tags:
-      - Import Order
-  /import-order/validate-sku/{orderNo}/{sku}:
-    post:
+      - User Management
+  /manage-users/edit/{userID}:
+    patch:
       consumes:
       - application/json
-      description: Validate SKU
-      operationId: validate-sku
+      description: Update role and warehouse of a user
       parameters:
-      - description: Order No
+      - description: User ID
         in: path
-        name: orderNo
+        name: userID
         required: true
         type: string
-      - description: SKU
-        in: path
-        name: sku
+      - description: Updated user details
+        in: body
+        name: request
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/request.EditUserRequest'
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
-            $ref: '#/definitions/api.Response'
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.EditUserResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/api.Response'
+      summary: Edit user details
+      tags:
+      - User Management
+  /order/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels an order by updating its status and recording the cancellation
+        reason
+      operationId: cancel-order
+      parameters:
+      - description: Cancel Order Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CancelOrder'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.CancelOrderResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.Response'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/api.Response'
-      summary: Validate SKU
+      summary: Cancel an existing return order
       tags:
-      - Import Order
+      - Return Order MKP
   /order/create:
     post:
       consumes:
@@ -1753,6 +1174,41 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Create a new return order
+      tags:
+      - Return Order MKP
+  /order/generate-sr/{orderNo}:
+    post:
+      consumes:
+      - application/json
+      description: Calls AX API to generate a new SrNo for the order
+      operationId: generate-sr-no-from-ax
+      parameters:
+      - description: Order Number
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Generate SrNo from AX system
       tags:
       - Return Order MKP
   /order/mark-edited/{orderNo}:
@@ -1897,600 +1353,4 @@ paths:
       summary: Update order status for return confirmation
       tags:
       - Return Order MKP
-  /return-order/create:
-    post:
-      consumes:
-      - application/json
-      description: Create a new return order
-      operationId: Create-ReturnOrder
-      parameters:
-      - description: Return Order
-        in: body
-        name: CreateReturnOrder
-        required: true
-        schema:
-          $ref: '#/definitions/request.CreateReturnOrder'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Return Order Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.CreateReturnOrder'
-                  type: array
-              type: object
-        "201":
-          description: Return Order Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.CreateReturnOrder'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Create Return Order
-      tags:
-      - Return Order
-  /return-order/delete/{orderNo}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete an order
-      operationId: delete-ReturnOrder
-      parameters:
-      - description: Order No
-        in: path
-        name: orderNo
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ReturnOrder Deleted
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.DeleteReturnOrder'
-                  type: array
-              type: object
-        "204":
-          description: No Content, Order Delete Successfully
-          schema:
-            $ref: '#/definitions/api.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Order Not Found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Delete Order
-      tags:
-      - Return Order
-  /return-order/get-all:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve the details of Return Order
-      operationId: GetAll-ReturnOrder
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get All
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.ReturnOrder'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found Endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Return Order
-      tags:
-      - Return Order
-  /return-order/get-all/{orderNo}:
-    get:
-      consumes:
-      - application/json
-      description: Get details return order by order no
-      operationId: GetAllByOrderNo-ReturnOrder
-      parameters:
-      - description: Order No
-        in: path
-        name: orderNo
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get All by OrderNo
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.ReturnOrder'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found Endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Return Order by OrderNo
-      tags:
-      - Return Order
-  /return-order/get-lines:
-    get:
-      consumes:
-      - application/json
-      description: Get all Return Order Line
-      operationId: GetAllLines-ReturnOrderLine
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get Return Order Lines
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.ReturnOrderLine'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found Endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Return Order Line
-      tags:
-      - Return Order
-  /return-order/get-lines/{orderNo}:
-    get:
-      consumes:
-      - application/json
-      description: Get details of an order line by its order no
-      operationId: GetLineByOrderNo-ReturnOrder
-      parameters:
-      - description: Order No
-        in: path
-        name: orderNo
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get Lines by OrderNo
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.ReturnOrderLine'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found Endpoint
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Return Order Line by OrderNo
-      tags:
-      - Return Order
-  /return-order/update/{orderNo}:
-    patch:
-      consumes:
-      - application/json
-      description: Update an existing return order using orderNo in the path
-      operationId: Update-ReturnOrder
-      parameters:
-      - description: Order No
-        in: path
-        name: orderNo
-        required: true
-        type: string
-      - description: Updated Order Data
-        in: body
-        name: order
-        required: true
-        schema:
-          $ref: '#/definitions/request.UpdateReturnOrder'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Return Order Update
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.UpdateReturnOrder'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Order Not Found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Update Return Order
-      tags:
-      - Return Order
-  /trade-return/add-line/{orderNo}:
-    post:
-      consumes:
-      - application/json
-      description: Add a new trade return line based on the provided order number
-        and line details
-      operationId: add-trade-return-line
-      parameters:
-      - description: Order number
-        in: path
-        name: orderNo
-        required: true
-        type: string
-      - description: Trade Return Line Details
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/request.TradeReturnLine'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Trade return line created successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  $ref: '#/definitions/response.BeforeReturnOrderItem'
-              type: object
-        "400":
-          description: Bad Request - Invalid input or missing required fields
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found - Order not found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Add a new trade return line to an existing order
-      tags:
-      - Trade Return
-  /trade-return/confirm-return/{orderNo}:
-    patch:
-      consumes:
-      - application/json
-      description: Confirm a trade return order based on the provided order number
-        (OrderNo) and input lines for ReturnOrderLine.
-      operationId: confirm-to-return
-      parameters:
-      - description: OrderNo
-        in: path
-        name: orderNo
-        required: true
-        type: string
-      - description: Updated trade return request details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.ConfirmToReturnRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Trade return order confirmed successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  $ref: '#/definitions/response.ConfirmToReturnOrder'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Confirm Return Order to Success
-      tags:
-      - Trade Return
-  /trade-return/create-trade:
-    post:
-      consumes:
-      - application/json
-      description: Create a new trade return order with multiple order lines
-      operationId: create-trade-return
-      parameters:
-      - description: Trade Return Detail
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/request.BeforeReturnOrder'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Trade return created successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  $ref: '#/definitions/response.BeforeReturnOrderResponse'
-              type: object
-        "400":
-          description: Bad Request - Invalid input or missing required fields
-          schema:
-            $ref: '#/definitions/api.Response'
-        "404":
-          description: Not Found - Order not found
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Create a new trade return order
-      tags:
-      - Trade Return
-  /trade-return/get-confirm:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve Return Orders with StatusCheckID = 2 (Confirmed)
-      operationId: Get-Confirm-ReturnOrder
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Success
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.DraftTradeDetail'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Return Orders with StatusCheckID = 2
-      tags:
-      - Trade Return
-  /trade-return/get-waiting:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve Return Orders with StatusCheckID = 1 (Waiting)
-      operationId: Get-Waiting-ReturnOrder
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Success
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.DraftTradeDetail'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Get Return Orders with StatusCheckID = 1
-      tags:
-      - Trade Return
-  /trade-return/search-confirm:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve Return Orders with StatusCheckID = 2 (Confirmed) within
-        a specific date range
-      operationId: Search-Confirm-ReturnOrder
-      parameters:
-      - description: Start Date (YYYY-MM-DD)
-        in: query
-        name: startDate
-        required: true
-        type: string
-      - description: End Date (YYYY-MM-DD)
-        in: query
-        name: endDate
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Success
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.DraftTradeDetail'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Search Return Orders with StatusCheckID = 2 by Date Range
-      tags:
-      - Trade Return
-  /trade-return/search-waiting:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve Return Orders with StatusCheckID = 1 (Waiting) within
-        a specific date range
-      operationId: Search-Waiting-ReturnOrder
-      parameters:
-      - description: Start Date (YYYY-MM-DD)
-        in: query
-        name: startDate
-        required: true
-        type: string
-      - description: End Date (YYYY-MM-DD)
-        in: query
-        name: endDate
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Success
-          schema:
-            allOf:
-            - $ref: '#/definitions/api.Response'
-            - properties:
-                result:
-                  items:
-                    $ref: '#/definitions/response.DraftTradeDetail'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/api.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Response'
-      summary: Search Return Orders with StatusCheckID = 1 by Date Range
-      tags:
-      - Trade Return
-  /user/{username}:
-    get:
-      description: Get user credentials by userName
-      parameters:
-      - description: UserName
-        in: path
-        name: username
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User credentials
-          schema:
-            $ref: '#/definitions/response.UserRole'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/gin.H'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/gin.H'
-      summary: Get User Credentials
-      tags:
-      - User
 swagger: "2.0"

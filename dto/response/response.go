@@ -353,6 +353,57 @@ type UpdateOrderStatusResponse struct {
 	ConfirmDate    time.Time `json:"confirmDate" db:"ConfirmDate"`
 }
 
+type CancelOrderResponse struct {
+	RefID        string    `json:"refID" db:"RefID"`
+	SourceTable  string    `json:"sourceTable" db:"SourceTable"`
+	CancelReason string    `json:"cancelReason" db:"CancelReason"`
+	CancelBy     string    `json:"cancelBy" db:"CancelBy"`
+	CancelDate   time.Time `json:"cancelDate" db:"CancelDate"`
+}
+
+type OrderHeadResponse struct {
+	OrderNo     string    `json:"orderNo" db:"OrderNo"`
+	SoNo        string    `json:"soNo" db:"SoNo"`
+	SrNo        string    `json:"srNo" db:"SrNo"`
+	CustomerID  string    `json:"customerId" db:"CustomerID"`
+	TrackingNo  string    `json:"trackingNo" db:"TrackingNo"`
+	Logistic    string    `json:"logistic" db:"Logistic"`
+	ChannelID   int       `json:"channelId" db:"ChannelID"`
+	CreateDate  time.Time `json:"createDate" db:"CreateDate"`
+	WarehouseID int       `json:"warehouseId" db:"WarehouseID"`
+}
+
+type DraftConfirmResponse struct {
+	OrderNo string             `json:"orderNo" db:"OrderNo"`
+	SoNo    string             `json:"soNo" db:"SoNo"`
+	SrNo    string             `json:"srNo" db:"SrNo"`
+	Items   []DraftConfirmItem `json:"items"`
+}
+
+type DraftConfirmItem struct {
+	OrderNo  string  `json:"orderNo" db:"OrderNo"`
+	SKU      string  `json:"sku" db:"SKU"`
+	ItemName string  `json:"itemName" db:"ItemName"`
+	QTY      int     `json:"qty" db:"QTY"`
+	Price    float64 `json:"price" db:"Price"`
+}
+
+type ListCodeRResponse struct {
+	SKU       string `json:"sku" db:"SKU"`
+	NAMEALIAS string `json:"nameAlias" db:"NAMEALIAS"`
+}
+
+type AddItemResponse struct {
+	OrderNo    string    `json:"orderNo" db:"OrderNo"`
+	SKU        string    `json:"sku" db:"SKU"`
+	ItemName   string    `json:"itemName" db:"ItemName"`
+	QTY        int       `json:"qty" db:"QTY"`
+	ReturnQTY  int       `json:"returnQty" db:"ReturnQTY"`
+	Price      float64   `json:"price" db:"Price"`
+	CreateBy   string    `json:"createBy" db:"CreateBy"`
+	CreateDate time.Time `json:"createDate" db:"CreateDate"`
+}
+
 /********** MKP (Online) ***************/
 
 type SaleOrderResponse struct {

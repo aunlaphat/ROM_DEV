@@ -76,24 +76,18 @@ type CreateBeforeReturnOrderItem struct {
 	AlterSKU   *string `json:"alterSKU,omitempty" db:"AlterSKU"`
 }
 
-type UpdateSaleReturn struct {
-	OrderNo string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
-	SrNo    string `json:"srNo" db:"SrNo" example:"SR-TEST-123456"`
+type CancelOrder struct {
+	RefID        string `json:"refID" db:"RefID"`
+	SourceTable  string `json:"sourceTable" db:"SourceTable"`
+	CancelReason string `json:"cancelReason" db:"CancelReason"`
 }
 
-type CancelSaleReturn struct {
-	OrderNo string `json:"orderNo" db:"OrderNo" example:"ORD-TEST-123456"`
-	Remark  string `json:"remark" db:"Remark" example:"cancel order"`
-}
-
-// Draft & Confirm MKP
-
-type AddCodeR struct {
+type AddItem struct {
 	OrderNo   string  `json:"orderNo" db:"OrderNo"`
 	SKU       string  `json:"sku" db:"SKU"`
 	ItemName  string  `json:"itemName" db:"ItemName"`
 	QTY       int     `json:"qty" db:"QTY"`
-	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
+	ReturnQTY int     `json:"returnQTY" db:"ReturnQTY"`
 	Price     float64 `json:"price" db:"Price"`
 	CreateBy  string  `json:"createBy" db:"CreateBy"`
 }
