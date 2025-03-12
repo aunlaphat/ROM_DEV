@@ -1,3 +1,5 @@
+// src/screens/ManageUser/index.tsx
+import { useState, useEffect } from "react";
 import {
   Card,
   Typography,
@@ -21,149 +23,147 @@ import {
   SearchOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { useState, useEffect } from "react";
-import { GET, POST, PATCH, DELETE } from "../../services/index";
-import { FETCHUSERS, ADDUSER, EDITUSER, DELETEUSER } from "../../services/path";
-import { User, Role, Warehouse, ApiResponse } from "./types";
+import { useUsers } from "../../redux/users/hooks";
 import { AvatarGenerator } from "../../components/avatar/AvatarGenerator";
 
 const { Content } = Layout;
 const { Search } = Input;
 const { Title } = Typography;
+const { Option } = Select;
 
 export const ManageUser = () => {
-  const [data, setData] = useState<User[]>([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [loading, setLoading] = useState(false);
+  // State
   const [searchText, setSearchText] = useState("");
-  const [filteredData, setFilteredData] = useState<User[]>([]);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 100
-  });
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [form] = Form.useForm();
 
+  // Redux hooks
+  const {
+    users,
+    roles,
+    warehouses,
+    loading,
+    pagination,
+    fetchUsers,
+    fetchRoles,
+    fetchWarehouses,
+    addUser,
+    editUser,
+    deleteUser,
+  } = useUsers();
+
+  // Effects
   useEffect(() => {
-    loadUsers();
-    loadRoles();
-    loadWarehouses();
-  }, []);
+    // Load initial data
+    fetchUsers({ isActive: true });
+    fetchRoles();
+    fetchWarehouses();
+  }, [fetchUsers, fetchRoles, fetchWarehouses]);
 
-  useEffect(() => {
-    const filtered = data.filter(
-      (user) =>
-        user.userName.toLowerCase().includes(searchText.toLowerCase()) ||
-        user.roleName.toLowerCase().includes(searchText.toLowerCase()) ||
-        user.warehouseName.toLowerCase().includes(searchText.toLowerCase())
-    );
-    setFilteredData(filtered);
-  }, [searchText, data]);
+  // Filtered users based on search
+  const filteredUsers = users.filter(
+    (user) =>
+      user.userName.toLowerCase().includes(searchText.toLowerCase()) ||
+      user.fullNameTH.toLowerCase().includes(searchText.toLowerCase()) ||
+      user.roleName.toLowerCase().includes(searchText.toLowerCase()) ||
+      user.warehouseName.toLowerCase().includes(searchText.toLowerCase())
+  );
 
-  const loadRoles = async () => {
-    try {
-      const response = await GET("roles");
-      setRoles(response.data);
-    } catch (error) {
-      console.error("Failed to fetch roles", error);
-    }
+  // Table pagination change handler
+  const handleTableChange = (pagination: any) => {
+    fetchUsers({
+      isActive: true,
+      limit: pagination.pageSize,
+      offset: (pagination.current - 1) * pagination.pageSize,
+    });
   };
 
-  const loadWarehouses = async () => {
-    try {
-      const response = await GET("warehouses");
-      setWarehouses(response.data);
-    } catch (error) {
-      console.error("Failed to fetch warehouses", error);
-    }
-  };
-
-  const loadUsers = async (page = pagination.current, pageSize = pagination.pageSize) => {
-    try {
-      setLoading(true);
-      const offset = (page - 1) * pageSize;
-      
-      const response = await GET(`manage-users/?isActive=true&limit=${pageSize}&offset=${offset}`);
-      const apiResponse = response.data as ApiResponse<User[]>;
-
-      if (apiResponse.success && Array.isArray(apiResponse.data)) {
-        setData(apiResponse.data);
-        setFilteredData(apiResponse.data);
-        setPagination({
-          ...pagination,
-          current: page,
-          pageSize: pageSize,
-          //total: apiResponse.total || apiResponse.data.length // ต้องมีการส่ง total จาก API
-          total: 100
-        });
-      } else {
-        notification.error({ message: "Failed to load users" });
-      }
-    } catch (error) {
-      console.error("Failed to fetch users", error);
-      notification.error({ message: "Failed to load users" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      const values = await form.validateFields();
-      if (currentUser) {
-        await PATCH(`${EDITUSER}${currentUser.userID}`, values);
-        notification.success({ message: "User updated successfully" });
-      } else {
-        await POST(ADDUSER, values);
-        notification.success({ message: "User added successfully" });
-      }
-      setIsModalVisible(false);
-      form.resetFields();
-      loadUsers();
-    } catch (error) {
-      console.error("Failed to save user", error);
-    }
-  };
-
-  const handleDelete = async (record: User) => {
-    try {
-      await DELETE(`${DELETEUSER}${record.userID}`, {});
-      notification.success({ message: "User deleted successfully" });
-      loadUsers();
-    } catch (error) {
-      console.error("Failed to delete user", error);
-    }
-  };
-
-  const handleOpenModal = (user: User | null) => {
-    setCurrentUser(user);
+  // Modal handlers
+  const showModal = (user: any = null) => {
+    setEditingUser(user);
     if (user) {
-      form.setFieldsValue(user);
+      // Edit mode - pre-fill form ใช้ name แทน id
+      const selectedRole = roles.find((role) => role.roleID === user.roleID);
+      const selectedWarehouse = warehouses.find(
+        (warehouse) => warehouse.warehouseID === user.warehouseID
+      );
+
+      form.setFieldsValue({
+        userID: user.userID,
+        roleID: user.roleID,
+        roleName: selectedRole?.roleName || "", // เพิ่ม field roleName
+        warehouseID: user.warehouseID,
+        warehouseName: selectedWarehouse?.warehouseName || "", // เพิ่ม field warehouseName
+      });
     } else {
+      // Add mode - reset form
       form.resetFields();
     }
     setIsModalVisible(true);
   };
 
-  const handleSearch = (value: string) => {
-    setSearchText(value);
+  const handleCancel = () => {
+    setIsModalVisible(false);
+    setEditingUser(null);
+    form.resetFields();
   };
 
-  const handleTableChange = (pagination: any) => {
-    loadUsers(pagination.current, pagination.pageSize);
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
+
+      const selectedRole = roles.find((role) => role.roleID === values.roleID);
+      const selectedWarehouse = warehouses.find(
+        (warehouse) => warehouse.warehouseID === values.warehouseID
+      );
+
+      if (editingUser) {
+        // Edit mode
+        editUser(editingUser.userID, {
+          userID: values.userID,
+          roleID: values.roleID,
+          roleName: selectedRole?.roleName, // ส่ง name ด้วย (ถ้าต้องการ)
+          warehouseID: Number(values.warehouseID),
+          warehouseName: selectedWarehouse?.warehouseName, // ส่ง name ด้วย (ถ้าต้องการ)
+        });
+      } else {
+        // Add mode
+        addUser({
+          userID: values.userID,
+          roleID: values.roleID,
+          roleName: selectedRole?.roleName, // ส่ง name ด้วย (ถ้าต้องการ)
+          warehouseID: Number(values.warehouseID),
+          warehouseName: selectedWarehouse?.warehouseName, // ส่ง name ด้วย (ถ้าต้องการ)
+        });
+      }
+
+      setIsModalVisible(false);
+      setEditingUser(null);
+      form.resetFields();
+    } catch (error) {
+      console.error("Form validation failed:", error);
+    }
   };
 
+  // Delete handler
+  const handleDelete = (userID: string) => {
+    deleteUser(userID);
+  };
+
+  // Table columns
   const columns = [
     {
       title: "ผู้ใช้งาน",
       key: "avatar",
       width: 250,
-      render: (record: User) => (
+      render: (record: any) => (
         <Space>
-          <AvatarGenerator userID={record.userName} userName={record.userName} size="large" />{" "}
+          <AvatarGenerator
+            userID={record.userID}
+            userName={record.userName}
+            size="large"
+          />
           <div>
             <div style={{ fontWeight: "bold" }}>{record.userName}</div>
             <div style={{ color: "#666" }}>{record.nickName}</div>
@@ -199,12 +199,12 @@ export const ManageUser = () => {
       title: "การดำเนินการ",
       key: "action",
       width: 200,
-      render: (_: any, record: User) => (
+      render: (_: any, record: any) => (
         <Space>
           <Button
             type="primary"
             icon={<EditOutlined />}
-            onClick={() => handleOpenModal(record)}
+            onClick={() => showModal(record)}
             ghost
           >
             แก้ไข
@@ -212,7 +212,7 @@ export const ManageUser = () => {
           <Popconfirm
             title="ยืนยันการลบผู้ใช้"
             description={`คุณต้องการลบผู้ใช้ ${record.userName} ใช่หรือไม่?`}
-            onConfirm={() => handleDelete(record)}
+            onConfirm={() => handleDelete(record.userID)}
             okText="ยืนยัน"
             cancelText="ยกเลิก"
             okButtonProps={{ danger: true }}
@@ -245,7 +245,7 @@ export const ManageUser = () => {
         >
           <Col>
             <Title level={4} style={{ margin: 0 }}>
-              <UserOutlined /> Mange Users
+              <UserOutlined /> จัดการผู้ใช้งาน
             </Title>
           </Col>
           <Col>
@@ -253,13 +253,13 @@ export const ManageUser = () => {
               <Search
                 placeholder="ค้นหาผู้ใช้งาน..."
                 allowClear
-                onSearch={handleSearch}
+                onSearch={(value) => setSearchText(value)}
                 style={{ width: 300 }}
               />
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => handleOpenModal(null)}
+                onClick={() => showModal()}
               >
                 เพิ่มผู้ใช้งาน
               </Button>
@@ -269,7 +269,7 @@ export const ManageUser = () => {
 
         <Table
           columns={columns}
-          dataSource={filteredData}
+          dataSource={filteredUsers}
           rowKey="userID"
           loading={loading}
           pagination={{
@@ -277,13 +277,74 @@ export const ManageUser = () => {
             showSizeChanger: true,
             showTotal: (total) => `ทั้งหมด ${total} รายการ`,
             showQuickJumper: true,
-            pageSizeOptions: ['10', '20', '50', '100']
+            pageSizeOptions: ["10", "20", "50", "100"],
           }}
           onChange={handleTableChange}
           size="middle"
           bordered
         />
       </Card>
+
+      {/* Modal for Add/Edit User */}
+      <Modal
+        title={editingUser ? "แก้ไขผู้ใช้งาน" : "เพิ่มผู้ใช้งานใหม่"}
+        open={isModalVisible}
+        onOk={handleSave}
+        onCancel={handleCancel}
+        okText={editingUser ? "บันทึกการแก้ไข" : "เพิ่มผู้ใช้"}
+        cancelText="ยกเลิก"
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="userID"
+            label="รหัสผู้ใช้"
+            rules={[{ required: true, message: "กรุณาระบุรหัสผู้ใช้" }]}
+          >
+            <Input placeholder="กรุณาระบุรหัสผู้ใช้" disabled={!!editingUser} />
+          </Form.Item>
+
+          <Form.Item
+            name="roleID"
+            label="บทบาท"
+            rules={[{ required: true, message: "กรุณาเลือกบทบาท" }]}
+          >
+            <Select placeholder="เลือกบทบาท">
+              {roles.map((role) => (
+                <Option key={role.roleID} value={role.roleID}>
+                  {role.roleID} : {role.roleName}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          {/* เพิ่ม hidden field สำหรับเก็บ roleName */}
+          <Form.Item name="roleName" hidden={true}>
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="warehouseID"
+            label="คลังสินค้า"
+            rules={[{ required: true, message: "กรุณาเลือกคลังสินค้า" }]}
+          >
+            <Select placeholder="เลือกคลังสินค้า">
+              {warehouses.map((warehouse) => (
+                <Option
+                  key={warehouse.warehouseID}
+                  value={warehouse.warehouseID}
+                >
+                  {warehouse.warehouseID} : {warehouse.warehouseName}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          {/* เพิ่ม hidden field สำหรับเก็บ warehouseName */}
+          <Form.Item name="warehouseName" hidden={true}>
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Layout>
   );
 };

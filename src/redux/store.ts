@@ -15,7 +15,7 @@ const persistConfig = {
   key: 'root',
   storage,
   whitelist: ['auth'],  // เฉพาะ auth ที่จะถูกเก็บใน localStorage
-  blacklist: ['order', 'alert'] // อันนี้จะไม่ถูกเก็บ
+  blacklist: ['order', 'alert', 'user'] // อันนี้จะไม่ถูกเก็บ
 };
 
 // Create persisted reducer
