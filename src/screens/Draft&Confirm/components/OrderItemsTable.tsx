@@ -30,6 +30,12 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
     }
   };
 
+  // Function to generate a unique key for each record
+  const generateUniqueKey = (record: OrderItem) => {
+    // ใช้องค์ประกอบหลายๆ อย่างเพื่อสร้าง key ที่ไม่ซ้ำกัน
+    return `${record.orderNo}-${record.sku}-${record.price}`;
+  };
+
   // Setup columns
   const getColumns = (): ColumnType<OrderItem>[] => {
     // Base columns used in both modes
@@ -109,7 +115,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
       }}
       dataSource={items}
       columns={getColumns()}
-      rowKey="sku"
+      rowKey={generateUniqueKey}
       pagination={false}
     />
   );

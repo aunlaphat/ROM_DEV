@@ -10,12 +10,13 @@ import {
   InputNumber,
   Spin,
   Empty,
+  message,
 } from "antd";
+import { useNavigate } from "react-router-dom"; // เพิ่ม useNavigate
 import { PlusCircleOutlined } from "@ant-design/icons";
 import { Order } from "../../../redux/draftConfirm/types";
 import { useDraftConfirm } from "../../../redux/draftConfirm/hook";
 import { OrderItemsTable } from "./OrderItemsTable";
-import { message } from "antd";
 
 interface EditOrderModalProps {
   visible: boolean;
@@ -32,6 +33,8 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
   loading,
   onCancel,
 }) => {
+  const navigate = useNavigate(); // เพิ่ม hook สำหรับ redirect
+
   // Redux hooks
   const {
     codeRList,
@@ -39,6 +42,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
     addItem,
     confirmDraftOrder,
     fetchCodeR,
+    error,
   } = useDraftConfirm();
 
   // Local state for form fields
@@ -48,6 +52,15 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
   const [price, setPrice] = useState<number | null>(null);
   const [loadingCodeR, setLoadingCodeR] = useState<boolean>(false);
   const [newlyAddedItems, setNewlyAddedItems] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ใช้ effect ดักจับการเปลี่ยนแปลงของ error
+  useEffect(() => {
+    if (error && isSubmitting) {
+      message.error(`การอัพเดตล้มเหลว: ${error}`);
+      setIsSubmitting(false);
+    }
+  }, [error, isSubmitting]);
 
   // Fetch CodeR list when modal is opened
   useEffect(() => {
@@ -102,13 +115,47 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
   };
 
   // Handle form submission
-  const handleOk = () => {
-    if (order) {
-      if (activeTabKey === "1") {
-        confirmDraftOrder({ orderNo: order.orderNo });
-        message.success("Order updated successfully");
+  const handleOk = async () => {
+    if (order && activeTabKey === "1") {
+      try {
+        setIsSubmitting(true); // เริ่มการส่ง
+
+        // สร้าง Promise เพื่อใช้กับ await
+        const confirmPromise = new Promise<void>((resolve, reject) => {
+          confirmDraftOrder({ orderNo: order.orderNo });
+
+          // ตั้งเวลา timeout เพื่อตรวจสอบว่ามี error หรือไม่
+          setTimeout(() => {
+            if (error) {
+              reject(new Error(error));
+            } else {
+              resolve();
+            }
+          }, 2000); // รอสักครู่เพื่อให้การอัพเดตเสร็จสิ้น
+        });
+
+        await confirmPromise;
+
+        // ถ้าไม่มี error และการทำงานเสร็จสิ้น
+        message.success("อัพเดตคำสั่งสำเร็จ");
+        onCancel(); // ปิด modal
+
+        // Redirect ไปยังแท็บ "Confirm" (Tab 2)
+        navigate("/draft-and-confirm?tab=2");
+      } catch (err) {
+        // จัดการข้อผิดพลาด
+        message.error(
+          `การอัพเดตล้มเหลว: ${
+            err instanceof Error
+              ? err.message
+              : "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ"
+          }`
+        );
+      } finally {
+        setIsSubmitting(false); // จบการส่ง
       }
-      onCancel();
+    } else {
+      onCancel(); // ในกรณีอื่นๆ แค่ปิด modal
     }
   };
 
@@ -180,7 +227,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                   backgroundColor: "#14C11B",
                   color: "#FFF",
                 }}
-                loading={loading}
+                loading={isSubmitting || loading} // แสดง loading ระหว่างการส่ง
               >
                 Update
               </Button>
@@ -192,7 +239,7 @@ export const EditOrderModal: React.FC<EditOrderModalProps> = ({
                   background: "#D9D9D9",
                   color: "#909090",
                 }}
-                disabled={loading}
+                disabled={isSubmitting || loading}
               >
                 Cancel
               </Button>

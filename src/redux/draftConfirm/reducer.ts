@@ -21,10 +21,12 @@ const draftConfirmReducer = (state: DraftConfirmState = initialDraftConfirmState
 
     // Fetch Orders Success
     case DraftConfirmActionTypes.FETCH_ORDERS_SUCCESS:
-      logger.redux.action(action.type, { orderCount: action.payload.length });
+      logger.redux.action(action.type, { 
+        orderCount: action.payload ? action.payload.length : 0 
+      });
       return {
         ...state,
-        orders: action.payload,
+        orders: action.payload || [],
         loading: false,
         error: null
       };

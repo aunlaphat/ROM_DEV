@@ -1,13 +1,17 @@
 // src/redux/draftConfirm/types/state.ts
-import { Order, CodeR } from './response';
+import { Order, CodeR } from "./response";
 
 // DraftConfirmState - สถานะใน Redux store
 export interface DraftConfirmState {
-  orders: Order[];             // รายการคำสั่งทั้งหมด
-  selectedOrder: Order | null; // คำสั่งที่เลือก
-  codeRList: CodeR[];          // รายการ CodeR ทั้งหมด
-  loading: boolean;            // สถานะการโหลด
-  error: string | null;        // ข้อผิดพลาด
+  orders: Order[];
+  selectedOrder: Order | null;
+  codeRList: CodeR[];
+  loading: boolean;
+  error: string | null;
+  lastSearchDates: {
+    startDate: string | null;
+    endDate: string | null;
+  };
 }
 
 // initialDraftConfirmState - ค่าเริ่มต้นของ state
@@ -16,5 +20,9 @@ export const initialDraftConfirmState: DraftConfirmState = {
   selectedOrder: null,
   codeRList: [],
   loading: false,
-  error: null
+  error: null,
+  lastSearchDates: {
+    startDate: null,
+    endDate: null,
+  },
 };

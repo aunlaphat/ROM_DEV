@@ -1,7 +1,7 @@
 // src/redux/draftConfirm/api.ts
-import { call, put } from 'redux-saga/effects';
-import { SagaIterator } from 'redux-saga';
-import { 
+import { call, put } from "redux-saga/effects";
+import { SagaIterator } from "redux-saga";
+import {
   fetchOrdersSuccess,
   fetchOrdersFailure,
   fetchOrderDetailsSuccess,
@@ -15,20 +15,20 @@ import {
   confirmDraftOrderSuccess,
   confirmDraftOrderFailure,
   cancelOrderSuccess,
-  cancelOrderFailure
-} from './action';
-import { GET, POST, PATCH, DELETE } from '../../services';
-import { logger } from '../../utils/logger';
-import { 
+  cancelOrderFailure,
+} from "./action";
+import { GET, POST, PATCH, DELETE } from "../../services";
+import { logger } from "../../utils/logger";
+import {
   DraftConfirmActionTypes,
   FetchOrdersRequest,
   FetchOrderDetailsRequest,
   AddItemRequest,
   RemoveItemRequest,
-  ConfirmDraftOrderRequest, 
-  CancelOrderRequest
-} from './types';
-import { openLoading, closeLoading } from '../../components/alert/useAlert';
+  ConfirmDraftOrderRequest,
+  CancelOrderRequest,
+} from "./types";
+import { openLoading, closeLoading } from "../../components/alert/useAlert";
 
 // Fetch Orders Saga
 export function* fetchOrdersSaga(action: {
@@ -37,30 +37,32 @@ export function* fetchOrdersSaga(action: {
 }): SagaIterator {
   try {
     openLoading();
-    logger.perf.start('Fetch Orders');
+    logger.perf.start("Fetch Orders");
 
     const { statusConfID, startDate, endDate } = action.payload;
     const query = new URLSearchParams();
-    query.append('statusConfID', statusConfID.toString());
-    
-    if (startDate) query.append('startDate', startDate);
-    if (endDate) query.append('endDate', endDate);
-    
+    query.append("statusConfID", statusConfID.toString());
+
+    if (startDate) query.append("startDate", startDate);
+    if (endDate) query.append("endDate", endDate);
+
     logger.api.request(`/draft-confirm/orders?${query.toString()}`);
-    const response = yield call(() => GET(`/draft-confirm/orders?${query.toString()}`));
+    const response = yield call(() =>
+      GET(`/draft-confirm/orders?${query.toString()}`)
+    );
 
     if (!response.data.success) {
-      throw new Error(response.data.message || 'Fetch orders failed');
+      throw new Error(response.data.message || "Fetch orders failed");
     }
 
     logger.api.success(`/draft-confirm/orders`, response.data.data);
     yield put(fetchOrdersSuccess(response.data.data));
   } catch (error: any) {
-    logger.error('Fetch Orders Error', error);
-    yield put(fetchOrdersFailure(error.message || 'Failed to fetch orders'));
+    logger.error("Fetch Orders Error", error);
+    yield put(fetchOrdersFailure(error.message || "Failed to fetch orders"));
   } finally {
     closeLoading();
-    logger.perf.end('Fetch Orders');
+    logger.perf.end("Fetch Orders");
   }
 }
 
@@ -71,28 +73,32 @@ export function* fetchOrderDetailsSaga(action: {
 }): SagaIterator {
   try {
     openLoading();
-    logger.perf.start('Fetch Order Details');
+    logger.perf.start("Fetch Order Details");
 
     const { orderNo, statusConfID } = action.payload;
     const query = new URLSearchParams();
-    query.append('statusConfID', statusConfID.toString());
-    query.append('orderNo', orderNo);
-    
+    query.append("statusConfID", statusConfID.toString());
+    query.append("orderNo", orderNo);
+
     logger.api.request(`/draft-confirm/order/details?${query.toString()}`);
-    const response = yield call(() => GET(`/draft-confirm/order/details?${query.toString()}`));
+    const response = yield call(() =>
+      GET(`/draft-confirm/order/details?${query.toString()}`)
+    );
 
     if (!response.data.success) {
-      throw new Error(response.data.message || 'Fetch order details failed');
+      throw new Error(response.data.message || "Fetch order details failed");
     }
 
     logger.api.success(`/draft-confirm/order/details`, response.data.data);
     yield put(fetchOrderDetailsSuccess(response.data.data));
   } catch (error: any) {
-    logger.error('Fetch Order Details Error', error);
-    yield put(fetchOrderDetailsFailure(error.message || 'Failed to fetch order details'));
+    logger.error("Fetch Order Details Error", error);
+    yield put(
+      fetchOrderDetailsFailure(error.message || "Failed to fetch order details")
+    );
   } finally {
     closeLoading();
-    logger.perf.end('Fetch Order Details');
+    logger.perf.end("Fetch Order Details");
   }
 }
 
@@ -100,23 +106,23 @@ export function* fetchOrderDetailsSaga(action: {
 export function* fetchCodeRSaga(): SagaIterator {
   try {
     openLoading();
-    logger.perf.start('Fetch CodeR List');
+    logger.perf.start("Fetch CodeR List");
 
-    logger.api.request('/draft-confirm/list-codeR');
-    const response = yield call(() => GET('/draft-confirm/list-codeR'));
+    logger.api.request("/draft-confirm/list-codeR");
+    const response = yield call(() => GET("/draft-confirm/list-codeR"));
 
     if (!response.data.success) {
-      throw new Error(response.data.message || 'Fetch CodeR list failed');
+      throw new Error(response.data.message || "Fetch CodeR list failed");
     }
 
-    logger.api.success('/draft-confirm/list-codeR', response.data.data);
+    logger.api.success("/draft-confirm/list-codeR", response.data.data);
     yield put(fetchCodeRSuccess(response.data.data));
   } catch (error: any) {
-    logger.error('Fetch CodeR List Error', error);
-    yield put(fetchCodeRFailure(error.message || 'Failed to fetch CodeR list'));
+    logger.error("Fetch CodeR List Error", error);
+    yield put(fetchCodeRFailure(error.message || "Failed to fetch CodeR list"));
   } finally {
     closeLoading();
-    logger.perf.end('Fetch CodeR List');
+    logger.perf.end("Fetch CodeR List");
   }
 }
 
@@ -127,31 +133,36 @@ export function* addItemSaga(action: {
 }): SagaIterator {
   try {
     openLoading();
-    logger.perf.start('Add Item');
+    logger.perf.start("Add Item");
 
     const { orderNo, ...itemData } = action.payload;
-    
+
     logger.api.request(`/draft-confirm/add-item/${orderNo}`, itemData);
-    const response = yield call(() => POST(`/draft-confirm/add-item/${orderNo}`, itemData));
+    const response = yield call(() =>
+      POST(`/draft-confirm/add-item/${orderNo}`, itemData)
+    );
 
     if (!response.data.success) {
-      throw new Error(response.data.message || 'Add item failed');
+      throw new Error(response.data.message || "Add item failed");
     }
 
-    logger.api.success(`/draft-confirm/add-item/${orderNo}`, response.data.data);
+    logger.api.success(
+      `/draft-confirm/add-item/${orderNo}`,
+      response.data.data
+    );
     yield put(addItemSuccess(response.data.data));
-    
+
     // Re-fetch order details to get updated items
     yield put({
       type: DraftConfirmActionTypes.FETCH_ORDER_DETAILS_REQUEST,
-      payload: { orderNo, statusConfID: 1 } // 1 = Draft status
+      payload: { orderNo, statusConfID: 1 }, // 1 = Draft status
     });
   } catch (error: any) {
-    logger.error('Add Item Error', error);
-    yield put(addItemFailure(error.message || 'Failed to add item'));
+    logger.error("Add Item Error", error);
+    yield put(addItemFailure(error.message || "Failed to add item"));
   } finally {
     closeLoading();
-    logger.perf.end('Add Item');
+    logger.perf.end("Add Item");
   }
 }
 
@@ -162,31 +173,33 @@ export function* removeItemSaga(action: {
 }): SagaIterator {
   try {
     openLoading();
-    logger.perf.start('Remove Item');
+    logger.perf.start("Remove Item");
 
     const { orderNo, sku } = action.payload;
-    
+
     logger.api.request(`/draft-confirm/remove-item/${orderNo}/${sku}`);
-    const response = yield call(() => DELETE(`/draft-confirm/remove-item/${orderNo}/${sku}`));
+    const response = yield call(() =>
+      DELETE(`/draft-confirm/remove-item/${orderNo}/${sku}`)
+    );
 
     if (!response.data.success) {
-      throw new Error(response.data.message || 'Remove item failed');
+      throw new Error(response.data.message || "Remove item failed");
     }
 
     logger.api.success(`/draft-confirm/remove-item/${orderNo}/${sku}`);
     yield put(removeItemSuccess());
-    
+
     // Re-fetch order details to get updated items
     yield put({
       type: DraftConfirmActionTypes.FETCH_ORDER_DETAILS_REQUEST,
-      payload: { orderNo, statusConfID: 1 } // 1 = Draft status
+      payload: { orderNo, statusConfID: 1 }, // 1 = Draft status
     });
   } catch (error: any) {
-    logger.error('Remove Item Error', error);
-    yield put(removeItemFailure(error.message || 'Failed to remove item'));
+    logger.error("Remove Item Error", error);
+    yield put(removeItemFailure(error.message || "Failed to remove item"));
   } finally {
     closeLoading();
-    logger.perf.end('Remove Item');
+    logger.perf.end("Remove Item");
   }
 }
 
@@ -211,10 +224,18 @@ export function* confirmDraftOrderSaga(action: {
     logger.api.success(`/draft-confirm/update-status/${orderNo}`, response.data.data);
     yield put(confirmDraftOrderSuccess(response.data.data));
     
-    // Re-fetch orders with updated status (now in "Confirm" tab)
+    // ใช้วันที่ปัจจุบันเป็นค่าเริ่มต้นสำหรับการค้นหา
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0]; // ได้รูปแบบ 'YYYY-MM-DD'
+    
+    // Re-fetch orders with updated status และส่งวันที่ไปด้วย
     yield put({
       type: DraftConfirmActionTypes.FETCH_ORDERS_REQUEST,
-      payload: { statusConfID: 2 } // 2 = Confirm status
+      payload: { 
+        statusConfID: 2, // 2 = Confirm status
+        startDate: formattedDate,
+        endDate: formattedDate
+      }
     });
   } catch (error: any) {
     logger.error('Confirm Draft Order Error', error);
@@ -232,39 +253,47 @@ export function* cancelOrderSaga(action: {
 }): SagaIterator {
   try {
     openLoading();
-    logger.perf.start('Cancel Order');
+    logger.perf.start("Cancel Order");
 
     const { orderNo, cancelReason } = action.payload;
-    
-    logger.api.request('/order/cancel', {
+
+    logger.api.request("/order/cancel", {
       refID: orderNo,
-      sourceTable: 'BeforeReturnOrder',
-      cancelReason: cancelReason
+      sourceTable: "BeforeReturnOrder",
+      cancelReason: cancelReason,
     });
 
-    const response = yield call(() => POST('/order/cancel', {
-      refID: orderNo,
-      sourceTable: 'BeforeReturnOrder',
-      cancelReason: cancelReason
-    }));
+    const response = yield call(() =>
+      POST("/order/cancel", {
+        refID: orderNo,
+        sourceTable: "BeforeReturnOrder",
+        cancelReason: cancelReason,
+      })
+    );
 
     if (!response.data.success) {
-      throw new Error(response.data.message || 'Cancel order failed');
+      throw new Error(response.data.message || "Cancel order failed");
     }
 
-    logger.api.success('/order/cancel', response.data.data);
+    logger.api.success("/order/cancel", response.data.data);
     yield put(cancelOrderSuccess());
-    
-    // Re-fetch orders to update the list
+
+    const today = new Date();
+    const formattedDate = today.toISOString().split("T")[0];
+
     yield put({
       type: DraftConfirmActionTypes.FETCH_ORDERS_REQUEST,
-      payload: { statusConfID: 1 } // 1 = Draft status (assuming we're in draft tab)
+      payload: {
+        statusConfID: 1, // 1 = Draft status
+        startDate: formattedDate,
+        endDate: formattedDate,
+      },
     });
   } catch (error: any) {
-    logger.error('Cancel Order Error', error);
-    yield put(cancelOrderFailure(error.message || 'Failed to cancel order'));
+    logger.error("Cancel Order Error", error);
+    yield put(cancelOrderFailure(error.message || "Failed to cancel order"));
   } finally {
     closeLoading();
-    logger.perf.end('Cancel Order');
+    logger.perf.end("Cancel Order");
   }
 }

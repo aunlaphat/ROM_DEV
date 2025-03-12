@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Button,
   ConfigProvider,
@@ -20,6 +20,7 @@ import { useDraftConfirm } from "../../redux/draftConfirm/hook";
 import { OrdersTable } from "./components/OrdersTable";
 import { EditOrderModal } from "./components/EditOrderModal";
 import { CancelOrderModal } from "./components/CancelOrderModal";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // Initialize dayjs plugins
 dayjs.extend(isSameOrAfter);
@@ -27,6 +28,15 @@ dayjs.extend(isSameOrBefore);
 dayjs.extend(isBetween);
 
 export const DraftAndConfirm = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // ดึง tab จาก URL parameter
+  const getTabFromUrl = useCallback(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("tab") || "1";
+  }, [location.search]); // ระบุ dependency ให้กับ useCallback
+
   // Redux setup
   const {
     orders,
@@ -39,7 +49,7 @@ export const DraftAndConfirm = () => {
   } = useDraftConfirm();
 
   // Local state
-  const [activeTabKey, setActiveTabKey] = useState<string>("1");
+  const [activeTabKey, setActiveTabKey] = useState<string>(getTabFromUrl());
   const [dates, setDates] = useState<[Dayjs, Dayjs] | null>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -87,9 +97,12 @@ export const DraftAndConfirm = () => {
     }
   };
 
+  // อัพเดต URL เมื่อ tab เปลี่ยน
   const onTabChange = (key: string) => {
     setActiveTabKey(key);
-    // Load data for the selected tab if dates are selected
+    navigate(`/draft-and-confirm?tab=${key}`);
+
+    // โหลดข้อมูลตาม tab ถ้ามีการเลือกวันที่แล้ว
     if (dates && dates[0] && dates[1]) {
       const statusConfID = key === "1" ? 1 : 2;
       fetchOrders({
@@ -99,6 +112,14 @@ export const DraftAndConfirm = () => {
       });
     }
   };
+
+  // เมื่อโหลดหน้า ให้ตรวจสอบ tab จาก URL
+  useEffect(() => {
+    const tabKey = getTabFromUrl();
+    if (tabKey !== activeTabKey) {
+      setActiveTabKey(tabKey);
+    }
+  }, [location, activeTabKey, getTabFromUrl]);
 
   const handleDateChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
     if (dates && dates[0] && dates[1]) {
@@ -122,7 +143,7 @@ export const DraftAndConfirm = () => {
       >
         Draft & Confirm Order MKP
       </div>
-      
+
       <Layout>
         <Layout.Content
           style={{
@@ -192,7 +213,7 @@ export const DraftAndConfirm = () => {
 
           {/* Orders Table */}
           <Spin spinning={loading}>
-            <OrdersTable 
+            <OrdersTable
               orders={orders}
               activeTabKey={activeTabKey}
               onEdit={handleEdit}
@@ -203,7 +224,7 @@ export const DraftAndConfirm = () => {
       </Layout>
 
       {/* Modals */}
-      <EditOrderModal 
+      <EditOrderModal
         visible={isEditModalVisible}
         order={selectedOrder}
         activeTabKey={activeTabKey}
@@ -211,7 +232,7 @@ export const DraftAndConfirm = () => {
         onCancel={handleCancelEdit}
       />
 
-      <CancelOrderModal 
+      <CancelOrderModal
         visible={cancelModalVisible}
         orderNo={orderToCancel}
         onClose={handleCancelModalClose}
