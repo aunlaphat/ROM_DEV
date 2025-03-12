@@ -4,7 +4,7 @@ import Webcam from 'react-webcam';
 import { CameraOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { QrReader, QrReaderProps } from 'react-qr-reader';
 import { useLocation } from 'react-router-dom';
-import api from "../../../utils/axios/axiosInstance";
+import api from "../../utils/axios/axiosInstance";
 
 interface CustomQrReaderProps extends QrReaderProps {
     onScan: (result: string | null) => void;

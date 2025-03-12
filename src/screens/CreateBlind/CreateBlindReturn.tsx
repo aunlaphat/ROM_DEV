@@ -4,67 +4,28 @@ import type { RadioChangeEvent } from 'antd';
 import { debounce } from "lodash";
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
+import { DataItemBlind, Product } from '../../types/types';
 import api from "../../utils/axios/axiosInstance"; 
 const { Option } = Select;
 
-
-interface DataItem {
-    key: number; // ค่าที่ใช้เป็น key
-    SKU: string;
-    Name: string;
-    QTY: number;
-}
-
-interface Product {
-    Key: string;
-    sku: string;
-    nameAlias: string;
-    size: string;
-  }
-
-const SKUName = [
-    { Name: "Bewell Better Back 2 Size M Nodel H01 (Gray)", SKU: "G097171-ARM01-BL" },
-    { Name: "Bewell Sport armband size M For", SKU: "G097171-ARM01-GY" },
-    { Name: "Sport armband size L", SKU: "G097171-ARM02-BL" },
-    { Name: "Bewell Sport armband size M with light", SKU: "G097171-ARM03-GR" },
-];
-
-// Create options for SKU and Name
-const skuOptions = SKUName.map(item => ({
-    value: item.SKU,
-    label: item.SKU
-}));
-
-const nameOptions = SKUName.map(item => ({
-    value: item.Name,
-    label: item.Name
-}));
-
 const CreateBlind = () => {
     const [showInput, setShowInput] = useState(false);
-    // const [selectedSKU, setSelectedSKU] = useState<string | undefined>(undefined);
     const [value, setValue] = useState<number>(0);
-    // const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
     const [form] = Form.useForm();
     const [form2] = Form.useForm();
     const [formValid, setFormValid] = useState(false);
     const [formskuValid, setFormskuValid] = useState(false);
-    // const [qty, setQty] = useState<number | null>(null);
     const [key, setKey] = useState<null>(null);
-    const [tableData, setTableData] = useState<DataItem[]>([]); // ใช้ interface ที่กำหนด
+    const [tableData, setTableData] = useState<DataItemBlind[]>([]); 
+    const [loading, setLoading] = useState(false);
+    const [dataSource, setDataSource] = useState<DataItemBlind[]>([]);
 
-    const [skuOptions, setSkuOptions] = useState<Product[]>([]); // To store SKU options
-    const [nameOptions, setNameOptions] = useState<Product[]>([]); // To store Name Alias options
+    const [skuOptions, setSkuOptions] = useState<Product[]>([]); 
+    const [nameOptions, setNameOptions] = useState<Product[]>([]); 
     const [selectedSKU, setSelectedSKU] = useState<string | undefined>(undefined);
     const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
     const [price, setPrice] = useState<number | null>(null); 
     const [qty, setQty] = useState<number | null>(null); 
-
-   const [loading, setLoading] = useState(false);
-   const [dataSource, setDataSource] = useState<DataItem[]>([]);
-
-
-    const navigate = useNavigate();
     
     const onChange = (e: RadioChangeEvent) => {
         setValue(e.target.value);
@@ -72,17 +33,16 @@ const CreateBlind = () => {
         setShowInput(e.target.value === 1);
     };
 
+    const navigate = useNavigate();
     // const handleNavigateToTakepicture = () => {
     //     navigate('/Takepicture'); // เส้นทางนี้ควรตรงกับการตั้งค่า Route ใน App.js หรือไฟล์ routing ของคุณ
     // };
 
-    const handleNavigateToTakepicture = (orderNumber: string, dataSource: DataItem[], value: number) => {
+    const handleNavigateToTakepicture = (orderNumber: string, dataSource: DataItemBlind[], value: number) => {
         navigate('/Takepicture', { state: { orderNumber, dataSource, value } });
     };
 
     /*** SKU&NameAlias ***/
-
-    // ค้นหา Product (SKU หรือ NAMEALIAS)
     const debouncedSearchSKU = debounce(async (value: string, searchType: string) => {
         setLoading(true);
         try {
@@ -96,7 +56,6 @@ const CreateBlind = () => {
         });
 
         const products = response.data.data;
-
         if (searchType === "SKU") {
             setSkuOptions(products.map((product: Product) => ({
             sku: product.sku,
@@ -129,10 +88,8 @@ const CreateBlind = () => {
         debouncedSearchSKU(value, "NAMEALIAS");
     };
 
-    // เมื่อเลือก Name Alias แล้วใช้ `/api/constants/get-sku` เพื่อหา SKU
     const handleNameChange = async (value: string) => {
         if (!value) {
-            // ถ้า value เป็น undefined หรือว่าง ให้เคลียร์ค่าในฟอร์ม
             form.setFieldsValue({ SKU: "", SKU_Name: "" });
             setSkuOptions([]);
             setNameOptions([]);
@@ -147,9 +104,7 @@ const CreateBlind = () => {
             params: { nameAlias, size },
         });
 
-        // เก็บผลลัพธ์จาก API เพื่อแสดงหลาย SKU
         const products = response.data.data;
-
         if (products.length > 0) {
             setSkuOptions(products.map((product: Product) => ({
             sku: product.sku,
@@ -157,45 +112,44 @@ const CreateBlind = () => {
             size: product.size,
             })));
             form2.setFieldsValue({
-            SKU: products[0].sku, // ตั้งค่า SKU ตัวแรกที่พบ
+            SKU: products[0].sku, 
             });
         } else {
             console.warn("No SKU found for:", nameAlias, size);
             setSkuOptions([]); 
             setNameOptions([]); 
-            form2.setFieldsValue({ SKU: "", SKU_Name: "" }); // เคลียร์ค่าในฟอร์ม
+            form2.setFieldsValue({ SKU: "", SKU_Name: "" });
         }
         } catch (error) {
-        console.error("Error fetching SKU:", error);
+            console.error("Error fetching SKU:", error);
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
     };
 
     const handleSKUChange = (value: string) => {
         const selected = skuOptions.find((option) => option.sku === value);
-        
         if (selected) {
-        form2.setFieldsValue({
-            SKU: selected.sku,
-            SKU_Name: selected.nameAlias,
-        });
-        setSelectedSKU(selected.sku);
-        setSelectedName(selected.nameAlias);
+            form2.setFieldsValue({
+                SKU: selected.sku,
+                SKU_Name: selected.nameAlias,
+            });
+            setSelectedSKU(selected.sku);
+            setSelectedName(selected.nameAlias);
 
-        // อัปเดต nameOptions ตาม SKU ที่เลือก
-        const filteredNameOptions = skuOptions
-        .filter((option) => option.sku === selected.sku) // กรองเฉพาะ SKU ที่ตรงกับที่เลือก
-        .map((option) => ({
-        ...option,  // คัดลอกค่าเดิม
-        Key: option.sku,  // เพิ่มคีย์ Key ที่ต้องการ
-        }));
-        setNameOptions(filteredNameOptions);  // อัปเดต nameOptions
-        } else { // เคลียร์ค่าเมื่อไม่มี SKU ที่ตรงกัน
-        setSkuOptions([]); 
-        setNameOptions([]); 
-        setSelectedSKU("");
-        setSelectedName("");
+            // อัปเดต nameOptions ตาม SKU ที่เลือก
+            const filteredNameOptions = skuOptions
+            .filter((option) => option.sku === selected.sku) // กรองเฉพาะ SKU ที่ตรงกับที่เลือก
+            .map((option) => ({
+            ...option,  // คัดลอกค่าเดิม
+            Key: option.sku,  // เพิ่มคีย์ Key ที่ต้องการ
+            }));
+            setNameOptions(filteredNameOptions);  // อัปเดต nameOptions
+        } else { 
+            setSkuOptions([]); 
+            setNameOptions([]); 
+            setSelectedSKU("");
+            setSelectedName("");
         }
     };
 
@@ -221,12 +175,11 @@ const CreateBlind = () => {
                     const isSKUExist = dataSource.some((item) => item.SKU === values.SKU);
     
                     if (isSKUExist) {
-                        // แสดงข้อความเตือนว่า SKU ซ้ำ
                         notification.warning({
                             message: "มีข้อผิดพลาด",
                             description: "SKU นี้ถูกเพิ่มไปแล้วในรายการ!",
                         });
-                        return; // ไม่ทำการเพิ่มข้อมูล
+                        return; 
                     }
     
                     // ถ้า SKU ยังไม่ซ้ำ เพิ่มข้อมูลใหม่
@@ -236,10 +189,7 @@ const CreateBlind = () => {
                         Name: nameAlias,
                         QTY: values.QTY,
                     };
-    
                     setDataSource([...dataSource, newData]); // เพิ่มข้อมูลใหม่ไปยัง dataSource
-    
-                    // แสดงข้อความเมื่อเพิ่มข้อมูลสำเร็จ
                     notification.success({
                         message: "เพิ่มสำเร็จ",
                         description: "ข้อมูลของคุณถูกเพิ่มเรียบร้อยแล้ว!",
@@ -252,7 +202,6 @@ const CreateBlind = () => {
                     setSelectedSKU("");
                     setSelectedName("");
                 } else {
-                    // แสดงข้อความเตือนหาก SKU_Name ไม่มีค่าหรือไม่มีเครื่องหมาย '+'
                     notification.warning({
                         message: "มีข้อผิดพลาด",
                         description: "กรุณาเลือก SKU Name ที่ถูกต้อง!",
@@ -267,14 +216,6 @@ const CreateBlind = () => {
                 });
             });
     };
-    
-    // const handleDelete = (key: string) => {
-    //     setTableData(tableData.filter(item => item.key !== key));
-    //     notification.success({
-    //         message: "ลบข้อมูลสำเร็จ",
-    //         description: "ข้อมูลของคุณถูกลบออกเรียบร้อยแล้ว.",
-    //     });
-    // };
 
     const handleDelete = (key: number) => {
         setDataSource(dataSource.filter((item) => item.key !== key));
@@ -282,9 +223,8 @@ const CreateBlind = () => {
           message: "ลบข้อมูลสำเร็จ",
           description: "ข้อมูลของคุณถูกลบออกเรียบร้อยแล้ว.",
         });
-      };
+    };
 
-   
     const columns = [
         { title: "SKU", dataIndex: "SKU", id: "SKU" },
         { title: "Name", dataIndex: "Name", id: "Name" },
@@ -307,6 +247,7 @@ const CreateBlind = () => {
             ),
         },
     ];
+
     const formatAccountNumber = (value: string) => {
         value = value.replace(/\D/g, ""); // Remove non-digit characters
         if (value.length > 3) {
@@ -334,7 +275,7 @@ const CreateBlind = () => {
                                 message: "กรุณาเพิ่มข้อมูลในตาราง",
                                 description: "กรุณากรอกรายการสินค้าอย่างน้อย 1 รายการก่อนส่งข้อมูล !",
                             });
-                            return; // หยุดการทำงานของฟังก์ชัน
+                            return; 
                         }
                     })
                     .catch((info) => {
@@ -345,20 +286,16 @@ const CreateBlind = () => {
                         });
                     });
             } else {
-                // ส่งข้อมูลและรีเซ็ตฟอร์มและตาราง
                 console.log("Table Data:", dataSource);
-                
-                form.resetFields();  // รีเซ็ตฟอร์มและตาราง
+                form.resetFields(); 
                 form2.resetFields();
-                setDataSource([]); // หรือปรับเป็นค่าเริ่มต้นที่คุณต้องการได้
-                
+                setDataSource([]);
                 notification.success({
                     message: "ส่งข้อมูลสำเร็จ",
                     description: "ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!",
                 });
-
                 // handleNavigateToTakepicture(); // ไปหน้าต่อไป
-                handleNavigateToTakepicture(values.Ordernumber, dataSource, value);
+                handleNavigateToTakepicture(values.OrderNo, dataSource, value);
             }
         })
         .catch((info) => {
@@ -368,7 +305,7 @@ const CreateBlind = () => {
                 description: "กรุณากรอกข้อมูลให้ครบก่อนส่งข้อมูล !",
             });
         });
-};
+    };
     
     const handleFormValidation = () => {
         // alert('test1');
@@ -384,7 +321,6 @@ const CreateBlind = () => {
         }else{
             setFormValid(false); 
         }
-        
     };
 
     const handleValuesChange = () => {
@@ -392,7 +328,6 @@ const CreateBlind = () => {
         // alert('test');
         handleFormValidation();// Trigger alert on any form field change
     };
-
 
     return (
         <ConfigProvider>
@@ -410,9 +345,9 @@ const CreateBlind = () => {
                         overflow: "auto",
                     }}
                 >
-                    <Form form={form} 
-                     onValuesChange={handleValuesChange} 
-                    layout="vertical">
+                <Form form={form} 
+                      onValuesChange={handleValuesChange} 
+                      layout="vertical">
                         <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
                             <Col span={8}>
                                 <Form.Item
@@ -429,20 +364,8 @@ const CreateBlind = () => {
                                   id="Phonenumber"
                                     label={<span style={{ color: '#657589' }}>กรอกเบอร์โทร</span>}
                                     name="Phonenumber"
-                                    rules={[{
-                                        required: true, message: 'กรุณากรอกเบอร์โทร!'
-
-                                    },
-                                    
-                                        {
-                                            len: 10,
-                                            message: 'กรุณากรอกเบอร์โทรให้ครบ 10 หลัก!',
-                                        
-                                    }
-
-                                    ]}
+                                    rules={[{ required: true, message: 'กรุณากรอกเบอร์โทร!' }, { len: 10, message: 'กรุณากรอกเบอร์โทรให้ครบ 10 หลัก!', }]}
                                 >
-                                    
                                     <Input
                                         type="number"
                                         style={{ height: 40 }}
@@ -450,12 +373,9 @@ const CreateBlind = () => {
                                         maxLength={10}
                                         onChange={(e) => {
                                             let value = e.target.value;
-                                
-                                            // Limit the value to 10 characters and remove non-numeric characters
                                             if (value.length > 10) {
                                                 value = value.slice(0, 10);
                                             }
-                                
                                             // Optionally format the value (e.g., adding spaces or dashes)
                                             // For example, here we remove all non-numeric characters for simplicity
                                             value = value.replace(/\D/g, '');
@@ -463,8 +383,6 @@ const CreateBlind = () => {
                                             // Set the value back to the input field
                                             e.target.value = value;
                                         }}
-
-
                                     />
                                 </Form.Item>
                             </Col>
@@ -483,8 +401,18 @@ const CreateBlind = () => {
                         <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
                             <Col span={8}>
                                 <Form.Item
+                                    id="OrderNo"
+                                    label={<span style={{ color: '#657589' }}>กรอกเลข Order</span>}
+                                    name="OrderNo"
+                                    rules={[{ required: true, message: "กรอกเลข Order" }]}
+                                >
+                                    <Input style={{ height: 40 }} placeholder="กรอกเลข Order" />
+                                </Form.Item>
+                            </Col>
+                            <Col span={8}>
+                                <Form.Item
                                  id="Tracking"
-                                   label={
+                                 label={
                                     <span style={{ color: '#657589' }}>
                                       กรอกเลข Tracking:&nbsp;
                                       <Tooltip title="เลขTracking จากขนส่ง">
@@ -492,55 +420,44 @@ const CreateBlind = () => {
                                       </Tooltip>
                                     </span>
                                   }
-                                    name="Tracking"
-                                    rules={[{ required: true, message: "กรอกเลข Tracking" }]}>
-                                    <Input style={{ height: 40 }} placeholder="กรอกเลข Tracking" />
+                                  name="Tracking"
+                                  rules={[{ required: true, message: "กรอกเลข Tracking" }]}>
+                                  <Input style={{ height: 40 }} placeholder="กรอกเลข Tracking" />
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
                                 <Form.Item
-                                  id="Ordernumber"
-                                    label={<span style={{ color: '#657589' }}>กรอกเลข Order</span>}
-                                    name="Ordernumber"
-                                    rules={[{ required: true, message: "กรอกเลข Order" }]}
+                                    id="Logistic"
+                                    label={
+                                        <span style={{ color: "#657589" }}>
+                                            กรอก Logistic:&nbsp;
+                                            <Tooltip title="ผู้ให้บริการขนส่ง">
+                                            <QuestionCircleOutlined
+                                                style={{ color: "#657589" }}
+                                            />
+                                            </Tooltip>
+                                        </span>
+                                    }
+                                    name="Logistic"
+                                    rules={[{ required: true, message: "กรอก Logistic" },]}
                                 >
-                                    <Input style={{ height: 40 }} placeholder="กรอกเลข Order" />
+                                    <Input style={{ height: 40 }} />
                                 </Form.Item>
-                            </Col>
-                            <Col span={8}>
-                            <Form.Item
-                                id="Logistic"
-                                label={
-                                <span style={{ color: "#657589" }}>
-                                    กรอก Logistic:&nbsp;
-                                    <Tooltip title="ผู้ให้บริการขนส่ง">
-                                    <QuestionCircleOutlined
-                                        style={{ color: "#657589" }}
-                                    />
-                                    </Tooltip>
-                                </span>
-                                }
-                                name="Logistic"
-                                rules={[
-                                { required: true, message: "กรอก Logistic" },
-                                ]}
-                            >
-                                <Input style={{ height: 40 }} />
-                            </Form.Item>
                             </Col>
                         </Row>
                     </Form>
-                    <Form
-    form={form2}
-    layout="vertical"
-    onValuesChange={() => {
-        const { SKU, SKU_Name, QTY } = form2.getFieldsValue();
-        console.log(SKU,SKU_Name,QTY);
-        // ตรวจสอบว่าทุกฟิลด์มีค่าไม่เป็น undefined และไม่เป็นค่าว่าง
-        const isFormValid = SKU !== undefined && SKU_Name !== undefined && QTY !== undefined;
-        setFormskuValid(isFormValid);
-    }}
->
+
+    <Form
+        form={form2}
+        layout="vertical"
+        onValuesChange={() => {
+            const { SKU, SKU_Name, QTY } = form2.getFieldsValue();
+            console.log(SKU,SKU_Name,QTY);
+            // ตรวจสอบว่าทุกฟิลด์มีค่าไม่เป็น undefined และไม่เป็นค่าว่าง
+            const isFormValid = SKU !== undefined && SKU_Name !== undefined && QTY !== undefined;
+            setFormskuValid(isFormValid);
+        }}
+    >
     <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
         {/* ... ส่วนอื่น ๆ ของฟอร์ม ... */}
     </Row>
@@ -554,10 +471,10 @@ const CreateBlind = () => {
     </Row>
 
     {showInput && (
-        <Row gutter={16} style={{ marginTop: "20px", width: '100%' }}>
+    <Row gutter={16} style={{ marginTop: "20px", width: '100%' }}>
         <Col span={8}>
             <Form.Item
-             id="SKU" 
+                id="SKU" 
                 label={<span style={{ color: '#657589' }}>SKU:</span>}
                 name="SKU"
                 rules={[{ required: true, message: "กรุณากรอก SKU" }]}
@@ -570,10 +487,10 @@ const CreateBlind = () => {
                       onSearch={handleSearchSKU} // ใช้สำหรับค้นหา SKU
                       onChange={handleSKUChange} // เมื่อเลือก SKU
                       loading={loading}
-                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
-                      virtual // ทำให้ค้นหาไวขึ้น
+                      listHeight={160} 
+                      virtual 
                       dropdownStyle={{ minWidth: 200 }}
-                    >
+                >
                       {skuOptions.map((option) => (
                         <Option 
                           key={`${option.sku}-${option.size}`} 
@@ -603,7 +520,7 @@ const CreateBlind = () => {
                       listHeight={160} // ปรับให้พอดีกับ 4 รายการ
                       virtual // ทำให้ค้นหาไวขึ้น
                       dropdownStyle={{ minWidth: 300 }}
-                    >
+                >
                       {nameOptions.map((option) => (
                         <Option 
                           key={`${option.nameAlias}-${option.size}`} 
@@ -630,8 +547,8 @@ const CreateBlind = () => {
                     style={{ width: '100%', height: 40, lineHeight: '40px' }}
                 />
             </Form.Item>
-                            </Col>
-                            <Col span={4}>
+        </Col>
+        <Col span={4}>
             <Button
                 id="Add" 
                 type="primary"
@@ -643,57 +560,56 @@ const CreateBlind = () => {
                 Add
             </Button>
         </Col>
-                        </Row>
-                        
-                        )}
+    </Row>          
+    )}
 
-                        {showInput && (
-                            <Table
-                            id="Table" 
-                                style={{ marginTop: '20px' }}
-                                columns={columns}
-                                dataSource={dataSource}
-                                rowKey="SKU"
-                                pagination={false}
-                            />
-                        )}
+    {showInput && (
+        <Table
+        id="Table" 
+            style={{ marginTop: '20px' }}
+            columns={columns}
+            dataSource={dataSource}
+            rowKey="SKU"
+            pagination={false}
+        />
+    )}
                         
-                    </Form>
-                    <Row align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}> 
-                    {/* <Button
-                        id="Confirm" 
-                        type="primary"
-                        onClick={handleSubmit}
-                        // disabled={
-                        //     (value === 2 && formValid === true ) 
-                        //     ? false 
-                        //     : (value === 1 && dataSource.length > 0&& formValid === true ) 
-                        //     ? false 
-                        //     :true
-                        // }
-                        // disabled={!((value === 2 && formValid) || (value === 1 && dataSource.length > 0 && formValid))}
-                        // disabled={tableData.length === 0 || !formValid || value === undefined}  // ปิดการใช้งานเมื่อไม่มีข้อมูลในตาราง, form ไม่ valid หรือไม่มีการเลือก value
+    </Form>
+            <Row align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}> 
+                {/* <Button
+                    id="Confirm" 
+                    type="primary"
+                    onClick={handleSubmit}
+                    // disabled={
+                    //     (value === 2 && formValid === true ) 
+                    //     ? false 
+                    //     : (value === 1 && dataSource.length > 0&& formValid === true ) 
+                    //     ? false 
+                    //     :true
+                    // }
+                    // disabled={!((value === 2 && formValid) || (value === 1 && dataSource.length > 0 && formValid))}
+                    // disabled={tableData.length === 0 || !formValid || value === undefined}  // ปิดการใช้งานเมื่อไม่มีข้อมูลในตาราง, form ไม่ valid หรือไม่มีการเลือก value
+                >
+                    ยืนยัน
+                </Button> */}
+                <Popconfirm
+                    id="popconfirmSubmit"
+                    title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
+                    onConfirm={handleSubmit} 
+                    okText="ใช่"
+                    cancelText="ไม่"
                     >
-                        ยืนยัน
-                    </Button> */}
-                    <Popconfirm
-                        id="popconfirmSubmit"
-                        title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
-                        onConfirm={handleSubmit} // เรียกใช้ฟังก์ชัน handleSubmit เมื่อกดยืนยัน
-                        okText="ใช่"
-                        cancelText="ไม่"
-                        >
-                        <Button
-                            id="Confirm"
-                            type="primary"
-                        >
-                            Submit
-                        </Button>
-                    </Popconfirm>
-                    </Row>
-                </Layout.Content>
-            </Layout>
-        </ConfigProvider>
+                    <Button
+                        id="Confirm"
+                        type="primary"
+                    >
+                        Submit
+                    </Button>
+                </Popconfirm>
+            </Row>
+            </Layout.Content>
+        </Layout>
+    </ConfigProvider>
     );
 };
 

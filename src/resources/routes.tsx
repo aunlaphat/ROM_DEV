@@ -9,15 +9,15 @@ import CreateReturnOrderMKP from "../screens/Orders/Marketplace";
 import { DraftAndConfirm } from "../screens/Draft&Confirm";
 import { Report } from "../screens/Report";
 import { ManageUser } from "../screens/ManageUser";
-import ImportOrder from "../screens/Return_import/Import_Return_Order";
+import ImportOrder from "../screens/ImportOrder/ImportOrder";
 import ReturnOrder from "../screens/Return/Returnorder";
-import IJPage from "../screens/CreateReturn/IJ";
+import IJPage from "../screens/CreateIJ/CreateIJ";
 import CreateTradeReturn from "../screens/CreateTradeReturn/CreateTradeReturn";
 import ConfirmReturnTrade from "../screens/ConfirmReturnTrade/ConfirmReturnTrade";
-import OtherReturn from "../screens/SaleReturn/SR/OtherReturn";
-import SaleReturn from "../screens/SaleReturn/Sale_Return";
-import CreateBlindReturn from "../screens/Create_Blind/CreateBlindReturn";
-import TakePicture from "../screens/Create_Blind/Takepicture";
+import OtherReturn from "../screens/ReceiptOrder/OtherReturn";
+import SaleReturn from "../screens/ReceiptOrder/SaleReturn";
+import CreateBlindReturn from "../screens/CreateBlind/CreateBlindReturn";
+import TakePicture from "../screens/CreateBlind/Takepicture";
 
 export const ROUTE_LOGIN = process.env.REACT_APP_FRONTEND_URL + "/";
 

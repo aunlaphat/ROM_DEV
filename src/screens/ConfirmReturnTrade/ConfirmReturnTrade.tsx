@@ -11,110 +11,64 @@ import isBetween from "dayjs/plugin/isBetween";
 import '../Return.css';
 import Webcam from "react-webcam";
 import api from "../../utils/axios/axiosInstance"; 
+import { Order, OrderDetail, OrderLine, SKUData, SelectedRecord} from '../../types/types';
 
 dayjs.extend(utc);
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isBetween);
 
-interface Order {
-  Order: string;
-  SO_INV: string;
-  Customer: string;
-  SR: string;
-  Transport: string;
-  ReturnTracking: string;
-  Channel: string;
-  Date_Create: string;
-  Warehouse: string;
-  data: SKUData[];  // ใช้ SKUData ที่มีการกำหนด Type ที่ถูกต้อง
-  codeR?: string;
-  nameR?: string;
-}
-
-interface OrderDetail {
-    orderNo: string;
-    soNo: string;
-    customerId: string;
-    srNo: string;
-    trackingNo: string;
-    logistic: string;
-    channelName: string;
-    createDate: string;
-    warehouseName: string;
-    data: OrderLine[]; 
-}
-
-interface OrderLine {
-    sku: string;
-    itemName: string;
-    qty: number;
-    price: string;
-    Type: 'system' | 'addon';
-}
-
-interface SKUData {
-  SKU: string;
-  Name: string;
-  QTY: number;
-  Price: string;
-  Action: string;
-  Type: 'system' | 'addon';  // เพิ่ม Type เพื่อระบุว่ามาจากในระบบหรือเป็น addon
-}
-  interface SelectedRecord {
-    data: SKUData[];
-  }
 const ConfirmReturnTrade = () => {
     
-  const columnsdata: Order[] = [
-    {
-        Order: "12345678",
-        SO_INV: "SO123456",
-        Customer: "TC-NMI-0007",
-        SR: "SR001",
-        ReturnTracking: "RT123456",
-        Transport: "SPX",
+    const columnsdata: Order[] = [
+        {
+            Order: "12345678",
+            SO_INV: "SO123456",
+            Customer: "TC-NMI-0007",
+            SR: "SR001",
+            ReturnTracking: "RT123456",
+            Transport: "SPX",
+            
+            Channel: "OTHER",
+            Date_Create: "2024-09-01",
+            Warehouse: "RBN",
+            data: [
+                { SKU: 'G090108-EF05', Name: 'Bewell Official Store', QTY: 20, Price: '599.00', Action: '', Type:'system' },
+                { SKU: 'G090108-EF04', Name: 'Bewell Shop', QTY: 50, Price: '599.00', Action: '',  Type:'system' },
+            ],
+        },
+        {
+            Order: "12345677",
+            SO_INV: "SO123457",
+            Customer: "TC-NMI-0008",
+            SR: "SR002",
+            ReturnTracking: "RT123457",
+            Transport: "Flash Express",
         
-        Channel: "OTHER",
-        Date_Create: "2024-09-01",
-        Warehouse: "RBN",
-        data: [
-            { SKU: 'G090108-EF05', Name: 'Bewell Official Store', QTY: 20, Price: '599.00', Action: '', Type:'system' },
-            { SKU: 'G090108-EF04', Name: 'Bewell Shop', QTY: 50, Price: '599.00', Action: '',  Type:'system' },
-        ],
-    },
-    {
-        Order: "12345677",
-        SO_INV: "SO123457",
-        Customer: "TC-NMI-0008",
-        SR: "SR002",
-        ReturnTracking: "RT123457",
-        Transport: "Flash Express",
-       
-        Channel: "OTHER",
-        Date_Create: "2024-09-15",
-        Warehouse: "RBN",
-        data: [
-            { SKU: 'G090108-EF05', Name: 'Bewell Official Store', QTY: 20, Price: '599.00', Action: '',  Type:'system' },
-            { SKU: 'G090108-EF04', Name: 'Bewell Shop', QTY: 50, Price: '599.00', Action: '',  Type:'system'},
-        ],
-    },
-    {
-        Order: "12345676",
-        SO_INV: "SO123458",
-        Customer: "TC-NMI-0009",
-        SR: "SR003",
-        ReturnTracking: "RT123458",
-        Transport: "SPX",
-        Channel: "OTHER",
-        Date_Create: "2024-09-29",
-        Warehouse: "RBN",
-        data: [
-            { SKU: 'G090108-EF05', Name: 'Bewell Official Store', QTY: 20, Price: '599.00', Action: '',  Type:'system' },
-            { SKU: 'G090108-EF04', Name: 'Bewell Shop', QTY: 50, Price: '599.00', Action: '',  Type:'system'},
-        ],
-    },
-];
+            Channel: "OTHER",
+            Date_Create: "2024-09-15",
+            Warehouse: "RBN",
+            data: [
+                { SKU: 'G090108-EF05', Name: 'Bewell Official Store', QTY: 20, Price: '599.00', Action: '',  Type:'system' },
+                { SKU: 'G090108-EF04', Name: 'Bewell Shop', QTY: 50, Price: '599.00', Action: '',  Type:'system'},
+            ],
+        },
+        {
+            Order: "12345676",
+            SO_INV: "SO123458",
+            Customer: "TC-NMI-0009",
+            SR: "SR003",
+            ReturnTracking: "RT123458",
+            Transport: "SPX",
+            Channel: "OTHER",
+            Date_Create: "2024-09-29",
+            Warehouse: "RBN",
+            data: [
+                { SKU: 'G090108-EF05', Name: 'Bewell Official Store', QTY: 20, Price: '599.00', Action: '',  Type:'system' },
+                { SKU: 'G090108-EF04', Name: 'Bewell Shop', QTY: 50, Price: '599.00', Action: '',  Type:'system'},
+            ],
+        },
+    ];
 
     const columns = [
         { title: "Order", dataIndex: "Order", id:"Order", key: "Order",     render: (text: string) => <span style={{ color: '#35465B' }}>{text}</span>  },
@@ -143,6 +97,7 @@ const ConfirmReturnTrade = () => {
             ),
         },
     ];
+
     const columnsconfirm = [
       { title: "Order", dataIndex: "Order", key: "Order", id:"Order",  },
       { title: "SO/INV", dataIndex: "SO_INV", key: "SO_INV" , id:"SO_INV", },
@@ -170,18 +125,7 @@ const ConfirmReturnTrade = () => {
           ),
       },
     ];
-  
-    // const codeROptions = [
-    //   { value: 'R01', label: 'R01',id:'R01' },
-    //   { value: 'R02', label: 'R02',id:'R02' },
-    // ];
-    
-    // const codeNameOptions = [
-    //   { value: 'ส่วนลด', label: 'ส่วนลด',id:'ส่วนลด' },
-    //   { value: 'ของแถม', label: 'แถม',id:'แถม' },
-    // ];
 
-    const { Option } = Select;
     const [form] = Form.useForm();
     const [dates, setDates] = useState<[Dayjs, Dayjs] | null>(null);
     const { RangePicker } = DatePicker;
@@ -203,84 +147,80 @@ const ConfirmReturnTrade = () => {
     // };
 
     const handleEdit = async (record: Order, activeTabKey: string) => {
-    try {
-        const response = await api.get(`/api/return-order/get-lines/${record.Order}`);
-        const orderLines: OrderLine[] = response.data.data || [];
-
-        console.log('Order Lines:', orderLines); // เพิ่มการพิมพ์ข้อมูลที่ได้รับจาก API
-        
-        const updatedRecord = {
-        ...record,
-        data: orderLines.map((line: OrderLine) => ({
-            SKU: line.sku,
-            Name: line.itemName,
-            QTY: line.qty,
-            Price: line.price,
-            Action: '',
-            Type: line.Type,
-        })),
-        };
-        console.log('Updated Record:', updatedRecord); // เพิ่มการพิมพ์ข้อมูลที่แมปแล้ว
-        setSelectedRecord(updatedRecord); // เก็บข้อมูล record ที่เลือกพร้อมกับ OrderLine
-        setIsModalVisible(true); // แสดง Modal
-    } catch (error) {
-        console.error('Failed to fetch order lines:', error);
-        notification.error({
-        message: 'Error',
-        description: 'Failed to fetch order lines.',
-        });
-    }
+        try {
+            const response = await api.get(`/api/return-order/get-lines/${record.Order}`);
+            const orderLines: OrderLine[] = response.data.data || [];
+            const updatedRecord = {
+                ...record,
+                data: orderLines.map((line: OrderLine) => ({
+                    SKU: line.sku,
+                    Name: line.itemName,
+                    QTY: line.qty,
+                    Price: line.price,
+                    Action: '',
+                    Type: line.Type,
+                })),
+            };
+            setSelectedRecord(updatedRecord); // เก็บข้อมูล record ที่เลือกพร้อมกับ OrderLine
+            setIsModalVisible(true); 
+        } catch (error) {
+            console.error('Failed to fetch order lines:', error);
+            notification.error({
+            message: 'Error',
+            description: 'Failed to fetch order lines.',
+            });
+        }
     };
     
     const handleOk = () => {
       // Logic for saving the edited record can go here
       handleUpdate();
       setIsModalVisible(false); // ปิด Modal
-  };
+    };
 
-  const handleCancel = () => {
-    setIsModalVisible(false);
+    const handleCancel = () => {
+        setIsModalVisible(false);
         setSelectedRecord(null);
-};
+    };
 
-  const fetchData = async (statusCheckID: number) => {
-    try {
-      const endpoint = statusCheckID === 1 
-        ? '/api/trade-return/get-waiting' 
-        : '/api/trade-return/get-confirm';
-      const response = await api.get(endpoint);
-      const data = response.data.data.map((item: OrderDetail) => ({
-        Order: item.orderNo,
-        SO_INV: item.soNo,
-        Customer: item.customerId,
-        SR: item.srNo,
-        ReturnTracking: item.trackingNo,
-        Transport: item.logistic,
-        Channel: item.channelName,
-        Date_Create: dayjs(item.createDate).utc().format('YYYY-MM-DD'),
-        Warehouse: item.warehouseName,
-        data: [], // Assuming you have a way to get SKUData
-      }));
+    const fetchData = async (statusCheckID: number) => {
+        try {
+        const endpoint = statusCheckID === 1 
+            ? '/api/trade-return/get-waiting' 
+            : '/api/trade-return/get-confirm';
+        const response = await api.get(endpoint);
+        const data = response.data.data.map((item: OrderDetail) => ({
+            Order: item.orderNo,
+            SO_INV: item.soNo,
+            Customer: item.customerId,
+            SR: item.srNo,
+            ReturnTracking: item.trackingNo,
+            Transport: item.logistic,
+            Channel: item.channelName,
+            Date_Create: dayjs(item.createDate).utc().format('YYYY-MM-DD'),
+            Warehouse: item.warehouseName,
+            data: [], // Assuming you have a way to get SKUData
+        }));
 
-      setFilteredData(data);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-      notification.error({
-        message: 'Error',
-        description: 'Failed to fetch data.',
-      });
-    }
-  };
+        setFilteredData(data);
+        } catch (error) {
+        console.error('Failed to fetch data:', error);
+        notification.error({
+            message: 'Error',
+            description: 'Failed to fetch data.',
+        });
+        }
+    };
 
-  useEffect(() => {
-    fetchData(activeTabKey === "1" ? 1 : 2);
-  }, [activeTabKey]);
-  
-  useEffect(() => {
-    handleSearch(activeTabKey === "1" ? 1 : 2);
-  }, []);
+    useEffect(() => {
+        fetchData(activeTabKey === "1" ? 1 : 2);
+    }, [activeTabKey]);
+    
+    useEffect(() => {
+        handleSearch(activeTabKey === "1" ? 1 : 2);
+    }, []);
 
-const handleSearch = async (statusCheckID: number) =>  {
+    const handleSearch = async (statusCheckID: number) =>  {
 
     // if (!dates || !dates[0] || !dates[1]) {
     //     if (isManualSearch) { // แจ้งเตือนเฉพาะตอนกดปุ่ม
@@ -293,58 +233,58 @@ const handleSearch = async (statusCheckID: number) =>  {
     //     return;
     //   }
 
-  if (dates && dates[0] && dates[1]) {
-    const startDate = dates[0].format('YYYY-MM-DD');
-    const endDate = dates[1].format('YYYY-MM-DD');
+    if (dates && dates[0] && dates[1]) {
+        const startDate = dates[0].format('YYYY-MM-DD');
+        const endDate = dates[1].format('YYYY-MM-DD');
 
-    try {
-      const endpoint = statusCheckID === 1 
-        ? '/api/trade-return/search-waiting' 
-        : '/api/trade-return/search-confirm';
+        try {
+            const endpoint = statusCheckID === 1 
+                ? '/api/trade-return/search-waiting' 
+                : '/api/trade-return/search-confirm';
 
-      const response = await api.get(endpoint, {
-        params: {
-          startDate,
-          endDate,
-        },
-      });
+            const response = await api.get(endpoint, {
+                params: {
+                startDate,
+                endDate,
+                },
+            });
 
-      const data = response.data.data || []; // ตรวจสอบว่ามีข้อมูลหรือไม่
-      const filtered = data.filter((item: OrderDetail) => {
-        const itemDate = dayjs(item.createDate).utc().format('YYYY-MM-DD');
-        return dayjs(itemDate).isSameOrAfter(startDate) && dayjs(itemDate).isSameOrBefore(endDate);
-      }).map((item: OrderDetail) => ({
-        Order: item.orderNo,
-        SO_INV: item.soNo,
-        Customer: item.customerId,
-        SR: item.srNo,
-        ReturnTracking: item.trackingNo,
-        Transport: item.logistic,
-        Channel: item.channelName,
-        Date_Create: dayjs(item.createDate).utc().format('YYYY-MM-DD'),
-        Warehouse: item.warehouseName,
-        data: [], // Assuming you have a way to get SKUData
-      }));
+            const data = response.data.data || []; // ตรวจสอบว่ามีข้อมูลหรือไม่
+            const filtered = data.filter((item: OrderDetail) => {
+                const itemDate = dayjs(item.createDate).utc().format('YYYY-MM-DD');
+                return dayjs(itemDate).isSameOrAfter(startDate) && dayjs(itemDate).isSameOrBefore(endDate);
+            }).map((item: OrderDetail) => ({
+                Order: item.orderNo,
+                SO_INV: item.soNo,
+                Customer: item.customerId,
+                SR: item.srNo,
+                ReturnTracking: item.trackingNo,
+                Transport: item.logistic,
+                Channel: item.channelName,
+                Date_Create: dayjs(item.createDate).utc().format('YYYY-MM-DD'),
+                Warehouse: item.warehouseName,
+                data: [], // Assuming you have a way to get SKUData
+            }));
 
-    //   if (filtered.length === 0) {
-    //     notification.warning({
-    //       message: 'Data not found',
-    //       description: 'Please select new date range again!',
-    //     });
-    //     // setDates(null); 
-    //     return;
-    //   } 
-  
-      setFilteredData(filtered);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-      notification.error({
-        message: 'Error',
-        description: 'Failed to fetch data.',
-      });
+        //   if (filtered.length === 0) {
+        //     notification.warning({
+        //       message: 'Data not found',
+        //       description: 'Please select new date range again!',
+        //     });
+        //     // setDates(null); 
+        //     return;
+        //   } 
+    
+            setFilteredData(filtered);
+        } catch (error) {
+        console.error('Failed to fetch data:', error);
+        notification.error({
+            message: 'Error',
+            description: 'Failed to fetch data.',
+        });
+        }
     }
-  }
-};
+  };
     
     const handleAdd = () => {
       if (selectedRecord) {
@@ -396,6 +336,7 @@ const handleSearch = async (statusCheckID: number) =>  {
             // handleSearch(activeTabKey === "1" ? 1 : 2); // เรียก handleSearch พร้อมกับ StatusCheckID ที่ถูกต้อง
         }
     };
+
     const handleUpdate = () => {
       // บันทึก newEntries ลงใน selectedRecord
       if (selectedRecord) {
@@ -408,160 +349,154 @@ const handleSearch = async (statusCheckID: number) =>  {
           // เปลี่ยนแท็บไปที่ "Confirm draft"
           setActiveTabKey('2');
       }
-  };
+    };
 
-    return (
-        
-        <ConfigProvider>
-             
-            <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
+return (
+    <ConfigProvider>
+        <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
             Confirm Return Trade
-            </div>
-            <Layout>
-                <Layout.Content
-                    style={{
-                        margin: "24px",
-                        padding: 36,
-                        minHeight: 360,
-                        background: "#fff",
-                        borderRadius: "8px",
-                        overflow: "auto",
-                    }}
-                >
-                    <Tabs
-                    id="card"
-                        onChange={onTabChange}
-                        type="card"
-                        items={[
-                            { label: "Waiting", key: "1" },
-                            { label: "Confirm", key: "2" },
-                        ]}
+        </div>
+        <Layout>
+            <Layout.Content
+                style={{
+                    margin: "24px",
+                    padding: 36,
+                    minHeight: 360,
+                    background: "#fff",
+                    borderRadius: "8px",
+                    overflow: "auto",
+                }}
+            >
+            <Tabs
+            id="card"
+                onChange={onTabChange}
+                type="card"
+                items={[
+                    { label: "Waiting", key: "1" },
+                    { label: "Confirm", key: "2" },
+                ]}
+            />
+
+            {activeTabKey === "1" && (
+            <>
+                <Row gutter={8} align="middle" justify="center" style={{ marginTop: "20px" }}>
+                    <Col>
+                        <Form.Item
+                            id="Select date"
+                            layout="vertical"
+                            label="Select date"
+                            name="Select date"
+                            rules={[{ required: true, message: "Please select the Select date!" }]}
+                        >
+                            <RangePicker
+                                value={dates}
+                                style={{ height: "40px" }}
+                                onChange={handleDateChange}
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col style={{ marginTop: "4px" }}>
+                        <Button
+                        id="Search"
+                            type="primary"
+                            style={{ height: "40px", width: "100px", background: "#32ADE6" }}
+                            onClick={() => handleSearch(1)}
+                        >
+                            Search
+                        </Button>
+                    </Col>
+                </Row>
+                <div>
+                    <Table 
+                        id="Table1"
+                        components={{
+                            header: {
+                                cell: (props: React.HTMLAttributes<HTMLElement>) => (
+                                <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B' }} />
+                                ),
+                            },
+                        }}
+                        pagination={false} // Disable pagination if necessary
+                        style={{ width: '100%', tableLayout: 'fixed' }} // Ensure the table takes full width and is fixed layout
+                        scroll={{ x: 'max-content' }}
+                        dataSource={filteredData}
+                        columns={columns} 
+                        rowKey="Order"
                     />
-
-                    {activeTabKey === "1" && (
-                        <>
-                            <Row gutter={8} align="middle" justify="center" style={{ marginTop: "20px" }}>
-                                <Col>
-                                    <Form.Item
-                                        id="Select date"
-                                        layout="vertical"
-                                        label="Select date"
-                                        name="Select date"
-                                        rules={[{ required: true, message: "Please select the Select date!" }]}
-                                    >
-                                        <RangePicker
-                                            value={dates}
-                                            style={{ height: "40px" }}
-                                            onChange={handleDateChange}
-                                        />
-                                    </Form.Item>
-                                </Col>
-                                <Col style={{ marginTop: "4px" }}>
-                                    <Button
-                                    id="Search"
-                                        type="primary"
-                                        style={{ height: "40px", width: "100px", background: "#32ADE6" }}
-                                        onClick={() => handleSearch(1)}
-                                    >
-                                        Search
-                                    </Button>
-                                </Col>
-                            </Row>
-                            <div>
-                                <Table 
-                                id="Table1"
-                                 components={{
-                                    header: {
-                                      cell: (props: React.HTMLAttributes<HTMLElement>) => (
-                                        <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B' }} />
-                                      ),
-                                    },
-                                  }}
-                                 pagination={false} // Disable pagination if necessary
-                                 style={{ width: '100%', tableLayout: 'fixed' }} // Ensure the table takes full width and is fixed layout
-                                 scroll={{ x: 'max-content' }}
-                                
-                                    dataSource={filteredData}
-                                    columns={columns} 
-                                    rowKey="Order"
+                </div>
+            </>
+            )}
+            {activeTabKey === '2' && (
+                <>
+                    <Row gutter={8} align="middle" justify="center" style={{ marginTop: "20px" }}>
+                        <Col>
+                            <Form.Item
+                            id="Select date2"
+                                layout="vertical"
+                                label="Select date"
+                                name="Select date"
+                                rules={[{ required: true, message: "Please select the Select date!" }]}
+                            >
+                                <RangePicker
+                                    value={dates}
+                                    style={{ height: "40px" }}
+                                    onChange={handleDateChange}
                                 />
-                            </div>
-                        </>
-                    )}
-
-                    {activeTabKey === '2' && (
-                        <>
-                        <Row gutter={8} align="middle" justify="center" style={{ marginTop: "20px" }}>
-                            <Col>
-                                <Form.Item
-                                id="Select date2"
-                                    layout="vertical"
-                                    label="Select date"
-                                    name="Select date"
-                                    rules={[{ required: true, message: "Please select the Select date!" }]}
-                                >
-                                    <RangePicker
-                                        value={dates}
-                                        style={{ height: "40px" }}
-                                        onChange={handleDateChange}
-                                    />
-                                </Form.Item>
-                            </Col>
-                            <Col style={{ marginTop: "4px" }}>
-                                <Button
-                                id="Search2"
-                                    type="primary"
-                                    style={{ height: "40px", width: "100px", background: "#32ADE6" }}
-                                    onClick={() => handleSearch(2)}
-                                >
-                                    Search
-                                </Button>
-                            </Col>
-                        </Row>
-                        <div>
-                            <Table 
+                            </Form.Item>
+                        </Col>
+                        <Col style={{ marginTop: "4px" }}>
+                            <Button
+                            id="Search2"
+                                type="primary"
+                                style={{ height: "40px", width: "100px", background: "#32ADE6" }}
+                                onClick={() => handleSearch(2)}
+                            >
+                                Search
+                            </Button>
+                        </Col>
+                    </Row>
+                    <div>
+                        <Table 
                             id="Table2"
-                             components={{
+                            components={{
                                 header: {
                                   cell: (props: React.HTMLAttributes<HTMLElement>) => (
                                     <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B' }} />
                                   ),
                                 },
-                              }}
-                             pagination={false} // Disable pagination if necessary
-                             style={{ width: '100%', tableLayout: 'fixed' }} // Ensure the table takes full width and is fixed layout
-                             scroll={{ x: 'max-content' }}
-                            
-                                dataSource={filteredData}
-                                columns={columnsconfirm} 
-                                rowKey="Order"
-                            />
-                        </div>
-                    </>
-                )}
-                </Layout.Content>
-            </Layout>
+                            }}
+                            pagination={false} // Disable pagination if necessary
+                            style={{ width: '100%', tableLayout: 'fixed' }} // Ensure the table takes full width and is fixed layout
+                            scroll={{ x: 'max-content' }}
+                            dataSource={filteredData}
+                            columns={columnsconfirm} 
+                            rowKey="Order"
+                        />
+                    </div>
+                </>
+            )}
+            </Layout.Content>
+        </Layout>
 
-            {activeTabKey=='1' && (
+        {activeTabKey=='1' && (
             <Modal
-            closable={false}
-          width={800}
-          title="Edit Order"
-          visible={isModalVisible}
-          onOk={handleOk}
-         
-          footer={
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                closable={false}
+                width={800}
+                title="Edit Order"
+                visible={isModalVisible}
+                onOk={handleOk}
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
 
-                <Button id="Update" onClick={handleOk} style={{ marginLeft: 8, backgroundColor: '#14C11B', color: '#FFF' }}>
-                    Update
-                </Button>
-                <Button id="Cancel" onClick={handleCancel} style={{ marginLeft: 8, background: '#D9D9D9', color: '#909090' }}>
-                    Cancel
-                </Button>
-            </div>
-        }
-        >
+                        <Button id="Update" onClick={handleOk} style={{ marginLeft: 8, backgroundColor: '#14C11B', color: '#FFF' }}>
+                            Update
+                        </Button>
+                        <Button id="Cancel" onClick={handleCancel} style={{ marginLeft: 8, background: '#D9D9D9', color: '#909090' }}>
+                            Cancel
+                        </Button>
+                    </div>
+                }
+            >
             {selectedRecord && (
                 <>
                     <Form layout="vertical" style={{ marginTop: 20 }}>
@@ -656,14 +591,14 @@ const handleSearch = async (statusCheckID: number) =>  {
 
                     {/* Table to display product data */}
                     <Table
-                    id="Table3"
-                    components={{
-                      header: {
-                        cell: (props: React.HTMLAttributes<HTMLElement>) => (
-                          <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B' }} />
-                        ),
-                      },
-                    }}
+                        id="Table3"
+                        components={{
+                        header: {
+                            cell: (props: React.HTMLAttributes<HTMLElement>) => (
+                            <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B' }} />
+                            ),
+                        },
+                        }}
                         columns={[
                             {  title: 'SKU', 
                                 dataIndex: 'SKU', 
@@ -690,56 +625,50 @@ const handleSearch = async (statusCheckID: number) =>  {
                                             />
                                              </Popconfirm>
                                   ) : null
-                          },
-                      ]}
+                            },
+                         ]}
                         dataSource={selectedRecord.data} // Use updated data with new entries
                         rowKey="SKU"
                         pagination={false}
                     />
                 </>
             )}
-        </Modal>
-            )
-          }
+            </Modal>
+        )}
         {activeTabKey=='2' && (
-        <Modal
+            <Modal
                 width={800}
                 title="Confrim"
                 visible={isModalVisible}
                 onOk={handleOk}
                 onCancel={handleCancel}
                 footer={
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      
-                   
-                  </div>
-              }
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        
+                    
+                    </div>
+                }
             >
-                {selectedRecord && (
-                 
-                    <>
-                     <Form layout="vertical" style={{ marginTop: 20 }}>
-                    <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px" }}>
-                       
-                            
-                                <Col span={12}>
+            {selectedRecord && (
+                <>
+                    <Form layout="vertical" style={{ marginTop: 20 }}>
+                        <Row gutter={16} align="middle" justify="center" style={{ marginTop: "20px" }}>
+                            <Col span={12}>
                                 <Form.Item id="Order2" label={<span style={{ color: '#657589' }}>Order</span>}>
-                                        <Input style={{ height: 40 }} value={selectedRecord.Order} readOnly disabled />
-                                    </Form.Item>
-                                </Col>
-                               
-                                <Col span={12}>
+                                    <Input style={{ height: 40 }} value={selectedRecord.Order} readOnly disabled />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
                                 <Form.Item id="SR2" label={<span style={{ color: '#657589' }}>SR</span>}>
-                                        <Input style={{ height: 40 }} value={selectedRecord.SR} disabled />
-                                    </Form.Item>
-                                </Col>
-                           
-                                </Row>
-                        </Form>
-                     
-    
-                        {/* Table to display product data */}
-                        <Table
+                                    <Input style={{ height: 40 }} value={selectedRecord.SR} disabled />
+                                </Form.Item>
+                            </Col>
+                        
+                        </Row>
+                    </Form>
+
+                    {/* Table to display product data */}
+                    <Table
                         id="Table4"
                         components={{
                           header: {
@@ -748,40 +677,38 @@ const handleSearch = async (statusCheckID: number) =>  {
                             ),
                           },
                         }}
-                            columns={[
-                                { title: 'SKU', dataIndex: 'SKU' },
-                                { title: 'Name', dataIndex: 'Name' },
-                                { title: 'QTY', dataIndex: 'QTY' },
-                                { title: 'Price', dataIndex: 'Price' },
-                                {
-                                  title: 'Action',
-                                  dataIndex: 'Action',
-                                  render: (_, record) => 
-                                      record.Type === 'addon' ? (
-                                          <Popconfirm
-                                              title="Are you sure to delete this item?"
-                                              onConfirm={() => handleDelete(record.SKU)}
-                                              okText="Yes"
-                                              cancelText="No"
-                                          >
-                                               <Button 
-                                                   type="link"
-                                                    icon={<DeleteOutlined style={{ color: 'red' }} />} 
-                                                />
-                                                 </Popconfirm>
-                                      ) : null
-                              },
-                          ]}
-                            dataSource={selectedRecord.data} // Use updated data with new entries
-                            rowKey="SKU"
-                            pagination={false}
-                        />
+                        columns={[
+                            { title: 'SKU', dataIndex: 'SKU' },
+                            { title: 'Name', dataIndex: 'Name' },
+                            { title: 'QTY', dataIndex: 'QTY' },
+                            { title: 'Price', dataIndex: 'Price' },
+                            {
+                                title: 'Action',
+                                dataIndex: 'Action',
+                                render: (_, record) => 
+                                    record.Type === 'addon' ? (
+                                        <Popconfirm
+                                            title="Are you sure to delete this item?"
+                                            onConfirm={() => handleDelete(record.SKU)}
+                                            okText="Yes"
+                                            cancelText="No"
+                                        >
+                                            <Button 
+                                                type="link"
+                                                icon={<DeleteOutlined style={{ color: 'red' }} />} 
+                                            />
+                                        </Popconfirm>
+                                    ) : null
+                            },
+                        ]}
+                        dataSource={selectedRecord.data} // Use updated data with new entries
+                        rowKey="SKU"
+                        pagination={false}
+                    />
                     </>
-                
-                )}
+            )}
             </Modal>
-        )
-      }
+        )}
         </ConfigProvider>
     );
 };
