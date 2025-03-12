@@ -2,6 +2,7 @@
 import { OrderState } from './orders/types';
 import { AuthState } from './auth/interface';
 import { DraftConfirmState } from './draftConfirm/types';
+import { UserState } from './users/types';
 
 // Define AlertState interface
 export interface AlertState {
@@ -19,4 +20,5 @@ export interface RootState {
   order: OrderState;
   alert: AlertState;
   draftConfirm: DraftConfirmState;
+  user: UserState;
 }

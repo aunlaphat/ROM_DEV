@@ -1,3 +1,4 @@
+// แก้ไขไฟล์ types.ts
 export interface User {
     userID: string;
     userName: string;
@@ -13,14 +14,16 @@ export interface User {
     createdAt: string;
 }
 
+// แก้ไขจาก id/name เป็น roleID/roleName
 export interface Role {
-    id: string;
-    name: string;
+    roleID: number;  // เปลี่ยนจาก id: string
+    roleName: string;  // เปลี่ยนจาก name: string
 }
 
+// แก้ไขจาก id/name เป็น warehouseID/warehouseName
 export interface Warehouse {
-    id: string;
-    name: string;
+    warehouseID: number;  // เปลี่ยนจาก id: string
+    warehouseName: string;  // เปลี่ยนจาก name: string
 }
 
 export interface ApiResponse<T> {

@@ -34,6 +34,12 @@ export const UPDATESTATUS = ORDER.UPDATE_STATUS;
 export const CANCELORDER = ORDER.CANCEL;
 export const MARKEDITED = ORDER.MARK_EDITED;
 
+// Constants endpoints
+export const CONSTANT = {
+  ROLES: `/constant/roles`,
+  WAREHOUSES: `/constant/warehouses`
+};
+
 // User Management endpoints
 export const USER = {
   LIST: `/manage-users/`,
@@ -99,3 +105,11 @@ export const FETCHSUBDISTRICT = CONSTANT.GETSUBDISTRICT;
 export const FETCHPOSTALCODE = CONSTANT.GETPOSTALCODE;
 export const SEARCHPRODUCT = CONSTANT.SEARCHPRODUCT;
 export const FETCHSKU = CONSTANT.GETSKU;
+
+export const ROLES_PATH = CONSTANT.ROLES;
+export const WAREHOUSES_PATH = CONSTANT.WAREHOUSES;
+export const FETCH_USERS = USER.LIST;
+export const GET_USER = USER.GET;
+export const ADD_USER = USER.ADD;
+export const EDIT_USER = USER.EDIT;
+export const DELETE_USER = USER.DELETE;
