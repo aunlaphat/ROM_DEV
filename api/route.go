@@ -46,4 +46,5 @@ func Routes(router *gin.Engine, app *Application) {
 	app.UserRoute(apiRouter)
 	app.OrderRoute(apiRouter)
 	app.DraftConfirmRoute(apiRouter)
+	app.ConstantRoute(apiRouter)
 }

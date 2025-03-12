@@ -15,6 +15,7 @@ type service struct {
 	draftConfirmRepo repository.DraftConfirmRepository
 }
 type AllOfService struct {
+	Constant     ConstantService
 	Auth         AuthService
 	User         UserService
 	Order        OrderService
@@ -31,6 +32,7 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		draftConfirmRepo: repo,
 	}
 	return AllOfService{
+		Constant:     srv,
 		Auth:         srv,
 		User:         srv,
 		Order:        srv,

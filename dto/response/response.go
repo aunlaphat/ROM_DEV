@@ -125,3 +125,13 @@ type AddItemResponse struct {
 	CreateBy   string    `json:"createBy" db:"CreateBy"`
 	CreateDate time.Time `json:"createDate" db:"CreateDate"`
 }
+
+type RoleResponse struct {
+	RoleID   int    `json:"roleId" db:"RoleID"`
+	RoleName string `json:"roleName" db:"RoleName"`
+}
+
+type WarehouseResponse struct {
+	WarehouseID   int    `json:"warehouseId" db:"WarehouseID"`
+	WarehouseName string `json:"warehouseName" db:"WarehouseName"`
+}

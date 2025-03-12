@@ -147,6 +147,94 @@ const docTemplate = `{
                 }
             }
         },
+        "/constant/roles": {
+            "get": {
+                "description": "Get all available roles",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get roles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.RoleResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/constant/warehouses": {
+            "get": {
+                "description": "Get all available warehouses",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Constants"
+                ],
+                "summary": "Get warehouses",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.WarehouseResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/draft-confirm/add-item/{orderNo}": {
             "post": {
                 "description": "Adds an item to an existing draft order",
@@ -1364,12 +1452,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "userID": {
-                    "type": "string",
-                    "example": "DC65060"
+                    "type": "string"
                 },
                 "userName": {
-                    "type": "string",
-                    "example": "eknarin.ler"
+                    "type": "string"
                 }
             }
         },
@@ -1377,13 +1463,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "password": {
-                    "description": "change password lastest in 17 January 2025",
-                    "type": "string",
-                    "example": "EKna1234"
+                    "type": "string"
                 },
                 "userName": {
-                    "type": "string",
-                    "example": "eknarin.ler"
+                    "type": "string"
                 }
             }
         },
@@ -1717,6 +1800,17 @@ const docTemplate = `{
                 }
             }
         },
+        "response.RoleResponse": {
+            "type": "object",
+            "properties": {
+                "roleId": {
+                    "type": "integer"
+                },
+                "roleName": {
+                    "type": "string"
+                }
+            }
+        },
         "response.SearchOrderItem": {
             "type": "object",
             "properties": {
@@ -1860,6 +1954,17 @@ const docTemplate = `{
                 },
                 "warehouseName": {
                     "description": "ชื่อคลังสินค้า",
+                    "type": "string"
+                }
+            }
+        },
+        "response.WarehouseResponse": {
+            "type": "object",
+            "properties": {
+                "warehouseId": {
+                    "type": "integer"
+                },
+                "warehouseName": {
                     "type": "string"
                 }
             }

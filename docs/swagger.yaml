@@ -133,20 +133,15 @@ definitions:
   request.LoginLark:
     properties:
       userID:
-        example: DC65060
         type: string
       userName:
-        example: eknarin.ler
         type: string
     type: object
   request.LoginWeb:
     properties:
       password:
-        description: change password lastest in 17 January 2025
-        example: EKna1234
         type: string
       userName:
-        example: eknarin.ler
         type: string
     type: object
   response.AddItemResponse:
@@ -369,6 +364,13 @@ definitions:
       warehouseId:
         type: integer
     type: object
+  response.RoleResponse:
+    properties:
+      roleId:
+        type: integer
+      roleName:
+        type: string
+    type: object
   response.SearchOrderItem:
     properties:
       itemName:
@@ -470,6 +472,13 @@ definitions:
         description: ชื่อคลังสินค้า
         type: string
     type: object
+  response.WarehouseResponse:
+    properties:
+      warehouseId:
+        type: integer
+      warehouseName:
+        type: string
+    type: object
 info:
   contact: {}
   description: This is a Return Order Management Service API server.
@@ -562,6 +571,58 @@ paths:
       summary: User Logout
       tags:
       - Authentication
+  /constant/roles:
+    get:
+      consumes:
+      - application/json
+      description: Get all available roles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.RoleResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get roles
+      tags:
+      - Constants
+  /constant/warehouses:
+    get:
+      consumes:
+      - application/json
+      description: Get all available warehouses
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/response.WarehouseResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Get warehouses
+      tags:
+      - Constants
   /draft-confirm/add-item/{orderNo}:
     post:
       consumes:
