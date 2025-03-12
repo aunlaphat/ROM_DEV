@@ -83,18 +83,10 @@ export const ManageUser = () => {
   const showModal = (user: any = null) => {
     setEditingUser(user);
     if (user) {
-      // Edit mode - pre-fill form ใช้ name แทน id
-      const selectedRole = roles.find((role) => role.roleID === user.roleID);
-      const selectedWarehouse = warehouses.find(
-        (warehouse) => warehouse.warehouseID === user.warehouseID
-      );
-
       form.setFieldsValue({
         userID: user.userID,
         roleID: user.roleID,
-        roleName: selectedRole?.roleName || "", // เพิ่ม field roleName
         warehouseID: user.warehouseID,
-        warehouseName: selectedWarehouse?.warehouseName || "", // เพิ่ม field warehouseName
       });
     } else {
       // Add mode - reset form
@@ -123,18 +115,14 @@ export const ManageUser = () => {
         editUser(editingUser.userID, {
           userID: values.userID,
           roleID: values.roleID,
-          roleName: selectedRole?.roleName, // ส่ง name ด้วย (ถ้าต้องการ)
-          warehouseID: Number(values.warehouseID),
-          warehouseName: selectedWarehouse?.warehouseName, // ส่ง name ด้วย (ถ้าต้องการ)
+          warehouseID: values.warehouseID,
         });
       } else {
         // Add mode
         addUser({
           userID: values.userID,
           roleID: values.roleID,
-          roleName: selectedRole?.roleName, // ส่ง name ด้วย (ถ้าต้องการ)
-          warehouseID: Number(values.warehouseID),
-          warehouseName: selectedWarehouse?.warehouseName, // ส่ง name ด้วย (ถ้าต้องการ)
+          warehouseID: values.warehouseID,
         });
       }
 
@@ -316,12 +304,6 @@ export const ManageUser = () => {
               ))}
             </Select>
           </Form.Item>
-
-          {/* เพิ่ม hidden field สำหรับเก็บ roleName */}
-          <Form.Item name="roleName" hidden={true}>
-            <Input />
-          </Form.Item>
-
           <Form.Item
             name="warehouseID"
             label="คลังสินค้า"
@@ -337,11 +319,6 @@ export const ManageUser = () => {
                 </Option>
               ))}
             </Select>
-          </Form.Item>
-
-          {/* เพิ่ม hidden field สำหรับเก็บ warehouseName */}
-          <Form.Item name="warehouseName" hidden={true}>
-            <Input />
           </Form.Item>
         </Form>
       </Modal>

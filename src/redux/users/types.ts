@@ -1,4 +1,3 @@
-import { Warehouse } from '../../screens/ManageUser/types';
 // src/redux/users/types.ts
 
 export enum UserActionTypes {
@@ -95,12 +94,14 @@ export interface DeleteUserResponse {
 export interface RoleResponse {
   roleID: number; // แก้จาก roleId เป็น roleID ตามโครงสร้าง response.go
   roleName: string; // ตรงกับ RoleName ในหลังบ้าน
+  description: string; // ตรงกับ Description ในหลังบ้าน
 }
 
 // ปรับปรุง WarehouseResponse ให้ตรงกับไฟล์ response.go
 export interface WarehouseResponse {
   warehouseID: number; // แก้จาก warehouseId เป็น warehouseID ตามโครงสร้าง response.go
   warehouseName: string; // ตรงกับ WarehouseName ในหลังบ้าน
+  location: string; // ตรงกับ Location ในหลังบ้าน
 }
 
 // Request Types - สอดคล้องกับ Backend
@@ -113,18 +114,18 @@ export interface GetUsersRequest {
 export interface AddUserRequest {
   userID: string;
   roleID: number;
-  roleName?: string;  // เพิ่ม roleName (optional)
+  // roleName?: string;  // เพิ่ม roleName (optional)
   warehouseID: number;
-  warehouseName?: string;  // เพิ่ม warehouseName (optional)
+  // warehouseName?: string;  // เพิ่ม warehouseName (optional)
 }
 
 // แก้ไข EditUserRequest ให้ warehouseID เป็น number เหมือนใน backend
 export interface EditUserRequest {
   userID: string;
-  roleID?: number;
-  roleName?: string;  // เพิ่ม roleName (optional)
-  warehouseID?: number;
-  warehouseName?: string;  // เพิ่ม warehouseName (optional)
+  roleID: number;
+  // roleName?: string;  // เพิ่ม roleName (optional)
+  warehouseID: number;
+  // warehouseName?: string;  // เพิ่ม warehouseName (optional)
 }
 
 // API Response Format

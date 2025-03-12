@@ -34,12 +34,6 @@ export const UPDATESTATUS = ORDER.UPDATE_STATUS;
 export const CANCELORDER = ORDER.CANCEL;
 export const MARKEDITED = ORDER.MARK_EDITED;
 
-// Constants endpoints
-export const CONSTANT = {
-  ROLES: `/constant/roles`,
-  WAREHOUSES: `/constant/warehouses`
-};
-
 // User Management endpoints
 export const USER = {
   LIST: `/manage-users/`,
@@ -51,10 +45,10 @@ export const USER = {
 
 // Export individual endpoints for backward compatibility
 export const FETCHUSERS = USER.LIST;
-export const FETCHUSERBYID = USER.LIST; // Note: should be used with specific ID
+export const GETUSER = USER.GET;
 export const ADDUSER = USER.ADD;
-export const EDITUSER = USER.EDIT(""); // Note: requires ID
-export const DELETEUSER = USER.DELETE(""); // Note: requires ID
+export const EDITUSER = USER.EDIT;
+export const DELETEUSER = USER.DELETE;
 
 // endpoints - Trade Return (offline)
 export const TRADE = {
@@ -84,6 +78,8 @@ export const SEARCHORDERTRACK = IMPORTORDER.SEARCHORDERTRACK;
 
 // endpoints - Constants
 export const CONSTANT = {
+  ROLES: `/constant/roles`,
+  WAREHOUSES: `/constant/warehouses`,
   GETCUSTOMER: `/constants/get-customer-id`,
   GETCUSTOMERINFO: (value: string) => `/constants/get-customer-info?customerID=${value}`,
   SEARCHINVOICE: `/constants/search-invoice-names`,
@@ -96,6 +92,8 @@ export const CONSTANT = {
 };
 
 // Export individual endpoints for backward compatibility
+export const ROLES = CONSTANT.ROLES;
+export const WAREHOUSES = CONSTANT.WAREHOUSES;
 export const FETCHCUSTOMER = CONSTANT.GETCUSTOMER;
 export const FETCHCUSTOMERINFO = CONSTANT.GETCUSTOMERINFO;
 export const SEARCHINVOICE = CONSTANT.SEARCHINVOICE;
@@ -105,11 +103,3 @@ export const FETCHSUBDISTRICT = CONSTANT.GETSUBDISTRICT;
 export const FETCHPOSTALCODE = CONSTANT.GETPOSTALCODE;
 export const SEARCHPRODUCT = CONSTANT.SEARCHPRODUCT;
 export const FETCHSKU = CONSTANT.GETSKU;
-
-export const ROLES_PATH = CONSTANT.ROLES;
-export const WAREHOUSES_PATH = CONSTANT.WAREHOUSES;
-export const FETCH_USERS = USER.LIST;
-export const GET_USER = USER.GET;
-export const ADD_USER = USER.ADD;
-export const EDIT_USER = USER.EDIT;
-export const DELETE_USER = USER.DELETE;
