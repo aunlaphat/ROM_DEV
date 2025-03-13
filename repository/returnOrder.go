@@ -20,6 +20,7 @@ type ReturnOrderRepository interface {
 	GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error)
 	CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) error
 	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder) error
+	UpdateReturnOrderLine(ctx context.Context, req request.UpdateReturnOrderLine) error
 	DeleteReturnOrder(ctx context.Context, orderNo string) error
 	CheckOrderNoExist(ctx context.Context, orderNo string) (bool, error)
 	CheckOrderNoLineExist(ctx context.Context, orderNo string) (bool, error)
@@ -470,6 +471,76 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 			if _, err := tx.ExecContext(ctx, lineQueryRebind, lineArgs...); err != nil {
 				return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
 			}
+		}
+
+		return nil
+	})
+}
+
+func (repo repositoryDB) UpdateReturnOrderLine(ctx context.Context, req request.UpdateReturnOrderLine) error {
+	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
+		// ดึงข้อมูลปัจจุบันจาก ReturnOrderLine ตาม OrderNo และ SKU
+		var current response.ReturnOrderLine
+		queryCurrent := ` SELECT ActualQTY, Price 
+						  FROM ReturnOrderLine 
+						  WHERE OrderNo = :OrderNo AND SKU = :SKU 
+						`
+		currentParams := map[string]interface{}{
+			"OrderNo": req.OrderNo,
+			"SKU":     req.SKU,
+		}
+
+		namedQuery, args, err := sqlx.Named(queryCurrent, currentParams)
+		if err != nil {
+			return fmt.Errorf("failed to prepare query: %w", err)
+		}
+		query := tx.Rebind(namedQuery)
+
+		if err := tx.GetContext(ctx, &current, query, args...); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("OrderNo and SKU not found: %w", err)
+			}
+			return fmt.Errorf("failed to fetch current data: %w", err)
+		}
+
+		// ตรวจสอบค่าที่เปลี่ยนแปลง
+		updateFields := []string{}
+		params := map[string]interface{}{
+			"OrderNo":  req.OrderNo,
+			"SKU":      req.SKU,
+			"UpdateBy": *req.UpdateBy, // รับค่า UserID จาก API
+		}
+
+		if req.ActualQTY != nil && *req.ActualQTY != *current.ActualQTY {
+			updateFields = append(updateFields, "ActualQTY = :ActualQTY")
+			params["ActualQTY"] = req.ActualQTY
+		}
+		if req.Price != nil && *req.Price != current.Price {
+			updateFields = append(updateFields, "Price = :Price")
+			params["Price"] = req.Price
+		}
+
+		// ถ้าไม่มีการเปลี่ยนแปลง ไม่ต้องอัปเดต
+		if len(updateFields) == 0 {
+			return nil
+		}
+
+		// เพิ่มฟิลด์ UpdateBy และ UpdateDate
+		updateFields = append(updateFields, "UpdateBy = :UpdateBy", "UpdateDate = GETDATE()")
+		updateQuery := fmt.Sprintf(` 
+						UPDATE ReturnOrderLine SET %s 
+						WHERE OrderNo = :OrderNo AND SKU = :SKU`,
+			strings.Join(updateFields, ", "))
+
+		namedUpdateQuery, updateArgs, err := sqlx.Named(updateQuery, params)
+		if err != nil {
+			return fmt.Errorf("failed to prepare update query: %w", err)
+		}
+		updateQueryRebind := tx.Rebind(namedUpdateQuery)
+
+		// ทำการอัปเดต ReturnOrderLine
+		if _, err := tx.ExecContext(ctx, updateQueryRebind, updateArgs...); err != nil {
+			return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
 		}
 
 		return nil

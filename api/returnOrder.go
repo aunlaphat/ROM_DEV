@@ -21,9 +21,10 @@ func (app *Application) ReturnOrder(apiRouter *gin.RouterGroup) {
 
 	apiAuth := api.Group("/")
 	apiAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
-	apiAuth.POST("/create", app.CreateReturnOrder)            // สร้างข้อมูลของที่ถูกส่งคืนมา
-	apiAuth.PATCH("/update/:orderNo", app.UpdateReturnOrder)  // อัพเดทข้อมูลของที่ถูกส่งคืน
-	apiAuth.DELETE("/delete/:orderNo", app.DeleteReturnOrder) // ลบ order ที่ทำการคืนมาออกหมด head+line
+	apiAuth.POST("/create", app.CreateReturnOrder)                         // สร้างข้อมูลของที่ถูกส่งคืนมา
+	apiAuth.PATCH("/update/:orderNo", app.UpdateReturnOrder)               // อัพเดทข้อมูลของที่ถูกส่งคืน
+	apiAuth.PATCH("/update-line/:orderNo/:sku", app.UpdateReturnOrderLine) // อัพเดทเพื่อ
+	apiAuth.DELETE("/delete/:orderNo", app.DeleteReturnOrder)              // ลบ order ที่ทำการคืนมาออกหมด head+line
 }
 
 // @Summary 	Get Return Order
@@ -236,6 +237,63 @@ func (app *Application) UpdateReturnOrder(c *gin.Context) {
 	}
 
 	handleResponse(c, true, "[ Updated successfully ]", result, http.StatusOK)
+}
+
+// @Summary Update Return Order Line
+// @Description Update ActualQTY & Price using OrderNo and SKU
+// @ID Update-ReturnOrderLine
+// @Tags Return Order
+// @Accept json
+// @Produce json
+// @Param orderNo path string true "Order No"
+// @Param sku path string true "SKU"
+// @Param updateData body request.UpdateReturnOrderLine true "Updated Order Line Data"
+// @Success 200 {object} Response{result=[]response.UpdateReturnOrderLine} "Return Order Line Updated"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 404 {object} Response "Order Line Not Found"
+// @Failure 500 {object} Response "Internal Server Error"
+// @Router /return-order/update-line/{orderNo}/{sku} [patch]
+func (app *Application) UpdateReturnOrderLine(c *gin.Context) {
+	orderNo := c.Param("orderNo")
+	sku := c.Param("sku")
+	var req request.UpdateReturnOrderLine
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		app.Logger.Warn("[ Invalid request payload ]", zap.Error(err))
+		handleValidationError(c, err)
+		return
+	}
+
+	// ตรวจสอบค่า OrderNo & SKU
+	if orderNo == "" || sku == "" {
+		app.Logger.Warn("[ OrderNo and SKU are required ]")
+		handleError(c, Status.BadRequestError("[ OrderNo and SKU are required ]"))
+		return
+	}
+
+	// ดึง userID จาก JWT token
+	userID, exists := c.Get("UserID")
+	if !exists {
+		app.Logger.Warn("[ Unauthorized - Missing UserID ]")
+		handleError(c, Status.UnauthorizedError("[ Unauthorized - Missing UserID ]"))
+		return
+	}
+
+	req.OrderNo = orderNo
+	req.SKU = sku
+	if req.UpdateBy == nil {
+		req.UpdateBy = new(string) // กำหนดให้เป็น pointer ของ string ก่อน
+	}
+	*req.UpdateBy = userID.(string)
+
+	// Call service to update order line
+	err := app.Service.ReturnOrder.UpdateReturnOrderLine(c.Request.Context(), req)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	handleResponse(c, true, "[ Updated successfully ]", nil, http.StatusOK)
 }
 
 // @Summary 	Delete Order

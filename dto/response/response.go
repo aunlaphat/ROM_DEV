@@ -145,6 +145,18 @@ type UpdateReturnOrder struct {
 	UpdateDate    *time.Time `json:"updateDate" db:"UpdateDate"`
 }
 
+type UpdateReturnOrderLine struct {
+	OrderNo    string   `json:"-" db:"OrderNo"`
+	TrackingNo string   `json:"-" db:"TrackingNo"`
+	SKU        string   `json:"sku" db:"SKU" example:"SKU12345"`
+	QTY        *int     `json:"qty" db:"QTY" example:"5"`
+	ReturnQTY  int      `json:"returnQTY" db:"ReturnQTY" example:"5"`
+	ActualQTY  *int     `json:"actualQTY" db:"ActualQTY" example:"5"`
+	Price      *float64 `json:"price" db:"Price" example:"199.99"`
+	AlterSKU   *string  `json:"-" db:"AlterSKU" `
+	UpdateBy   *string  `json:"updateBy" db:"UpdateBy"`
+}
+
 type DeleteReturnOrder struct {
 	OrderNo string `db:"OrderNo"`
 }

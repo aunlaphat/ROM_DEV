@@ -478,6 +478,26 @@ definitions:
         example: 12345678TH
         type: string
     type: object
+  request.UpdateReturnOrderLine:
+    properties:
+      actualQTY:
+        example: 5
+        type: integer
+      price:
+        example: 199.99
+        type: number
+      qty:
+        example: 5
+        type: integer
+      returnQTY:
+        example: 5
+        type: integer
+      sku:
+        example: SKU12345
+        type: string
+      updateBy:
+        type: string
+    type: object
   request.UpdateToReturn:
     properties:
       srNo:
@@ -1065,6 +1085,26 @@ definitions:
       updateBy:
         type: string
       updateDate:
+        type: string
+    type: object
+  response.UpdateReturnOrderLine:
+    properties:
+      actualQTY:
+        example: 5
+        type: integer
+      price:
+        example: 199.99
+        type: number
+      qty:
+        example: 5
+        type: integer
+      returnQTY:
+        example: 5
+        type: integer
+      sku:
+        example: SKU12345
+        type: string
+      updateBy:
         type: string
     type: object
   response.UpdateSrNoResponse:
@@ -3056,6 +3096,58 @@ paths:
           schema:
             $ref: '#/definitions/api.Response'
       summary: Get Return Order Line by OrderNo
+      tags:
+      - Return Order
+  /return-order/update-line/{orderNo}/{sku}:
+    patch:
+      consumes:
+      - application/json
+      description: Update ActualQTY & Price using OrderNo and SKU
+      operationId: Update-ReturnOrderLine
+      parameters:
+      - description: Order No
+        in: path
+        name: orderNo
+        required: true
+        type: string
+      - description: SKU
+        in: path
+        name: sku
+        required: true
+        type: string
+      - description: Updated Order Line Data
+        in: body
+        name: updateData
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateReturnOrderLine'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Return Order Line Updated
+          schema:
+            allOf:
+            - $ref: '#/definitions/api.Response'
+            - properties:
+                result:
+                  items:
+                    $ref: '#/definitions/response.UpdateReturnOrderLine'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.Response'
+        "404":
+          description: Order Line Not Found
+          schema:
+            $ref: '#/definitions/api.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Response'
+      summary: Update Return Order Line
       tags:
       - Return Order
   /return-order/update/{orderNo}:

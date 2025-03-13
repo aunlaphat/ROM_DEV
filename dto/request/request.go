@@ -128,7 +128,18 @@ type UpdateReturnOrder struct {
 	Description   *string `json:"description" db:"Description" example:""`
 	UpdateBy      *string `json:"-" db:"UpdateBy"`
 	// UpdateDate   *time.Time      `json:"updateDate" db:"UpdateDate"` // MSSQL GETDATE() function
+}
 
+type UpdateReturnOrderLine struct {
+	OrderNo    string   `json:"-" db:"OrderNo"`
+	TrackingNo string   `json:"-" db:"TrackingNo"`
+	SKU        string   `json:"sku" db:"SKU" example:"SKU12345"`
+	QTY        *int     `json:"qty" db:"QTY" example:"5"`
+	ReturnQTY  int      `json:"returnQTY" db:"ReturnQTY" example:"5"`
+	ActualQTY  *int     `json:"actualQTY" db:"ActualQTY" example:"5"`
+	Price      *float64 `json:"price" db:"Price" example:"199.99"`
+	AlterSKU   *string  `json:"-" db:"AlterSKU" `
+	UpdateBy   *string  `json:"updateBy" db:"UpdateBy"`
 }
 
 type ReturnOrder struct {
@@ -168,7 +179,7 @@ type ConfirmTradeReturnRequest struct {
 }
 
 type TradeReturnLineRequest struct {
-	SKU       string  `json:"sku" db:"SKU"`
+	SKU string `json:"sku" db:"SKU"`
 	// ItemName  string  `json:"itemName" db:"ItemName"`
 	QTY       int     `json:"qty" db:"QTY"`
 	ReturnQTY int     `json:"returnQty" db:"ReturnQTY"`
@@ -228,7 +239,6 @@ type ImportLinesActual struct {
 	Price        float64 `json:"price" db:"Price"`
 	StatusDelete bool    `json:"statusDelete" db:"StatusDelete"`
 }
-
 
 type OrderHeadDetail struct {
 	OrderNo     string    `db:"OrderNo" json:"orderNo"`         // เลขที่ใบสั่งซื้อ

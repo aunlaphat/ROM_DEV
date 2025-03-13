@@ -3081,6 +3081,88 @@ const docTemplate = `{
                 }
             }
         },
+        "/return-order/update-line/{orderNo}/{sku}": {
+            "patch": {
+                "description": "Update ActualQTY \u0026 Price using OrderNo and SKU",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Return Order"
+                ],
+                "summary": "Update Return Order Line",
+                "operationId": "Update-ReturnOrderLine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order No",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "SKU",
+                        "name": "sku",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated Order Line Data",
+                        "name": "updateData",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.UpdateReturnOrderLine"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Return Order Line Updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/api.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/response.UpdateReturnOrderLine"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Order Line Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/return-order/update/{orderNo}": {
             "patch": {
                 "description": "Update an existing return order using orderNo in the path",
@@ -4280,6 +4362,34 @@ const docTemplate = `{
                 }
             }
         },
+        "request.UpdateReturnOrderLine": {
+            "type": "object",
+            "properties": {
+                "actualQTY": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "price": {
+                    "type": "number",
+                    "example": 199.99
+                },
+                "qty": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "returnQTY": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "sku": {
+                    "type": "string",
+                    "example": "SKU12345"
+                },
+                "updateBy": {
+                    "type": "string"
+                }
+            }
+        },
         "request.UpdateToReturn": {
             "type": "object",
             "properties": {
@@ -5151,6 +5261,34 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updateDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.UpdateReturnOrderLine": {
+            "type": "object",
+            "properties": {
+                "actualQTY": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "price": {
+                    "type": "number",
+                    "example": 199.99
+                },
+                "qty": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "returnQTY": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "sku": {
+                    "type": "string",
+                    "example": "SKU12345"
+                },
+                "updateBy": {
                     "type": "string"
                 }
             }
