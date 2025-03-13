@@ -1,12 +1,14 @@
-import { Popconfirm, Button, Radio, Select, Space, Col, ConfigProvider, Form, Layout, Row, Input, InputNumber, Table, notification, message, Tooltip } from "antd";
+import { Modal, Popconfirm, Button, Radio, Select, Space, Col, ConfigProvider, Form, Layout, Row, Input, InputNumber, Table, notification, message, Tooltip } from "antd";
 import { DeleteOutlined, PlusCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import type { RadioChangeEvent } from 'antd';
 import { debounce } from "lodash";
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { DataItemBlind, Product } from '../../types/types';
+import { DataItemBlind, Product, TRANSPORT_TYPES } from '../../types/types';
+import { useSelector } from 'react-redux';
+import { RootState } from "../../redux/types";
 import api from "../../utils/axios/axiosInstance"; 
-import {FETCHSKU, SEARCHPRODUCT} from '../../services/path';
+import {FETCHSKU, SEARCHPRODUCT, CREATETRADE, SEARCHORDERTRACK} from '../../services/path';
 const { Option } = Select;
 
 const CreateBlind = () => {
@@ -27,6 +29,41 @@ const CreateBlind = () => {
     const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
     const [price, setPrice] = useState<number | null>(null); 
     const [qty, setQty] = useState<number | null>(null); 
+
+    // ดึงข้อมูลผู้ใช้ที่เข้าสู่ระบบ
+      const auth = useSelector((state: RootState) => state.auth);
+      const userID = auth?.user?.userID;
+      const token = localStorage.getItem("access_token");
+    
+      const [isModalVisible, setIsModalVisible] = useState(false);
+    
+      const [currentPage, setCurrentPage] = useState<number>(1);
+      const [pageSize, setPageSize] = useState<number>(5);
+    
+      // ฟังก์ชันสำหรับเปลี่ยนหน้า
+      const handlePageChange = (page: number, pageSize: number) => {
+        setCurrentPage(page);
+        setPageSize(pageSize); // ถ้าผู้ใช้เลือกจำนวนรายการต่อหน้าใหม่
+      };
+    
+      // คำนวณจำนวนหน้าทั้งหมดจากจำนวนรายการทั้งหมด
+      const totalPages = Math.ceil(dataSource.length / pageSize);
+    
+      // ตรวจสอบว่า pagination ควรแสดงหรือไม่ (ให้แสดงเสมอแม้ว่า dataSource จะมีน้อยกว่า pageSize)
+      const showPagination = dataSource.length > 0;
+    
+      const showModal = () => {
+          setIsModalVisible(true);
+      };
+    
+      const handleOk = () => {
+        setIsModalVisible(false);
+        handleSubmit(); 
+    };
+  
+    const handleCancel = () => {
+        setIsModalVisible(false);
+    };
     
     const onChange = (e: RadioChangeEvent) => {
         setValue(e.target.value);
@@ -42,6 +79,20 @@ const CreateBlind = () => {
     const handleNavigateToTakepicture = (orderNumber: string, dataSource: DataItemBlind[], value: number) => {
         navigate('/Takepicture', { state: { orderNumber, dataSource, value } });
     };
+
+      /*** Logistic Type ***/
+      const [isOtherTransport, setIsOtherTransport] = useState(false);
+      const [transportValue, setTransportValue] = useState<string | undefined>(undefined);
+      const handleTransportChange = (value: string) => {
+        if (value === 'OTHER') {
+          setIsOtherTransport(true);
+          form.resetFields(['Logistic']);
+          setTransportValue(''); 
+        } else {
+          setIsOtherTransport(false);
+          setTransportValue(value);
+        }
+      };
 
     /*** SKU&NameAlias ***/
     const debouncedSearchSKU = debounce(async (value: string, searchType: string) => {
@@ -227,9 +278,9 @@ const CreateBlind = () => {
     };
 
     const columns = [
-        { title: "SKU", dataIndex: "SKU", id: "SKU" },
-        { title: "Name", dataIndex: "Name", id: "Name" },
-        { title: "QTY", dataIndex: "QTY", id: "QTY" },
+        { title: "รหัสสินค้า", dataIndex: "SKU", id: "SKU" },
+        { title: "ชื่อสินค้า", dataIndex: "Name", id: "Name" },
+        { title: "จำนวนที่ได้รับ", dataIndex: "QTY", id: "QTY" },
         {
             title: "Action",
             id:'Action',
@@ -265,48 +316,74 @@ const CreateBlind = () => {
         return errors.length === 0; // ถ้าไม่มีข้อผิดพลาด
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         form.validateFields()
-        .then((values) => {
-            if (value === 1) {
-                form2.validateFields()
-                    .then((values2) => {
-                        if (dataSource.length === 0) {
-                            notification.warning({
-                                message: "กรุณาเพิ่มข้อมูลในตาราง",
-                                description: "กรุณากรอกรายการสินค้าอย่างน้อย 1 รายการก่อนส่งข้อมูล !",
-                            });
-                            return; 
-                        }
-                    })
-                    .catch((info) => {
-                        console.log("Validate Failed:", info);
+            .then(async (values) => {
+                // Check if 'แกะกล่อง' is selected as "Yes"
+                if (value === 1) {
+                    // If "Yes", check if there's at least one item in dataSource
+                    if (dataSource.length === 0) {
                         notification.warning({
                             message: "กรุณาเพิ่มข้อมูลในตาราง",
                             description: "กรุณากรอกรายการสินค้าอย่างน้อย 1 รายการก่อนส่งข้อมูล !",
                         });
+                        return;
+                    }
+                }
+    
+                // Proceed with submitting data
+                const requestData = {
+                    OrderNo: values.OrderNo,
+                    ChannelID: 3, 
+                    TrackingNo: values.Tracking,
+                    Logistic: values.Logistic,
+                    ReturnDate: values.Date,
+                    StatusReturnID: 3, 
+                    BeforeReturnOrderLines: dataSource.map(item => ({
+                        SKU: item.SKU,
+                        ItemName: item.Name,
+                        QTY: item.QTY,
+                        TrackingNo: values.Tracking,
+                        CreateBy: userID, 
+                    })),
+                    CreateBy: userID, 
+                };
+                console.log("Order Data:", requestData);  // Log the data being sent
+                try {
+                    const response = await api.post(CREATETRADE, requestData, {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
                     });
-            } else {
-                console.log("Table Data:", dataSource);
-                form.resetFields(); 
-                form2.resetFields();
-                setDataSource([]);
-                notification.success({
-                    message: "ส่งข้อมูลสำเร็จ",
-                    description: "ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!",
+    
+                    if (response.status === 200) {
+                        notification.success({
+                            message: 'ส่งข้อมูลสำเร็จ',
+                            description: 'ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!',
+                        });
+    
+                        // After successful submission, navigate to the sale-return page
+                        const orderResponse = await api.get(SEARCHORDERTRACK(values.OrderNo));
+                        if (orderResponse.data && orderResponse.data.data && orderResponse.data.data.length > 0) {
+                            navigate("/sale-return", { state: { orderNo: values.OrderNo } });
+                        }
+                    }
+                } catch (error) {
+                    notification.error({
+                        message: 'เกิดข้อผิดพลาด',
+                        description: 'ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+                    });
+                }
+            })
+            .catch((info) => {
+                notification.warning({
+                    message: "คำเตือน",
+                    description: "กรุณากรอกข้อมูลให้ครบก่อนส่งข้อมูล !",
                 });
-                // handleNavigateToTakepicture(); // ไปหน้าต่อไป
-                handleNavigateToTakepicture(values.OrderNo, dataSource, value);
-            }
-        })
-        .catch((info) => {
-            console.log("Validate Failed:", info);
-            notification.warning({
-                message: "คำเตือน",
-                description: "กรุณากรอกข้อมูลให้ครบก่อนส่งข้อมูล !",
             });
-        });
     };
+    
+    
     
     const handleFormValidation = () => {
         // alert('test1');
@@ -427,24 +504,34 @@ const CreateBlind = () => {
                                 </Form.Item>
                             </Col>
                             <Col span={8}>
-                                <Form.Item
-                                    id="Logistic"
-                                    label={
-                                        <span style={{ color: "#657589" }}>
-                                            กรอก Logistic:&nbsp;
-                                            <Tooltip title="ผู้ให้บริการขนส่ง">
-                                            <QuestionCircleOutlined
-                                                style={{ color: "#657589" }}
+                                        <Form.Item
+                                          id="Logistic"
+                                          label={<span style={{ color: "#657589" }}>ประเภทขนส่ง</span>}
+                                          name="Logistic"
+                                          rules={[{ required: true, message: "กรุณาเลือกขนส่ง" }]}
+                                        >
+                                          {isOtherTransport ? (
+                                            <Input
+                                              placeholder="กรอกประเภทขนส่ง"
+                                              value={transportValue}
+                                              onChange={(e) => setTransportValue(e.target.value)}
+                                              style={{ height: 40, width: "100%" }}
                                             />
-                                            </Tooltip>
-                                        </span>
-                                    }
-                                    name="Logistic"
-                                    rules={[{ required: true, message: "กรอก Logistic" },]}
-                                >
-                                    <Input style={{ height: 40 }} />
-                                </Form.Item>
-                            </Col>
+                                          ) : (
+                                            <Select
+                                              options={TRANSPORT_TYPES}
+                                              placeholder="เลือกประเภทขนส่ง"
+                                              showSearch
+                                              optionFilterProp="label"
+                                              style={{ height: 40, width: "100%" }}
+                                              onChange={handleTransportChange}
+                                              value={transportValue}
+                                              listHeight={160} 
+                                              virtual 
+                                            />
+                                          )}
+                                        </Form.Item>
+                                      </Col>
                         </Row>
                     </Form>
 
@@ -476,9 +563,9 @@ const CreateBlind = () => {
         <Col span={8}>
             <Form.Item
                 id="SKU" 
-                label={<span style={{ color: '#657589' }}>SKU:</span>}
+                label={<span style={{ color: '#657589' }}>รหัสสินค้า</span>}
                 name="SKU"
-                rules={[{ required: true, message: "กรุณากรอก SKU" }]}
+                // rules={[{ required: true, message: "กรุณาเลือก/ค้นหา รหัสสินค้า (SKU)" }]}
             >
                 <Select
                       showSearch
@@ -506,9 +593,9 @@ const CreateBlind = () => {
         <Col span={8}>
             <Form.Item
                 id="SKU_Name" 
-                label={<span style={{ color: '#657589' }}>SKU Name:</span>}
+                label={<span style={{ color: '#657589' }}>ชื่อสินค้า</span>}
                 name="SKU_Name"
-                rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
+                // rules={[{ required: true, message: "กรุณาเลือก/ค้นหา ชื่อสินค้า" }]}
             >
                 <Select
                       showSearch
@@ -536,9 +623,9 @@ const CreateBlind = () => {
         <Col span={4}>
             <Form.Item
                 id="qty" 
-                label={<span style={{ color: '#657589' }}>QTY:</span>}
+                label={<span style={{ color: '#657589' }}>จำนวนที่ได้รับ</span>}
                 name="QTY"
-                rules={[{ required: true, message: 'กรุณากรอกจำนวน' }]}
+                // rules={[{ required: true, message: 'กรุณากรอกจำนวนที่ได้รับ' }]}
             >
                 <InputNumber
                     min={1}
@@ -565,49 +652,160 @@ const CreateBlind = () => {
     )}
 
     {showInput && (
-        <Table
-        id="Table" 
-            style={{ marginTop: '20px' }}
-            columns={columns}
-            dataSource={dataSource}
-            rowKey="SKU"
-            pagination={false}
-        />
+         <div >
+         <Table
+           dataSource={dataSource.slice((currentPage - 1) * pageSize, currentPage * pageSize)} // แสดงเฉพาะจำนวนรายการที่เลือก
+           columns={columns}
+           rowKey="key"
+           pagination={false} // ปิด pagination ใน Table
+           style={{
+             width: "100%",
+             tableLayout: "auto",
+             border: "1px solid #ddd",
+             borderRadius: "8px",
+           }}
+           scroll={{ x: "max-content" }}
+           bordered={false}
+         />
+       
+       {showPagination && (
+         <div>
+           {/* showTotal แสดงอยู่เหนือ showPagination */}
+           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 20 }}>
+               <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>
+                   ทั้งหมด <span style={{ color: '#007bff' }}>{dataSource.length}</span> รายการ
+               </span>
+           </div>
+           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 20, gap: 10 }}>
+             {/* ปุ่มไปหน้าแรก */}
+             <button
+                 onClick={() => handlePageChange(1, pageSize)}
+                 disabled={currentPage === 1}
+                 style={{
+                     fontSize: "14px",
+                     // fontWeight: "bold",
+                     padding: "4px 10px",
+                     border: "1px solid #ddd",
+                     borderRadius: "6px",
+                     background: currentPage === 1 ? "#f5f5f5" : "#fff",
+                     cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                 }}
+             >
+                 {"<<"}
+             </button>
+
+             {/* ปุ่มไปหน้าก่อน */}
+             <button
+                 onClick={() => handlePageChange(currentPage - 1, pageSize)}
+                 disabled={currentPage === 1}
+                 style={{
+                     fontSize: "14px",
+                     // fontWeight: "bold",
+                     padding: "4px 10px",
+                     border: "1px solid #ddd",
+                     borderRadius: "6px",
+                     background: currentPage === 1 ? "#f5f5f5" : "#fff",
+                     cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                 }}
+             >
+                 {"<"}
+             </button>
+
+             {/* แสดงเลขหน้าแบบ [ 1 / 9 ] */}
+             <span style={{ fontSize: "14px", fontWeight: 'bold' }}>
+                 [ {currentPage} to {Math.ceil(dataSource.length / pageSize)} ]
+             </span>
+
+             {/* ปุ่มไปหน้าถัดไป */}
+             <button
+                 onClick={() => handlePageChange(currentPage + 1, pageSize)}
+                 disabled={currentPage === Math.ceil(dataSource.length / pageSize)}
+                 style={{
+                     fontSize: "14px",
+                     // fontWeight: "bold",
+                     padding: "4px 10px",
+                     border: "1px solid #ddd",
+                     borderRadius: "6px",
+                     background: currentPage === Math.ceil(dataSource.length / pageSize) ? "#f5f5f5" : "#fff",
+                     cursor: currentPage === Math.ceil(dataSource.length / pageSize) ? "not-allowed" : "pointer",
+                 }}
+             >
+                 {">"}
+             </button>
+
+             {/* ปุ่มไปหน้าสุดท้าย */}
+             <button
+                 onClick={() => handlePageChange(Math.ceil(dataSource.length / pageSize), pageSize)}
+                 disabled={currentPage === Math.ceil(dataSource.length / pageSize)}
+                 style={{
+                     fontSize: "14px",
+                     // fontWeight: "bold",
+                     padding: "4px 10px",
+                     border: "1px solid #ddd",
+                     borderRadius: "6px",
+                     background: currentPage === Math.ceil(dataSource.length / pageSize) ? "#f5f5f5" : "#fff",
+                     cursor: currentPage === Math.ceil(dataSource.length / pageSize) ? "not-allowed" : "pointer",
+                 }}
+             >
+                 {">>"}
+             </button>
+
+             {/* เลือกจำนวนรายการต่อหน้า */}
+             <select
+                 value={pageSize}
+                 onChange={(e) => handlePageChange(1, Number(e.target.value))}
+                 className="paginate"
+                 style={{
+                     fontSize: "14px",
+                     fontWeight: "bold",
+                     padding: "4px 10px",
+                     border: "1px solid #ddd",
+                     borderRadius: "6px",
+                     cursor: "pointer",
+                 }}
+             >
+                 <option value="5">5 รายการ</option>
+                 <option value="10">10 รายการ</option>
+                 <option value="20">20 รายการ</option>
+             </select>
+           </div>
+           </div>
+         )}
+       </div>
     )}
                         
     </Form>
-            <Row align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}> 
-                {/* <Button
-                    id="Confirm" 
-                    type="primary"
-                    onClick={handleSubmit}
-                    // disabled={
-                    //     (value === 2 && formValid === true ) 
-                    //     ? false 
-                    //     : (value === 1 && dataSource.length > 0&& formValid === true ) 
-                    //     ? false 
-                    //     :true
-                    // }
-                    // disabled={!((value === 2 && formValid) || (value === 1 && dataSource.length > 0 && formValid))}
-                    // disabled={tableData.length === 0 || !formValid || value === undefined}  // ปิดการใช้งานเมื่อไม่มีข้อมูลในตาราง, form ไม่ valid หรือไม่มีการเลือก value
-                >
-                    ยืนยัน
-                </Button> */}
-                <Popconfirm
-                    id="popconfirmSubmit"
-                    title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
-                    onConfirm={handleSubmit} 
-                    okText="ใช่"
-                    cancelText="ไม่"
-                    >
-                    <Button
-                        id="Confirm"
-                        type="primary"
-                    >
-                        Submit
+    <Row justify="center" gutter={16}>
+              <Button
+                id="Submit"
+                onClick={showModal}
+                className="submit-trade"
+              >
+                Submit
+              </Button>
+              <Modal
+                title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
+                open={isModalVisible}
+                onOk={handleOk}
+                onCancel={handleCancel}
+                okText="ใช่"
+                cancelText="ไม่"
+                centered
+                style={{ textAlign: 'center'}}
+                footer={
+                  <div style={{ textAlign: "center" }}> {/* ทำให้ปุ่มอยู่ตรงกลาง */}
+                    <Button key="ok" type="default" onClick={handleOk} style={{ marginRight: 8 }} className="button-yes">
+                      Yes
                     </Button>
-                </Popconfirm>
-            </Row>
+                    <Button key="cancel" type="dashed" onClick={handleCancel} className="button-no">
+                      No
+                    </Button>
+                  </div>
+                }
+
+              >
+              </Modal>
+          </Row>
             </Layout.Content>
         </Layout>
     </ConfigProvider>

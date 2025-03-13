@@ -6,6 +6,7 @@ import { QrReader, QrReaderProps } from 'react-qr-reader';
 import api from "../../utils/axios/axiosInstance"; 
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/types";
+import { useLocation } from 'react-router-dom';
 import { CustomQrReaderProps, ReceiptOrder, ReceiptOrderLine } from '../../types/types';
 import {FETCHORDERTRACK, SEARCHORDERTRACK, UPLOADORDER, COMFIRMRECEIPT} from '../../services/path';
 
@@ -50,6 +51,17 @@ const SaleReturn: React.FC = () => {
     const auth = useSelector((state: RootState) => state.auth);
     const userID = auth?.user?.userID;
     const token = localStorage.getItem("access_token");
+
+    const location = useLocation();
+    // Retrieve the orderNo from the location state
+    useEffect(() => {
+        if (location.state && location.state.orderNo) {
+            const orderNo = location.state.orderNo;
+            setSelectedOrderNo(orderNo);
+            setOrderOptions(orderNo);
+            handleSelectChange(orderNo);
+        }
+    }, [location.state]);
 
     useEffect(() => {
         const fetchOrderOptions = async () => {
@@ -616,6 +628,7 @@ const SaleReturn: React.FC = () => {
                                 style={{ height: 40 }}
                                 placeholder="Search Order Number"
                                 optionFilterProp="label"
+                                value={selectedOrderNo} 
                                 onChange={handleSelectChange}
                                 options={orderOptions}
                             />

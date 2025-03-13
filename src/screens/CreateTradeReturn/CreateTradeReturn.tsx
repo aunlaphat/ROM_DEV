@@ -75,7 +75,7 @@ const CreateTradeReturn = () => {
 
   const handleOk = () => {
       setIsModalVisible(false);
-      handleSubmit(); // เรียกใช้ฟังก์ชัน handleSubmit
+      handleSubmit(); 
   };
 
   const handleCancel = () => {
@@ -1069,7 +1069,7 @@ const handleUpload = (file: File) => {
                   id="SKU"
                   label={<span style={{ color: "#657589" }}>รหัสสินค้า</span>}
                   name="SKU"
-                  // rules={[{ required: true, message: "กรุณากรอก SKU" }]}
+                  // rules={[{ required: true, message: "กรุณาเลือก/ค้นหา รหัสสินค้า (SKU)" }]}
                 >
                   <Select
                     showSearch
