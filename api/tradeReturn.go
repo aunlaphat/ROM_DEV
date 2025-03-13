@@ -172,12 +172,12 @@ func (app *Application) CreateTradeReturn(c *gin.Context) {
 		return
 	}
 
-	// *️⃣ ตรวจสอบว่า ReturnOrderLine ต้องไม่เป็นค่าว่าง (มีอย่างน้อย 1 รายการ)
-	if len(req.BeforeReturnOrderLines) == 0 {
-		app.Logger.Warn("[ sku information can't empty must be > 0 line ]")
-		handleError(c, Status.BadRequestError("[ sku information can't empty must be > 0 line ]"))
-		return
-	}
+	// // *️⃣ ตรวจสอบว่า ReturnOrderLine ต้องไม่เป็นค่าว่าง (มีอย่างน้อย 1 รายการ)
+	// if len(req.BeforeReturnOrderLines) == 0 {
+	// 	app.Logger.Warn("[ sku information can't empty must be > 0 line ]")
+	// 	handleError(c, Status.BadRequestError("[ sku information can't empty must be > 0 line ]"))
+	// 	return
+	// }
 
 	// // *️⃣ Validate request ที่ส่งมา
 	// if err := utils.ValidateCreateTradeReturn(req); err != nil {
