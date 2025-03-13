@@ -9,6 +9,7 @@ import api from "../../utils/axios/axiosInstance";
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/types";
 import { TRANSPORT_TYPES, Address, Customer, DataItem, Product } from '../../types/types';
+import {FETCHCUSTOMER, FETCHCUSTOMERINFO, SEARCHINVOICE, FETCHPROVINCES, FETCHDISTRICT, FETCHSUBDISTRICT, FETCHPOSTALCODE, SEARCHPRODUCT, FETCHSKU, CREATETRADE} from '../../services/path';
 import '../../style/styles.css';
 const { Option } = Select;
 
@@ -43,7 +44,6 @@ const CreateTradeReturn = () => {
   const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
   const [price, setPrice] = useState<number | null>(null); 
   const [qty, setQty] = useState<number | null>(null); 
-
   const [returnQty, setReturnQty] = useState<number | null>(null);
   const [pricePerUnit, setPricePerUnit] = useState<number | null>(null);
 
@@ -95,7 +95,7 @@ const CreateTradeReturn = () => {
     const fetchCustomerAccounts = async () => {
       setLoading(true);
       try {
-        const response = await api.get("/api/constants/get-customer-id");
+        const response = await api.get(FETCHCUSTOMER);
         setCustomerAccounts(response.data.data); // เก็บข้อมูล customer accounts
       } catch (error) {
         notification.error({
@@ -118,9 +118,7 @@ const CreateTradeReturn = () => {
       setSelectedInvoice(null); 
       form.resetFields(["Invoice_name"]);
 
-      const customerResponse = await api.get(
-        `/api/constants/get-customer-info?customerID=${value}`,
-      );
+      const customerResponse = await api.get(FETCHCUSTOMERINFO(value));
 
       const customerData = customerResponse.data.data;
       if (customerData && customerData.length > 0) {
@@ -156,8 +154,7 @@ const CreateTradeReturn = () => {
   const debouncedSearch = debounce(async (value: string) => {
     setLoading(true); 
     try {
-      const response = await api.get(
-        "/api/constants/search-invoice-names", 
+      const response = await api.get(SEARCHINVOICE, 
         {
           params: {
             customerID: selectedAccount?.customerID, // ใช้ customerID ที่เลือก
@@ -224,7 +221,7 @@ const CreateTradeReturn = () => {
     const fetchProvinces = async () => {
       setLoading(true);
       try {
-        const response = await api.get("/api/constants/get-provinces");
+        const response = await api.get(FETCHPROVINCES);
         setProvinces(response.data.data);
       } catch (error) {
         console.error("Failed to fetch provinces", error);
@@ -240,7 +237,7 @@ const CreateTradeReturn = () => {
       const fetchDistricts = async () => {
         setLoading(true);
         try {
-          const response = await api.get(`/api/constants/get-district?provinceCode=${province}`);
+          const response = await api.get(FETCHDISTRICT(province));
           setDistricts(response.data.data);
         } catch (error) {
           console.error("Failed to fetch districts", error);
@@ -259,7 +256,7 @@ const CreateTradeReturn = () => {
       const fetchSubDistricts = async () => {
         setLoading(true);
         try {
-          const response = await api.get(`/api/constants/get-sub-district?districtCode=${district}`);
+          const response = await api.get(FETCHSUBDISTRICT(district));
           setSubDistricts(response.data.data);
         } catch (error) {
           console.error("Failed to fetch subdistricts", error);
@@ -278,7 +275,7 @@ const CreateTradeReturn = () => {
       const fetchPostalCode = async () => {
         setLoading(true);
         try {
-          const response = await api.get(`/api/constants/get-postal-code?subdistrictCode=${subDistrict}`);
+          const response = await api.get(FETCHPOSTALCODE(subDistrict));
           setPostalCode(response.data.data);
           formaddress.setFieldsValue({
             PostalCode: response.data.data.length > 0 ? response.data.data[0].zipCode : "",
@@ -370,7 +367,7 @@ const CreateTradeReturn = () => {
   const debouncedSearchSKU = debounce(async (value: string, searchType: string) => {
     setLoading(true);
     try {
-      const response = await api.get("/api/constants/search-product", {
+      const response = await api.get(SEARCHPRODUCT, {
         params: {
           keyword: value,
           searchType,
@@ -419,7 +416,7 @@ const CreateTradeReturn = () => {
 
     try {
       setLoading(true);
-      const response = await api.get("/api/constants/get-sku", {
+      const response = await api.get(FETCHSKU, {
         params: { nameAlias, size },
       });
 
@@ -748,7 +745,7 @@ const handleUpload = (file: File) => {
     
         // ดึงโทเค็นจาก Local Storage
         const token = localStorage.getItem('access_token')
-        const response = await api.post('/api/trade-return/create-trade', requestData, {
+        const response = await api.post(CREATETRADE, requestData, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

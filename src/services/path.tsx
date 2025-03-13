@@ -56,7 +56,9 @@ export const TRADE = {
   SEARCHDATECONFIRM: `/trade-return/search-confirm`,
   GETWAITING: `/trade-return/get-waiting`,
   GETCONFIRM: `/trade-return/get-confirm`,
+  CREATETRADE: `/trade-return/create-trade`,
   GETORDERLINE: (OrderNo: string) => `/return-order/get-lines/${OrderNo}`,
+  UPDATEORDERLINE: (OrderNo: string, SKU: string) => `/return-order/update-line/${OrderNo}/${SKU}`,
 };
 
 // Export individual endpoints for backward compatibility
@@ -64,17 +66,23 @@ export const SEARCHDATEWAITING = TRADE.SEARCHDATEWAITING;
 export const SEARCHDATECONFIRM = TRADE.SEARCHDATECONFIRM;
 export const FETCHWAITING = TRADE.GETWAITING;
 export const FETCHCONFIRM = TRADE.GETCONFIRM;
+export const CREATETRADE = TRADE.CREATETRADE;
 export const FETCHORDERLINE = TRADE.GETORDERLINE;
+export const UPDATEORDERLINE = TRADE.UPDATEORDERLINE;
 
 // endpoints - Import Order Return to Ware House
 export const IMPORTORDER = {
   GETORDERTRACK: `/import-order/get-order-tracking`,
   SEARCHORDERTRACK: (value: string) => `/import-order/search-order-tracking?search=${value}`,
+  UPLOADORDER: `/import-order/upload-photo`,
+  COMFIRMRECEIPT: (OrderNo: string | null) => `/import-order/confirm-receipt/${OrderNo}`,
 };
 
 // Export individual endpoints for backward compatibility
 export const FETCHORDERTRACK = IMPORTORDER.GETORDERTRACK;
 export const SEARCHORDERTRACK = IMPORTORDER.SEARCHORDERTRACK;
+export const UPLOADORDER = IMPORTORDER.UPLOADORDER;
+export const COMFIRMRECEIPT = IMPORTORDER.COMFIRMRECEIPT;
 
 // endpoints - Constants
 export const CONSTANT = {
@@ -82,11 +90,12 @@ export const CONSTANT = {
   GETCUSTOMERINFO: (value: string) => `/constants/get-customer-info?customerID=${value}`,
   SEARCHINVOICE: `/constants/search-invoice-names`,
   GETPROVINCES: `/constants/get-provinces`,
-  GETDISTRICT: (province: number) => `/constants/get-district?provinceCode=${province}`,
-  GETSUBDISTRICT: (district: number) => `/constants/get-sub-district?districtCode=${district}`,
-  GETPOSTALCODE: (subDistrict: number) => `/constants/get-postal-code?subdistrictCode=${subDistrict}`,
+  GETDISTRICT: (province: string) => `/constants/get-district?provinceCode=${province}`,
+  GETSUBDISTRICT: (district: string) => `/constants/get-sub-district?districtCode=${district}`,
+  GETPOSTALCODE: (subDistrict: string) => `/constants/get-postal-code?subdistrictCode=${subDistrict}`,
   SEARCHPRODUCT: `/constants/search-product`,
-  GETSKU: `/constants/get-sku`
+  GETSKU: `/constants/get-sku`,
+  GETWAREHOUSE: `/constants/get-warehouse`
 };
 
 // Export individual endpoints for backward compatibility
@@ -99,3 +108,4 @@ export const FETCHSUBDISTRICT = CONSTANT.GETSUBDISTRICT;
 export const FETCHPOSTALCODE = CONSTANT.GETPOSTALCODE;
 export const SEARCHPRODUCT = CONSTANT.SEARCHPRODUCT;
 export const FETCHSKU = CONSTANT.GETSKU;
+export const FETCHWAREHOUSE = CONSTANT.GETWAREHOUSE;

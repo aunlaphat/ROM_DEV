@@ -14,6 +14,7 @@ import api from "../../utils/axios/axiosInstance";
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/types";
 import { Order, OrderDetail, OrderLine, SKUData, SelectedRecord} from '../../types/types';
+import { SEARCHDATEWAITING, SEARCHDATECONFIRM, FETCHWAITING, FETCHCONFIRM, FETCHORDERLINE, UPDATEORDERLINE, } from '../../services/path';
 
 dayjs.extend(utc);
 dayjs.extend(isSameOrAfter);
@@ -53,7 +54,7 @@ const ConfirmReturnTrade = () => {
 
     const handleEdit = async (order: string, activeTabKey: string) => {
         try {
-            const response = await api.get(`/api/return-order/get-lines/${order}`);
+            const response = await api.get(FETCHORDERLINE(order));
             const orderLines: OrderLine[] = response.data.data || [];
             const initialOrder: Order = {
                 Order: order,
@@ -120,7 +121,7 @@ const ConfirmReturnTrade = () => {
     
         try {
             const token = localStorage.getItem('access_token')
-            const response = await api.patch(`/api/return-order/update-line/${selectedOrderNo}/${editingSKU}`, {  // Use PATCH
+            const response = await api.patch(UPDATEORDERLINE(selectedOrderNo, editingSKU), {  // Use PATCH
                 ActualQTY: editedValues.QTY,
                 Price: editedValues.Price,
                 UpdateBy: userID,
@@ -154,8 +155,8 @@ const ConfirmReturnTrade = () => {
     const fetchData = async (statusCheckID: number) => {
         try {
             const endpoint = statusCheckID === 1 
-                ? '/api/trade-return/get-waiting' 
-                : '/api/trade-return/get-confirm';
+                ? FETCHWAITING 
+                : FETCHCONFIRM;
             const response = await api.get(endpoint);
             const data = response.data.data.map((item: OrderDetail) => ({
                 Order: item.orderNo,
@@ -206,8 +207,8 @@ const ConfirmReturnTrade = () => {
 
             try {
                 const endpoint = statusCheckID === 1 
-                    ? '/api/trade-return/search-waiting' 
-                    : '/api/trade-return/search-confirm';
+                    ? SEARCHDATEWAITING 
+                    : SEARCHDATECONFIRM;
 
                 const response = await api.get(endpoint, {
                     params: {

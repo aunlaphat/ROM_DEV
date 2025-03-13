@@ -1,13 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Steps, Col, ConfigProvider, Form, Layout, Row, Select, Button, Table, Modal, Input, notification, Divider, Popconfirm } from 'antd';
+import { Steps, Col, ConfigProvider, Form, Layout, Row, Select, Button, Table, Modal, Input, notification, Divider, Popconfirm, message, Tooltip } from 'antd';
 import Webcam from 'react-webcam';
-import { CameraOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { CameraOutlined, EyeOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined, CopyOutlined } from '@ant-design/icons';
 import { QrReader, QrReaderProps } from 'react-qr-reader';
 import api from "../../utils/axios/axiosInstance"; 
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/types";
 import { CustomQrReaderProps, ReceiptOrder, ReceiptOrderLine } from '../../types/types';
+import {FETCHORDERTRACK, SEARCHORDERTRACK, UPLOADORDER, COMFIRMRECEIPT} from '../../services/path';
 
+// ปรับ ui หน้าค้นหาหน้าแรก ไม่ต้องแสดง select ให้ค้นหาเองเลย ค้นหาได้ทั้งเลข Order + Track
+// เพิ่มฟีเจอคัดลอก sku ให้ก้อปไปรับเข้าง่ายๆ หรือ เพิ่มปุ่มยืนยันรับเข้าให้แต่ละ sku + สแกนรับเข้าได้เหมือนเดิม
+// เพิ่ม view ใต้ภาพดูภาพเต็มได้
+// ปรับ button ใน action
+// ยังเกิดบัคถ่าย sku ภาพสุดท้ายแล้วบัคให้ถ่ายอีกรอบ แต่มันเก็บค่าภาพแรกที่ถ่ายไว้ถูกแล้ว
+// จำนวนสินค้าที่คืนต้องปรับเป็น หน้าคลังกรอกเองว่าสินค้าที่พบหน้าคลังมีมาเท่าไร เพิ่มฟิลด์ WHQTY ในฐานข้อมูลเพิ่ม
+// ยังไม่ได้เช็คบัค
 const SaleReturn: React.FC = () => {
     const [orderOptions, setOrderOptions] = useState<{ value: string; label: string }[]>([]);
     const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null); 
@@ -46,7 +54,7 @@ const SaleReturn: React.FC = () => {
     useEffect(() => {
         const fetchOrderOptions = async () => {
             try {
-                const response = await api.get('/api/import-order/get-order-tracking');
+                const response = await api.get(FETCHORDERTRACK);
                 const options = response.data.data.map((item: any, index: number) => ({
                     key: `${item.orderNo}-${index}`, // เพิ่ม index เพื่อให้คีย์เป็นเอกลักษณ์
                     value: item.orderNo,
@@ -72,7 +80,7 @@ const SaleReturn: React.FC = () => {
         setShowTable(false);
 
         try {
-            const response = await api.get(`/api/import-order/search-order-tracking?search=${value}`);
+            const response = await api.get(SEARCHORDERTRACK(value));
           // ตรวจสอบว่ามีข้อมูล orderLines หรือไม่
           if (response.data && response.data.data && response.data.data.length > 0 && response.data.data[0].orderLines) {
             // กรองข้อมูล orderLines ที่มี SKU ขึ้นต้นด้วย "G"
@@ -151,16 +159,30 @@ const SaleReturn: React.FC = () => {
     };
 
     const columns = [
-        { title: 'รหัสสินค้า', dataIndex: 'sku', key: 'sku' ,id:'sku'},
+        { title: 'รหัสสินค้า', dataIndex: 'sku', key: 'sku' ,id:'sku',
+            render: (text: string) => (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <Tooltip title="Copy to clipboard">
+                        <CopyOutlined
+                            style={{ cursor: 'pointer', marginRight: '8px' }}
+                            onClick={() => {
+                                navigator.clipboard.writeText(text).then(() => {
+                                    message.success('SKU copied to clipboard!');
+                                }).catch(() => {
+                                    message.error('Failed to copy SKU!');
+                                });
+                            }}
+                        />
+                    </Tooltip>
+                    {text}
+                </div>
+            ),
+        },
         { title: 'ชื่อสินค้า', dataIndex: 'itemName', key: 'itemName' ,id:'itemName'},
         { title: 'จำนวนสินค้า', dataIndex: 'qty', key: 'qty' ,id:'qty'},
         { title: 'จำนวนสินค้าที่คืน', dataIndex: 'receivedQty', key: 'receivedQty' ,id:'receivedQty'},
         { title: 'ราคาสินค้ารวม', dataIndex: 'price', key: 'price',id:'price' },
-        {
-            title: 'Return',
-            id:'Return' ,
-            dataIndex: 'Return',
-            key: 'Return',
+        { title: 'Return', id:'Return' , dataIndex: 'Return', key: 'Return',
             render: (_: any, record: ReceiptOrderLine) => {
                 const isConfirmed = record.receivedQty === record.qty;
                 return isConfirmed ? (
@@ -174,16 +196,65 @@ const SaleReturn: React.FC = () => {
                 );
             }
         },
-        {
-            title: 'Image',
-            id:'Image',
-            dataIndex: 'image',
-            key: 'image',
+        { title: 'Image', id:'Image', dataIndex: 'image', key: 'image',
             render: (_: any, record: ReceiptOrderLine) => {
                 // ตรวจสอบว่า record.image มีค่าหรือไม่
                 const stepImage = images[`step${parseInt(record.key, 10)+2}`]; 
+                const handleViewImage = (imageUrl: string) => {
+                    // เปิด modal เพื่อดูภาพ
+                    Modal.info({
+                        title: null,
+                        content: (
+                            <div style={{ position: 'relative', display: 'inline-block' }}>
+                                <img 
+                                    src={imageUrl} 
+                                    alt="Return" 
+                                    style={{ 
+                                        width: '100%', 
+                                        height: 'auto', 
+                                        maxWidth: '800px', 
+                                        display: 'block' 
+                                    }} 
+                                />
+                                <Button
+                                    type="primary"
+                                    icon={<CloseOutlined />}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '10px',
+                                        right: '10px',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                                        border: 'none',
+                                        color: 'white',
+                                        padding: '5px',
+                                        fontSize: '16px',
+                                    }}
+                                    onClick={() => Modal.destroyAll()}
+                                />
+                            </div>
+                        ),
+                        footer: null,
+                        width: 'auto',
+                        bodyStyle: { padding: 0 }
+                    });
+                };
+    
                 return stepImage ? (
-                    <img src={stepImage} alt="Return" style={{ width: '100px' }} />
+                    <div>
+                        <img 
+                            src={stepImage} 
+                            alt="Return" 
+                            style={{ width: '100px', marginRight: '10px' }} 
+                        />
+                        <Button
+                            style={{ background: '#02C39A'}}
+                            icon={<EyeOutlined />}
+                            type="primary"
+                            onClick={() => handleViewImage(stepImage)} 
+                        >
+                            ดูรูปภาพ
+                        </Button>
+                    </div>
                 ) : (
                     <Button
                         style={{ background: '#02C39A' }}
@@ -194,49 +265,46 @@ const SaleReturn: React.FC = () => {
                         กดเพื่อถ่ายรูป
                     </Button>
                 );
-    }
-    },
-    
-    {
-        title: 'Action',
-        id:'Action',
-        key: 'action',
-        render: (_: any, record: ReceiptOrderLine) => (
-          <>
-            <Button
-              style={{
-                marginRight: '10px',
-                marginBottom: '10px',
-                background: '#BADEFF',
-                color: '#1890FF',
-              }}
-              id="Takepicture"
-              type="primary"
-              onClick={() => handleRetakePhoto(record.key)}
-              icon={<RedoOutlined />}
-            >
-              ถ่ายรูปใหม่
-            </Button>
-      
-            <Popconfirm
-             id="Delectpopconfirm"
-              title="คุณแน่ใจหรือว่าต้องการลบรายการนี้?"
-              onConfirm={() => handleDelete(record.key)}
-              okText="ยืนยัน"
-              cancelText="ยกเลิก"
-            >
-              <Button
-                id="Cancel"
+            }
+        },
+        { title: 'Action', id:'Action', key: 'action',
+            render: (_: any, record: ReceiptOrderLine) => (
+            <>
+                <Button
+                style={{
+                    marginRight: '10px',
+                    marginBottom: '10px',
+                    background: '#BADEFF',
+                    color: '#1890FF',
+                    width: '100px',
+                }}
+                id="Takepicture"
                 type="primary"
-                style={{ color: '#E53939', background: '#F9D3D3' }}
-                icon={<DeleteOutlined />}
-              >
-                Delete
-              </Button>
-            </Popconfirm>
-          </>
-        ),
-      },
+                onClick={() => handleRetakePhoto(record.key)}
+                icon={<RedoOutlined />}
+                >
+                ถ่ายรูปใหม่
+                </Button>
+        
+                <Popconfirm
+                    id="Delectpopconfirm"
+                    title="คุณแน่ใจหรือว่าต้องการลบรายการนี้?"
+                    onConfirm={() => handleDelete(record.key)}
+                    okText="ยืนยัน"
+                    cancelText="ยกเลิก"
+                >
+                <Button
+                    id="Cancel"
+                    type="primary"
+                    style={{ color: '#E53939', background: '#F9D3D3', width: '100px', }}
+                    icon={<DeleteOutlined />}
+                >
+                    Delete
+                </Button>
+                </Popconfirm>
+            </>
+            ),
+        },
     ];
 
     const handleTakePhoto = (recordKey: string, sku: string) => {
@@ -375,7 +443,7 @@ const SaleReturn: React.FC = () => {
                 }
                 console.log("FormData:", formData); // check data
         
-                const response = await api.post('/api/import-order/upload-photo', formData, {
+                const response = await api.post(UPLOADORDER, formData, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'multipart/form-data',
@@ -446,7 +514,7 @@ const SaleReturn: React.FC = () => {
     
           console.log(requestData);
           // ส่งข้อมูลไปยัง API
-          const response = await api.post(`/api/import-order/confirm-receipt/${selectedOrderNo}`, requestData, {
+          const response = await api.post(COMFIRMRECEIPT(selectedOrderNo), requestData, {
             headers: {
               Authorization: `Bearer ${token}`,
             },

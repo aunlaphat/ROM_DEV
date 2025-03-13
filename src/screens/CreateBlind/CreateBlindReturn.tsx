@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { DataItemBlind, Product } from '../../types/types';
 import api from "../../utils/axios/axiosInstance"; 
+import {FETCHSKU, SEARCHPRODUCT} from '../../services/path';
 const { Option } = Select;
 
 const CreateBlind = () => {
@@ -46,7 +47,7 @@ const CreateBlind = () => {
     const debouncedSearchSKU = debounce(async (value: string, searchType: string) => {
         setLoading(true);
         try {
-        const response = await api.get("/api/constants/search-product", {
+        const response = await api.get(SEARCHPRODUCT, {
             params: {
             keyword: value,
             searchType,
@@ -100,7 +101,7 @@ const CreateBlind = () => {
 
         try {
         setLoading(true);
-        const response = await api.get("/api/constants/get-sku", {
+        const response = await api.get(FETCHSKU, {
             params: { nameAlias, size },
         });
 
