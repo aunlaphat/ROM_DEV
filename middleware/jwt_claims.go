@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/jwtauth"
 )
 
-// ✅ JWT Middleware ตรวจสอบ Token และดึง `UserID` & `RoleID`
+// JWT Middleware ตรวจสอบ Token และดึง `UserID` & `RoleID`
 func JWTMiddleware(tokenAuth *jwtauth.JWTAuth) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 🔹 ดึง Token จาก Header หรือ Cookie
@@ -45,14 +45,14 @@ func JWTMiddleware(tokenAuth *jwtauth.JWTAuth) gin.HandlerFunc {
 			return
 		}
 
-		// ✅ เซ็ต `UserID` และ `RoleID` ใน Context
+		// เซ็ต `UserID` และ `RoleID` ใน Context
 		c.Set("UserID", userID)
 		c.Set("RoleID", roleID)
 
-		// ✅ Debug Mode - แสดง Claims ทั้งหมด
+		// Debug Mode - แสดง Claims ทั้งหมด
 		fmt.Printf("🔍 JWT Debug - UserID=%s, RoleID=%d, Claims=%v\n", userID, roleID, claims)
 
-		// ✅ เซ็ตค่า Claims ตามแหล่งที่มา
+		// เซ็ตค่า Claims ตามแหล่งที่มา
 		if source == "header" {
 			c.Set("jwt_claims_header", claims)
 		} else if source == "cookie" {
@@ -65,7 +65,7 @@ func JWTMiddleware(tokenAuth *jwtauth.JWTAuth) gin.HandlerFunc {
 	}
 }
 
-// ✅ ดึง Token จาก Header หรือ Cookie
+// ดึง Token จาก Header หรือ Cookie
 func extractToken(c *gin.Context) (string, string) {
 	authHeader := c.GetHeader("Authorization")
 	if len(authHeader) > 7 && strings.HasPrefix(authHeader, "Bearer ") {
@@ -80,14 +80,14 @@ func extractToken(c *gin.Context) (string, string) {
 	return "", ""
 }
 
-// ✅ ถอดรหัส Token และดึง Claims
+// ถอดรหัส Token และดึง Claims
 func parseToken(c *gin.Context, tokenAuth *jwtauth.JWTAuth, tokenString string) (map[string]interface{}, error) {
 	token, err := tokenAuth.Decode(tokenString)
 	if err != nil {
 		return nil, err
 	}
 
-	// ✅ Debug พิมพ์ค่า Claims ออกมา
+	// Debug พิมพ์ค่า Claims ออกมา
 	claims, err := token.AsMap(c.Request.Context())
 	if err != nil {
 		return nil, errors.New("unauthorized - invalid token claims format")
@@ -96,7 +96,7 @@ func parseToken(c *gin.Context, tokenAuth *jwtauth.JWTAuth, tokenString string) 
 	return claims, nil
 }
 
-// ✅ ดึงค่า `UserID` จาก Claims
+// ดึงค่า `UserID` จาก Claims
 func getUserIDFromClaims(claims map[string]interface{}) (string, error) {
 	userID, exists := claims["userID"].(string)
 	if !exists {
@@ -105,7 +105,7 @@ func getUserIDFromClaims(claims map[string]interface{}) (string, error) {
 	return userID, nil
 }
 
-// ✅ ดึงค่า `RoleID` จาก Claims
+// ดึงค่า `RoleID` จาก Claims
 func getRoleIDFromClaims(claims map[string]interface{}) (int, error) {
 	roleID, exists := claims["roleID"].(float64) // JSON Decode มาเป็น float64
 	if !exists {

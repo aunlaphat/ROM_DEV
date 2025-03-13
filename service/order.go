@@ -224,7 +224,7 @@ func (srv service) UpdateOrderStatus(ctx context.Context, orderNo string, userID
 
 	// ✅ ตรวจสอบสิทธิ์ของผู้ใช้
 	switch roleID {
-	case 2: // 📌 **Accounting**
+	case 2: // **Accounting**
 		srv.logger.Info("🔹 Role: Accounting - Checking isCNCreated",
 			zap.String("OrderNo", orderNo),
 			zap.Bool("isCNCreated", order.IsCNCreated),
@@ -262,7 +262,7 @@ func (srv service) UpdateOrderStatus(ctx context.Context, orderNo string, userID
 			ConfirmDate:    time.Now(),
 		}, nil
 
-	case 3: // 📌 **Warehouse**
+	case 3: // **Warehouse**
 		srv.logger.Info("🔹 Role: Warehouse - Checking isEdited",
 			zap.String("OrderNo", orderNo),
 			zap.Bool("isEdited", order.IsEdited),
@@ -300,7 +300,7 @@ func (srv service) UpdateOrderStatus(ctx context.Context, orderNo string, userID
 			ConfirmDate:    time.Now(),
 		}, nil
 
-	default: // 📌 **Role อื่น ๆ** → Default เป็น Pending/Draft
+	default: // **Role อื่น ๆ** → Default เป็น Pending/Draft
 		srv.logger.Warn("⚠️ Unrecognized Role - Assigning Default Pending/Draft",
 			zap.String("OrderNo", orderNo),
 			zap.Int("RoleID", roleID),

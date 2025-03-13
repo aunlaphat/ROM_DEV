@@ -11,11 +11,9 @@ import (
 
 func (app *Application) UserRoute(apiRouter *gin.RouterGroup) {
 	users := apiRouter.Group("/manage-users")
-
 	users.GET("/", app.GetUsers)
+	
 	users.Use(middleware.JWTMiddleware(app.TokenAuth))
-
-	//users.GET("/", app.GetUsers)
 	users.GET("/:userID", app.GetUser)
 	users.POST("/add", app.AddUser)
 	users.PATCH("/edit/:userID", app.EditUser)

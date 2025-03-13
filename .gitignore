@@ -34,3 +34,5 @@ ttt/
 *.log
 
 .codegpt
+
+.air.toml

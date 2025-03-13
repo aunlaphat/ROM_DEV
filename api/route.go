@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,17 +20,15 @@ func SetupSwagger(router *gin.RouterGroup) {
 func Routes(router *gin.Engine, app *Application) {
 	allowedOrigin := os.Getenv("CORS_ORIGIN")
 	if allowedOrigin == "" {
-		allowedOrigin = "http://localhost:3000" // Default
+		allowedOrigin = "http://localhost:3000"
 	}
-	fmt.Println("🔥 CORS Allowed Origin:", allowedOrigin) // ✅ Debug จุดนี้
-
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{allowedOrigin},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
-		ExposeHeaders:    []string{"Authorization","Set-Cookie"},
+		ExposeHeaders:    []string{"Authorization", "Set-Cookie"},
 		AllowCredentials: true,
-		MaxAge:           300, // 5 minutes
+		MaxAge:           300,
 	}))
 
 	apiRouter := router.Group("/api")
@@ -45,7 +42,6 @@ func Routes(router *gin.Engine, app *Application) {
 	filesDir := filepath.Join(workDir, "uploads")
 	apiRouter.StaticFS("/uploads", http.Dir(filesDir))
 
-	// Authenticated & User Routes
 	app.AuthRoute(apiRouter)
 	app.UserRoute(apiRouter)
 	app.OrderRoute(apiRouter)
@@ -54,5 +50,5 @@ func Routes(router *gin.Engine, app *Application) {
 	app.ImportOrderRoute(apiRouter)
 	app.TradeReturnRoute(apiRouter)
 	app.BeforeReturnRoute(apiRouter)
-	app.Constants(apiRouter)
+	app.ConstantRoute(apiRouter)
 }

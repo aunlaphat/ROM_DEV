@@ -13,7 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// ✅ ตั้งค่าเส้นทาง API
 func (app *Application) OrderRoute(apiRouter *gin.RouterGroup) {
 	order := apiRouter.Group("/order")
 
@@ -26,8 +25,6 @@ func (app *Application) OrderRoute(apiRouter *gin.RouterGroup) {
 	orderAuth.POST("/update-sr/:orderNo", app.UpdateSrNo)
 	orderAuth.POST("/update-status/:orderNo", app.UpdateOrderStatus)
 	orderAuth.POST("/cancel", app.CancelOrder)
-
-	// Frontend อัปเดต IsEdited = true เมื่อมีการแก้ไขข้อมูล (เช่น เปลี่ยน QTY, ลบรายการ, หรือเพิ่มสินค้าใหม่)
 	orderAuth.PATCH("/mark-edited/:orderNo", app.MarkOrderAsEdited)
 }
 
@@ -180,8 +177,6 @@ func (app *Application) UpdateSrNo(c *gin.Context) {
 // @Router /order/update-status/{orderNo} [post]
 func (app *Application) UpdateOrderStatus(c *gin.Context) {
 	orderNo := c.Param("orderNo")
-
-	// ✅ ดึง UserID และ RoleID จาก Claims
 	userID, exists := c.Get("UserID")
 	if !exists {
 		handleResponse(c, false, "⚠️ Unauthorized - Missing UserID", nil, http.StatusUnauthorized)
@@ -194,7 +189,6 @@ func (app *Application) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
-	// ✅ แปลง RoleID เป็น int
 	roleIDInt, ok := roleID.(int)
 	if !ok {
 		handleResponse(c, false, "⚠️ Unauthorized - Invalid RoleID format", nil, http.StatusUnauthorized)
@@ -229,7 +223,6 @@ func (app *Application) UpdateOrderStatus(c *gin.Context) {
 // @Router /order/mark-edited/{orderNo} [patch]
 func (app *Application) MarkOrderAsEdited(c *gin.Context) {
 	orderNo := c.Param("orderNo")
-
 	userID, exists := c.Get("UserID")
 	if !exists {
 		handleResponse(c, false, "⚠️ Unauthorized - Missing UserID", nil, http.StatusUnauthorized)
@@ -316,9 +309,7 @@ func (app *Application) GenerateSrNoFromAX(c *gin.Context) {
 		return
 	}
 
-	// เรียก AX API เพื่อขอ SrNo
-	srNo := fmt.Sprintf("SR-%s-%d", orderNo, time.Now().Unix())
+	srNo := fmt.Sprintf("SR-%d", time.Now().Unix())
 
-	// ส่งค่า SrNo กลับไปให้ frontend
 	handleResponse(c, true, "⭐ SrNo generated from AX successfully ⭐", srNo, http.StatusOK)
 }

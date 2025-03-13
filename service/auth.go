@@ -24,21 +24,21 @@ func (srv service) Login(ctx context.Context, req request.LoginWeb) (response.Lo
 		return response.Login{}, errors.ValidationError("username or password must not be empty")
 	}
 
-	// ✅ ดึงข้อมูล User พร้อม Role และ Password
+	// ดึงข้อมูล User พร้อม Role และ Password
 	user, err := srv.userRepo.Login(ctx, req.UserName)
 	if err != nil {
 		srv.logger.Warn("❌ User not found", zap.String("username", req.UserName), zap.Error(err))
 		return response.Login{}, errors.UnauthorizedError("invalid username or password")
 	}
 
-	// ✅ ตรวจสอบรหัสผ่าน
+	// ตรวจสอบรหัสผ่าน
 	hashedPassword := utils.HashPassword(req.Password)
 	if hashedPassword != user.Password {
 		srv.logger.Warn("❌ Invalid password", zap.String("username", req.UserName))
 		return response.Login{}, errors.UnauthorizedError("invalid username or password")
 	}
 
-	// ✅ สร้าง Response
+	// สร้าง Response
 	loginResponse := response.Login{
 		UserID:       user.UserID,
 		UserName:     user.UserName,

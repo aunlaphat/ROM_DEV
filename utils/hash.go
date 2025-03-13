@@ -6,7 +6,7 @@ import (
 	"regexp"
 )
 
-// ✅ HashPassword ใช้ SHA-256 สำหรับ Hash รหัสผ่าน
+// HashPassword ใช้ SHA-256 สำหรับ Hash รหัสผ่าน
 func HashPassword(password string) string {
 	hasher := md5.New()
 	hasher.Write([]byte(password))

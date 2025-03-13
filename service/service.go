@@ -19,6 +19,7 @@ type service struct {
 	constant         repository.Constants
 }
 type AllOfService struct {
+	Constant     ConstantService
 	Auth         AuthService
 	User         UserService
 	Order        OrderService
@@ -43,6 +44,7 @@ func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 		constant:         repo,
 	}
 	return AllOfService{
+		Constant:     srv,
 		Auth:         srv,
 		User:         srv,
 		Order:        srv,
