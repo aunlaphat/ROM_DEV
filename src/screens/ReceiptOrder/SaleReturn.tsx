@@ -6,41 +6,18 @@ import { QrReader, QrReaderProps } from 'react-qr-reader';
 import api from "../../utils/axios/axiosInstance"; 
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/types";
-
-// เก็บในไฟล์ type.ts ทำเป็น export แทน
-interface CustomQrReaderProps extends QrReaderProps {
-    onScan: (result: string | null) => void;
-    onError: (error: any) => void;
-}
-
-interface Order {
-    orderNo: string;
-    trackingNo: string;
-    data: OrderLine[];
-}
-
-interface OrderLine {
-    key: string;
-    sku: string;
-    itemName: string;
-    qty: number;
-    receivedQty: number;
-    price: string;
-    image: string | null;
-    filePath: string;
-}
+import { CustomQrReaderProps, ReceiptOrder, ReceiptOrderLine } from '../../types/types';
 
 const SaleReturn: React.FC = () => {
     const [orderOptions, setOrderOptions] = useState<{ value: string; label: string }[]>([]);
-    const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null); // ประกาศ selectedOrderNo
+    const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null); 
+    const [skuInput, setSkuInput] = useState<string>('');
+    const [skuName, setSkuName] = useState<string | null>(null);
    
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [showScanner, setShowScanner] = useState<boolean>(false);
-   
-    const [skuInput, setSkuInput] = useState<string>('');
     const [currentStep, setCurrentStep] = useState(0);
     const [currentRecordKey, setCurrentRecordKey] = useState<string | null>(null);
-    const [skuName, setSkuName] = useState<string | null>(null);
     const [showWebcam, setShowWebcam] = useState(false);
     const [showSteps, setShowSteps] = useState(false);
     const [showTable, setShowTable] = useState(false);
@@ -50,7 +27,7 @@ const SaleReturn: React.FC = () => {
         step2: null,
     });
     const webcamRef = useRef<Webcam>(null);
-    const [data, setData] = useState<OrderLine[]>([]);
+    const [data, setData] = useState<ReceiptOrderLine[]>([]);
     
     const onChange = (current: number) => {
         setCurrentStep(current);
@@ -64,8 +41,8 @@ const SaleReturn: React.FC = () => {
     // ดึงข้อมูลผู้ใช้ที่เข้าสู่ระบบ
     const auth = useSelector((state: RootState) => state.auth);
     const userID = auth?.user?.userID;
-
     const token = localStorage.getItem("access_token");
+
     useEffect(() => {
         const fetchOrderOptions = async () => {
             try {
@@ -89,7 +66,7 @@ const SaleReturn: React.FC = () => {
     }, []);
    
     const handleSelectChange = async (value: string) => {
-        setSelectedOrderNo(value); // กำหนดค่า selectedOrderNo
+        setSelectedOrderNo(value); 
         setShowSteps(true);
         setCurrentStep(0);
         setShowTable(false);
@@ -112,7 +89,6 @@ const SaleReturn: React.FC = () => {
             setData(orderData);
             // setShowTable(true);
         } else {
-            // กรณีไม่มีข้อมูล orderLines
             setData([]);
             setShowTable(false);
             notification.warning({
@@ -175,18 +151,17 @@ const SaleReturn: React.FC = () => {
     };
 
     const columns = [
-        { title: 'SKU', dataIndex: 'sku', key: 'sku' ,id:'sku'},
-        { title: 'Name', dataIndex: 'itemName', key: 'itemName' ,id:'itemName'},
-        { title: 'QTY', dataIndex: 'qty', key: 'qty' ,id:'qty'},
-        { title: 'จำนวนรับเข้า', dataIndex: 'receivedQty', key: 'receivedQty' ,id:'receivedQty'},
-        { title: 'Amount', dataIndex: 'price', key: 'price',id:'price' },
+        { title: 'รหัสสินค้า', dataIndex: 'sku', key: 'sku' ,id:'sku'},
+        { title: 'ชื่อสินค้า', dataIndex: 'itemName', key: 'itemName' ,id:'itemName'},
+        { title: 'จำนวนสินค้า', dataIndex: 'qty', key: 'qty' ,id:'qty'},
+        { title: 'จำนวนสินค้าที่คืน', dataIndex: 'receivedQty', key: 'receivedQty' ,id:'receivedQty'},
+        { title: 'ราคาสินค้ารวม', dataIndex: 'price', key: 'price',id:'price' },
         {
             title: 'Return',
             id:'Return' ,
             dataIndex: 'Return',
             key: 'Return',
-            render: (_: any, record: OrderLine) => {
-                // Check if the current record has receivedQty equal to qty
+            render: (_: any, record: ReceiptOrderLine) => {
                 const isConfirmed = record.receivedQty === record.qty;
                 return isConfirmed ? (
                     <Button type="primary" style={{ background: '#D1FAD3', width: '73px', borderRadius: '20px' }}>
@@ -204,9 +179,9 @@ const SaleReturn: React.FC = () => {
             id:'Image',
             dataIndex: 'image',
             key: 'image',
-            render: (_: any, record: OrderLine) => {
+            render: (_: any, record: ReceiptOrderLine) => {
                 // ตรวจสอบว่า record.image มีค่าหรือไม่
-                const stepImage = images[`step${parseInt(record.key, 10)+2}`]; // ปรับให้ตรงกับ key ของ record
+                const stepImage = images[`step${parseInt(record.key, 10)+2}`]; 
                 return stepImage ? (
                     <img src={stepImage} alt="Return" style={{ width: '100px' }} />
                 ) : (
@@ -214,7 +189,7 @@ const SaleReturn: React.FC = () => {
                         style={{ background: '#02C39A' }}
                         icon={<CameraOutlined />}
                         type="primary"
-                        onClick={() => handleTakePhoto(record.key, record.sku)} // ใช้ sku แทน itemName
+                        onClick={() => handleTakePhoto(record.key, record.sku)} 
                     >
                         กดเพื่อถ่ายรูป
                     </Button>
@@ -226,7 +201,7 @@ const SaleReturn: React.FC = () => {
         title: 'Action',
         id:'Action',
         key: 'action',
-        render: (_: any, record: OrderLine) => (
+        render: (_: any, record: ReceiptOrderLine) => (
           <>
             <Button
               style={{
@@ -246,12 +221,12 @@ const SaleReturn: React.FC = () => {
             <Popconfirm
              id="Delectpopconfirm"
               title="คุณแน่ใจหรือว่าต้องการลบรายการนี้?"
-              onConfirm={() => handleDelete(record.key)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดยืนยัน
+              onConfirm={() => handleDelete(record.key)}
               okText="ยืนยัน"
               cancelText="ยกเลิก"
             >
               <Button
-              id="Cancel"
+                id="Cancel"
                 type="primary"
                 style={{ color: '#E53939', background: '#F9D3D3' }}
                 icon={<DeleteOutlined />}
@@ -266,10 +241,11 @@ const SaleReturn: React.FC = () => {
 
     const handleTakePhoto = (recordKey: string, sku: string) => {
         setCurrentRecordKey(recordKey);
-        setSkuName(sku); // Use sku instead of itemName
+        setSkuName(sku); 
         console.log("CurrentRecordKey (take photo):", recordKey);
         setShowWebcam(true);
     };
+
     const handleBackStep = () => {
         if (currentStep > 0) {  // ตรวจสอบว่า currentStep มากกว่า 0 เพื่อย้อยกลับ
             setCurrentStep((prevStep) => prevStep - 1);
@@ -279,7 +255,7 @@ const SaleReturn: React.FC = () => {
     const handleRetakePhoto = (recordKey: string) => {
         setCurrentRecordKey(recordKey);
         const currentItem = data.find(item => item.key === recordKey);
-        setSkuName(currentItem?.sku || null); // Use sku instead of itemName
+        setSkuName(currentItem?.sku || null); 
         console.log("CurrentRecordKey (retake photo):", recordKey);
         setShowWebcam(true);
     };
@@ -304,12 +280,11 @@ const SaleReturn: React.FC = () => {
         setShowWebcam(false);
         setCurrentRecordKey(null);
         setSkuName(null);
-        setImages((prevImages) => ({ ...prevImages, [`step${currentStep + 1}`]: null })); // Clear image if needed
+        setImages((prevImages) => ({ ...prevImages, [`step${currentStep + 1}`]: null })); 
     };
     
     const handleConfirmReceived = () => {
         const foundSKU = data.find(item => item.sku === skuInput.trim()); // ใช้ trim() เพื่อจัดการกับช่องว่าง
-    
         if (foundSKU) {
             // เช็คว่าจำนวนที่รับเข้าจะไม่เกิน qty
             if (foundSKU.receivedQty < foundSKU.qty) {
@@ -320,7 +295,6 @@ const SaleReturn: React.FC = () => {
                             : item
                     )
                 );
-    
                 notification.success({
                     message: 'สำเร็จ',
                     description: `อัปเดตการรับเข้า SKU: ${skuInput} สำเร็จ`,
@@ -340,10 +314,8 @@ const SaleReturn: React.FC = () => {
                 placement: 'topRight',
             });
         }
-    
-        setSkuInput(''); // ล้างช่องกรอกข้อมูลหลังจากการแจ้งเตือน
+        setSkuInput(''); 
     };
-    
     notification.config({
         placement: 'topRight',
         duration: 3, // ระยะเวลาการแสดง notification
@@ -351,14 +323,12 @@ const SaleReturn: React.FC = () => {
     });
 
     const handleScanSku = () => {
-        // เปิด/ปิดการใช้งานกล้องเพื่อสแกน
-        setShowScanner(true);
+        setShowScanner(true); // เปิด/ปิดการใช้งานกล้องเพื่อสแกน
     };
 
     const handleScanResult = (result: string | null) => {
         if (result) {
-            console.log(result);
-            // จัดการผลลัพธ์ที่ได้รับ
+            console.log(result); // จัดการผลลัพธ์ที่ได้รับ
         }
     };
 
@@ -368,7 +338,6 @@ const SaleReturn: React.FC = () => {
 
     const handleSubmit = async () => {
       const allReceived = data.every(item => item.receivedQty === item.qty);
-    
       if (allReceived) {
         try {
           // ดึงโทเค็นจาก Local Storage
@@ -377,7 +346,7 @@ const SaleReturn: React.FC = () => {
           const base64ToFile = async (base64String: string, filename: string): Promise<File> => {
             const res = await fetch(base64String);
             const blob = await res.blob();
-            console.log("Blob from base64ToFile:", blob); // เพิ่มบรรทัดนี้
+            console.log("Blob from base64ToFile:", blob); 
             return new File([blob], filename, { type: 'image/jpeg' }); // เปลี่ยน type ตามประเภทรูปภาพ
           };
     
@@ -404,9 +373,7 @@ const SaleReturn: React.FC = () => {
                 if (sku) {
                     formData.append('sku', sku);
                 }
-
-
-        console.log("FormData:", formData); // เพิ่มบรรทัดนี้
+                console.log("FormData:", formData); // check data
         
                 const response = await api.post('/api/import-order/upload-photo', formData, {
                     headers: {
@@ -414,28 +381,28 @@ const SaleReturn: React.FC = () => {
                         'Content-Type': 'multipart/form-data',
                     },
                 });
-                console.log("Response data from uploadImage:", response.data); // เพิ่มบรรทัดนี้
-                console.log("Response from uploadImage: ", response); //add this line.
+                console.log("Response data from uploadImage:", response.data); 
+                console.log("Response from uploadImage: ", response); 
         
                 if (response.data && response.data.data && response.data.data.filePath) {
-                    return response.data.data.filePath; // แก้ไขบรรทัดนี้
+                    return response.data.data.filePath; 
                 } else {
                     console.error("filePath not found in response:", response);
-                    return null; // หรือ throw error
+                    return null; 
                 }
             } catch (error) {
                 console.error("Error uploading image:", error);
                 return null;
             }
-        };
-    
+         };
+
           // อัปโหลดภาพและบันทึกพาธสำหรับแต่ละภาพ
           const step1ImagePath = images.step1 ? await uploadImage(images.step1, 1, null) : null;
           const step2ImagePath = images.step2 ? await uploadImage(images.step2, 2, null) : null;
           const itemImages = await Promise.all(
             data.map(async (item) => {
-                console.log("Images for item:", item.key, item.image); // แก้ไขบรรทัดนี้
-                if (item.image) { // ใช้ item.image แทน images[item.key]
+                console.log("Images for item:", item.key, item.image);
+                if (item.image) { 
                     const filePath = await uploadImage(item.image, 3, item.sku);
                     return { ...item, filePath };
                 }
@@ -454,7 +421,7 @@ const SaleReturn: React.FC = () => {
                 QTY: item.qty,
                 ReturnQTY: item.receivedQty,
                 Price: item.price,
-                ImageTypeID: 3, // กำหนดค่า ImageTypeID สำหรับภาพที่มี SKU
+                ImageTypeID: 3, 
                 FilePath: item.filePath,
               })),
               {
@@ -462,7 +429,7 @@ const SaleReturn: React.FC = () => {
                 QTY: null,
                 ReturnQTY: null,
                 Price: null,
-                ImageTypeID: 1, // กำหนดค่า ImageTypeID สำหรับภาพ step 1
+                ImageTypeID: 1, 
                 FilePath: step1ImagePath,
               },
               {
@@ -470,11 +437,11 @@ const SaleReturn: React.FC = () => {
                 QTY: null,
                 ReturnQTY: null,
                 Price: null,
-                ImageTypeID: 2, // กำหนดค่า ImageTypeID สำหรับภาพ step 2
+                ImageTypeID: 2,
                 FilePath: step2ImagePath,
               },
             ],
-            CreateBy: userID, // เพิ่ม userID ที่เข้าสู่ระบบในฟิลด์ CreateBy
+            CreateBy: userID, 
           };
     
           console.log(requestData);
@@ -550,9 +517,11 @@ const SaleReturn: React.FC = () => {
     
 
     return (
-        <ConfigProvider>
-            <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
-                Sale Return
+        <ConfigProvider
+  
+        >
+            <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "#023E8A" }}>
+                ถ่าย/สแกนรับเข้าการคืนสินค้าทั่วไป
             </div>
             <Layout>
                 <Layout.Content
@@ -565,47 +534,47 @@ const SaleReturn: React.FC = () => {
                         overflow: "auto",
                     }}
                 >
-                    <Row align="middle" justify="center" style={{ marginTop: "20px",width:'100%'  }}>
-                        <Col span={12} >
-                            <Form.Item
-                            id="selectedSalesOrder"
-                                layout="vertical"
-                                label={<span style={{ color: '#657589' }}>กรอกเลข Order</span>}
-                                name="selectedSalesOrder"
-                                rules={[{ required: true, message: 'กรุณากรอกเลข Order!' }]}
-                            >
-                                <Select
-                                    showSearch
-                                    style={{ height: 40}}
-                                    placeholder="Search to Select"
-                                    optionFilterProp="label"
-                                    onChange={handleSelectChange}
-                                    options={orderOptions}
-                                />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-
-                    {showSteps && !showTable && (
-                        <>
-                        <Steps current={currentStep} 
-                               onChange={onChange}
-                               style={{ marginTop: '20px', width: '100%' }}
+                <Row align="middle" justify="center" style={{ marginTop: "20px", width:'100%'  }}>
+                    <Col span={7} >
+                        <Form.Item
+                        id="selectedSalesOrder"
+                            layout="vertical"
+                            label={<span style={{ color: '#657589' }}>เลือกเลขออเดอร์</span>}
+                            name="selectedSalesOrder"
+                            rules={[{ required: true, message: 'กรุณากรอกเลข Order!' }]}
                         >
-                        <Steps.Step title="ถ่ายก่อนเปิดสินค้า" />
-                        <Steps.Step title="ถ่ายหลังเปิดสินค้า" />
+                            <Select
+                                showSearch
+                                style={{ height: 40 }}
+                                placeholder="Search Order Number"
+                                optionFilterProp="label"
+                                onChange={handleSelectChange}
+                                options={orderOptions}
+                            />
+                        </Form.Item>
+                    </Col>
+                </Row>
+
+                {showSteps && !showTable && (
+                    <>
+                    <Steps current={currentStep} 
+                        onChange={onChange}
+                        style={{ marginTop: '20px', width: '100%' }}
+                        className="custom-steps"
+                    >
+                        <Steps.Step title="ถ่ายก่อนเปิดสินค้า" className="custom-steps"/>
+                        <Steps.Step title="ถ่ายหลังเปิดสินค้า"/>
                         {data.map((item, index) => (
                         <Steps.Step
                             key={item.key}
                             title={
                                 <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: 'normal' }}>
-                                
-                                    <div style={{ color: '#1890FF'  }}>{item.sku}</div>
+                                    <div>{item.sku}</div>
                                 </div>
                             }
                         />
                         ))}
-                        </Steps>
+                    </Steps>
 
                     <Row justify="center" align="middle" style={{ marginTop: 20 }}>
                         <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '20px' }}>
@@ -627,34 +596,36 @@ const SaleReturn: React.FC = () => {
                         </Col>
 
                         <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
-                        
-                        <Button onClick={toggleCamera} style={{ marginTop: 10 }}>
-                            เปลี่ยนกล้อง
-                        </Button>
-                        {currentStep > 0 && (  // แสดงปุ่ม "ย้อนกลับ" เมื่อ currentStep > 0
-                        <Button
+                            <Button 
+                                onClick={toggleCamera} 
+                                style={{ marginTop: 10 , marginRight: '20px'}}
+                            >
+                                เปลี่ยนกล้อง
+                            </Button>
+                            {currentStep > 0 && (  // แสดงปุ่ม "ย้อนกลับ" เมื่อ currentStep > 0
+                            <Button
                                 id="back"
-                            style={{marginRight: '20px', width: '100px', color: '#35465B'}}
-                            type="default"
-                            onClick={handleBackStep}
-                        >
-                            ย้อนกลับ
-                        </Button>
-                        )}
-                        {!images[`step${currentStep + 1}`] ? (
-                                <Button
-                                id="Takepicture"
-                                    type="primary"
-                                    onClick={capturePhoto}
-                                    style={{ display: 'flex', alignItems: 'center' }}>
-                                    ถ่ายรูป
-                                </Button>
-                        ) : (
+                                style={{marginTop: '10px', marginRight: '20px', width: '100px'}}
+                                type="default"
+                                onClick={handleBackStep}
+                            >
+                                ย้อนกลับ
+                            </Button>
+                            )}
+                            {!images[`step${currentStep + 1}`] ? (
+                                    <Button
+                                        id="Takepicture"
+                                        type="primary"
+                                        onClick={capturePhoto}
+                                        style={{ marginTop: '10px', display: 'flex', width: '100px', alignItems: 'center' }}>
+                                        ถ่ายรูป
+                                    </Button>
+                            ) : (
                                 <>
                                     <Button
-                                    id="Retakepicture"
+                                        id="Retakepicture"
                                         icon={<RedoOutlined />}
-                                        style={{ marginRight: '20px', width: '100px', color: '#35465B' }}
+                                        style={{ marginTop: '10px', marginRight: '20px', width: '100px'}}
                                         type="default"
                                         onClick={retakePhoto}
                                     >
@@ -662,8 +633,8 @@ const SaleReturn: React.FC = () => {
                                     </Button>
                                     
                                     <Button
-                                    id="Next"
-                                        style={{ width: '100px' }}
+                                        id="Next"
+                                        style={{ marginTop: '10px', width: '100px' }}
                                         type="primary"
                                         onClick={handleNextStep}
                                     >
@@ -673,77 +644,71 @@ const SaleReturn: React.FC = () => {
                             )}
                         </Col>
                     </Row>
-                </>
-            )}
-       
-                       
-                        {showTable && (
-                            <>
-                              <Divider orientation="left" style={{color: '#657589'}}>รับเข้า SKU</Divider>
-                              <Row justify="center" align="middle" style={{ marginTop: 20 }}>
-            <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
-                <Form.Item  
-                id="inputsku"
-                 layout="vertical"
-                    label={<span style={{ color: '#657589' }}>กรอก SKU เพื่อรับเข้า</span>}
-                    style={{ marginBottom: 0 }}
-                >
-
-                    <Input
-                        placeholder="ระบุ SKU"
-                        value={skuInput}
-                        onChange={(e) => setSkuInput(e.target.value)}
-                        style={{ width: '375px', marginRight: '10px', height: 40 }}
-                    />
-                    <Button 
-                                    id="สแกนSKU"
-                        icon={<ScanOutlined />} 
-                        onClick={handleScanSku} 
-                        style={{ height: 40, marginLeft: 5 }}
-                    >
-                        สแกน SKU
-                    </Button>
-                </Form.Item>
-            </Col>
-            <Row gutter={40} style={{ marginTop: '20px' }}> 
-                
-            <Col span={12} >
-                <Button id="ยืนยันการรับเข้า" type="primary" onClick={handleConfirmReceived} disabled={!skuInput} style={{}}>
-                    ยืนยันการรับเข้า
-                </Button>
-
-            </Col>
-            <Col span={12} >
-            <Button id="ส่งข้อมูล" type="primary" onClick={handleSubmit} style={{background:'#14C11B'}} >
-                                ส่งข้อมูล
-                            </Button>
+                    </>
+                )}
+                {showTable && (
+                    <>
+                    <Divider orientation="left" style={{color: '#657589'}}>รับเข้า SKU</Divider>
+                        <Row justify="center" align="middle" style={{ marginTop: 20 }}>
+                            <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
+                                <Form.Item  
+                                    id="inputsku"
+                                    layout="vertical"
+                                    label={<span style={{ color: '#657589' }}>กรอก/สแกน รหัสสินค้าเพื่อยืนยันการรับเข้า</span>}
+                                    style={{ marginBottom: 0 }}
+                                >
+                                    <Input
+                                        placeholder="ระบุ SKU"
+                                        value={skuInput}
+                                        onChange={(e) => setSkuInput(e.target.value)}
+                                        style={{ width: '375px', marginRight: '10px', height: 40 }}
+                                    />
+                                    <Button 
+                                        id="สแกนSKU"
+                                        icon={<ScanOutlined />} 
+                                        onClick={handleScanSku} 
+                                        style={{ height: 40, marginLeft: 5 }}
+                                    >
+                                        สแกน SKU
+                                    </Button>
+                                </Form.Item>
                             </Col>
+                            <Row gutter={40} style={{ marginTop: '20px' }}> 
+                                <Col span={12} >
+                                    <Button id="ยืนยันการรับเข้า" type="primary" onClick={handleConfirmReceived} disabled={!skuInput} style={{}}>
+                                        ยืนยันการรับเข้า
+                                    </Button>
+                                </Col>
+                                <Col span={12} >
+                                    <Button id="ส่งข้อมูล" type="primary" onClick={handleSubmit} style={{background:'#14C11B'}} >
+                                        ส่งข้อมูล
+                                    </Button>
+                                </Col>
                             </Row>
-        </Row>
-                                <Table
-                                    dataSource={data}
-                                    columns={columns}
-                                    pagination={false}
-                                    rowKey="key"
-                                    style={{ marginTop: '50px' }}
-                                />
-                            </>
-                        )}
-    
-                        {showWebcam && (
-                        <Modal
-                            visible={showWebcam}
-                            footer={null}
-                            onCancel={handleCancelModal}
-                            title={
-                                <div style={{ textAlign: 'center', fontSize: '16px',fontWeight: 'normal'  }}> {/* ขนาดปกติสามารถปรับได้ */}
-                                    ถ่ายรูป SKU:<br />
-                                    <div style={{color:'#1890FF'}}>{skuName}</div> {/* เน้น SKU */}
-                                </div>
-                            }
-                            
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+                        </Row>
+                    <Table
+                        dataSource={data}
+                        columns={columns}
+                        pagination={false}
+                        rowKey="key"
+                        style={{ marginTop: '50px' }}
+                    />
+                    </>
+                )}
+                {showWebcam && (
+                    <Modal
+                        open={showWebcam}
+                        footer={null}
+                        onCancel={handleCancelModal}
+                        title={
+                            <div style={{ textAlign: 'center', fontSize: '16px',fontWeight: 'normal'  }}> {/* ขนาดปกติสามารถปรับได้ */}
+                                ถ่ายรูป SKU:<br />
+                                <div style={{color:'#1890FF'}}>{skuName}</div> {/* เน้น SKU */}
+                            </div>
+                        }
+                        
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
                             <Webcam
                             id="Webcam2"
                                 audio={false}
@@ -751,31 +716,30 @@ const SaleReturn: React.FC = () => {
                                 screenshotFormat="image/jpeg"
                                 style={{ width: '100%', maxWidth: '400px' }}
                             />
-                             </div>
-                            <Row justify="center" style={{ marginTop: '10px' }}>
-                                <Button id="ถ่ายรูป" type="primary" onClick={handleCapturePhoto}>
-                                    ถ่ายรูป
-                                </Button>
-                            </Row>
-                        </Modal>
-                    )}
-
-                    {showScanner && (
-                        <Modal
-                            visible={showScanner}
-                            footer={null}
-                            onCancel={() => setShowScanner(false)}
-                            title="Scan SKU"
-                        >
-                             
-                        </Modal>
-                    )}
+                        </div>
+                        <Row justify="center" style={{ marginTop: '10px' }}>
+                            <Button id="ถ่ายรูป" type="primary" onClick={handleCapturePhoto}>
+                                ถ่ายรูป
+                            </Button>
+                        </Row>
+                    </Modal>
+                )}
+                {showScanner && (
+                    <Modal
+                        open={showScanner}
+                        footer={null}
+                        onCancel={() => setShowScanner(false)}
+                        title="Scan SKU"
+                    >
+                            
+                    </Modal>
+                )}
                         
-                    </Layout.Content>
-                </Layout>
-            </ConfigProvider>
+                </Layout.Content>
+            </Layout>
+        </ConfigProvider>
         );
     };
-    
+        
     export default SaleReturn;
     

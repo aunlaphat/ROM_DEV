@@ -1,3 +1,5 @@
+import { QrReader, QrReaderProps } from 'react-qr-reader';
+
 export const TRANSPORT_TYPES = [
   { value: 'SPX', label: 'SPX Express' },
   { value: 'JNT', label: 'J&T Express' },
@@ -66,6 +68,7 @@ export interface Address {
   }
 
   export interface SKUData {
+    OrderNo: string;
     SKU: string;
     Name: string;
     QTY: number;
@@ -84,7 +87,7 @@ export interface Address {
       customerId: string;
       srNo: string;
       trackingNo: string;
-      logistic: string;
+      // logistic: string;
       channelName: string;
       createDate: string;
       warehouseName: string;
@@ -97,6 +100,28 @@ export interface Address {
       qty: number;
       price: string;
       Type: 'system' | 'addon';
+  }
+
+  export interface CustomQrReaderProps extends QrReaderProps {
+      onScan: (result: string | null) => void;
+      onError: (error: any) => void;
+  }
+  
+  export interface ReceiptOrder {
+      orderNo: string;
+      trackingNo: string;
+      data: ReceiptOrderLine[];
+  }
+  
+  export interface ReceiptOrderLine {
+      key: string;
+      sku: string;
+      itemName: string;
+      qty: number;
+      receivedQty: number;
+      price: string;
+      image: string | null;
+      filePath: string;
   }
 
   export {};

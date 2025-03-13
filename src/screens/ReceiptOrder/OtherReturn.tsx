@@ -3,79 +3,47 @@ import { Steps, Col, ConfigProvider, Form, Layout, Row, Select, Button, Table, M
 import Webcam from 'react-webcam';
 import { CameraOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { QrReader, QrReaderProps } from 'react-qr-reader';
-import { useLocation } from 'react-router-dom';
-import api from "../../utils/axios/axiosInstance";
-
-interface CustomQrReaderProps extends QrReaderProps {
-    onScan: (result: string | null) => void;
-    onError: (error: any) => void;
-}
-
-interface Order {
-    orderNo: string;
-    trackingNo: string;
-    data: OrderLine[];
-}
-
-interface OrderLine {
-    key: string;
-    sku: string;
-    itemName: string;
-    qty: number;
-    receivedQty: number;
-    price: string;
-    image: string | null;
-}
+import api from "../../utils/axios/axiosInstance"; 
+import { useSelector } from 'react-redux';
+import { RootState } from "../../redux/types";
+import { CustomQrReaderProps, ReceiptOrder, ReceiptOrderLine } from '../../types/types';
 
 const OtherReturn: React.FC = () => {
-    const location = useLocation();
-    const { orderNumber, dataSource, value } = location.state || {};
-
     const [orderOptions, setOrderOptions] = useState<{ value: string; label: string }[]>([]);
+    const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null); 
+   
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [showScanner, setShowScanner] = useState<boolean>(false);
+   
     const [skuInput, setSkuInput] = useState<string>('');
-    const [current, setCurrent] = useState(0);
     const [currentStep, setCurrentStep] = useState(0);
     const [currentRecordKey, setCurrentRecordKey] = useState<string | null>(null);
     const [skuName, setSkuName] = useState<string | null>(null);
     const [showWebcam, setShowWebcam] = useState(false);
     const [showSteps, setShowSteps] = useState(false);
     const [showTable, setShowTable] = useState(false);
+    const [current, setCurrent] = useState(0);
     const [images, setImages] = useState<{ [key: string]: string | null }>({
         step1: null,
         step2: null,
     });
     const webcamRef = useRef<Webcam>(null);
-    const [data, setData] = useState<OrderLine[]>([]);
-
-    // useEffect(() => {
-    //     if (orderNumber && value === 1) {
-    //         setData(dataSource.map((item, index) => ({
-    //             key: `${index + 1}`,
-    //             sku: item.SKU,
-    //             itemName: item.Name,
-    //             qty: item.QTY,
-    //             receivedQty: 0,
-    //             price: "", // Add price if needed
-    //             image: null,
-    //         })));
-    //         setShowSteps(true);
-    //     } else if (orderNumber && value === 2) {
-    //         setShowSteps(true);
-    //     }
-    // }, [orderNumber, dataSource, value]);
-
+    const [data, setData] = useState<ReceiptOrderLine[]>([]);
+    
     const onChange = (current: number) => {
         setCurrentStep(current);
     };
-
     const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('environment');
 
     const toggleCamera = () => {
         setCameraFacingMode((prevMode) => (prevMode === 'user' ? 'environment' : 'user'));
     };
 
+    // ดึงข้อมูลผู้ใช้ที่เข้าสู่ระบบ
+    const auth = useSelector((state: RootState) => state.auth);
+    const userID = auth?.user?.userID;
+
+    const token = localStorage.getItem("access_token");
     useEffect(() => {
         const fetchOrderOptions = async () => {
             try {
@@ -97,38 +65,39 @@ const OtherReturn: React.FC = () => {
 
         fetchOrderOptions();
     }, []);
-
+   
     const handleSelectChange = async (value: string) => {
+        setSelectedOrderNo(value); // กำหนดค่า selectedOrderNo
         setShowSteps(true);
         setCurrentStep(0);
         setShowTable(false);
 
         try {
             const response = await api.get(`/api/import-order/search-order-tracking?search=${value}`);
-            // ตรวจสอบว่ามีข้อมูล orderLines หรือไม่
-            if (response.data && response.data.data && response.data.data.length > 0 && response.data.data[0].orderLines) {
-                // กรองข้อมูล orderLines ที่มี SKU ขึ้นต้นด้วย "G"
-                const filteredOrderLines = response.data.data[0].orderLines.filter((item: any) => item.sku.startsWith('G'));
-                const orderData = filteredOrderLines.map((item: any, index: number) => ({
-                    key: `${index + 1}`,
-                    sku: item.sku,
-                    itemName: item.itemName,
-                    qty: item.qty,
-                    receivedQty: 0,
-                    price: item.price,
-                    image: null,
-                }));
-                setData(orderData);
-                // setShowTable(true);
-            } else {
-                // กรณีไม่มีข้อมูล orderLines
-                setData([]);
-                setShowTable(false);
-                notification.warning({
-                    message: 'คำเตือน',
-                    description: 'ไม่พบข้อมูล Order Lines สำหรับ Order นี้',
-                });
-            }
+          // ตรวจสอบว่ามีข้อมูล orderLines หรือไม่
+          if (response.data && response.data.data && response.data.data.length > 0 && response.data.data[0].orderLines) {
+            // กรองข้อมูล orderLines ที่มี SKU ขึ้นต้นด้วย "G"
+            const filteredOrderLines = response.data.data[0].orderLines.filter((item: any) => item.sku.startsWith('G'));
+            const orderData = filteredOrderLines.map((item: any, index: number) => ({
+                key: `${index + 1}`,
+                sku: item.sku,
+                itemName: item.itemName,
+                qty: item.qty,
+                receivedQty: 0,
+                price: item.price,
+                image: null,
+            }));
+            setData(orderData);
+            // setShowTable(true);
+        } else {
+            // กรณีไม่มีข้อมูล orderLines
+            setData([]);
+            setShowTable(false);
+            notification.warning({
+                message: 'คำเตือน',
+                description: 'ไม่พบข้อมูล Order Lines สำหรับ Order นี้',
+            });
+        }
         } catch (error) {
             console.error('Failed to fetch order data:', error);
             notification.error({
@@ -158,29 +127,43 @@ const OtherReturn: React.FC = () => {
     };
 
     const handleNextStep = () => {
-        if (currentStep < 1) { // Change this condition to 1
-            setCurrentStep(currentStep + 1);
+        if (currentStep < data.length + 2) {
+            if (currentStep >= 2) { // ตรวจสอบว่าอยู่ในขั้นตอนที่ 3 (SKU) หรือไม่
+                const recordKey = data[currentStep - 2].key; // คำนวณ recordKey จาก currentStep
+                const imageSrc = images[`step${currentStep + 1}`];
+                if (imageSrc) {
+                    setData(prevData => {
+                        return prevData.map(record => {
+                            if (record.key === recordKey) {
+                                return { ...record, image: imageSrc };
+                            }
+                            return record;
+                        });
+                    });
+                }
+            }
+            setCurrentStep(prevStep => prevStep + 1);
         } else {
             setShowTable(true);
         }
     };
-
+    
     const handleDelete = (recordKey: string) => {
         setData((prevData) => prevData.filter(item => item.key !== recordKey));
     };
 
     const columns = [
-        { title: 'SKU', dataIndex: 'sku', key: 'sku',id:'sku' },
+        { title: 'SKU', dataIndex: 'sku', key: 'sku' ,id:'sku'},
         { title: 'Name', dataIndex: 'itemName', key: 'itemName' ,id:'itemName'},
-        { title: 'QTY', dataIndex: 'qty', key: 'qty',id:'qty' },
-        { title: 'จำนวนรับเข้า', dataIndex: 'receivedQty', key: 'receivedQty',id:'receivedQty' },
+        { title: 'QTY', dataIndex: 'qty', key: 'qty' ,id:'qty'},
+        { title: 'จำนวนรับเข้า', dataIndex: 'receivedQty', key: 'receivedQty' ,id:'receivedQty'},
         { title: 'Amount', dataIndex: 'price', key: 'price',id:'price' },
         {
             title: 'Return',
+            id:'Return' ,
             dataIndex: 'Return',
-            id:'Return',
             key: 'Return',
-            render: (_: any, record: OrderLine) => {
+            render: (_: any, record: ReceiptOrderLine) => {
                 // Check if the current record has receivedQty equal to qty
                 const isConfirmed = record.receivedQty === record.qty;
                 return isConfirmed ? (
@@ -196,137 +179,74 @@ const OtherReturn: React.FC = () => {
         },
         {
             title: 'Image',
+            id:'Image',
             dataIndex: 'image',
-            id:'image',
             key: 'image',
-            render: (_: any, record: OrderLine) =>
-                record.image ? (
-                    <img src={record.image} alt="Return" style={{ width: '100px' }} />
+            render: (_: any, record: ReceiptOrderLine) => {
+                // ตรวจสอบว่า record.image มีค่าหรือไม่
+                const stepImage = images[`step${parseInt(record.key, 10)+2}`]; // ปรับให้ตรงกับ key ของ record
+                return stepImage ? (
+                    <img src={stepImage} alt="Return" style={{ width: '100px' }} />
                 ) : (
                     <Button
                         style={{ background: '#02C39A' }}
                         icon={<CameraOutlined />}
                         type="primary"
-                        onClick={() => handleTakePhoto(record.key, record.sku)} // Use sku instead of itemName
+                        onClick={() => handleTakePhoto(record.key, record.sku)} // ใช้ sku แทน itemName
                     >
                         กดเพื่อถ่ายรูป
                     </Button>
-                ),
-        },
-        {
-            title: 'Action',
-            id:'Action',
-            key: 'action',
-            render: (_: any, record: OrderLine) => (
-              <>
-                <Button
-                  style={{
-                    marginRight: '10px',
-                    marginBottom: '10px',
-                    background: '#BADEFF',
-                    color: '#1890FF',
-                  }}
-                  id="ถ่ายรูปใหม่"
-                  type="primary"
-                  onClick={() => handleRetakePhoto(record.key)}
-                  icon={<RedoOutlined />}
-                >
-                  ถ่ายรูปใหม่
-                </Button>
-          
-                <Popconfirm
-                id="PopconfirmDelete"
-                  title="คุณแน่ใจหรือว่าต้องการลบรายการนี้?"
-                  onConfirm={() => handleDelete(record.key)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดยืนยัน
-                  okText="ยืนยัน"
-                  cancelText="ยกเลิก"
-                >
-                  <Button
-                  id="Delete"
-                    type="primary"
-                    style={{ color: '#E53939', background: '#F9D3D3' }}
-                    icon={<DeleteOutlined />}
-                  >
-                    Delete
-                  </Button>
-                </Popconfirm>
-              </>
-            ),
-          },
-          
+                );
+    }
+    },
+    
+    {
+        title: 'Action',
+        id:'Action',
+        key: 'action',
+        render: (_: any, record: ReceiptOrderLine) => (
+          <>
+            <Button
+              style={{
+                marginRight: '10px',
+                marginBottom: '10px',
+                background: '#BADEFF',
+                color: '#1890FF',
+              }}
+              id="Takepicture"
+              type="primary"
+              onClick={() => handleRetakePhoto(record.key)}
+              icon={<RedoOutlined />}
+            >
+              ถ่ายรูปใหม่
+            </Button>
+      
+            <Popconfirm
+             id="Delectpopconfirm"
+              title="คุณแน่ใจหรือว่าต้องการลบรายการนี้?"
+              onConfirm={() => handleDelete(record.key)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดยืนยัน
+              okText="ยืนยัน"
+              cancelText="ยกเลิก"
+            >
+              <Button
+              id="Cancel"
+                type="primary"
+                style={{ color: '#E53939', background: '#F9D3D3' }}
+                icon={<DeleteOutlined />}
+              >
+                Delete
+              </Button>
+            </Popconfirm>
+          </>
+        ),
+      },
     ];
-
-    // const [data, setData] = useState<OrderLine[]>([
-
-    //     {
-    //         key: '1',
-    //         sku: 'G090108-EF05',
-    //         itemName: 'Bewell Foot Rest EF-05',
-    //         qty: 3,
-    //         receivedQty: 0,
-    //         price: '500',
-    //         image: null,
-        
-
-
-    //     },
-    //     {
-    //         key: '2',
-    //         sku: 'G091116-PC08-GY',
-    //         itemName: 'Bewell Cooling Blanket Single PC-08(Gray)',
-    //         qty: 2,
-    //         receivedQty: 0,
-    //         price: '600',
-    //         image: null,
-          
-    //     },
-    //     {
-    //         key: '3',
-    //         sku: 'G091116-PC09-BL',
-    //         itemName: 'Bewell Cooling Blanket King PC-08(Blue)',
-    //         qty: 3,
-    //         receivedQty: 0,
-    //         price: '700',
-    //         image: null,
-            
-    //     },
-
-       
-    // ]);
 
     const handleTakePhoto = (recordKey: string, sku: string) => {
         setCurrentRecordKey(recordKey);
         setSkuName(sku); // Use sku instead of itemName
+        console.log("CurrentRecordKey (take photo):", recordKey);
         setShowWebcam(true);
-    };
-
-    const handleRetakePhoto = (recordKey: string) => {
-        setCurrentRecordKey(recordKey);
-        const currentItem = data.find(item => item.key === recordKey);
-        setSkuName(currentItem?.sku || null); // Use sku instead of itemName
-        setShowWebcam(true);
-    };
-
-    const handleCapturePhoto = () => {
-        if (webcamRef.current && currentRecordKey) {
-            const imageSrc = webcamRef.current.getScreenshot();
-            if (imageSrc) {
-                setData((prevData) =>
-                    prevData.map((item) =>
-                        item.key === currentRecordKey ? { ...item, image: imageSrc } : item
-                    )
-                );
-                setSkuName(data.find(item => item.key === currentRecordKey)?.sku || null);
-            }
-            setShowWebcam(false); // Close webcam after capturing photo
-        }
-    };
-
-    const handleCancelModal = () => {
-        setShowWebcam(false);
-        setCurrentRecordKey(null);
-        setSkuName(null);
-        setImages((prevImages) => ({ ...prevImages, [`step${currentStep + 1}`]: null })); // Clear image if needed
     };
     const handleBackStep = () => {
         if (currentStep > 0) {  // ตรวจสอบว่า currentStep มากกว่า 0 เพื่อย้อยกลับ
@@ -334,9 +254,40 @@ const OtherReturn: React.FC = () => {
         }
     };
 
+    const handleRetakePhoto = (recordKey: string) => {
+        setCurrentRecordKey(recordKey);
+        const currentItem = data.find(item => item.key === recordKey);
+        setSkuName(currentItem?.sku || null); // Use sku instead of itemName
+        console.log("CurrentRecordKey (retake photo):", recordKey);
+        setShowWebcam(true);
+    };
+
+    const handleCapturePhoto = () => {
+        if (webcamRef.current && currentRecordKey) {
+            console.log("CurrentRecordKey:", currentRecordKey);
+            const imageSrc = webcamRef.current.getScreenshot();
+            if (imageSrc) {
+                setData((prevData) =>
+                    prevData.map((item) =>
+                        item.key === currentRecordKey ? { ...item, image: imageSrc } : item
+                    )
+                );
+                console.log("Data after capture:", data);
+            }
+            setShowWebcam(false);
+        }
+    };
+    
+    const handleCancelModal = () => {
+        setShowWebcam(false);
+        setCurrentRecordKey(null);
+        setSkuName(null);
+        setImages((prevImages) => ({ ...prevImages, [`step${currentStep + 1}`]: null })); // Clear image if needed
+    };
+    
     const handleConfirmReceived = () => {
         const foundSKU = data.find(item => item.sku === skuInput.trim()); // ใช้ trim() เพื่อจัดการกับช่องว่าง
-
+    
         if (foundSKU) {
             // เช็คว่าจำนวนที่รับเข้าจะไม่เกิน qty
             if (foundSKU.receivedQty < foundSKU.qty) {
@@ -347,7 +298,7 @@ const OtherReturn: React.FC = () => {
                             : item
                     )
                 );
-
+    
                 notification.success({
                     message: 'สำเร็จ',
                     description: `อัปเดตการรับเข้า SKU: ${skuInput} สำเร็จ`,
@@ -367,10 +318,10 @@ const OtherReturn: React.FC = () => {
                 placement: 'topRight',
             });
         }
-
+    
         setSkuInput(''); // ล้างช่องกรอกข้อมูลหลังจากการแจ้งเตือน
     };
-
+    
     notification.config({
         placement: 'topRight',
         duration: 3, // ระยะเวลาการแสดง notification
@@ -393,52 +344,193 @@ const OtherReturn: React.FC = () => {
         console.log(error);
     };
 
-    const handleSubmit = () => {
-        const allReceived = data.every(item => item.receivedQty === item.qty);
-        const allImagesTaken = data.every(item => item.image); // เช็คว่ามีภาพสำหรับทุก SKU
+    const handleSubmit = async () => {
+      const allReceived = data.every(item => item.receivedQty === item.qty);
+    
+      if (allReceived) {
+        try {
+          // ดึงโทเค็นจาก Local Storage
+          const token = localStorage.getItem('access_token');
+    
+          const base64ToFile = async (base64String: string, filename: string): Promise<File> => {
+            const res = await fetch(base64String);
+            const blob = await res.blob();
+            console.log("Blob from base64ToFile:", blob); // เพิ่มบรรทัดนี้
+            return new File([blob], filename, { type: 'image/jpeg' }); // เปลี่ยน type ตามประเภทรูปภาพ
+          };
+    
+          const uploadImage = async (image: string, imageTypeID: number, sku: string | null) => {
+            try {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // แปลงวันที่และเวลาเป็นสตริงที่ใช้ได้ในชื่อไฟล์
+                let filename = '';
+            
+                if (imageTypeID === 1) {
+                  filename = `beforeopen_${timestamp}.jpg`;
+                } else if (imageTypeID === 2) {
+                  filename = `afteropen_${timestamp}.jpg`;
+                } else if (imageTypeID === 3 && sku) {
+                  filename = `${sku}_${timestamp}.jpg`;
+                } else {
+                  filename = `image_${timestamp}.jpg`; // กรณีที่ไม่ตรงกับเงื่อนไขใดๆ
+                }
+            
+                const file = await base64ToFile(image, filename);
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('orderNo', selectedOrderNo!);
+                formData.append('imageTypeID', imageTypeID.toString());
+                if (sku) {
+                    formData.append('sku', sku);
+                }
 
-        if (allReceived && allImagesTaken) {
-            console.log('ข้อมูลที่ส่ง:', data);
-            setData([]); // ลบข้อมูลในตาราง
-            notification.success({
-                message: 'ส่งข้อมูลสำเร็จ',
-                description: 'ข้อมูลถูกส่งเรียบร้อยแล้ว',
-                placement: 'topRight',
-            });
-        } else {
-            let warningMessage = 'กรุณายืนยันจำนวนรับเข้าทั้งหมดก่อนส่งข้อมูล';
-            if (!allImagesTaken) {
-                warningMessage += '\nกรุณาถ่ายรูปให้ครบก่อนส่งข้อมูล';
+
+        console.log("FormData:", formData); // เพิ่มบรรทัดนี้
+        
+                const response = await api.post('/api/import-order/upload-photo', formData, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                console.log("Response data from uploadImage:", response.data); // เพิ่มบรรทัดนี้
+                console.log("Response from uploadImage: ", response); //add this line.
+        
+                if (response.data && response.data.data && response.data.data.filePath) {
+                    return response.data.data.filePath; // แก้ไขบรรทัดนี้
+                } else {
+                    console.error("filePath not found in response:", response);
+                    return null; // หรือ throw error
+                }
+            } catch (error) {
+                console.error("Error uploading image:", error);
+                return null;
             }
+        };
+    
+          // อัปโหลดภาพและบันทึกพาธสำหรับแต่ละภาพ
+          const step1ImagePath = images.step1 ? await uploadImage(images.step1, 1, null) : null;
+          const step2ImagePath = images.step2 ? await uploadImage(images.step2, 2, null) : null;
+          const itemImages = await Promise.all(
+            data.map(async (item) => {
+                console.log("Images for item:", item.key, item.image); // แก้ไขบรรทัดนี้
+                if (item.image) { // ใช้ item.image แทน images[item.key]
+                    const filePath = await uploadImage(item.image, 3, item.sku);
+                    return { ...item, filePath };
+                }
+                return item;
+            })
+        );
 
-            notification.warning({
-                message: 'ข้อมูลไม่ครบถ้วน',
-                description: warningMessage,
-                placement: 'topRight',
+        console.log("itemImages:", itemImages);
+    
+          // เตรียมข้อมูลสำหรับส่งไปยัง API
+          const requestData = {
+            Identifier: selectedOrderNo, // ใช้ OrderNo หรือ TrackingNo ที่เลือก
+            ImportLines: [
+              ...itemImages.map(item => ({
+                SKU: item.sku,
+                QTY: item.qty,
+                ReturnQTY: item.receivedQty,
+                Price: item.price,
+                ImageTypeID: 3, // กำหนดค่า ImageTypeID สำหรับภาพที่มี SKU
+                FilePath: item.filePath,
+              })),
+              {
+                SKU: null,
+                QTY: null,
+                ReturnQTY: null,
+                Price: null,
+                ImageTypeID: 1, // กำหนดค่า ImageTypeID สำหรับภาพ step 1
+                FilePath: step1ImagePath,
+              },
+              {
+                SKU: null,
+                QTY: null,
+                ReturnQTY: null,
+                Price: null,
+                ImageTypeID: 2, // กำหนดค่า ImageTypeID สำหรับภาพ step 2
+                FilePath: step2ImagePath,
+              },
+            ],
+            CreateBy: userID, // เพิ่ม userID ที่เข้าสู่ระบบในฟิลด์ CreateBy
+          };
+    
+          console.log(requestData);
+          // ส่งข้อมูลไปยัง API
+          const response = await api.post(`/api/import-order/confirm-receipt/${selectedOrderNo}`, requestData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+    
+          // ตรวจสอบผลลัพธ์จาก API
+          if (response.status === 200) {
+            notification.success({
+              message: 'ส่งข้อมูลสำเร็จ',
+              description: 'ข้อมูลถูกส่งเรียบร้อยแล้ว',
+              placement: 'topRight',
             });
+    
+            // รีเซ็ตฟอร์มและตาราง
+            setData([]);
+            setSelectedOrderNo(null);
+            setShowTable(false);
+            setShowSteps(false);
+            setCurrentStep(0);
+            setImages({
+              step1: null,
+              step2: null,
+            });
+          } else {
+            notification.error({
+              message: 'เกิดข้อผิดพลาด',
+              description: 'ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+              placement: 'topRight',
+            });
+          }
+        } catch (error) {
+          console.error("Error submitting data:", error);
+          notification.error({
+            message: "เกิดข้อผิดพลาด",
+            description: "ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+            placement: 'topRight',
+          });
+        }
+      } else {
+        let warningMessage = 'กรุณายืนยันจำนวนรับเข้าทั้งหมดก่อนส่งข้อมูล';
+        if (!allReceived) {
+          warningMessage += '\nกรุณาถ่ายรูปให้ครบก่อนส่งข้อมูล';
+        }
+    
+        notification.warning({
+          message: 'ข้อมูลไม่ครบถ้วน',
+          description: warningMessage,
+          placement: 'topRight',
+        });
+      }
+    };
+
+    const handleKeyDown = (event: { key: string; }) => {
+        if (event.key === 'Enter' && skuInput.trim()) {
+            handleConfirmReceived();
         }
     };
-    // const handleKeyDown = (event: { key: string; }) => {
-    //     if (event.key === 'Enter' && skuInput.trim()) {
-    //         handleConfirmReceived();
-    //     }
-    // };
 
-    // useEffect(() => {
-    //     // เพิ่ม event listener เมื่อ component ถูก mount
-    //     window.addEventListener('keydown', handleKeyDown);
+    useEffect(() => {
+        // เพิ่ม event listener เมื่อ component ถูก mount
+        window.addEventListener('keydown', handleKeyDown);
 
-    //     // ลบ event listener เมื่อ component ถูก unmount
-    //     return () => {
-    //         window.removeEventListener('keydown', handleKeyDown);
-    //     };
-    // }, [skuInput]);
-
+        // ลบ event listener เมื่อ component ถูก unmount
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [skuInput]);
+    
 
     return (
         <ConfigProvider>
             <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
-            SR/IJ และ อื่นๆ Return 
+                Sale Return
             </div>
             <Layout>
                 <Layout.Content
@@ -451,7 +543,7 @@ const OtherReturn: React.FC = () => {
                         overflow: "auto",
                     }}
                 >
-                    <Row align="middle" justify="center" style={{ marginTop: "20px", width: '100%' }}>
+                    <Row align="middle" justify="center" style={{ marginTop: "20px",width:'100%'  }}>
                         <Col span={12} >
                             <Form.Item
                             id="selectedSalesOrder"
@@ -462,7 +554,7 @@ const OtherReturn: React.FC = () => {
                             >
                                 <Select
                                     showSearch
-                                    style={{ height: 40 }}
+                                    style={{ height: 40}}
                                     placeholder="Search to Select"
                                     optionFilterProp="label"
                                     onChange={handleSelectChange}
@@ -474,166 +566,172 @@ const OtherReturn: React.FC = () => {
 
                     {showSteps && !showTable && (
                         <>
-                            <Steps current={currentStep} onChange={onChange} style={{ marginTop: '20px', width: '100%' }}>
-                                <Steps.Step title="ถ่ายก่อนเปิดสินค้า" />
-                                <Steps.Step title="ถ่ายหลังเปิดสินค้า" />
-
-                            </Steps>
-
-                            <Row justify="center" align="middle" style={{ marginTop: 20 }}>
-                                <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '20px' }}>
-                                    {!images[`step${currentStep + 1}`] ? (
-                                        <Webcam
-                                            id="Webcam1"
-                                            audio={false}
-                                            ref={webcamRef}
-                                            screenshotFormat="image/jpeg"
-                                            style={{ width: '100%', maxWidth: '400px' }}
-                                        />
-                                    ) : (
-                                        <img
-                                            src={images[`step${currentStep + 1}`]!}
-                                            alt={`Captured ${currentStep + 1}`}
-                                            style={{ width: '100%', maxWidth: '400px', border: '1px solid #ccc' }}
-                                        />
-                                    )}
-                                </Col>
-
-                                <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
-                                {currentStep > 0 && (  // แสดงปุ่ม "ย้อนกลับ" เมื่อ currentStep > 0
-                <Button
-                id="Back"
-                    style={{marginRight: '10px', width: '100px', color: '#35465B'}}
-                    type="default"
-                    onClick={handleBackStep}
-                >
-                    ย้อนกลับ
-                </Button>
-                   )}
-                                    {!images[`step${currentStep + 1}`] ? (
-                                        <Button
-                                        id="ถ่ายรูป"
-                                            type="primary"
-                                            onClick={capturePhoto}
-                                            style={{ display: 'flex', alignItems: 'center', width: '100px', }}>
-                                            ถ่ายรูป
-                                        </Button>
-                                    ) : (
-                                        <>
-
-                                            <Button
-                                             id="ถ่ายรูปใหม่"
-                                                icon={<RedoOutlined />}
-                                                style={{ marginRight: '10px', width: '100px', color: '#35465B' }}
-                                                type="default"
-                                                onClick={retakePhoto}
-                                            >
-                                                ถ่ายใหม่
-                                            </Button>
-                                            <Button
-                                             id="ถัดไป"
-                                                style={{ width: '100px' }}
-                                                type="primary"
-                                                onClick={handleNextStep}
-
-                                            >
-                                                ถัดไป
-                                            </Button>
-                                        </>
-                                    )}
-                                </Col>
-                            </Row>
-                        </>
-                    )}
-
-                    {showTable && (
-                        <>
-                            <Divider orientation="left" style={{ color: '#657589' }}>รับเข้า SKU</Divider>
-                            <Row justify="center" align="middle" style={{ marginTop: 20 }}>
-                                <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
-                                    <Form.Item
-                                     id="กรอก SKU"
-                                        layout="vertical"
-                                        label={<span style={{ color: '#657589' }}>กรอก SKU เพื่อรับเข้า</span>}
-                                        style={{ marginBottom: 0 }}
-                                    >
-
-                                        <Input
-                                            placeholder="ระบุ SKU"
-                                            value={skuInput}
-                                            onChange={(e) => setSkuInput(e.target.value)}
-                                            onPressEnter={handleConfirmReceived}
-                                            style={{ width: '375px', marginRight: '10px', height: 40 }}
-                                        />
-                                        <Button
-                                        id="สแกน SKU"
-                                            icon={<ScanOutlined />}
-                                            onClick={handleScanSku}
-                                            style={{ height: 40, marginLeft: 5 }}
-                                        >
-                                            สแกน SKU
-                                        </Button>
-                                    </Form.Item>
-                                </Col>
-                                <Row gutter={40} style={{ marginTop: '20px' }}>
-
-                                    <Col span={12} >
-                                        <Button 
-                                        id=" ยืนยันการรับเข้า"
-                                        type="primary" onClick={handleConfirmReceived} disabled={!skuInput} style={{}}>
-                                            ยืนยันการรับเข้า
-                                        </Button>
-
-                                    </Col>
-                                    <Col span={12} >
-                                        <Button   id=" ส่งข้อมูล" type="primary" onClick={handleSubmit} style={{ background: '#14C11B' }} >
-                                            ส่งข้อมูล
-                                        </Button>
-                                    </Col>
-                                </Row>
-                            </Row>
-                            <Table
-                                dataSource={data}
-                                columns={columns}
-                                pagination={false}
-                                rowKey="key"
-                                style={{ marginTop: '50px' }}
-                            />
-
-
-
-
-                        </>
-
-
-
-
-                    )}
-
-                    {showWebcam && (
-                        <Modal
-                            visible={showWebcam}
-                            footer={null}
-                            onCancel={handleCancelModal}
+                        <Steps current={currentStep} 
+                               onChange={onChange}
+                               style={{ marginTop: '20px', width: '100%' }}
+                        >
+                        <Steps.Step title="ถ่ายก่อนเปิดสินค้า" />
+                        <Steps.Step title="ถ่ายหลังเปิดสินค้า" />
+                        {data.map((item, index) => (
+                        <Steps.Step
+                            key={item.key}
                             title={
-                                <div style={{ textAlign: 'center', fontSize: '16px', fontWeight: 'normal' }}> {/* ขนาดปกติสามารถปรับได้ */}
-                                    ถ่ายรูป SKU:<br />
-                                    <div style={{ color: '#1890FF' }}>{skuName}</div> {/* เน้น SKU */}
+                                <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: 'normal' }}>
+                                
+                                    <div style={{ color: '#1890FF'  }}>{item.sku}</div>
                                 </div>
                             }
+                        />
+                        ))}
+                        </Steps>
 
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+                    <Row justify="center" align="middle" style={{ marginTop: 20 }}>
+                        <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '20px' }}>
+                            {!images[`step${currentStep + 1}`] ? (
                                 <Webcam
-                                id="webcam2"
+                                id="webcam"
                                     audio={false}
                                     ref={webcamRef}
                                     screenshotFormat="image/jpeg"
                                     style={{ width: '100%', maxWidth: '400px' }}
                                 />
-                            </div>
+                            ) : (
+                                <img
+                                    src={images[`step${currentStep + 1}`]!}
+                                    alt={`Captured ${currentStep + 1}`}
+                                    style={{ width: '100%', maxWidth: '400px', border: '1px solid #ccc' }}
+                                />
+                            )}
+                        </Col>
+
+                        <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
+                        
+                        <Button onClick={toggleCamera} style={{ marginTop: 10 }}>
+                            เปลี่ยนกล้อง
+                        </Button>
+                        {currentStep > 0 && (  // แสดงปุ่ม "ย้อนกลับ" เมื่อ currentStep > 0
+                        <Button
+                                id="back"
+                            style={{marginRight: '20px', width: '100px', color: '#35465B'}}
+                            type="default"
+                            onClick={handleBackStep}
+                        >
+                            ย้อนกลับ
+                        </Button>
+                        )}
+                        {!images[`step${currentStep + 1}`] ? (
+                                <Button
+                                id="Takepicture"
+                                    type="primary"
+                                    onClick={capturePhoto}
+                                    style={{ display: 'flex', alignItems: 'center' }}>
+                                    ถ่ายรูป
+                                </Button>
+                        ) : (
+                                <>
+                                    <Button
+                                    id="Retakepicture"
+                                        icon={<RedoOutlined />}
+                                        style={{ marginRight: '20px', width: '100px', color: '#35465B' }}
+                                        type="default"
+                                        onClick={retakePhoto}
+                                    >
+                                        ถ่ายใหม่
+                                    </Button>
+                                    
+                                    <Button
+                                    id="Next"
+                                        style={{ width: '100px' }}
+                                        type="primary"
+                                        onClick={handleNextStep}
+                                    >
+                                        ถัดไป
+                                    </Button>
+                                </>
+                            )}
+                        </Col>
+                    </Row>
+                </>
+            )}
+       
+                       
+                        {showTable && (
+                            <>
+                              <Divider orientation="left" style={{color: '#657589'}}>รับเข้า SKU</Divider>
+                              <Row justify="center" align="middle" style={{ marginTop: 20 }}>
+            <Col span={24} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '10px' }}>
+                <Form.Item  
+                id="inputsku"
+                 layout="vertical"
+                    label={<span style={{ color: '#657589' }}>กรอก SKU เพื่อรับเข้า</span>}
+                    style={{ marginBottom: 0 }}
+                >
+
+                    <Input
+                        placeholder="ระบุ SKU"
+                        value={skuInput}
+                        onChange={(e) => setSkuInput(e.target.value)}
+                        style={{ width: '375px', marginRight: '10px', height: 40 }}
+                    />
+                    <Button 
+                                    id="สแกนSKU"
+                        icon={<ScanOutlined />} 
+                        onClick={handleScanSku} 
+                        style={{ height: 40, marginLeft: 5 }}
+                    >
+                        สแกน SKU
+                    </Button>
+                </Form.Item>
+            </Col>
+            <Row gutter={40} style={{ marginTop: '20px' }}> 
+                
+            <Col span={12} >
+                <Button id="ยืนยันการรับเข้า" type="primary" onClick={handleConfirmReceived} disabled={!skuInput} style={{}}>
+                    ยืนยันการรับเข้า
+                </Button>
+
+            </Col>
+            <Col span={12} >
+            <Button id="ส่งข้อมูล" type="primary" onClick={handleSubmit} style={{background:'#14C11B'}} >
+                                ส่งข้อมูล
+                            </Button>
+                            </Col>
+                            </Row>
+        </Row>
+                                <Table
+                                    dataSource={data}
+                                    columns={columns}
+                                    pagination={false}
+                                    rowKey="key"
+                                    style={{ marginTop: '50px' }}
+                                />
+                            </>
+                        )}
+    
+                        {showWebcam && (
+                        <Modal
+                            visible={showWebcam}
+                            footer={null}
+                            onCancel={handleCancelModal}
+                            title={
+                                <div style={{ textAlign: 'center', fontSize: '16px',fontWeight: 'normal'  }}> {/* ขนาดปกติสามารถปรับได้ */}
+                                    ถ่ายรูป SKU:<br />
+                                    <div style={{color:'#1890FF'}}>{skuName}</div> {/* เน้น SKU */}
+                                </div>
+                            }
+                            
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+                            <Webcam
+                            id="Webcam2"
+                                audio={false}
+                                ref={webcamRef}
+                                screenshotFormat="image/jpeg"
+                                style={{ width: '100%', maxWidth: '400px' }}
+                            />
+                             </div>
                             <Row justify="center" style={{ marginTop: '10px' }}>
-                                <Button id="ถ่ายรูป2" type="primary" onClick={handleCapturePhoto}>
+                                <Button id="ถ่ายรูป" type="primary" onClick={handleCapturePhoto}>
                                     ถ่ายรูป
                                 </Button>
                             </Row>
@@ -647,15 +745,15 @@ const OtherReturn: React.FC = () => {
                             onCancel={() => setShowScanner(false)}
                             title="Scan SKU"
                         >
-
+                             
                         </Modal>
                     )}
-
-                </Layout.Content>
-            </Layout>
-        </ConfigProvider>
-    );
-};
-
-export default OtherReturn;
-
+                        
+                    </Layout.Content>
+                </Layout>
+            </ConfigProvider>
+        );
+    };
+    
+    export default OtherReturn;
+    

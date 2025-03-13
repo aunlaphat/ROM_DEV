@@ -1,0 +1,29 @@
+.submit-trade {
+    color: #fff;
+    background-color: #14C11B;
+    width: 100px;
+    height: 40px;
+    margin: 20px;
+    border: #14C11B;
+    cursor: pointer;
+}
+
+.button-no {
+    color: #fff;
+    background-color: #f00909;
+    border: #f00909;
+}
+
+.button-yes {
+    color: #fff;
+    background-color: #14C11B;
+    border: #14C11B;
+}
+
+.custom-table-row td {
+    word-wrap: break-word;
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+  
+  

@@ -1,4 +1,4 @@
-import { Popconfirm, Button, Col, ConfigProvider, DatePicker, Form, FormInstance, Input, InputNumber, Layout, Row, Select, Table, notification, Modal, Upload, Divider, Tooltip, } from "antd";
+import { Popconfirm, Button, Col, ConfigProvider, DatePicker, Form, FormInstance, Input, InputNumber, Layout, Row, Select, Table, notification, Modal, Upload, Divider, Tooltip, Pagination, } from "antd";
 import { SearchOutlined, DeleteOutlined, LeftOutlined, PlusCircleOutlined, UploadOutlined, CloseOutlined, QuestionCircleOutlined, } from "@ant-design/icons";
 import { debounce } from "lodash";
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import api from "../../utils/axios/axiosInstance";
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/types";
 import { TRANSPORT_TYPES, Address, Customer, DataItem, Product } from '../../types/types';
+import '../../style/styles.css';
 const { Option } = Select;
 
 const CreateTradeReturn = () => {
@@ -52,6 +53,21 @@ const CreateTradeReturn = () => {
   const token = localStorage.getItem("access_token");
 
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(5);
+
+  // ฟังก์ชันสำหรับเปลี่ยนหน้า
+  const handlePageChange = (page: number, pageSize: number) => {
+    setCurrentPage(page);
+    setPageSize(pageSize); // ถ้าผู้ใช้เลือกจำนวนรายการต่อหน้าใหม่
+  };
+
+  // คำนวณจำนวนหน้าทั้งหมดจากจำนวนรายการทั้งหมด
+  const totalPages = Math.ceil(dataSource.length / pageSize);
+
+  // ตรวจสอบว่า pagination ควรแสดงหรือไม่ (ให้แสดงเสมอแม้ว่า dataSource จะมีน้อยกว่า pageSize)
+  const showPagination = dataSource.length > 0;
 
   const showModal = () => {
       setIsModalVisible(true);
@@ -532,7 +548,7 @@ const CreateTradeReturn = () => {
     { title: "ราคาต่อหน่วย", dataIndex: "PricePerUnit", key: "PricePerUnit", id: "PricePerUnit" },
     { title: "ราคารวม", dataIndex: "Price", key: "Price", id: "Price" },
     {
-      title: "Action",
+      title: "ลบรายการคืน",
       id: "Action",
       dataIndex: "Action",
       key: "Action",
@@ -1405,7 +1421,7 @@ const handleUpload = (file: File) => {
             </Form>
           </Modal>
 
-          <Row gutter={20} style={{ marginBottom: 20, marginLeft: 20 }}>
+          <Row gutter={16} style={{ marginBottom: 20 }}>
             <Col>
               <Button id=" Download Template" onClick={handleDownloadTemplate}>
                 <img
@@ -1433,27 +1449,131 @@ const handleUpload = (file: File) => {
               </Upload>
             </Col>
           </Row>
+        <div >
+          <Table
+            dataSource={dataSource.slice((currentPage - 1) * pageSize, currentPage * pageSize)} // แสดงเฉพาะจำนวนรายการที่เลือก
+            columns={columns}
+            rowKey="key"
+            pagination={false} // ปิด pagination ใน Table
+            style={{
+              width: "100%",
+              tableLayout: "auto",
+              border: "1px solid #ddd",
+              borderRadius: "8px",
+            }}
+            scroll={{ x: "max-content" }}
+            bordered={false}
+          />
+        
+        {showPagination && (
           <div>
-            <Table
-              dataSource={dataSource}
-              columns={columns}
-              rowKey="key"
-              pagination={false} // Disable pagination if necessary
-              style={{ width: "100%", tableLayout: "fixed" }} // Ensure the table takes full width and is fixed layout
-              scroll={{ x: "max-content" }}
-            />
-          </div>
+            {/* showTotal แสดงอยู่เหนือ showPagination */}
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 20 }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>
+                    ทั้งหมด <span style={{ color: '#007bff' }}>{dataSource.length}</span> รายการ
+                </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 20, gap: 10 }}>
+              {/* ปุ่มไปหน้าแรก */}
+              <button
+                  onClick={() => handlePageChange(1, pageSize)}
+                  disabled={currentPage === 1}
+                  style={{
+                      fontSize: "14px",
+                      // fontWeight: "bold",
+                      padding: "4px 10px",
+                      border: "1px solid #ddd",
+                      borderRadius: "6px",
+                      background: currentPage === 1 ? "#f5f5f5" : "#fff",
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  }}
+              >
+                  {"<<"}
+              </button>
+
+              {/* ปุ่มไปหน้าก่อน */}
+              <button
+                  onClick={() => handlePageChange(currentPage - 1, pageSize)}
+                  disabled={currentPage === 1}
+                  style={{
+                      fontSize: "14px",
+                      // fontWeight: "bold",
+                      padding: "4px 10px",
+                      border: "1px solid #ddd",
+                      borderRadius: "6px",
+                      background: currentPage === 1 ? "#f5f5f5" : "#fff",
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  }}
+              >
+                  {"<"}
+              </button>
+
+              {/* แสดงเลขหน้าแบบ [ 1 / 9 ] */}
+              <span style={{ fontSize: "14px", fontWeight: 'bold' }}>
+                  [ {currentPage} to {Math.ceil(dataSource.length / pageSize)} ]
+              </span>
+
+              {/* ปุ่มไปหน้าถัดไป */}
+              <button
+                  onClick={() => handlePageChange(currentPage + 1, pageSize)}
+                  disabled={currentPage === Math.ceil(dataSource.length / pageSize)}
+                  style={{
+                      fontSize: "14px",
+                      // fontWeight: "bold",
+                      padding: "4px 10px",
+                      border: "1px solid #ddd",
+                      borderRadius: "6px",
+                      background: currentPage === Math.ceil(dataSource.length / pageSize) ? "#f5f5f5" : "#fff",
+                      cursor: currentPage === Math.ceil(dataSource.length / pageSize) ? "not-allowed" : "pointer",
+                  }}
+              >
+                  {">"}
+              </button>
+
+              {/* ปุ่มไปหน้าสุดท้าย */}
+              <button
+                  onClick={() => handlePageChange(Math.ceil(dataSource.length / pageSize), pageSize)}
+                  disabled={currentPage === Math.ceil(dataSource.length / pageSize)}
+                  style={{
+                      fontSize: "14px",
+                      // fontWeight: "bold",
+                      padding: "4px 10px",
+                      border: "1px solid #ddd",
+                      borderRadius: "6px",
+                      background: currentPage === Math.ceil(dataSource.length / pageSize) ? "#f5f5f5" : "#fff",
+                      cursor: currentPage === Math.ceil(dataSource.length / pageSize) ? "not-allowed" : "pointer",
+                  }}
+              >
+                  {">>"}
+              </button>
+
+              {/* เลือกจำนวนรายการต่อหน้า */}
+              <select
+                  value={pageSize}
+                  onChange={(e) => handlePageChange(1, Number(e.target.value))}
+                  className="paginate"
+                  style={{
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      padding: "4px 10px",
+                      border: "1px solid #ddd",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                  }}
+              >
+                  <option value="5">5 รายการ</option>
+                  <option value="10">10 รายการ</option>
+                  <option value="20">20 รายการ</option>
+              </select>
+            </div>
+            </div>
+          )}
+        </div>
           <Row justify="center" gutter={16}>
               <Button
                 id="Submit"
-                style={{
-                  color: "#fff",
-                  backgroundColor: "#14C11B",
-                  width: 100,
-                  height: 40,
-                  margin: 20,
-                }}
                 onClick={showModal}
+                className="submit-trade"
               >
                 Submit
               </Button>
@@ -1464,7 +1584,19 @@ const handleUpload = (file: File) => {
                 onCancel={handleCancel}
                 okText="ใช่"
                 cancelText="ไม่"
-                centered // เพิ่ม centered เพื่อจัดตำแหน่ง Modal ให้ตรงกลาง
+                centered
+                style={{ textAlign: 'center'}}
+                footer={
+                  <div style={{ textAlign: "center" }}> {/* ทำให้ปุ่มอยู่ตรงกลาง */}
+                    <Button key="ok" type="default" onClick={handleOk} style={{ marginRight: 8 }} className="button-yes">
+                      Yes
+                    </Button>
+                    <Button key="cancel" type="dashed" onClick={handleCancel} className="button-no">
+                      No
+                    </Button>
+                  </div>
+                }
+
               >
               </Modal>
           </Row>
