@@ -29,19 +29,20 @@ type BeforeReturnOrder struct {
 }
 
 type BeforeReturnOrderLine struct {
-	RecID      int        `db:"RecID"`      // รหัสอ้างอิงอัตโนมัติ (PK - Auto Increment)
-	OrderNo    string     `db:"OrderNo"`    // เลขที่ใบสั่งซื้อ (FK -> BeforeReturnOrder)
-	SKU        string     `db:"SKU"`        // รหัสสินค้า
-	ItemName   string     `db:"ItemName"`   // ชื่อสินค้า
-	QTY        int        `db:"QTY"`        // จำนวนสินค้าที่ซื้อ
-	ReturnQTY  int        `db:"ReturnQTY"`  // จำนวนที่ต้องการคืน
-	Price      float64    `db:"Price"`      // ราคาต่อหน่วย
-	CreateBy   string     `db:"CreateBy"`   // ผู้สร้างรายการ
-	CreateDate time.Time  `db:"CreateDate"` // วันที่สร้างรายการ
-	AlterSKU   *string    `db:"AlterSKU"`   // รหัสสินค้าทดแทน (ถ้ามี)
-	UpdateBy   *string    `db:"UpdateBy"`   // ผู้แก้ไขล่าสุด
-	UpdateDate *time.Time `db:"UpdateDate"` // วันที่แก้ไขล่าสุด
-	TrackingNo *string    `db:"TrackingNo"` // เลขพัสดุ (ถ้ามีกรณีส่งสินค้าคนละพัสดุ)
+	RecID       int        `db:"RecID"`     // รหัสอ้างอิงอัตโนมัติ (PK - Auto Increment)
+	OrderNo     string     `db:"OrderNo"`   // เลขที่ใบสั่งซื้อ (FK -> BeforeReturnOrder)
+	SKU         string     `db:"SKU"`       // รหัสสินค้า
+	ItemName    string     `db:"ItemName"`  // ชื่อสินค้า
+	QTY         int        `db:"QTY"`       // จำนวนสินค้าที่ซื้อ
+	ReturnQTY   int        `db:"ReturnQTY"` // จำนวนที่ต้องการคืน
+	Price       float64    `db:"Price"`     // ราคาต่อหน่วย
+	WarehouseID *int       `db:"WarehouseID" json:"warehouseID"`
+	CreateBy    string     `db:"CreateBy"`   // ผู้สร้างรายการ
+	CreateDate  time.Time  `db:"CreateDate"` // วันที่สร้างรายการ
+	AlterSKU    *string    `db:"AlterSKU"`   // รหัสสินค้าทดแทน (ถ้ามี)
+	UpdateBy    *string    `db:"UpdateBy"`   // ผู้แก้ไขล่าสุด
+	UpdateDate  *time.Time `db:"UpdateDate"` // วันที่แก้ไขล่าสุด
+	TrackingNo  *string    `db:"TrackingNo"` // เลขพัสดุ (ถ้ามีกรณีส่งสินค้าคนละพัสดุ)
 }
 
 type SearchOrder struct {
@@ -59,7 +60,7 @@ type CreateBeforeReturnOrder struct {
 	MkpStatus   string                        `json:"mkpStatus,omitempty" db:"MkpStatus"`
 	WarehouseID int                           `json:"warehouseID" db:"WarehouseID" binding:"required"`
 	ReturnDate  time.Time                     `json:"returnDate" db:"ReturnDate" binding:"required"`
-	TrackingNo  string                        `json:"trackingNo" db:"TrackingNo" binding:"required"`
+	TrackingNo  *string                       `json:"trackingNo" db:"TrackingNo" binding:"required"`
 	Logistic    string                        `json:"logistic" db:"Logistic" binding:"required"`
 	Items       []CreateBeforeReturnOrderItem `json:"items"`
 }
@@ -96,7 +97,7 @@ type CreateReturnOrder struct {
 	OrderNo       string  `json:"orderNo" db:"OrderNo" example:"ORD0001"`
 	SoNo          string  `json:"soNo" db:"SoNo" example:"SO0001"`
 	SrNo          string  `json:"srNo" db:"SrNo" example:"SR0001"`
-	TrackingNo    string  `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
+	TrackingNo    *string `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
 	PlatfID       *int    `json:"platfId" db:"PlatfID" example:"1"`
 	ChannelID     *int    `json:"channelId" db:"ChannelID" example:"2"`
 	OptStatusID   *int    `json:"optStatusId" db:"OptStatusID" example:"1"`
@@ -132,7 +133,7 @@ type UpdateReturnOrder struct {
 
 type UpdateReturnOrderLine struct {
 	OrderNo    string   `json:"-" db:"OrderNo"`
-	TrackingNo string   `json:"-" db:"TrackingNo"`
+	TrackingNo *string  `json:"-" db:"TrackingNo"`
 	SKU        string   `json:"sku" db:"SKU" example:"SKU12345"`
 	QTY        *int     `json:"qty" db:"QTY" example:"5"`
 	ReturnQTY  int      `json:"returnQTY" db:"ReturnQTY" example:"5"`
@@ -143,16 +144,16 @@ type UpdateReturnOrderLine struct {
 }
 
 type ReturnOrder struct {
-	OrderNo     string `json:"orderNo" db:"OrderNo"`
-	SoNo        string `json:"soNo" db:"SoNo"`
-	SrNo        string `json:"srNo" db:"SrNo"`
-	TrackingNo  string `json:"trackingNo" db:"TrackingNo"`
-	PlatfID     int    `json:"platfID" db:"PlatfID"`
-	ChannelID   int    `json:"channelID" db:"ChannelID"`
-	OptStatusID int    `json:"optStatusID" db:"OptStatusID"`
-	AxStatusID  int    `json:"axStatusID" db:"AxStatusID"`
-	Reason      string `json:"reason" db:"Reason"`
-	CreateBy    string `json:"createBy" db:"CreateBy"`
+	OrderNo     string  `json:"orderNo" db:"OrderNo"`
+	SoNo        string  `json:"soNo" db:"SoNo"`
+	SrNo        string  `json:"srNo" db:"SrNo"`
+	TrackingNo  *string `json:"trackingNo" db:"TrackingNo"`
+	PlatfID     int     `json:"platfID" db:"PlatfID"`
+	ChannelID   int     `json:"channelID" db:"ChannelID"`
+	OptStatusID int     `json:"optStatusID" db:"OptStatusID"`
+	AxStatusID  int     `json:"axStatusID" db:"AxStatusID"`
+	Reason      string  `json:"reason" db:"Reason"`
+	CreateBy    string  `json:"createBy" db:"CreateBy"`
 	//CreateDate       time.Time         `json:"createDate" db:"CreateDate"`
 	UpdateBy string `json:"updateBy" db:"UpdateBy"`
 	//UpdateDate       time.Time         `json:"updateDate" db:"UpdateDate"`
@@ -162,7 +163,7 @@ type ReturnOrder struct {
 
 type ReturnOrderLine struct {
 	OrderNo    string  `json:"-" db:"OrderNo"`
-	TrackingNo string  `json:"-" db:"TrackingNo"`
+	TrackingNo *string `json:"-" db:"TrackingNo"`
 	SKU        string  `json:"sku" db:"SKU" example:"SKU12345"`
 	QTY        *int    `json:"qty" db:"QTY" example:"5"`
 	ReturnQTY  int     `json:"returnQTY" db:"ReturnQTY" example:"5"`

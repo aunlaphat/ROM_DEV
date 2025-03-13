@@ -73,16 +73,16 @@ type BeforeReturnService interface {
 func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("[ Starting trade return creation process ]", zap.String("OrderNo", req.OrderNo))
 
-	// *️⃣ ตรวจสอบว่า OrderNo สร้างซ้ำหรือไม่
-	exists, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
-	if err != nil {
-		srv.logger.Error("[ [ Error checking OrderNo existence ]", zap.Error(err)) // db มีปัญหา
-		return nil, errors.InternalError("[ Error checking OrderNo existence: %v ]", err)
-	}
-	if exists != nil {
-		srv.logger.Warn("[ Order already exists ]", zap.String("OrderNo", req.OrderNo))
-		return nil, errors.ConflictError("[ OrderNo %s already exists: %v ]", req.OrderNo, err)
-	}
+	// // *️⃣ ตรวจสอบว่า OrderNo สร้างซ้ำหรือไม่
+	// exists, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
+	// if err != nil {
+	// 	srv.logger.Error("[ [ Error checking OrderNo existence ]", zap.Error(err)) // db มีปัญหา
+	// 	return nil, errors.InternalError("[ Error checking OrderNo existence: %v ]", err)
+	// }
+	// if exists != nil {
+	// 	srv.logger.Warn("[ Order already exists ]", zap.String("OrderNo", req.OrderNo))
+	// 	return nil, errors.ConflictError("[ OrderNo %s already exists: %v ]", req.OrderNo, err)
+	// }
 
 	// *️⃣ สร้าง trade return order
 	createdOrder, err := srv.beforeReturnRepo.CreateTradeReturn(ctx, req)
