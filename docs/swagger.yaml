@@ -200,6 +200,8 @@ definitions:
       updateDate:
         description: วันที่แก้ไขล่าสุด
         type: string
+      warehouseID:
+        type: integer
     type: object
   request.CancelOrder:
     properties:
@@ -369,20 +371,15 @@ definitions:
   request.LoginLark:
     properties:
       userID:
-        example: DC65060
         type: string
       userName:
-        example: eknarin.ler
         type: string
     type: object
   request.LoginWeb:
     properties:
       password:
-        description: change password lastest in 17 January 2025
-        example: EKna1234
         type: string
       userName:
-        example: eknarin.ler
         type: string
     type: object
   request.OrderLines:
@@ -559,6 +556,8 @@ definitions:
         type: string
       trackingNo:
         type: string
+      warehouseID:
+        type: integer
     type: object
   response.BeforeReturnOrderResponse:
     properties:

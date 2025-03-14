@@ -3965,6 +3965,9 @@ const docTemplate = `{
                 "updateDate": {
                     "description": "วันที่แก้ไขล่าสุด",
                     "type": "string"
+                },
+                "warehouseID": {
+                    "type": "integer"
                 }
             }
         },
@@ -4208,12 +4211,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "userID": {
-                    "type": "string",
-                    "example": "DC65060"
+                    "type": "string"
                 },
                 "userName": {
-                    "type": "string",
-                    "example": "eknarin.ler"
+                    "type": "string"
                 }
             }
         },
@@ -4221,13 +4222,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "password": {
-                    "description": "change password lastest in 17 January 2025",
-                    "type": "string",
-                    "example": "EKna1234"
+                    "type": "string"
                 },
                 "userName": {
-                    "type": "string",
-                    "example": "eknarin.ler"
+                    "type": "string"
                 }
             }
         },
@@ -4480,6 +4478,9 @@ const docTemplate = `{
                 },
                 "trackingNo": {
                     "type": "string"
+                },
+                "warehouseID": {
+                    "type": "integer"
                 }
             }
         },
