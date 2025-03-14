@@ -25,7 +25,7 @@ export interface OrderItem {
     logistic: string;
     channelId: number;
     createDate: string;
-    warehouseId: number;
+    warehouseID: number;
     items?: OrderItem[];
   }
   

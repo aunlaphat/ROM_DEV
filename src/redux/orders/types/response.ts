@@ -44,7 +44,7 @@ export interface ReturnOrderResponse {
   customerId: string;
   trackingNo: string;
   logistic: string;
-  warehouseId: number;
+  warehouseID: number;
   soStatus: string | null;
   mkpStatus: string | null;
   returnDate: string | null;

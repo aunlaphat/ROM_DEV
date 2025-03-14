@@ -15,7 +15,7 @@ export interface User {
   departmentNo: string;
   roleID: number;
   roleName: string;
-  warehouseID: string; // Changed to string to match backend
+  warehouseID: number,
   warehouseName: string;
   description: string;
   isActive: boolean;
@@ -37,7 +37,7 @@ export interface Role {
  * Warehouse data interface
  */
 export interface Warehouse {
-  warehouseID: string; // Changed to string to match backend
+  warehouseID: number;
   warehouseName: string;
   location?: string;
 }
@@ -48,7 +48,7 @@ export interface Warehouse {
 export interface AddUserRequest {
   userID: string;
   roleID: number;
-  warehouseID: string; // String type to match backend
+  warehouseID: number;
 }
 
 /**
@@ -57,7 +57,7 @@ export interface AddUserRequest {
 export interface EditUserRequest {
   userID: string;
   roleID?: number; // Optional to match backend
-  warehouseID?: string; // Optional string to match backend
+  warehouseID?: number;
 }
 
 /**
@@ -66,7 +66,7 @@ export interface EditUserRequest {
 export interface AddUserResponse {
   userID: string;
   roleID: number;
-  warehouseID: string; // String type to match backend
+  warehouseID: number;
   createdBy: string;
 }
 
@@ -77,7 +77,7 @@ export interface EditUserResponse {
   userID: string;
   roleID?: number; // Optional to match backend
   roleName: string;
-  warehouseID?: string; // Optional string to match backend
+  warehouseID: number;
   warehouseName: string;
   updatedBy: string;
   updatedAt: string;
@@ -91,7 +91,7 @@ export interface DeleteUserResponse {
   userName: string;
   roleID: number;
   roleName: string;
-  warehouseID: string; // String type to match backend
+  warehouseID: number;
   warehouseName: string;
   deactivatedBy: string;
   deactivatedAt: string;

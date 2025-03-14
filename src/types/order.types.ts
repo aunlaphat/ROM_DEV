@@ -78,7 +78,7 @@ export interface OrderLineDetail {
   itemName: string;
   qty: number;
   price: number;
-  warehouseId: number;
+  warehouseID: number;
 }
 
 export interface SearchOrderResponse {
