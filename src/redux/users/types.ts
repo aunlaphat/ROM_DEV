@@ -47,32 +47,29 @@ export interface UserResponse {
   nickName: string;
   fullNameTH: string;
   departmentNo: string;
-  roleID: number;
+  roleID: number;          // int ตาม backend
   roleName: string;
-  warehouseID: number;
+  warehouseID: number;     // int ตาม backend
   warehouseName: string;
   description: string;
   isActive: boolean;
-  lastLoginAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  lastLoginAt?: string;    // optional
+  createdAt: string;       // ไม่ใช่ optional
+  updatedAt?: string;      // optional
 }
 
 export interface AddUserResponse {
   userID: string;
-  roleID: number;
-  roleName?: string;
-  warehouseID: string;
-  warehouseName?: string;
+  roleID: number;          // int ตาม backend
+  warehouseID: number;     // int ตาม backend
   createdBy: string;
-  createdAt: string;
 }
 
 export interface EditUserResponse {
   userID: string;
-  roleID?: number;
+  roleID?: number;         // optional int ตาม backend
   roleName: string;
-  warehouseID?: number;
+  warehouseID?: number;    // optional int ตาม backend
   warehouseName: string;
   updatedBy: string;
   updatedAt: string;
@@ -81,27 +78,26 @@ export interface EditUserResponse {
 export interface DeleteUserResponse {
   userID: string;
   userName: string;
-  roleID: number;
+  roleID: number;          // int ตาม backend
   roleName: string;
-  warehouseID: number;
+  warehouseID: number;     // int ตาม backend
   warehouseName: string;
   deactivatedBy: string;
   deactivatedAt: string;
   message: string;
 }
 
-// ปรับปรุง RoleResponse ให้ตรงกับไฟล์ response.go
+// Role และ Warehouse Response
 export interface RoleResponse {
-  roleID: number; // แก้จาก roleId เป็น roleID ตามโครงสร้าง response.go
-  roleName: string; // ตรงกับ RoleName ในหลังบ้าน
-  description: string; // ตรงกับ Description ในหลังบ้าน
+  roleID: number;
+  roleName: string;
+  description: string;
 }
 
-// ปรับปรุง WarehouseResponse ให้ตรงกับไฟล์ response.go
 export interface WarehouseResponse {
-  warehouseID: number; // แก้จาก warehouseId เป็น warehouseID ตามโครงสร้าง response.go
-  warehouseName: string; // ตรงกับ WarehouseName ในหลังบ้าน
-  location: string; // ตรงกับ Location ในหลังบ้าน
+  warehouseID: number;
+  warehouseName: string;
+  location: string;
 }
 
 // Request Types - สอดคล้องกับ Backend
@@ -113,19 +109,14 @@ export interface GetUsersRequest {
 
 export interface AddUserRequest {
   userID: string;
-  roleID: number;
-  // roleName?: string;  // เพิ่ม roleName (optional)
-  warehouseID: number;
-  // warehouseName?: string;  // เพิ่ม warehouseName (optional)
+  roleID: number;          // int ตาม backend
+  warehouseID: number;     // int ตาม backend
 }
 
-// แก้ไข EditUserRequest ให้ warehouseID เป็น number เหมือนใน backend
 export interface EditUserRequest {
   userID: string;
-  roleID: number;
-  // roleName?: string;  // เพิ่ม roleName (optional)
-  warehouseID: number;
-  // warehouseName?: string;  // เพิ่ม warehouseName (optional)
+  roleID?: number;         // optional int ตาม backend
+  warehouseID?: number;    // optional int ตาม backend
 }
 
 // API Response Format

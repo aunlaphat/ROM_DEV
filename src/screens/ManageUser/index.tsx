@@ -1,42 +1,21 @@
 // src/screens/ManageUser/index.tsx
-import { useState, useEffect } from "react";
-import {
-  Card,
-  Typography,
-  Layout,
-  Table,
-  Button,
-  Input,
-  Modal,
-  Form,
-  Select,
-  Row,
-  Col,
-  Popconfirm,
-  notification,
-  Space,
-} from "antd";
-import {
-  EditOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  SearchOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+import React, { useState, useEffect } from "react";
+import { Card, Layout, notification } from "antd";
 import { useUsers } from "../../redux/users/hooks";
-import { AvatarGenerator } from "../../components/avatar/AvatarGenerator";
+import { UserResponse, AddUserRequest, EditUserRequest } from "../../redux/users/types";
+
+// Components
+import UserHeader from "./components/UserHeader";
+import UserTable from "./components/UserTable";
+import UserForm from "./components/UserForm";
 
 const { Content } = Layout;
-const { Search } = Input;
-const { Title } = Typography;
-const { Option } = Select;
 
-export const ManageUser = () => {
+export const ManageUser: React.FC = () => {
   // State
   const [searchText, setSearchText] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingUser, setEditingUser] = useState<any>(null);
-  const [form] = Form.useForm();
+  const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
 
   // Redux hooks
   const {
@@ -44,6 +23,7 @@ export const ManageUser = () => {
     roles,
     warehouses,
     loading,
+    error,
     pagination,
     fetchUsers,
     fetchRoles,
@@ -53,15 +33,25 @@ export const ManageUser = () => {
     deleteUser,
   } = useUsers();
 
-  // Effects
+  // เมื่อโหลดหน้าแรก
   useEffect(() => {
-    // Load initial data
+    // โหลดข้อมูลเริ่มต้น
     fetchUsers({ isActive: true });
     fetchRoles();
     fetchWarehouses();
   }, [fetchUsers, fetchRoles, fetchWarehouses]);
 
-  // Filtered users based on search
+  // ติดตาม error
+  useEffect(() => {
+    if (error) {
+      notification.error({
+        message: "เกิดข้อผิดพลาด",
+        description: error,
+      });
+    }
+  }, [error]);
+
+  // กรองผู้ใช้ตามคำค้นหา
   const filteredUsers = users.filter(
     (user) =>
       user.userName.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -70,7 +60,7 @@ export const ManageUser = () => {
       user.warehouseName.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  // Table pagination change handler
+  // จัดการการเปลี่ยนหน้าตาราง
   const handleTableChange = (pagination: any) => {
     fetchUsers({
       isActive: true,
@@ -79,140 +69,52 @@ export const ManageUser = () => {
     });
   };
 
-  // Modal handlers
-  const showModal = (user: any = null) => {
-    setEditingUser(user);
-    if (user) {
-      form.setFieldsValue({
-        userID: user.userID,
-        roleID: user.roleID,
-        warehouseID: user.warehouseID,
-      });
-    } else {
-      // Add mode - reset form
-      form.resetFields();
-    }
+  // เปิด modal สำหรับเพิ่มผู้ใช้
+  const handleAddUser = () => {
+    setSelectedUser(null);
     setIsModalVisible(true);
   };
 
-  const handleCancel = () => {
+  // เปิด modal สำหรับแก้ไขผู้ใช้
+  const handleEditUser = (user: UserResponse) => {
+    setSelectedUser(user);
+    setIsModalVisible(true);
+  };
+
+  // ปิด modal
+  const handleCancelModal = () => {
     setIsModalVisible(false);
-    setEditingUser(null);
-    form.resetFields();
+    setSelectedUser(null);
   };
 
-  const handleSave = async () => {
-    try {
-      const values = await form.validateFields();
+  // บันทึกข้อมูลผู้ใช้ (เพิ่มหรือแก้ไข)
+const handleSaveUser = (values: AddUserRequest | EditUserRequest) => {
+  console.log('handleSaveUser called with values:', values);
+  console.log('selectedUser:', selectedUser);
+  
+  if (selectedUser) {
+    // ถ้ามี selectedUser แสดงว่าอยู่ในโหมดแก้ไข
+    console.log('Edit mode detected, calling editUser');
+    editUser(selectedUser.userID, values as EditUserRequest);
+  } else {
+    // ถ้าไม่มี selectedUser แสดงว่าอยู่ในโหมดเพิ่ม
+    console.log('Add mode detected, calling addUser');
+    addUser(values as AddUserRequest);
+  }
 
-      const selectedRole = roles.find((role) => role.roleID === values.roleID);
-      const selectedWarehouse = warehouses.find(
-        (warehouse) => warehouse.warehouseID === values.warehouseID
-      );
+  setIsModalVisible(false);
+  setSelectedUser(null);
+};
 
-      if (editingUser) {
-        // Edit mode
-        editUser(editingUser.userID, {
-          userID: values.userID,
-          roleID: values.roleID,
-          warehouseID: values.warehouseID,
-        });
-      } else {
-        // Add mode
-        addUser({
-          userID: values.userID,
-          roleID: values.roleID,
-          warehouseID: values.warehouseID,
-        });
-      }
-
-      setIsModalVisible(false);
-      setEditingUser(null);
-      form.resetFields();
-    } catch (error) {
-      console.error("Form validation failed:", error);
-    }
-  };
-
-  // Delete handler
-  const handleDelete = (userID: string) => {
+  // ลบผู้ใช้
+  const handleDeleteUser = (userID: string) => {
     deleteUser(userID);
   };
 
-  // Table columns
-  const columns = [
-    {
-      title: "ผู้ใช้งาน",
-      key: "avatar",
-      width: 250,
-      render: (record: any) => (
-        <Space>
-          <AvatarGenerator
-            userID={record.userID}
-            userName={record.userName}
-            size="large"
-          />
-          <div>
-            <div style={{ fontWeight: "bold" }}>{record.userName}</div>
-            <div style={{ color: "#666" }}>{record.nickName}</div>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: "ชื่อ-นามสกุล",
-      dataIndex: "fullNameTH",
-      key: "fullNameTH",
-      width: "200px",
-    },
-    {
-      title: "แผนก",
-      dataIndex: "departmentNo",
-      key: "departmentNo",
-      width: "100px",
-    },
-    {
-      title: "บทบาท",
-      dataIndex: "roleName",
-      key: "roleName",
-      width: "150px",
-    },
-    {
-      title: "คลังสินค้า",
-      dataIndex: "warehouseName",
-      key: "warehouseName",
-      width: "120px",
-    },
-    {
-      title: "การดำเนินการ",
-      key: "action",
-      width: 200,
-      render: (_: any, record: any) => (
-        <Space>
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => showModal(record)}
-            ghost
-          >
-            แก้ไข
-          </Button>
-          <Popconfirm
-            title="ยืนยันการลบผู้ใช้"
-            description={`คุณต้องการลบผู้ใช้ ${record.userName} ใช่หรือไม่?`}
-            onConfirm={() => handleDelete(record.userID)}
-            okText="ยืนยัน"
-            cancelText="ยกเลิก"
-            okButtonProps={{ danger: true }}
-          >
-            <Button danger icon={<DeleteOutlined />}>
-              ลบ
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  // จัดการค้นหา
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+  };
 
   return (
     <Layout
@@ -226,102 +128,36 @@ export const ManageUser = () => {
       }}
     >
       <Card bordered={false}>
-        <Row
-          justify="space-between"
-          align="middle"
-          style={{ marginBottom: 24 }}
-        >
-          <Col>
-            <Title level={4} style={{ margin: 0 }}>
-              <UserOutlined /> จัดการผู้ใช้งาน
-            </Title>
-          </Col>
-          <Col>
-            <Space>
-              <Search
-                placeholder="ค้นหาผู้ใช้งาน..."
-                allowClear
-                onSearch={(value) => setSearchText(value)}
-                style={{ width: 300 }}
-              />
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => showModal()}
-              >
-                เพิ่มผู้ใช้งาน
-              </Button>
-            </Space>
-          </Col>
-        </Row>
+        {/* ส่วนหัวและค้นหา */}
+        <UserHeader
+          onSearch={handleSearch}
+          onAddUser={handleAddUser}
+          searchPlaceholder="ค้นหาชื่อผู้ใช้, ชื่อ-สกุล, บทบาท..."
+        />
 
-        <Table
-          columns={columns}
-          dataSource={filteredUsers}
-          rowKey="userID"
+        {/* ตารางผู้ใช้ */}
+        <UserTable
+          users={filteredUsers}
           loading={loading}
-          pagination={{
-            ...pagination,
-            showSizeChanger: true,
-            showTotal: (total) => `ทั้งหมด ${total} รายการ`,
-            showQuickJumper: true,
-            pageSizeOptions: ["10", "20", "50", "100"],
-          }}
+          pagination={pagination}
+          onEdit={handleEditUser}
+          onDelete={handleDeleteUser}
           onChange={handleTableChange}
-          size="middle"
-          bordered
         />
       </Card>
 
-      {/* Modal for Add/Edit User */}
-      <Modal
-        title={editingUser ? "แก้ไขผู้ใช้งาน" : "เพิ่มผู้ใช้งานใหม่"}
-        open={isModalVisible}
-        onOk={handleSave}
-        onCancel={handleCancel}
-        okText={editingUser ? "บันทึกการแก้ไข" : "เพิ่มผู้ใช้"}
-        cancelText="ยกเลิก"
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="userID"
-            label="รหัสผู้ใช้"
-            rules={[{ required: true, message: "กรุณาระบุรหัสผู้ใช้" }]}
-          >
-            <Input placeholder="กรุณาระบุรหัสผู้ใช้" disabled={!!editingUser} />
-          </Form.Item>
-
-          <Form.Item
-            name="roleID"
-            label="บทบาท"
-            rules={[{ required: true, message: "กรุณาเลือกบทบาท" }]}
-          >
-            <Select placeholder="เลือกบทบาท">
-              {roles.map((role) => (
-                <Option key={role.roleID} value={role.roleID}>
-                  {role.roleID} : {role.roleName}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="warehouseID"
-            label="คลังสินค้า"
-            rules={[{ required: true, message: "กรุณาเลือกคลังสินค้า" }]}
-          >
-            <Select placeholder="เลือกคลังสินค้า">
-              {warehouses.map((warehouse) => (
-                <Option
-                  key={warehouse.warehouseID}
-                  value={warehouse.warehouseID}
-                >
-                  {warehouse.warehouseID} : {warehouse.warehouseName}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
+      {/* Modal สำหรับเพิ่ม/แก้ไขผู้ใช้ */}
+      <UserForm
+        visible={isModalVisible}
+        user={selectedUser}
+        roles={roles}
+        warehouses={warehouses}
+        onSave={handleSaveUser}
+        onCancel={handleCancelModal}
+        confirmLoading={loading}
+      />
     </Layout>
   );
 };
+
+export default ManageUser;

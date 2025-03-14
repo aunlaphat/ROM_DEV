@@ -1,6 +1,6 @@
 // src/redux/users/api.ts
 
-import { call, put, delay } from "redux-saga/effects";
+import { call, put } from "redux-saga/effects";
 import { SagaIterator } from "redux-saga";
 import { notification } from "antd";
 import { GET, POST, PATCH, DELETE } from "../../services";
@@ -16,6 +16,8 @@ import {
   DeleteUserResponse,
   RoleResponse,
   WarehouseResponse,
+  AddUserRequest,
+  EditUserRequest,
 } from "./types";
 import {
   fetchUsersSuccess,
@@ -68,17 +70,12 @@ export function* fetchUsersSaga(action: {
     });
 
     // ส่ง action เมื่อดึงข้อมูลสำเร็จ
-    // ในกรณีนี้ backend อาจไม่ส่ง total กลับมา เลยใช้ค่าประมาณ
     const total =
       apiResponse.data.length < limit ? offset + apiResponse.data.length : 1000;
     yield put(fetchUsersSuccess(apiResponse.data, total));
   } catch (error: any) {
     logger.error("Fetch Users Error", error);
-
-    // ส่ง action เมื่อดึงข้อมูลล้มเหลว
     yield put(fetchUsersFailure(error.message));
-
-    // แสดงข้อความแจ้งเตือน
     notification.error({
       message: "ดึงข้อมูลผู้ใช้ไม่สำเร็จ",
       description: error.response?.data?.message || error.message,
@@ -119,11 +116,7 @@ export function* fetchUserSaga(action: {
     yield put(fetchUserSuccess(apiResponse.data));
   } catch (error: any) {
     logger.error("Fetch User Details Error", error);
-
-    // ส่ง action เมื่อดึงข้อมูลล้มเหลว
     yield put(fetchUserFailure(error.message));
-
-    // แสดงข้อความแจ้งเตือน
     notification.error({
       message: "ดึงข้อมูลผู้ใช้ไม่สำเร็จ",
       description: error.response?.data?.message || error.message,
@@ -137,153 +130,154 @@ export function* fetchUserSaga(action: {
 // Add User Saga
 export function* addUserSaga(action: {
   type: typeof UserActionTypes.ADD_USER_REQUEST;
-  payload: any;
+  payload: AddUserRequest;
 }): SagaIterator {
   try {
     openLoading();
-    logger.perf.start('Add User');
+    logger.perf.start("Add User");
 
+    // สร้างข้อมูลที่จะส่งไป API - ตรวจสอบให้แน่ใจว่า warehouseID เป็น number
     const userData = {
-      ...action.payload,
-      warehouseID: Number(action.payload.warehouseID) // แปลงเป็น number
+      userID: action.payload.userID,
+      roleID: action.payload.roleID,
+      warehouseID: Number(action.payload.warehouseID), // แปลงเป็น number ให้แน่ใจ
     };
-    
-    // แสดงการใช้ name ใน log
-    logger.log('info', 'Add User with names', {
-      roleID: userData.roleID,
-      roleName: userData.roleName,
-      warehouseID: userData.warehouseID,
-      warehouseName: userData.warehouseName
-    });
-    
-    // เรียก API endpoint
-    logger.api.request(USER.ADD, {
+
+    logger.log("info", "Add User request:", {
       userID: userData.userID,
       roleID: userData.roleID,
-      roleName: userData.roleName,
       warehouseID: userData.warehouseID,
-      warehouseName: userData.warehouseName
     });
-    
+
+    // เรียก API endpoint
+    logger.api.request(USER.ADD, userData);
+
     const response = yield call(() => POST(USER.ADD, userData));
-    
+
     const apiResponse = response.data as ApiResponse<AddUserResponse>;
-    
+
     if (!apiResponse.success) {
-      throw new Error(apiResponse.message || 'Failed to add user');
+      throw new Error(apiResponse.message || "Failed to add user");
     }
 
     logger.api.success(USER.ADD, {
       userID: apiResponse.data.userID,
       roleID: apiResponse.data.roleID,
-      roleName: userData.roleName || "Unknown"
+      warehouseID: apiResponse.data.warehouseID, // เป็น number เหมือนส่วนอื่นๆ
     });
 
     // ส่ง action เมื่อเพิ่มผู้ใช้สำเร็จ
-    yield put(addUserSuccess({
-      ...apiResponse.data,
-      // เพิ่ม name ที่ส่งไปเมื่อ response ไม่มี name กลับมา
-      roleName: userData.roleName,
-      warehouseName: userData.warehouseName
-    }));
+    yield put(addUserSuccess(apiResponse.data));
 
     // แสดงข้อความแจ้งเตือน
     notification.success({
-      message: 'เพิ่มผู้ใช้สำเร็จ',
-      description: 'ผู้ใช้ใหม่ถูกเพิ่มเข้าสู่ระบบแล้ว',
+      message: "เพิ่มผู้ใช้สำเร็จ",
+      description: "ผู้ใช้ใหม่ถูกเพิ่มเข้าสู่ระบบแล้ว",
     });
 
     // โหลดรายการผู้ใช้ใหม่
-    yield put({ 
-      type: UserActionTypes.FETCH_USERS_REQUEST, 
-      payload: { isActive: true } 
+    yield put({
+      type: UserActionTypes.FETCH_USERS_REQUEST,
+      payload: { isActive: true },
     });
-
   } catch (error: any) {
-    logger.error('Add User Error', error);
+    logger.error("Add User Error", error);
     yield put(addUserFailure(error.message));
     notification.error({
-      message: 'เพิ่มผู้ใช้ไม่สำเร็จ',
+      message: "เพิ่มผู้ใช้ไม่สำเร็จ",
       description: error.response?.data?.message || error.message,
     });
   } finally {
     closeLoading();
-    logger.perf.end('Add User');
+    logger.perf.end("Add User");
   }
 }
 
 // Edit User Saga
 export function* editUserSaga(action: {
   type: typeof UserActionTypes.EDIT_USER_REQUEST;
-  payload: { userID: string, userData: any };
+  payload: { userID: string; userData: EditUserRequest };
 }): SagaIterator {
   try {
     openLoading();
-    logger.perf.start('Edit User');
+    logger.perf.start("Edit User");
 
     const { userID, userData } = action.payload;
 
-    // แสดงการใช้ name ใน log
-    logger.log('info', 'Edit User with names', {
-      roleID: userData.roleID,
-      roleName: userData.roleName,
-      warehouseID: userData.warehouseID,
-      warehouseName: userData.warehouseName
+    // ตรวจสอบให้แน่ใจว่า userData มีข้อมูลครบถ้วน
+    if (!userData || !userData.userID) {
+      throw new Error("ข้อมูลผู้ใช้ไม่ถูกต้องหรือไม่ครบถ้วน");
+    }
+
+    // Log ข้อมูลที่ได้รับเพื่อการตรวจสอบ
+    logger.log("info", "Original edit user data:", {
+      userID,
+      userData,
     });
-    
-    // เรียก API endpoint ส่งเฉพาะ ID ที่แน่ใจว่า backend ต้องการ
-    logger.api.request(USER.EDIT(userID), {
+
+    // สร้างข้อมูลที่จะส่งไป API - ส่ง userData โดยตรง (ไม่ผ่าน apiRequestData)
+    // ข้อมูลควรมี roleID และ warehouseID ที่ถูกต้องแล้วจาก UserForm
+    const apiRequestData = {
       userID: userData.userID,
-      roleID: userData.roleID,
-      warehouseID: userData.warehouseID
-    });
-    
-    const response = yield call(() => PATCH(USER.EDIT(userID), userData));
-    
+      roleID: Number(userData.roleID),
+      warehouseID: Number(userData.warehouseID),
+    };
+
+    // เพิ่ม roleID ถ้ามีการกำหนดค่า
+    if (userData.roleID !== undefined) {
+      apiRequestData.roleID = Number(userData.roleID);
+    }
+
+    // เพิ่ม warehouseID ถ้ามีการกำหนดค่า
+    if (userData.warehouseID !== undefined) {
+      apiRequestData.warehouseID = Number(userData.warehouseID);
+    }
+
+    // แสดงข้อมูลที่จะส่งไป API
+    logger.log("info", "Edit User API request data:", apiRequestData);
+
+    // เรียก API endpoint
+    logger.api.request(USER.EDIT(userID), apiRequestData);
+
+    // ส่งข้อมูลที่ได้ปรับแล้วไปยัง API
+    const response = yield call(() => PATCH(USER.EDIT(userID), apiRequestData));
+
     const apiResponse = response.data as ApiResponse<EditUserResponse>;
-    
+
     if (!apiResponse.success) {
-      throw new Error(apiResponse.message || 'Failed to edit user');
+      throw new Error(apiResponse.message || "Failed to edit user");
     }
 
     logger.api.success(USER.EDIT(userID), {
       userID: apiResponse.data.userID,
-      updatedBy: apiResponse.data.updatedBy
+      updatedBy: apiResponse.data.updatedBy,
+      responseData: apiResponse.data, // แสดงข้อมูล response ทั้งหมด
     });
 
-    // สร้างข้อมูลที่ถูกต้องตาม type definition
-    const combinedData: EditUserResponse = {
-      ...apiResponse.data,
-      // ใช้ค่าจาก apiResponse ถ้ามี หรือใช้ค่าจาก userData ถ้าไม่มี
-      roleName: apiResponse.data.roleName || userData.roleName || '',
-      warehouseName: apiResponse.data.warehouseName || userData.warehouseName || ''
-    };
-
     // ส่ง action เมื่อแก้ไขผู้ใช้สำเร็จ
-    yield put(editUserSuccess(combinedData));
+    yield put(editUserSuccess(apiResponse.data));
 
     // แสดงข้อความแจ้งเตือน
     notification.success({
-      message: 'แก้ไขผู้ใช้สำเร็จ',
-      description: 'ข้อมูลผู้ใช้ถูกอัปเดตแล้ว',
+      message: "แก้ไขผู้ใช้สำเร็จ",
+      description: "ข้อมูลผู้ใช้ถูกอัปเดตแล้ว",
     });
 
     // โหลดรายการผู้ใช้ใหม่
-    yield put({ 
-      type: UserActionTypes.FETCH_USERS_REQUEST, 
-      payload: { isActive: true } 
+    yield put({
+      type: UserActionTypes.FETCH_USERS_REQUEST,
+      payload: { isActive: true },
     });
-
   } catch (error: any) {
-    logger.error('Edit User Error', error);
+    logger.error("Edit User Error", error);
     yield put(editUserFailure(error.message));
     notification.error({
-      message: 'แก้ไขผู้ใช้ไม่สำเร็จ',
+      message: "แก้ไขผู้ใช้ไม่สำเร็จ",
       description: error.response?.data?.message || error.message,
     });
   } finally {
     closeLoading();
-    logger.perf.end('Edit User');
+    logger.perf.end("Edit User");
   }
 }
 
@@ -298,7 +292,7 @@ export function* deleteUserSaga(action: {
 
     const userID = action.payload;
 
-    // เรียก API endpoint - ส่ง empty object เป็น body
+    // เรียก API endpoint
     logger.api.request(USER.DELETE(userID));
 
     const response = yield call(() => DELETE(USER.DELETE(userID), {}));
@@ -330,11 +324,7 @@ export function* deleteUserSaga(action: {
     });
   } catch (error: any) {
     logger.error("Delete User Error", error);
-
-    // ส่ง action เมื่อลบผู้ใช้ล้มเหลว
     yield put(deleteUserFailure(error.message));
-
-    // แสดงข้อความแจ้งเตือน
     notification.error({
       message: "ลบผู้ใช้ไม่สำเร็จ",
       description: error.response?.data?.message || error.message,
@@ -350,7 +340,7 @@ export function* fetchRolesSaga(): SagaIterator {
   try {
     logger.perf.start("Fetch Roles");
 
-    // เรียก API endpoint ที่ถูกต้อง
+    // เรียก API endpoint
     logger.api.request(CONSTANT.ROLES);
 
     const response = yield call(() => GET(CONSTANT.ROLES));
@@ -369,23 +359,10 @@ export function* fetchRolesSaga(): SagaIterator {
     yield put(fetchRolesSuccess(apiResponse.data));
   } catch (error: any) {
     logger.error("Fetch Roles Error", error);
-
-    // ส่ง action เมื่อดึงข้อมูลล้มเหลว
-    yield put(
-      fetchRolesFailure(
-        error.response?.data?.message ||
-          error.message ||
-          "ไม่สามารถดึงข้อมูลบทบาทได้"
-      )
-    );
-
-    // แสดงข้อความแจ้งเตือน (เพิ่มเติม)
+    yield put(fetchRolesFailure(error.message));
     notification.error({
       message: "ดึงข้อมูลบทบาทไม่สำเร็จ",
-      description:
-        error.response?.data?.message ||
-        error.message ||
-        "กรุณาลองใหม่อีกครั้ง",
+      description: error.response?.data?.message || error.message,
     });
   } finally {
     logger.perf.end("Fetch Roles");
@@ -416,8 +393,6 @@ export function* fetchWarehousesSaga(): SagaIterator {
     yield put(fetchWarehousesSuccess(apiResponse.data));
   } catch (error: any) {
     logger.error("Fetch Warehouses Error", error);
-
-    // ส่ง action เมื่อดึงข้อมูลล้มเหลว
     yield put(fetchWarehousesFailure(error.message));
   } finally {
     logger.perf.end("Fetch Warehouses");
