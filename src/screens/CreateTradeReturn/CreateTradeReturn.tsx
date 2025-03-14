@@ -1,4 +1,4 @@
-import { Popconfirm, Button, Col, ConfigProvider, DatePicker, Form, FormInstance, Input, InputNumber, Layout, Row, Select, Table, notification, Modal, Upload, Divider, Tooltip, } from "antd";
+import { Popconfirm, Button, Col, ConfigProvider, DatePicker, Form, FormInstance, Input, InputNumber, Layout, Row, Select, Table, notification, Modal, Upload, Divider, Tooltip, Pagination, } from "antd";
 import { SearchOutlined, DeleteOutlined, LeftOutlined, PlusCircleOutlined, UploadOutlined, CloseOutlined, QuestionCircleOutlined, } from "@ant-design/icons";
 import { debounce } from "lodash";
 import { useEffect, useState } from "react";
@@ -8,7 +8,9 @@ import icon from "../../assets/images/document-text.png";
 import api from "../../utils/axios/axiosInstance"; 
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/types";
-import { Address, Customer, DataItem, Product } from '../../types/types';
+import { TRANSPORT_TYPES, Address, Customer, DataItem, Product } from '../../types/types';
+import {FETCHCUSTOMER, FETCHCUSTOMERINFO, SEARCHINVOICE, FETCHPROVINCES, FETCHDISTRICT, FETCHSUBDISTRICT, FETCHPOSTALCODE, SEARCHPRODUCT, FETCHSKU, CREATETRADE} from '../../services/path';
+import '../../style/styles.css';
 const { Option } = Select;
 
 const CreateTradeReturn = () => {
@@ -42,18 +44,58 @@ const CreateTradeReturn = () => {
   const [selectedName, setSelectedName] = useState<string | undefined>(undefined);
   const [price, setPrice] = useState<number | null>(null); 
   const [qty, setQty] = useState<number | null>(null); 
+  const [returnQty, setReturnQty] = useState<number | null>(null);
+  const [pricePerUnit, setPricePerUnit] = useState<number | null>(null);
 
   // ดึงข้อมูลผู้ใช้ที่เข้าสู่ระบบ
   const auth = useSelector((state: RootState) => state.auth);
   const userID = auth?.user?.userID;
-
   const token = localStorage.getItem("access_token");
+
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(5);
+
+  // ฟังก์ชันสำหรับเปลี่ยนหน้า
+  const handlePageChange = (page: number, pageSize: number) => {
+    setCurrentPage(page);
+    setPageSize(pageSize); // ถ้าผู้ใช้เลือกจำนวนรายการต่อหน้าใหม่
+  };
+
+  // คำนวณจำนวนหน้าทั้งหมดจากจำนวนรายการทั้งหมด
+  const totalPages = Math.ceil(dataSource.length / pageSize);
+
+  // ตรวจสอบว่า pagination ควรแสดงหรือไม่ (ให้แสดงเสมอแม้ว่า dataSource จะมีน้อยกว่า pageSize)
+  const showPagination = dataSource.length > 0;
+
+  const showModal = () => {
+      setIsModalVisible(true);
+  };
+
+  const handleOk = () => {
+      setIsModalVisible(false);
+      handleSubmit(); 
+  };
+
+  const handleCancel = () => {
+      setIsModalVisible(false);
+  };
+  
+  useEffect(() => {
+    if (returnQty !== null && pricePerUnit !== null) {
+      const calculatedPrice = returnQty * pricePerUnit;
+      setPrice(calculatedPrice);
+      form.setFieldsValue({ Price: calculatedPrice });
+    }
+  }, [returnQty, pricePerUnit, form]);
+
   /*** Customer&Invoice ***/
   useEffect(() => {
     const fetchCustomerAccounts = async () => {
       setLoading(true);
       try {
-        const response = await api.get("/api/constants/get-customer-id");
+        const response = await api.get(FETCHCUSTOMER);
         setCustomerAccounts(response.data.data); // เก็บข้อมูล customer accounts
       } catch (error) {
         notification.error({
@@ -76,19 +118,13 @@ const CreateTradeReturn = () => {
       setSelectedInvoice(null); 
       form.resetFields(["Invoice_name"]);
 
-      const customerResponse = await api.get(
-        `/api/constants/get-customer-info?customerID=${value}`,
-      );
+      const customerResponse = await api.get(FETCHCUSTOMERINFO(value));
 
       const customerData = customerResponse.data.data;
-
       if (customerData && customerData.length > 0) {
         const firstCustomer = customerData[0];
         setSelectedAccount(firstCustomer);
-  
-        // Set available invoice names
         setInvoiceNames(customerData);
-  
         form.setFieldsValue({
           Customer_name: firstCustomer.customerName,
           Address: firstCustomer.address,
@@ -118,8 +154,7 @@ const CreateTradeReturn = () => {
   const debouncedSearch = debounce(async (value: string) => {
     setLoading(true); 
     try {
-      const response = await api.get(
-        "/api/constants/search-invoice-names", 
+      const response = await api.get(SEARCHINVOICE, 
         {
           params: {
             customerID: selectedAccount?.customerID, // ใช้ customerID ที่เลือก
@@ -186,7 +221,7 @@ const CreateTradeReturn = () => {
     const fetchProvinces = async () => {
       setLoading(true);
       try {
-        const response = await api.get("/api/constants/get-provinces");
+        const response = await api.get(FETCHPROVINCES);
         setProvinces(response.data.data);
       } catch (error) {
         console.error("Failed to fetch provinces", error);
@@ -202,7 +237,7 @@ const CreateTradeReturn = () => {
       const fetchDistricts = async () => {
         setLoading(true);
         try {
-          const response = await api.get(`/api/constants/get-district?provinceCode=${province}`);
+          const response = await api.get(FETCHDISTRICT(province));
           setDistricts(response.data.data);
         } catch (error) {
           console.error("Failed to fetch districts", error);
@@ -221,7 +256,7 @@ const CreateTradeReturn = () => {
       const fetchSubDistricts = async () => {
         setLoading(true);
         try {
-          const response = await api.get(`/api/constants/get-sub-district?districtCode=${district}`);
+          const response = await api.get(FETCHSUBDISTRICT(district));
           setSubDistricts(response.data.data);
         } catch (error) {
           console.error("Failed to fetch subdistricts", error);
@@ -240,7 +275,7 @@ const CreateTradeReturn = () => {
       const fetchPostalCode = async () => {
         setLoading(true);
         try {
-          const response = await api.get(`/api/constants/get-postal-code?subdistrictCode=${subDistrict}`);
+          const response = await api.get(FETCHPOSTALCODE(subDistrict));
           setPostalCode(response.data.data);
           formaddress.setFieldsValue({
             PostalCode: response.data.data.length > 0 ? response.data.data[0].zipCode : "",
@@ -275,18 +310,18 @@ const CreateTradeReturn = () => {
   };
   
   const handleDistrictChange = (value: string) => {
-    if (!value) return; // ป้องกันค่า undefined
+    if (!value) return; 
     setDistrict(value);
     setSelectedDistrict(value); 
 
-    formaddress.resetFields(["SubDistrict", "PostalCode"]); // รีเซ็ตค่าในฟอร์ม
+    formaddress.resetFields(["SubDistrict", "PostalCode"]);
     setSubDistrict(undefined); 
     setPostalCode([]); 
     setSelectedSubDistrict(""); 
   };
 
   const handleSubDistrictChange = (value: string) => {
-    if (!value) return; // ป้องกันค่า undefined
+    if (!value) return; 
     setSubDistrict(value);
     setSelectedSubDistrict(value); 
   };
@@ -313,13 +348,26 @@ const CreateTradeReturn = () => {
     // setOpen(false);
   };
 
-  /*** SKU&NameAlias ***/
+  /*** Logistic Type ***/
+  const [isOtherTransport, setIsOtherTransport] = useState(false);
+  const [transportValue, setTransportValue] = useState<string | undefined>(undefined);
+  const handleTransportChange = (value: string) => {
+    if (value === 'OTHER') {
+      setIsOtherTransport(true);
+      form.resetFields(['Logistic']);
+      setTransportValue(''); 
+    } else {
+      setIsOtherTransport(false);
+      setTransportValue(value);
+    }
+  };
 
+  /*** SKU&NameAlias ***/
   // ค้นหา Product (SKU หรือ NAMEALIAS)
   const debouncedSearchSKU = debounce(async (value: string, searchType: string) => {
     setLoading(true);
     try {
-      const response = await api.get("/api/constants/search-product", {
+      const response = await api.get(SEARCHPRODUCT, {
         params: {
           keyword: value,
           searchType,
@@ -368,7 +416,7 @@ const CreateTradeReturn = () => {
 
     try {
       setLoading(true);
-      const response = await api.get("/api/constants/get-sku", {
+      const response = await api.get(FETCHSKU, {
         params: { nameAlias, size },
       });
 
@@ -490,61 +538,101 @@ const CreateTradeReturn = () => {
   };
 
   const columns = [
-    { title: "SKU", dataIndex: "SKU", key: "SKU", id: "SKU" },
-    { title: "Name", dataIndex: "Name", key: "Name", id: "Name" },
-    { title: "QTY", dataIndex: "QTY", key: "QTY", id: "QTY" },
+    { title: "รหัสสินค้า", dataIndex: "SKU", key: "SKU", id: "SKU" },
+    { title: "ชื่อสินค้า", dataIndex: "Name", key: "Name", id: "Name" },
+    { title: "จำนวนเริ่มต้น", dataIndex: "QTY", key: "QTY", id: "QTY" },
+    { title: "จำนวนที่คืน", dataIndex: "ReturnQTY", key: "ReturnQTY", id: "ReturnQTY" },
+    { title: "ราคาต่อหน่วย", dataIndex: "PricePerUnit", key: "PricePerUnit", id: "PricePerUnit" },
+    { title: "ราคารวม", dataIndex: "Price", key: "Price", id: "Price" },
     {
-      title: "Action",
+      title: "ลบรายการคืน",
       id: "Action",
       dataIndex: "Action",
       key: "Action",
       render: (_: any, record: { key: number }) => (
-        <Popconfirm
-          title="คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?"
-          onConfirm={() => handleDelete(record.key)} // เรียกใช้ฟังก์ชัน handleDelete เมื่อกดยืนยัน
-          okText="ใช่"
-          cancelText="ไม่"
-        >
-          <DeleteOutlined
-            style={{ cursor: "pointer", color: "red", fontSize: "20px" }}
-          />
-        </Popconfirm>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Popconfirm
+            title="คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?"
+            onConfirm={() => handleDelete(record.key)} 
+            okText="ใช่"
+            cancelText="ไม่"
+          >
+            <DeleteOutlined
+              style={{ cursor: "pointer", color: "red", fontSize: "20px" }}
+            />
+          </Popconfirm>
+        </div>
       ),
     },
   ];
 
   const handleDownloadTemplate = () => {
-    const templateColumns = columns.filter((col) => col.key !== "Action"); // กรองออก action column
+    const templateColumns = [
+        { title: "ลำดับ", dataIndex: "key", key: "key" }, // เพิ่ม Column "ลำดับ"
+        ...columns.filter((col) => col.key !== "Action"), // เพิ่ม Column อื่นๆ
+    ];
     const ws = XLSX.utils.json_to_sheet([]);
     XLSX.utils.sheet_add_aoa(ws, [templateColumns.map((col) => col.title)]);
 
+    const mappedDataSource = dataSource.map((item) => {
+        return {
+            key: item.key, // เพิ่ม key
+            SKU: item.SKU,
+            Name: item.Name,
+            QTY: item.QTY,
+            ReturnQTY: item.ReturnQTY,
+            PricePerUnit: item.PricePerUnit,
+            Price: item.Price,
+        };
+    });
+
+    XLSX.utils.sheet_add_json(ws, mappedDataSource, { origin: "A2", skipHeader: true });
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
-
     XLSX.writeFile(wb, "Template.xlsx");
-  };
+};
 
-  const handleUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
+const handleUpload = (file: File) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
       const data = new Uint8Array(e.target?.result as ArrayBuffer);
       const workbook = XLSX.read(data, { type: "array" });
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json<DataItem>(worksheet);
 
-      // กรองข้อมูลเฉพาะที่มี SKU และ QTY
-      const filteredData = json.filter((item) => item.SKU && item.QTY);
+      const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
-      // อัปเดต dataSource ด้วยข้อมูลที่กรอง
-      setDataSource(filteredData);
+      console.log("JSON Data:", json);
 
-      notification.success({
-        message: "อัปโหลดสำเร็จ",
-        description: "ข้อมูลจากไฟล์ Excel ถูกนำเข้าเรียบร้อยแล้ว!",
-      });
-    };
-    reader.readAsArrayBuffer(file);
+      if (Array.isArray(json) && json.length > 0) {
+          const mappedData: DataItem[] = json.map((row, index) => {
+              const dataItem: DataItem = {
+                  key: index + 1,
+                  SKU: row["รหัสสินค้า"] as string,
+                  Name: row["ชื่อสินค้า"] as string,
+                  QTY: row["จำนวนเริ่มต้น"] as number,
+                  ReturnQTY: row["จำนวนที่คืน"] as number,
+                  PricePerUnit: row["ราคาต่อหน่วย"] as number,
+                  Price: row["ราคารวม"] as number,
+              };
+              return dataItem;
+          }).filter((item) => item.SKU && item.QTY);
+
+          setDataSource(mappedData);
+
+          notification.success({
+              message: "อัปโหลดสำเร็จ",
+              description: "ข้อมูลจากไฟล์ Excel ถูกนำเข้าเรียบร้อยแล้ว!",
+          });
+      } else {
+          notification.error({
+              message: "อัปโหลดล้มเหลว",
+              description: "ไฟล์ Excel ไม่มีข้อมูลที่ถูกต้อง!",
+          });
+      }
   };
+  reader.readAsArrayBuffer(file);
+};
 
   const uploadProps = {
     beforeUpload: (file: File) => {
@@ -576,20 +664,20 @@ const CreateTradeReturn = () => {
           SKU: values.SKU,
           Name: nameAlias,
           QTY: values.QTY,
-          Price: values.Price,
-          Tax: values.Tax || "", // ถ้าไม่มี Tax ให้ใส่ค่าว่าง
+          ReturnQTY: values.ReturnQTY,
+          PricePerUnit: values.PricePerUnit,
+          Price: values.ReturnQTY * values.PricePerUnit,
         };
 
         setDataSource([...dataSource, newData]); // เพิ่มข้อมูลใหม่ไปยัง dataSource
 
-        // แสดงข้อความเมื่อเพิ่มข้อมูลสำเร็จ
         notification.success({
           message: "เพิ่มสำเร็จ",
           description: "ข้อมูลของคุณถูกเพิ่มเรียบร้อยแล้ว!",
         });
 
         // ล้างฟิลด์ในฟอร์มหลังจากเพิ่มข้อมูลเสร็จ
-        form.resetFields(["SKU", "SKU_Name", "QTY", "Price"]);
+        form.resetFields(["SKU", "SKU_Name", "QTY", "ReturnQTY", "PricePerUnit", "Price"]);
         setSkuOptions([]);
         setNameOptions([]);
         setSelectedSKU("");
@@ -628,7 +716,7 @@ const CreateTradeReturn = () => {
             message: "ไม่สามารถส่งข้อมูลได้",
             description: "กรุณาเพิ่มข้อมูลในตารางก่อนส่ง!",
           });
-          return; // หยุดการทำงานของฟังก์ชัน
+          return; 
         }
     
         // ดึงค่าจากฟอร์ม
@@ -636,41 +724,38 @@ const CreateTradeReturn = () => {
     
         // เตรียมข้อมูลสำหรับส่งไปยัง API
         const requestData = {
-          OrderNo: values.Doc,
-          SoNo: values.Doc, // ใช้ Doc เป็น SoNo
-          ChannelID: 2, // กำหนดค่า ChannelID ตามที่ต้องการ
+          OrderNo: values.Order,
+          SoNo: values.SO, 
+          ChannelID: 2, 
           CustomerID: selectedAccount?.customerID,
           TrackingNo: values.Tracking,
           Logistic: values.Logistic,
-          StatusReturnID: 3, // กำหนดค่า StatusReturnID ตามที่ต้องการ
-          CreateBy: userID, // เพิ่ม userID ที่เข้าสู่ระบบในฟิลด์ CreateBy
+          ReturnDate: values.Date,
+          StatusReturnID: 3, 
+          CreateBy: userID, 
           BeforeReturnOrderLines: dataSource.map(item => ({
             SKU: item.SKU,
             ItemName: item.Name,
-            ReturnQTY: item.QTY, // กำหนดค่า ReturnQTY ตามที่ต้องการ
+            QTY: item.QTY,
+            ReturnQTY: item.ReturnQTY, 
             Price: item.Price,
             TrackingNo: values.Tracking,
           })),
         };
     
         // ดึงโทเค็นจาก Local Storage
-        const token = localStorage.getItem('access_token');
-    
-        // ส่งข้อมูลไปยัง API
-        const response = await api.post('/api/trade-return/create-trade', requestData, {
+        const token = localStorage.getItem('access_token')
+        const response = await api.post(CREATETRADE, requestData, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
     
-        // ตรวจสอบผลลัพธ์จาก API
         if (response.status === 200) {
           notification.success({
             message: "ส่งข้อมูลสำเร็จ",
             description: "ข้อมูลของคุณถูกส่งเรียบร้อยแล้ว!",
           });
-    
-          // รีเซ็ตฟอร์มและตาราง
           form.resetFields();
           formaddress.resetFields();
           setSelectedAccount(null);
@@ -702,7 +787,7 @@ const CreateTradeReturn = () => {
           color: "DodgerBlue",
         }}
       >
-        Create Trade Return
+        สร้างรายการคืนจากหน้าสาขา (TRADE)
       </div>
       <Layout>
         <Layout.Content
@@ -719,314 +804,429 @@ const CreateTradeReturn = () => {
             layout="vertical"
             style={{ width: "100%", padding: "30px" }}
           >
-            <div>
-              <Divider
-                style={{ color: "#657589", fontSize: "22px", margin: 30 }}
-                orientation="left"
-              >
-                Sale Order Information
-              </Divider>
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item
-                    id="Tracking"
+          <div>
+            <Divider
+              style={{ color: "#657589", fontSize: "22px", margin: 30 }}
+              orientation="left"
+            >
+              Order Information
+            </Divider>
+            <Row gutter={16} style={{ marginTop: "10px" }}>
+              <Col span={8}>
+                <Form.Item
+                    id="Order"
                     label={
-                      <span style={{ color: "#657589" }}>
-                        กรอกเลข Tracking:&nbsp;
-                        <Tooltip title="เลขTracking จากขนส่ง">
+                      <span style={{ color: '#657589' }}>
+                        Order Number &nbsp;
+                        <Tooltip title="เลขที่ออเดอร์ ตัวอย่าง: 241215USC2YBX5">
                           <QuestionCircleOutlined
                             style={{ color: "#657589" }}
                           />
                         </Tooltip>
-                      </span>
-                    }
-                    name="Tracking"
-                    rules={[{ required: true, message: "กรอกเลข Tracking" }]}
+                      </span>}
+                    name="Order"
+                    rules={[{ required: true, message: "กรุณากรอกเลข Order" }]}
+                >
+                  <Input 
+                    style={{ height: 40, width: "100%"}} 
+                    placeholder="ตัวอย่าง 241215USC2YBX5" 
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  id="SO"
+                  label={
+                    <span style={{ color: "#657589" }}>
+                      Sale Order &nbsp;
+                      <Tooltip title="เลขที่คำสั่งซื้อในระบบ ตัวอย่าง: SOA2410-00234">
+                        <QuestionCircleOutlined
+                          style={{ color: "#657589" }}
+                        />
+                      </Tooltip>
+                    </span>
+                  }
+                  name="SO"
+                  style={{ color: "#657589" }}
+                  rules={[{ required: true }]}
+                >
+                  <Input
+                    style={{ width: "100%", height: "40px" }}
+                    placeholder="ตัวอย่าง SOA2410-00234"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                  <Form.Item
+                  id="Date"
+                      label={
+                        <span style={{ color: '#657589' }}>
+                          วันที่ส่งคืน &nbsp;
+                          <Tooltip title="วันที่คาดว่าขนส่งน่าจะถึงภายในวันนั้นหรือก่อนวันนั้น">
+                            <QuestionCircleOutlined
+                              style={{ color: "#657589" }}
+                            />
+                          </Tooltip>
+                        </span>
+                      }
+                      name="Date"
+                      rules={[{ required: true, message: 'กรุณาเลือกวันที่คืน' }]}
                   >
-                    <Input style={{ height: 40 }} />
+                      <DatePicker 
+                        style={{ width: '100%', height: '40px', }} 
+                        placeholder="เลือกวันที่คืน"
+                      />
                   </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    id="Logistic"
-                    label={
-                      <span style={{ color: "#657589" }}>
-                        กรอก Logistic:&nbsp;
-                        <Tooltip title="ผู้ให้บริการขนส่ง">
-                          <QuestionCircleOutlined
-                            style={{ color: "#657589" }}
-                          />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="Logistic"
-                    rules={[
-                      { required: true, message: "กรอก Logistic" },
-                    ]}
-                  >
-                    <Input style={{ height: 40 }} />
-                  </Form.Item>
-                </Col>
-                <Col span={8}></Col>
-              </Row>
-              <Row
-                gutter={16}
-                align="middle"
-                justify="center"
-                style={{ marginTop: "20px", width: "100%" }}
-              >
-                <Col span={8}>
-                  <Form.Item
-                    id="Doc"
-                    label={
-                      <span style={{ color: "#657589" }}>
-                        กรอกเอกสารอ้างอิง:&nbsp;
-                        <Tooltip title="ตัวอย่างเอกสาร SOA2410-00234">
-                          <QuestionCircleOutlined
-                            style={{ color: "#657589" }}
-                          />
-                        </Tooltip>
-                      </span>
-                    }
-                    name="Doc"
-                  >
+              </Col>
+              <Col span={8}></Col>
+            </Row>
+
+            <Row gutter={16} style={{ marginTop: "10px" }}>
+              <Col span={8}>
+                <Form.Item
+                  id="Tracking"
+                  label={
+                    <span style={{ color: "#657589" }}>
+                      เลขพัสดุ &nbsp;
+                      {/* <Tooltip title="เลขTracking จากขนส่ง">
+                        <QuestionCircleOutlined
+                          style={{ color: "#657589" }}
+                        />
+                      </Tooltip> */}
+                    </span>
+                  }
+                  name="Tracking"
+                  rules={[{ required: true, message: "กรุณากรอกเลขพัสดุ" }]}
+                >
+                  <Input 
+                    style={{ height: 40, width: "100%" }}
+                    placeholder="กรอกเลขพัสดุ"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  id="Logistic"
+                  label={<span style={{ color: "#657589" }}>ประเภทขนส่ง</span>}
+                  name="Logistic"
+                  rules={[{ required: true, message: "กรุณาเลือกขนส่ง" }]}
+                >
+                  {isOtherTransport ? (
                     <Input
-                      style={{ width: "100%", height: "40px" }}
-                      placeholder="ตัวอย่างเอกสาร SOA2410-00234"
+                      placeholder="กรอกประเภทขนส่ง"
+                      value={transportValue}
+                      onChange={(e) => setTransportValue(e.target.value)}
+                      style={{ height: 40, width: "100%" }}
                     />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    label="Customer account"
-                    name="Customer_account"
-                    rules={[{ required: true }]}
-                  >
+                  ) : (
                     <Select
+                      options={TRANSPORT_TYPES}
+                      placeholder="เลือกประเภทขนส่ง"
                       showSearch
-                      placeholder="Select Customer Account"
-                      onChange={handleAccountChange}
-                      loading={loading}
-                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
-                      virtual // ทำให้ค้นหาไวขึ้น
-                    >
-                      {customerAccounts.length > 0 ? (
-                        customerAccounts.map((account) => (
-                          <Option
-                            key={account.customerID}
-                            value={account.customerID}
-                          >
-                            {account.customerID}
-                          </Option>
-                        ))
-                      ) : (
-                        <Option disabled>No customer accounts available</Option>
-                      )}
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    label="Customer Name"
-                    name="Customer_name"
-                    rules={[{ required: true }]}
-                  >
-                    <Input
-                      value={selectedAccount?.customerName || "-"}
-                      disabled
+                      optionFilterProp="label"
+                      style={{ height: 40, width: "100%" }}
+                      onChange={handleTransportChange}
+                      value={transportValue}
+                      listHeight={160} 
+                      virtual 
                     />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Row gutter={16} style={{ marginTop: "10px" }}>
-                <Col span={8}>
-                  <Form.Item
-                    label="Invoice Name"
-                    name="Invoice_name"
-                    rules={[{ required: true }]}
+                  )}
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  label="Customer account"
+                  name="Customer_account"
+                  rules={[{ required: true }]}
+                  style={{ color: "#657589" }}
+                >
+                  <Select
+                    showSearch
+                    placeholder="Select Customer Account"
+                    onChange={handleAccountChange}
+                    loading={loading}
+                    listHeight={160} 
+                    virtual 
+                    style={{ height: 40, width: "100%" }}
                   >
-                    <Select
-                      showSearch
-                      value={selectedAccount?.customerName || "-"}
-                      placeholder="Select Invoice Name"
-                      onSearch={handleInvoiceSearch} // เรียกฟังก์ชันค้นหาตอนพิมพ์
-                      onChange={handleInvoiceChange}
-                      loading={loading}
-                      listHeight={160} // ปรับให้พอดีกับ 4 รายการ
-                      virtual
-                    >
-                      {invoiceNames.map((invoice) => (
+                    {customerAccounts.length > 0 ? (
+                      customerAccounts.map((account) => (
                         <Option
-                          key={`${invoice.customerName}-${invoice.address}-${invoice.taxID}`}
-                          value={`${invoice.customerName}+${invoice.address}+${invoice.taxID}`}
+                          key={account.customerID}
+                          value={account.customerID}
                         >
-                          {invoice.customerName}
+                          {account.customerID}
                         </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item label="Tax ID" name="Tax">
-                    <Input value={selectedAccount?.taxID || "-"} disabled />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Divider
-                style={{ color: "#657589", fontSize: "22px", margin: 30 }}
-                orientation="left"
-              >
-                Address Information
-              </Divider>
-              <Row gutter={16} style={{ marginTop: "10px" }}>
-                <Col span={18}>
-                  <Form.Item
-                    label="Invoice Address"
-                    name="Address"
-                    // rules={[{ required: true }]}
+                      ))
+                    ) : (
+                      <Option disabled>No customer accounts available</Option>
+                    )}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16} style={{ marginTop: "10px" }}>
+              <Col span={8}>
+                <Form.Item
+                  label="Customer Name"
+                  name="Customer_name"
+                  rules={[{ required: true }]}
+                >
+                  <Input
+                    style={{ height: 40, width: "100%" }}
+                    placeholder="ข้อมูลชื่อลูกค้า"
+                    value={selectedAccount?.customerName || "-"}
+                    disabled
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  label="Invoice Name"
+                  name="Invoice_name"
+                  style={{ color: "#657589" }}
+                  rules={[{ required: true }]}
+                >
+                  <Select
+                    showSearch
+                    value={selectedAccount?.customerName || "-"}
+                    placeholder="Select Invoice Name"
+                    onSearch={handleInvoiceSearch} 
+                    onChange={handleInvoiceChange}
+                    loading={loading}
+                    listHeight={160}
+                    virtual
+                    style={{ height: 40, width: "100%" }}
                   >
-                    <Input value={selectedAccount?.address || "-"} disabled />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Button
-                    id="NewInvoiceAddress"
-                    type="primary"
-                    onClick={handleOpen}
-                    style={{ width: "100%", height: "40px", marginTop: 30 }}
-                  >
-                    New invoice address
-                  </Button>
-                </Col>
-              </Row>
-              <Divider
-                style={{ color: "#657589", fontSize: "22px", margin: 30 }}
-                orientation="left"
-              > 
-                {" "}
-                SKU information
-              </Divider>
-              <Row gutter={16} style={{ marginTop: "10px", width: "100%" }}>
-                <Col span={6}>
-                  <Form.Item
-                    id="SKU"
-                    label={<span style={{ color: "#657589" }}>กรอก SKU :</span>}
-                    name="SKU"
-                    // rules={[{ required: true, message: "กรุณากรอก SKU" }]}
-                  >
-                    <Select
-                      showSearch
-                      style={{ width: "100%", height: "40px" }}
-                      dropdownStyle={{ minWidth: 200 }}
-                      listHeight={160}
-                      placeholder="Search by SKU"
-                      value={selectedSKU} // ใช้ค่าที่เลือก
-                      onSearch={handleSearchSKU} // ใช้สำหรับค้นหา SKU
-                      onChange={handleSKUChange} // เมื่อเลือก SKU
-                      loading={loading}
-                      virtual // ทำให้ค้นหาไวขึ้น
-                    >
-                      {skuOptions.map((option) => (
-                        <Option 
-                          key={`${option.sku}-${option.size}`} 
-                          value={option.sku}
-                        >
-                          {option.sku}
+                    {invoiceNames.map((invoice) => (
+                      <Option
+                        key={`${invoice.customerName}-${invoice.address}-${invoice.taxID}`}
+                        value={`${invoice.customerName}+${invoice.address}+${invoice.taxID}`}
+                      >
+                        {invoice.customerName}
                       </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item 
+                  label="Tax ID" 
+                  name="Tax"
+                  style={{ color: "#657589" }}
+                  rules={[{ required: true }]}
+                >
+                  <Input 
+                    style={{ height: 40, width: "100%" }}
+                    placeholder="ข้อมูลเลขภาษี"
+                    value={selectedAccount?.taxID || "-"} 
+                    disabled 
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
-                <Col span={7}>
-                  <Form.Item
-                    id="SKU_Name"
-                    label={
-                      <span style={{ color: "#657589" }}>กรอก SKU Name:</span>
-                    }
-                    name="SKU_Name"
-                    // rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
-                  >
-                    <Select
-                      showSearch
-                      style={{ width: "100%", height: "40px" }}
-                      dropdownStyle={{ minWidth: 300 }}
-                      listHeight={160}
-                      placeholder="Search by Product Name"
-                      value={selectedName} // ใช้ค่าที่เลือก
-                      onSearch={handleSearchNameAlias} // ใช้สำหรับค้นหา Name Alias
-                      onChange={handleNameChange} // เมื่อเลือก Name Alias
-                      loading={loading}
-                      virtual // ทำให้ค้นหาไวขึ้น
-                    >
-                      {nameOptions.map((option) => (
-                        <Option 
-                          key={`${option.nameAlias}-${option.size}`} 
-                          value={`${option.nameAlias}+${option.size}`}
-                        >
-                          {option.nameAlias}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={4}>
-                  <Form.Item
-                    id="qty"
-                    label={<span style={{ color: "#657589" }}>QTY:</span>}
-                    name="QTY"
-                    // rules={[{ required: true, message: "กรุณากรอก QTY" }]}
-                  >
-                    <InputNumber
-                      min={1}
-                      max={100}
-                      value={qty}
-                      onChange={(value) => setQty(value)}
-                      style={{
-                        width: "100%",
-                        height: "40px",
-                        lineHeight: "40px",
-                      }}
-                    />
-                  </Form.Item>
-                </Col>
+            <Row gutter={16} style={{ marginTop: "10px" }}>
+              <Col span={18}>
+                <Form.Item
+                  label="Invoice Address"
+                  name="Address"
+                  style={{ color: "#657589" }}
+                  rules={[{ required: true }]}
+                  // rules={[{ required: true }]}
+                >
+                  <Input
+                    style={{ width: "100%", height: "40px"}}
+                    placeholder="ข้อมูลที่อยู่ลูกค้า"
+                    value={selectedAccount?.address || "-"} 
+                    disabled 
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Button
+                  id="NewInvoiceAddress"
+                  type="primary"
+                  onClick={handleOpen}
+                  style={{ width: "100%", height: "40px", marginTop: "30px" }}
+                >
+                  New invoice address
+                </Button>
+              </Col>
+            </Row>
 
-                <Col span={4}>
-                  <Form.Item
-                    id="price"
-                    label={<span style={{ color: "#657589" }}>Price:</span>}
-                    name="Price"
-                    // rules={[{ required: true, message: "กรุณากรอก Price" }]}
+            <Divider
+              style={{ color: "#657589", fontSize: "22px", margin: 30 }}
+              orientation="left"
+            > 
+              {" "}
+              SKU information
+            </Divider>
+            <Row gutter={16} style={{ marginTop: "10px", width: "100%", justifyContent: "center"}}>
+              <Col span={7}>
+                <Form.Item
+                  id="SKU"
+                  label={<span style={{ color: "#657589" }}>รหัสสินค้า</span>}
+                  name="SKU"
+                  // rules={[{ required: true, message: "กรุณาเลือก/ค้นหา รหัสสินค้า (SKU)" }]}
+                >
+                  <Select
+                    showSearch
+                    style={{ width: "100%", height: "40px" }}
+                    dropdownStyle={{ minWidth: 200 }}
+                    listHeight={160}
+                    placeholder="Search by SKU"
+                    value={selectedSKU} // ใช้ค่าที่เลือก
+                    onSearch={handleSearchSKU} // ใช้สำหรับค้นหา SKU
+                    onChange={handleSKUChange} // เมื่อเลือก SKU
+                    loading={loading}
+                    virtual
                   >
-                    <InputNumber
-                      min={1}
-                      max={100000}
-                      value={price}
-                      onChange={(value) => setPrice(value)}
-                      step={0.01}
-                      style={{
-                        width: "100%",
-                        height: "40px",
-                        lineHeight: "40px",
-                      }}
-                    />
-                  </Form.Item>
-                </Col>
+                    {skuOptions.map((option) => (
+                      <Option 
+                        key={`${option.sku}-${option.size}`} 
+                        value={option.sku}
+                      >
+                        {option.sku}
+                    </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
 
-                <Col span={3}>
-                  <Button
-                    id="add"
-                    type="primary"
-                    style={{ width: "100%", height: "40px", marginTop: 30 }}
-                    onClick={handleAdd} // เรียกใช้ฟังก์ชัน handleAdd
+              <Col span={7}>
+                <Form.Item
+                  id="SKU_Name"
+                  label={
+                    <span style={{ color: "#657589" }}>ชื่อสินค้า</span>
+                  }
+                  name="SKU_Name"
+                  // rules={[{ required: true, message: "กรุณาเลือก SKU Name" }]}
+                >
+                  <Select
+                    showSearch
+                    style={{ width: "100%", height: "40px" }}
+                    dropdownStyle={{ minWidth: 300 }}
+                    listHeight={160}
+                    placeholder="Search by Product Name"
+                    value={selectedName} // ใช้ค่าที่เลือก
+                    onSearch={handleSearchNameAlias} // ใช้สำหรับค้นหา Name Alias
+                    onChange={handleNameChange} // เมื่อเลือก Name Alias
+                    loading={loading}
+                    virtual 
                   >
-                    <PlusCircleOutlined />
-                    Add
-                  </Button>
-                </Col>
-              </Row>
-            </div>
+                    {nameOptions.map((option) => (
+                      <Option 
+                        key={`${option.nameAlias}-${option.size}`} 
+                        value={`${option.nameAlias}+${option.size}`}
+                      >
+                        {option.nameAlias}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16} style={{ marginTop: "10px", width: "100%", justifyContent: "center" }}>
+              <Col span={4}>
+                <Form.Item
+                  id="qty"
+                  label={<span style={{ color: "#657589" }}>จำนวนเริ่มต้น</span>}
+                  name="QTY"
+                  // rules={[{ required: true, message: "กรุณากรอก QTY" }]}
+                >
+                  <InputNumber
+                    min={1}
+                    max={100}
+                    value={qty}
+                    onChange={(value) => setQty(value)}
+                    style={{
+                      width: "100%",
+                      height: "40px",
+                      lineHeight: "40px",
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  id="returnQTY"
+                  label={<span style={{ color: "#657589" }}>จำนวนที่คืน</span>}
+                  name="ReturnQTY"
+                  // rules={[{ required: true, message: "กรุณากรอก QTY" }]}
+                >
+                  <InputNumber
+                    min={1}
+                    max={100}
+                    value={returnQty}
+                    onChange={(value) => setReturnQty(value)}
+                    style={{
+                      width: "100%",
+                      height: "40px",
+                      lineHeight: "40px",
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  id="pricePerUnit"
+                  label={<span style={{ color: "#657589" }}>ราคาต่อหน่วย</span>}
+                  name="PricePerUnit"
+                  // rules={[{ required: true, message: "กรุณากรอก Price" }]}
+                >
+                  <InputNumber
+                    min={1}
+                    max={100000}
+                    value={pricePerUnit}
+                    onChange={(value) => setPricePerUnit(value)}
+                    step={0.01}
+                    style={{
+                      width: "100%",
+                      height: "40px",
+                      lineHeight: "40px",
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Form.Item
+                  id="price"
+                  label={<span style={{ color: "#657589" }}>ราคารวม</span>}
+                  name="Price"
+                  // rules={[{ required: true, message: "กรุณากรอก Price" }]}
+                >
+                  <InputNumber
+                    min={1}
+                    max={100000}
+                    value={price}
+                    // onChange={(value) => setPrice(value)}
+                    step={0.01}
+                    disabled
+                    style={{
+                      width: "100%",
+                      height: "40px",
+                      lineHeight: "40px",
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={4}>
+                <Button
+                  id="add"
+                  type="primary"
+                  style={{ width: "100%", height: "40px", marginTop: 30 }}
+                  onClick={handleAdd} 
+                >
+                  <PlusCircleOutlined />
+                  Add
+                </Button>
+              </Col>
+            </Row>
+          </div>
           </Form>
+
           <Modal
             open={open}
             onClose={handleClose}
@@ -1066,16 +1266,17 @@ const CreateTradeReturn = () => {
                   <Form.Item
                     id="Invoice Name"
                     label={
-                      <span style={{ color: "#657589" }}>Invoice name:</span>
+                      <span style={{ color: "#657589" }}>Invoice name</span>
                     }
                     name="Invoice_Name"
                     rules={[{ required: true, message: "Please Select Invoice name" }]}
                   >
-                  <Input
-                    style={{ width: "400px", height: "40px" }}
-                    value={form.getFieldValue("Invoice_Name")} // ใช้ค่าจาก form
-                    disabled
-                  />
+                    <Input
+                      style={{ width: "400px", height: "40px" }}
+                      placeholder="ข้อมูลลูกค้าตามใบสั่งซื้อ"
+                      value={form.getFieldValue("Invoice_Name")} // ใช้ค่าจาก form
+                      disabled
+                    />
                   </Form.Item>
                 </Col>
 
@@ -1083,7 +1284,7 @@ const CreateTradeReturn = () => {
                   <Form.Item
                     id="้houseno"
                     label={
-                      <span style={{ color: "#657589" }}>บ้านเลขที่:</span>
+                      <span style={{ color: "#657589" }}>บ้านเลขที่</span>
                     }
                     name="HouseNo"
                     rules={[{ required: true, message: "Please Input House no." }]}
@@ -1099,11 +1300,11 @@ const CreateTradeReturn = () => {
                 <Col>
                   <Form.Item
                     id="SelectProvince"
-                    label={<span style={{ color: "#657589" }}>จังหวัด:</span>}
+                    label={<span style={{ color: "#657589" }}>จังหวัด</span>}
                     name="Province"
                     rules={[{ required: true, message: "Please Select Province" }]}
                   >
-                  <Select
+                    <Select
                       showSearch
                       placeholder="Select Province"
                       value={selecteProvince}
@@ -1120,7 +1321,7 @@ const CreateTradeReturn = () => {
                           if (!option) return false;
                           return option.label.toLowerCase().includes(input.toLowerCase());
                       }}
-                  />
+                    />
                   </Form.Item>
                 </Col>
 
@@ -1128,27 +1329,27 @@ const CreateTradeReturn = () => {
                 <Col>
                   <Form.Item
                     id="SelectDistrict"
-                    label={<span style={{ color: "#657589" }}>เขต:</span>}
+                    label={<span style={{ color: "#657589" }}>เขต</span>}
                     name="District"
                     rules={[{ required: true, message: "Please Select District" }]}
                   >
                     <Select
-                        showSearch
-                        placeholder="Select District"
-                        value={selectedDistrict}
-                        onChange={handleDistrictChange}
-                        loading={loading}
-                        listHeight={160}
-                        virtual
-                        style={{ width: "400px", height: "40px" }}
-                        options={districts.map(d => ({
-                            label: d.districtTH,
-                            value: d.districtCode.toString()
-                        }))}
-                        filterOption={(input, option) => {
-                            if (!option) return false;
-                            return option.label.toLowerCase().includes(input.toLowerCase());
-                        }}
+                      showSearch
+                      placeholder="Select District"
+                      value={selectedDistrict}
+                      onChange={handleDistrictChange}
+                      loading={loading}
+                      listHeight={160}
+                      virtual
+                      style={{ width: "400px", height: "40px" }}
+                      options={districts.map(d => ({
+                          label: d.districtTH,
+                          value: d.districtCode.toString()
+                      }))}
+                      filterOption={(input, option) => {
+                          if (!option) return false;
+                          return option.label.toLowerCase().includes(input.toLowerCase());
+                      }}
                     />
 
                   </Form.Item>
@@ -1158,27 +1359,27 @@ const CreateTradeReturn = () => {
                 <Col>
                   <Form.Item
                     id="SelectSubDistrict"
-                    label={<span style={{ color: "#657589" }}>แขวง:</span>}
+                    label={<span style={{ color: "#657589" }}>แขวง</span>}
                     name="SubDistrict"
                     rules={[{ required: true, message: "Please Select Sub-district" }]}
                   >
                       <Select
-                          showSearch
-                          placeholder="Select Sub-District"
-                          value={selectedSubDistrict}
-                          onChange={handleSubDistrictChange}
-                          loading={loading}
-                          listHeight={160}
-                          virtual
-                          style={{ width: "400px", height: "40px" }}
-                          options={subDistricts.map(s => ({
-                              label: s.subdistrictTH,
-                              value: s.subdistrictCode.toString()
-                          }))}
-                          filterOption={(input, option) => {
-                              if (!option) return false;
-                              return option.label.toLowerCase().includes(input.toLowerCase());
-                          }}
+                        showSearch
+                        placeholder="Select Sub-District"
+                        value={selectedSubDistrict}
+                        onChange={handleSubDistrictChange}
+                        loading={loading}
+                        listHeight={160}
+                        virtual
+                        style={{ width: "400px", height: "40px" }}
+                        options={subDistricts.map(s => ({
+                            label: s.subdistrictTH,
+                            value: s.subdistrictCode.toString()
+                        }))}
+                        filterOption={(input, option) => {
+                            if (!option) return false;
+                            return option.label.toLowerCase().includes(input.toLowerCase());
+                        }}
                       />
                   </Form.Item>
                 </Col>
@@ -1188,16 +1389,17 @@ const CreateTradeReturn = () => {
                   <Form.Item
                     id="PostalCode"
                     label={
-                      <span style={{ color: "#657589" }}>รหัสไปรษณีย์:</span>
+                      <span style={{ color: "#657589" }}>รหัสไปรษณีย์</span>
                     }
                     name="PostalCode"
                     rules={[{ required: true, message: "Please Select Postcode" }]}
                   >
-                  <Input
-                    style={{ width: "400px", height: "40px" }}
-                    value={postalCode.length > 0 ? postalCode[0].zipCode : ""}
-                    disabled
-                  />
+                    <Input
+                      style={{ width: "400px", height: "40px" }}
+                      placeholder="ข้อมูลเลขไปรษณีย์"
+                      value={postalCode.length > 0 ? postalCode[0].zipCode : ""}
+                      disabled
+                    />
                   </Form.Item>
                 </Col>
 
@@ -1216,7 +1418,7 @@ const CreateTradeReturn = () => {
             </Form>
           </Modal>
 
-          <Row gutter={20} style={{ marginBottom: 20, marginLeft: 20 }}>
+          <Row gutter={16} style={{ marginBottom: 20 }}>
             <Col>
               <Button id=" Download Template" onClick={handleDownloadTemplate}>
                 <img
@@ -1244,37 +1446,168 @@ const CreateTradeReturn = () => {
               </Upload>
             </Col>
           </Row>
+        <div >
+          <Table
+             components={{
+                header: {
+                    cell: (props: React.HTMLAttributes<HTMLElement>) => (
+                      <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B', padding: "12px", textAlign: 'center' }} />
+                    ),
+                  },
+                  body: {
+                      cell: (props: React.HTMLAttributes<HTMLElement>) => (
+                        <td {...props} style={{ padding: "12px", textAlign: 'center'}} />
+                      ),
+                  }
+            }}
+            dataSource={dataSource.slice((currentPage - 1) * pageSize, currentPage * pageSize)} // แสดงเฉพาะจำนวนรายการที่เลือก
+            columns={columns}
+            rowKey="key"
+            pagination={false} // ปิด pagination ใน Table
+            style={{
+              width: "100%",
+              tableLayout: "auto",
+              border: "1px solid #ddd",
+              borderRadius: "8px",
+            }}
+            scroll={{ x: "max-content" }}
+            bordered={false}
+          />
+        
+        {showPagination && (
           <div>
-            <Table
-              dataSource={dataSource}
-              columns={columns}
-              rowKey="key"
-              pagination={false} // Disable pagination if necessary
-              style={{ width: "100%", tableLayout: "fixed" }} // Ensure the table takes full width and is fixed layout
-              scroll={{ x: "max-content" }}
-            />
-          </div>
+            {/* showTotal แสดงอยู่เหนือ showPagination */}
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 20 }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>
+                    ทั้งหมด <span style={{ color: '#007bff' }}>{dataSource.length}</span> รายการ
+                </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 20, gap: 10 }}>
+              {/* ปุ่มไปหน้าแรก */}
+              <button
+                  onClick={() => handlePageChange(1, pageSize)}
+                  disabled={currentPage === 1}
+                  style={{
+                      fontSize: "14px",
+                      // fontWeight: "bold",
+                      padding: "4px 10px",
+                      border: "1px solid #ddd",
+                      borderRadius: "6px",
+                      background: currentPage === 1 ? "#f5f5f5" : "#fff",
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  }}
+              >
+                  {"<<"}
+              </button>
+
+              {/* ปุ่มไปหน้าก่อน */}
+              <button
+                  onClick={() => handlePageChange(currentPage - 1, pageSize)}
+                  disabled={currentPage === 1}
+                  style={{
+                      fontSize: "14px",
+                      // fontWeight: "bold",
+                      padding: "4px 10px",
+                      border: "1px solid #ddd",
+                      borderRadius: "6px",
+                      background: currentPage === 1 ? "#f5f5f5" : "#fff",
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  }}
+              >
+                  {"<"}
+              </button>
+
+              {/* แสดงเลขหน้าแบบ [ 1 / 9 ] */}
+              <span style={{ fontSize: "14px", fontWeight: 'bold' }}>
+                  [ {currentPage} to {Math.ceil(dataSource.length / pageSize)} ]
+              </span>
+
+              {/* ปุ่มไปหน้าถัดไป */}
+              <button
+                  onClick={() => handlePageChange(currentPage + 1, pageSize)}
+                  disabled={currentPage === Math.ceil(dataSource.length / pageSize)}
+                  style={{
+                      fontSize: "14px",
+                      // fontWeight: "bold",
+                      padding: "4px 10px",
+                      border: "1px solid #ddd",
+                      borderRadius: "6px",
+                      background: currentPage === Math.ceil(dataSource.length / pageSize) ? "#f5f5f5" : "#fff",
+                      cursor: currentPage === Math.ceil(dataSource.length / pageSize) ? "not-allowed" : "pointer",
+                  }}
+              >
+                  {">"}
+              </button>
+
+              {/* ปุ่มไปหน้าสุดท้าย */}
+              <button
+                  onClick={() => handlePageChange(Math.ceil(dataSource.length / pageSize), pageSize)}
+                  disabled={currentPage === Math.ceil(dataSource.length / pageSize)}
+                  style={{
+                      fontSize: "14px",
+                      // fontWeight: "bold",
+                      padding: "4px 10px",
+                      border: "1px solid #ddd",
+                      borderRadius: "6px",
+                      background: currentPage === Math.ceil(dataSource.length / pageSize) ? "#f5f5f5" : "#fff",
+                      cursor: currentPage === Math.ceil(dataSource.length / pageSize) ? "not-allowed" : "pointer",
+                  }}
+              >
+                  {">>"}
+              </button>
+
+              {/* เลือกจำนวนรายการต่อหน้า */}
+              <select
+                  value={pageSize}
+                  onChange={(e) => handlePageChange(1, Number(e.target.value))}
+                  className="paginate"
+                  style={{
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      padding: "4px 10px",
+                      border: "1px solid #ddd",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                  }}
+              >
+                  <option value="5">5 รายการ</option>
+                  <option value="10">10 รายการ</option>
+                  <option value="20">20 รายการ</option>
+              </select>
+            </div>
+            </div>
+          )}
+        </div>
           <Row justify="center" gutter={16}>
-            <Popconfirm
-              id="popconfirmSubmit"
-              title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
-              onConfirm={handleSubmit} // เรียกใช้ฟังก์ชัน handleSubmit เมื่อกดยืนยัน
-              okText="ใช่"
-              cancelText="ไม่"
-            >
               <Button
                 id="Submit"
-                style={{
-                  color: "#fff",
-                  backgroundColor: "#14C11B",
-                  width: 100,
-                  height: 40,
-                  margin: 20,
-                }}
+                onClick={showModal}
+                className="submit-trade"
               >
                 Submit
               </Button>
-            </Popconfirm>
+              <Modal
+                title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
+                open={isModalVisible}
+                onOk={handleOk}
+                onCancel={handleCancel} 
+                okText="ใช่"
+                cancelText="ไม่"
+                centered
+                style={{ textAlign: 'center'}}
+                footer={
+                  <div style={{ textAlign: "center" }}> {/* ทำให้ปุ่มอยู่ตรงกลาง */}
+                    <Button key="ok" type="default" onClick={handleOk} style={{ marginRight: 8 }} className="button-yes">
+                      Yes
+                    </Button>
+                    <Button key="cancel" type="dashed" onClick={handleCancel} className="button-no">
+                      No
+                    </Button>
+                  </div>
+                }
+
+              >
+              </Modal>
           </Row>
         </Layout.Content>
       </Layout>

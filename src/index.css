@@ -53,3 +53,28 @@ code {
 .white-row {
 	background-color: #ffffff; 
 }
+
+.custom-steps .ant-steps-item-process .ant-steps-item-icon {
+	background-color: #ffb246 !important;  
+	border-color: #ffb246 !important;
+  }
+  
+.custom-steps .ant-steps-item-finish .ant-steps-item-icon {
+	background-color: #83ecbb !important;  
+	border-color: #83ecbb !important;
+  }
+
+.custom-steps .ant-steps-item-finish .ant-steps-item-icon > .ant-steps-icon {
+	color: #2f8132 !important;  /* สีเขียว */
+}
+  
+  
+.custom-steps .ant-steps-item-wait .ant-steps-item-icon {
+	background-color: #a3e5ff !important;  /* สีของ Step ที่รอ */
+	border-color: #a3e5ff !important;
+}
+
+/* เปลี่ยนสีเครื่องหมายถูก ✔ ด้านใน Step ที่เสร็จแล้ว */
+.custom-steps .ant-steps-item-wait .ant-steps-item-icon > .ant-steps-icon {
+	color: #1b0d94 !important;  /* สีเขียว */
+}

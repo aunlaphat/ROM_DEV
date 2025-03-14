@@ -60,7 +60,10 @@
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "@typescript-eslint/no-unused-vars": "off"
+    }
   },
   "browserslist": {
     "production": [
@@ -78,7 +81,7 @@
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@iconify/react": "^5.0.2",
     "@types/jwt-decode": "^2.2.1",
-    "@types/lodash": "^4.17.16",
+    "@types/lodash": "^4.17.15",
     "@types/react-highlight-words": "^0.20.0",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2"

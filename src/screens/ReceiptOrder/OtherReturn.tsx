@@ -6,33 +6,11 @@ import { QrReader, QrReaderProps } from 'react-qr-reader';
 import api from "../../utils/axios/axiosInstance"; 
 import { useSelector } from 'react-redux';
 import { RootState } from "../../redux/types";
+import { CustomQrReaderProps, ReceiptOrder, ReceiptOrderLine } from '../../types/types';
 
-// เก็บในไฟล์ type.ts ทำเป็น export แทน
-interface CustomQrReaderProps extends QrReaderProps {
-    onScan: (result: string | null) => void;
-    onError: (error: any) => void;
-}
-
-interface Order {
-    orderNo: string;
-    trackingNo: string;
-    data: OrderLine[];
-}
-
-interface OrderLine {
-    key: string;
-    sku: string;
-    itemName: string;
-    qty: number;
-    receivedQty: number;
-    price: string;
-    image: string | null;
-    filePath: string;
-}
-
-const SaleReturn: React.FC = () => {
+const OtherReturn: React.FC = () => {
     const [orderOptions, setOrderOptions] = useState<{ value: string; label: string }[]>([]);
-    const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null); // ประกาศ selectedOrderNo
+    const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null); 
    
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [showScanner, setShowScanner] = useState<boolean>(false);
@@ -50,7 +28,7 @@ const SaleReturn: React.FC = () => {
         step2: null,
     });
     const webcamRef = useRef<Webcam>(null);
-    const [data, setData] = useState<OrderLine[]>([]);
+    const [data, setData] = useState<ReceiptOrderLine[]>([]);
     
     const onChange = (current: number) => {
         setCurrentStep(current);
@@ -185,7 +163,7 @@ const SaleReturn: React.FC = () => {
             id:'Return' ,
             dataIndex: 'Return',
             key: 'Return',
-            render: (_: any, record: OrderLine) => {
+            render: (_: any, record: ReceiptOrderLine) => {
                 // Check if the current record has receivedQty equal to qty
                 const isConfirmed = record.receivedQty === record.qty;
                 return isConfirmed ? (
@@ -204,7 +182,7 @@ const SaleReturn: React.FC = () => {
             id:'Image',
             dataIndex: 'image',
             key: 'image',
-            render: (_: any, record: OrderLine) => {
+            render: (_: any, record: ReceiptOrderLine) => {
                 // ตรวจสอบว่า record.image มีค่าหรือไม่
                 const stepImage = images[`step${parseInt(record.key, 10)+2}`]; // ปรับให้ตรงกับ key ของ record
                 return stepImage ? (
@@ -226,7 +204,7 @@ const SaleReturn: React.FC = () => {
         title: 'Action',
         id:'Action',
         key: 'action',
-        render: (_: any, record: OrderLine) => (
+        render: (_: any, record: ReceiptOrderLine) => (
           <>
             <Button
               style={{
@@ -777,5 +755,5 @@ const SaleReturn: React.FC = () => {
         );
     };
     
-    export default SaleReturn;
+    export default OtherReturn;
     
