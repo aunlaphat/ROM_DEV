@@ -787,7 +787,7 @@ const handleUpload = (file: File) => {
           color: "DodgerBlue",
         }}
       >
-        Create Trade Return
+        สร้างรายการคืนจากหน้าสาขา (TRADE)
       </div>
       <Layout>
         <Layout.Content

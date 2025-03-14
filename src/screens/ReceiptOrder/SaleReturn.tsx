@@ -10,13 +10,14 @@ import { useLocation } from 'react-router-dom';
 import { CustomQrReaderProps, ReceiptOrder, ReceiptOrderLine } from '../../types/types';
 import {FETCHORDERTRACK, SEARCHORDERTRACK, UPLOADORDER, COMFIRMRECEIPT} from '../../services/path';
 
-// ปรับ ui หน้าค้นหาหน้าแรก ไม่ต้องแสดง select ให้ค้นหาเองเลย ค้นหาได้ทั้งเลข Order + Track
-// เพิ่มฟีเจอคัดลอก sku ให้ก้อปไปรับเข้าง่ายๆ หรือ เพิ่มปุ่มยืนยันรับเข้าให้แต่ละ sku + สแกนรับเข้าได้เหมือนเดิม
-// เพิ่ม view ใต้ภาพดูภาพเต็มได้
-// ปรับ button ใน action
+// * = ทำแล้ว
+// ปรับ ui หน้าค้นหาหน้าแรก ไม่ต้องแสดง select ให้ค้นหาเองเลย ค้นหาได้ทั้งเลข Order + Track 
+// เพิ่มฟีเจอคัดลอก sku ให้ก้อปไปรับเข้าง่ายๆ หรือ เพิ่มปุ่มยืนยันรับเข้าให้แต่ละ sku + สแกนรับเข้าได้เหมือนเดิม *
+// เพิ่ม view ใต้ภาพดูภาพเต็มได้ *
+// ปรับ button ใน action *
 // ยังเกิดบัคถ่าย sku ภาพสุดท้ายแล้วบัคให้ถ่ายอีกรอบ แต่มันเก็บค่าภาพแรกที่ถ่ายไว้ถูกแล้ว
-// จำนวนสินค้าที่คืนต้องปรับเป็น หน้าคลังกรอกเองว่าสินค้าที่พบหน้าคลังมีมาเท่าไร เพิ่มฟิลด์ WHQTY ในฐานข้อมูลเพิ่ม
-// ยังไม่ได้เช็คบัค
+// จำนวนสินค้าที่คืนต้องปรับเป็น หน้าคลังกรอกเองว่าสินค้าที่พบหน้าคลังมีมาเท่าไร เพิ่มฟิลด์ WHQTY ในฐานข้อมูลเพิ่ม 
+// ยังไม่ได้เช็คบัค *
 const SaleReturn: React.FC = () => {
     const [orderOptions, setOrderOptions] = useState<{ value: string; label: string }[]>([]);
     const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null); 
@@ -95,8 +96,8 @@ const SaleReturn: React.FC = () => {
             const response = await api.get(SEARCHORDERTRACK(value));
           // ตรวจสอบว่ามีข้อมูล orderLines หรือไม่
           if (response.data && response.data.data && response.data.data.length > 0 && response.data.data[0].orderLines) {
-            // กรองข้อมูล orderLines ที่มี SKU ขึ้นต้นด้วย "G"
-            const filteredOrderLines = response.data.data[0].orderLines.filter((item: any) => item.sku.startsWith('G'));
+            // กรองข้อมูล orderLines ที่ไม่ใช่ SKU ขึ้นต้นด้วย "R" ที่เป็นส่วนลดแสดง
+            const filteredOrderLines = response.data.data[0].orderLines.filter((item: any) => !item.sku.startsWith('R'));
             const orderData = filteredOrderLines.map((item: any, index: number) => ({
                 key: `${index + 1}`,
                 sku: item.sku,

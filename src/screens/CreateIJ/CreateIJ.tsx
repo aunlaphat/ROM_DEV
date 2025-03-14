@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, notification, Form, Input, InputNumber, DatePicker, Button, Row, Col, Table, ConfigProvider, Layout, Select, Modal, message, Popconfirm, Divider, Tooltip } from 'antd';
 import moment from 'moment';
-import { DeleteOutlined, LeftOutlined, PlusCircleOutlined, QuestionCircleOutlined, UploadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, LeftOutlined, PlusCircleOutlined, QuestionCircleOutlined, UploadOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from "xlsx";
 import { Name } from 'ajv';
@@ -299,7 +299,7 @@ const IJPage: React.FC = () => {
     const columns = [
         { title: 'รหัสสินค้า', dataIndex: 'SKU', id:'SKU', key: 'SKU', },
         { title: 'ชื่อสินค้า', dataIndex: 'SKU_Name', id:'SKU_Name', key: 'SKU_Name', },
-        { title: 'จำนวนเริ่มต้น', dataIndex: 'QTY',id:'QTY', key: 'QTY',},
+        { title: 'จำนวนที่ยืม', dataIndex: 'QTY',id:'QTY', key: 'QTY',},
         { title: 'จำนวนที่คืน', dataIndex: 'QTY', id:'QTY', key: 'QTY',},
         { title: "คลังต้นทาง", id:'warehouse_form', dataIndex: "warehouse_form", key: "warehouse_form",
             render: (_: any, record: DataSourceItem) => (
@@ -361,24 +361,53 @@ const IJPage: React.FC = () => {
     ];
 
       const handleDownloadTemplate = () => {
+        const warehouseNameMap: { [key: number]: string } = warehouses.reduce((acc, warehouse) => {
+            acc[warehouse.WarehouseID] = warehouse.WarehouseName;
+            return acc;
+        }, {} as { [key: number]: string });
+
         const templateColumns = [
             { title: "ลำดับ", dataIndex: "key", key: "key" }, // เพิ่ม Column "ลำดับ"
-            ...columns.filter((col) => col.key), // เพิ่ม Column อื่นๆ
+            ...columns.filter((col) => col.key !== "Action"), // เพิ่ม Column อื่นๆ
         ];
         const ws = XLSX.utils.json_to_sheet([]);
         XLSX.utils.sheet_add_aoa(ws, [templateColumns.map((col) => col.title)]);
     
-        const mappedDataSource = dataSource.map((item) => {
+        const mappedDataSource = dataSource.map((item, index) => {
+             // Debugging: Log the values being passed
+             console.log(`warehouse_form: ${item.warehouse_form}, location_form: ${item.location_form}, warehouse_to: ${item.warehouse_to}`);
+
+             // Type guard: Check if warehouse_form, location_form, and warehouse_to are valid numbers
+             const getWarehouseName = (warehouseID: string | undefined): string => {
+                 if (warehouseID && !isNaN(Number(warehouseID))) {
+                     const warehouseName = warehouseNameMap[Number(warehouseID)];
+                     if (warehouseName) {
+                         return warehouseName;  // Return the warehouse name if found
+                     } else {
+                         console.warn(`No warehouse found for ID: ${warehouseID}`);
+                         return '';  // Return an empty string if no match found
+                     }
+                 }
+                 return '';  // Return empty string if the ID is invalid or undefined
+             };
+
             return {
-                key: item.key, // เพิ่ม key
+                key: index + 1, // เพิ่ม key
                 SKU: item.SKU,
                 Name: item.SKU_Name,
                 QTY: item.QTY,
                 ReturnQTY: item.ReturnQTY,
-                // PricePerUnit: item.PricePerUnit,
-                // Price: item.Price,
+                warehouse_form: getWarehouseName(item.warehouse_form), // Get warehouse name
+                location_form: item.location_form,
+                warehouse_to: getWarehouseName(item.warehouse_to), // Get warehouse name
             };
         });
+
+        // Ensure that 'key' values are not in scientific notation
+        const formattedData = mappedDataSource.map((item) => ({
+            ...item,
+            key: `${item.key}` // Convert the 'key' to string format
+        }));
     
         XLSX.utils.sheet_add_json(ws, mappedDataSource, { origin: "A2", skipHeader: true });
     
@@ -404,10 +433,11 @@ const IJPage: React.FC = () => {
                       key: index + 1,
                       SKU: row["รหัสสินค้า"] as string,
                       SKU_Name: row["ชื่อสินค้า"] as string,
-                      QTY: row["จำนวนเริ่มต้น"] as number,
+                      QTY: row["จำนวนที่ยืม"] as number,
                       ReturnQTY: row["จำนวนที่คืน"] as number,
-                    //   PricePerUnit: row["ราคาต่อหน่วย"] as number,
-                    //   Price: row["ราคารวม"] as number,
+                      warehouse_to: row["คลังปลายทาง"] as string, // Map warehouse_to
+                      location_form: row["ที่อยู่ต้นทาง"] as string,
+                      warehouse_form: row["คลังต้นทาง"] as string,
                   };
                   return dataItem;
               }).filter((item) => item.SKU && item.QTY);
@@ -491,7 +521,7 @@ const IJPage: React.FC = () => {
           console.log("Form Values:", values);
           console.log("dataSource:", dataSource); // เพิ่ม console.log ตรงนี้
             const orderData = {
-                // OrderNo: values.Order,
+                OrderNo: values.Order,
                 SoNo: values.IJ,
                 SrNo: String(values.IJ_Create),
                 ChannelID: 4, 
@@ -580,32 +610,45 @@ const IJPage: React.FC = () => {
                     }}
                 >
                 <div id="mainContent">
-                        <Button
-                         id="backButton"
-                            onClick={handleBack}
-                            style={{ background: '#98CEFF', color: '#fff' }}
-                        >
-                            <LeftOutlined style={{ color: '#fff', marginRight: 5 }} />
-                            Back
-                        </Button>
-
                         <Form
                         id="form"
                             form={form}
                             layout="vertical"
                             onValuesChange={onChange}
-                            style={{ padding: '20px', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                            style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                         >
                 
-                            <div id="formContainer" style={{ width: '100%', maxWidth: '800px' }}> {/* Adjust max-width here */}
+                            <div id="formContainer" style={{ width: '100%'}}> {/* Adjust max-width here */}
 
                                 <Divider style={{ color: '#657589', fontSize: '22px', marginTop: 30, marginBottom: 30 }} orientation="left"> IJ document Information </Divider>
                                 <Row gutter={16} >
+                                     <Col span={8}>
+                                        <Form.Item
+                                            id="Order"
+                                            label={
+                                                <span style={{ color: '#657589' }}>
+                                                Order Number &nbsp;
+                                                <Tooltip title="เลขที่ออเดอร์ ตัวอย่าง: 241215USC2YBX5">
+                                                    <QuestionCircleOutlined
+                                                    style={{ color: "#657589" }}
+                                                    />
+                                                </Tooltip>
+                                                </span>}
+                                            name="Order"
+                                            rules={[{ required: true, message: "กรุณากรอกเลข Order" }]}
+                                        >
+                                            <Input 
+                                            style={{ height: 40, width: "100%"}} 
+                                            placeholder="ตัวอย่าง 241215USC2YBX5" 
+                                            />
+                                        </Form.Item>
+                                    </Col>
                                     <Col span={8}>
                                         <Form.Item
                                           id="ijDocumentInput"
-                                            label={<span style={{ color: '#657589' }}>กรอกเอกสารอ้างอิง IJ (ไม่บังคับ):</span>}
+                                          label={<span style={{ color: '#657589' }}>เลขที่เอกสารอ้างอิง IJ</span>}
                                             name="IJ"
+                                            rules={[{ required: true, message: 'กรุณากรอกเลขที่เอกสารอ้างอิง' }]}
 
                                         >
                                             <Input id="Doc" style={{ width: '100%', height: '40px', }} placeholder="กรอกเอกสารอ้างอิง" onChange={handleRemarkChange} disabled={formDisabled} />
@@ -616,8 +659,8 @@ const IJPage: React.FC = () => {
                                          id="ijCreateInput"
                                             label={
                                                 <span style={{ color: '#657589' }}>
-                                                    IJ Create:&nbsp;
-                                                    <Tooltip title="กด create IJ ระบบจะส่งคำสั่งสร้าง เข้า AX แล้วจะได้เลข IJ">
+                                                    IJ Create &nbsp;
+                                                    <Tooltip title="เลขสุ่มจาก AX ได้รับหลังกดยืนยันการส่งข้อมูล">
                                                         <QuestionCircleOutlined style={{ color: '#657589' }} />
                                                     </Tooltip>
                                                 </span>
@@ -627,22 +670,12 @@ const IJPage: React.FC = () => {
                                             <Input  style={{ width: '100%', height: '40px', }} placeholder="IJ Create" disabled={true} />
                                         </Form.Item>
                                     </Col>
-                                    <Col span={8}>
-                                        <Form.Item
-                                            id="remarkInput"
-                                            label={<span style={{ color: '#657589' }}>Remark (ไม่บังคับ):</span>}
-                                            name="Remark"
-                                        >
-                                            <Input style={{ width: '100%', height: '40px', }} showCount maxLength={200} onChange={handleIJChange} disabled={formDisabled} />
-                                        </Form.Item>
-                                    </Col>
                                 </Row>
                                 <Row gutter={16} >
-                                    <Divider style={{ color: '#657589', fontSize: '22px', marginTop: 30, marginBottom: 30 }} orientation="left"> Transport Information </Divider>
                                     <Col span={8}>
                                         <Form.Item
                                         id="Date"
-                                            label={<span style={{ color: '#657589' }}>วันที่คืน:</span>}
+                                            label={<span style={{ color: '#657589' }}>วันที่คืน</span>}
                                             name="Date"
                                             rules={[{ required: true, message: 'กรุณาเลือกวันที่คืน' }]}
                                         >
@@ -654,7 +687,7 @@ const IJPage: React.FC = () => {
                                          id="Tracking"
                                             label={
                                                 <span style={{ color: '#657589' }}>
-                                                    กรอกเลข Tracking:&nbsp;
+                                                    เลขพัสดุ &nbsp;
                                                     <Tooltip title="เลขพัสดุจากขนส่ง">
                                                         <QuestionCircleOutlined style={{ color: '#657589' }} />
                                                     </Tooltip>
@@ -696,6 +729,24 @@ const IJPage: React.FC = () => {
                                     )}
                                     </Form.Item>
                                 </Col>
+                                </Row>
+                                <Row gutter={16} >
+                                    <Col span={16} >
+                                        <Form.Item
+                                            id="remarkInput"
+                                            label={
+                                                <span style={{ color: '#657589' }}>
+                                                    เหตุผลการคืน
+                                                    <Tooltip title="ไม่บังคับ">
+                                                        <InfoCircleOutlined style={{ color: '#657589', marginLeft: '8px' }} />
+                                                    </Tooltip>
+                                                </span>
+                                            }
+                                            name="Remark"
+                                        >
+                                            <Input style={{ width: '100%', height: '40px', }} showCount maxLength={200} onChange={handleIJChange} disabled={formDisabled} />
+                                        </Form.Item>
+                                    </Col>
                                 </Row>
                                    <Divider
                                      style={{ color: "#657589", fontSize: "22px", margin: 30 }}
@@ -773,7 +824,7 @@ const IJPage: React.FC = () => {
                                      <Col span={4}>
                                        <Form.Item
                                          id="qty"
-                                         label={<span style={{ color: "#657589" }}>จำนวนเริ่มต้น</span>}
+                                         label={<span style={{ color: "#657589" }}>จำนวนที่ยืม</span>}
                                          name="QTY"
                                          // rules={[{ required: true, message: "กรุณากรอก QTY" }]}
                                        >

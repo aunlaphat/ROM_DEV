@@ -410,7 +410,7 @@ const CreateBlind = () => {
     return (
         <ConfigProvider>
             <div style={{ marginLeft: "28px", fontSize: "25px", fontWeight: "bold", color: "DodgerBlue" }}>
-                Create Build Return
+                สร้างรายการคืนจากหน้าคลังสินค้า
             </div>
             <Layout>
                 <Layout.Content
