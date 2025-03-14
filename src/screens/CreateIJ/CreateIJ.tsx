@@ -949,6 +949,18 @@ const IJPage: React.FC = () => {
 
                 <div>
                         <Table
+                           components={{
+                                header: {
+                                    cell: (props: React.HTMLAttributes<HTMLElement>) => (
+                                    <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B', padding: "12px", textAlign: 'center' }} />
+                                    ),
+                                },
+                                body: {
+                                    cell: (props: React.HTMLAttributes<HTMLElement>) => (
+                                        <td {...props} style={{ padding: "12px", textAlign: 'center'}} />
+                                    ),
+                                }
+                            }}
                             dataSource={dataSource.slice((currentPage - 1) * pageSize, currentPage * pageSize)} // แสดงเฉพาะจำนวนรายการที่เลือก
                             columns={columns}
                             rowKey="key"

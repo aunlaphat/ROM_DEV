@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Steps, Col, ConfigProvider, Form, Layout, Row, Select, Button, Table, Modal, Input, notification, Divider, Popconfirm, message, Tooltip } from 'antd';
 import Webcam from 'react-webcam';
-import { CameraOutlined, EyeOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined, CopyOutlined } from '@ant-design/icons';
+import { SearchOutlined, CameraOutlined, EyeOutlined, RedoOutlined, DeleteOutlined, ScanOutlined, CheckCircleOutlined, WarningOutlined, CheckOutlined, CloseOutlined, CopyOutlined } from '@ant-design/icons';
 import { QrReader, QrReaderProps } from 'react-qr-reader';
 import api from "../../utils/axios/axiosInstance"; 
 import { useSelector } from 'react-redux';
@@ -23,6 +23,7 @@ const SaleReturn: React.FC = () => {
     const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null); 
     const [skuInput, setSkuInput] = useState<string>('');
     const [skuName, setSkuName] = useState<string | null>(null);
+    const [searchCompleted, setSearchCompleted] = useState(false); 
    
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [showScanner, setShowScanner] = useState<boolean>(false);
@@ -52,6 +53,36 @@ const SaleReturn: React.FC = () => {
     const auth = useSelector((state: RootState) => state.auth);
     const userID = auth?.user?.userID;
     const token = localStorage.getItem("access_token");
+
+     const [isModalVisible, setIsModalVisible] = useState(false);
+    
+      const [currentPage, setCurrentPage] = useState<number>(1);
+      const [pageSize, setPageSize] = useState<number>(5);
+    
+      // ฟังก์ชันสำหรับเปลี่ยนหน้า
+      const handlePageChange = (page: number, pageSize: number) => {
+        setCurrentPage(page);
+        setPageSize(pageSize); // ถ้าผู้ใช้เลือกจำนวนรายการต่อหน้าใหม่
+      };
+    
+      // คำนวณจำนวนหน้าทั้งหมดจากจำนวนรายการทั้งหมด
+      const totalPages = Math.ceil(data.length / pageSize);
+    
+      // ตรวจสอบว่า pagination ควรแสดงหรือไม่ (ให้แสดงเสมอแม้ว่า dataSource จะมีน้อยกว่า pageSize)
+      const showPagination = data.length > 0;
+    
+      const showModal = () => {
+          setIsModalVisible(true);
+      };
+    
+      const handleOk = () => {
+          setIsModalVisible(false);
+          handleSubmit(); 
+      };
+    
+      const handleCancel = () => {
+          setIsModalVisible(false);
+      };
 
     const location = useLocation();
     // Retrieve the orderNo from the location state
@@ -108,6 +139,8 @@ const SaleReturn: React.FC = () => {
                 image: null,
             }));
             setData(orderData);
+            setSearchCompleted(true);  // Mark search as completed
+            setCurrentStep(0);  // Reset to the first step of capturing images
             // setShowTable(true);
         } else {
             setData([]);
@@ -214,41 +247,50 @@ const SaleReturn: React.FC = () => {
                 // ตรวจสอบว่า record.image มีค่าหรือไม่
                 const stepImage = images[`step${parseInt(record.key, 10)+2}`]; 
                 const handleViewImage = (imageUrl: string) => {
-                    // เปิด modal เพื่อดูภาพ
+                    // Open a modal to view the image
                     Modal.info({
                         title: null,
+                        icon: null, 
                         content: (
-                            <div style={{ position: 'relative', display: 'inline-block' }}>
-                                <img 
-                                    src={imageUrl} 
-                                    alt="Return" 
-                                    style={{ 
-                                        width: '100%', 
-                                        height: 'auto', 
-                                        maxWidth: '800px', 
-                                        display: 'block' 
-                                    }} 
-                                />
-                                <Button
-                                    type="primary"
-                                    icon={<CloseOutlined />}
-                                    style={{
-                                        position: 'absolute',
-                                        top: '10px',
-                                        right: '10px',
-                                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                                        border: 'none',
-                                        color: 'white',
-                                        padding: '5px',
-                                        fontSize: '16px',
-                                    }}
-                                    onClick={() => Modal.destroyAll()}
-                                />
-                            </div>
+                            <div style={{ textAlign: 'center', justifyContent: "center" }}>
+                            <img
+                                src={imageUrl}
+                                alt="Return"
+                                style={{
+                                    width: '100%',
+                                    maxHeight: '60vh', // Set max height for better viewability
+                                }}
+                            />
+                            <Button
+                                type="primary"
+                                icon={<CloseOutlined />}
+                                style={{
+                                    position: 'absolute',
+                                    top: '30px',
+                                    right: '45px',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.6)', // Semi-transparent background
+                                    border: 'none',
+                                    color: '#000',
+                                    padding: '5px 5px',
+                                    fontSize: '14px',
+                                    borderRadius: '50%',
+                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)', // Shadow for better visibility
+                                }}
+                                onClick={() => Modal.destroyAll()}
+                            />
+                        </div>
                         ),
                         footer: null,
-                        width: 'auto',
-                        bodyStyle: { padding: 0 }
+                        width: '45%', // Use auto width to fit the content
+                        bodyStyle: {
+                            padding: 0,
+                            background: 'transparent', // Make the background transparent
+                        },
+                        style: {
+                            textAlign: 'center', // Center the content
+                            background: 'transparent', // Set the modal background to transparent
+                            border: 'none', // Remove any border around the modal
+                        },
                     });
                 };
     
@@ -257,7 +299,7 @@ const SaleReturn: React.FC = () => {
                         <img 
                             src={stepImage} 
                             alt="Return" 
-                            style={{ width: '100px', marginRight: '10px' }} 
+                            style={{ width: '100px'}} 
                         />
                         <Button
                             style={{ background: '#02C39A'}}
@@ -285,7 +327,6 @@ const SaleReturn: React.FC = () => {
             <>
                 <Button
                 style={{
-                    marginRight: '10px',
                     marginBottom: '10px',
                     background: '#BADEFF',
                     color: '#1890FF',
@@ -615,29 +656,48 @@ const SaleReturn: React.FC = () => {
                         overflow: "auto",
                     }}
                 >
-                <Row align="middle" justify="center" style={{ marginTop: "20px", width:'100%'  }}>
-                    <Col span={7} >
-                        <Form.Item
-                        id="selectedSalesOrder"
-                            layout="vertical"
-                            label={<span style={{ color: '#657589' }}>เลือกเลขออเดอร์</span>}
-                            name="selectedSalesOrder"
-                            rules={[{ required: true, message: 'กรุณากรอกเลข Order!' }]}
-                        >
-                            <Select
-                                showSearch
-                                style={{ height: 40 }}
-                                placeholder="Search Order Number"
-                                optionFilterProp="label"
-                                value={selectedOrderNo} 
-                                onChange={handleSelectChange}
-                                options={orderOptions}
-                            />
-                        </Form.Item>
-                    </Col>
-                </Row>
+{!searchCompleted && (
+  <React.Fragment>
+    <Row align="middle" justify="center" style={{ marginTop: "60px", width: '100%' }}>
+      {/* Row for the input field */}
+      <Col span={8} style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
+        <Form.Item
+          id="selectedSalesOrder"
+          layout="vertical"
+          label={<span style={{ color: '#657589', textAlign: 'center', fontSize: '18px', fontWeight: "bold", display: 'block',  width: '100%' }}>ค้นหาเลข Order/Tracking</span>}
+          name="selectedSalesOrder"
+          rules={[{ required: true, message: 'กรุณากรอกเลข Order!' }]}
+          style={{ width: '100%', height: '40px', textAlign: 'center' }}
+        >
+          <Input
+            style={{ fontSize: '16px', height: '45px'}}  // Increased input size
+            placeholder="กรุณากรอกเลข Order หรือ Tracking Number"
+            value={selectedOrderNo || ''}
+            onChange={(e) => setSelectedOrderNo(e.target.value)}  // Directly set the value from input
+          />
+        </Form.Item>
+      </Col>
+    </Row>
 
-                {showSteps && !showTable && (
+    <Row gutter={40} justify="center" style={{ marginTop: "8px" }} >
+      {/* Row for the button */}
+      <Col span={3} style={{ display: 'flex', justifyContent: 'center'  }}>
+        <Button
+          type="primary"
+          className="submit-trade"
+          onClick={() => handleSelectChange(selectedOrderNo || '')}  // Trigger the search function
+          icon={<SearchOutlined />}  // Added search icon
+          style={{ width: '100%', fontSize: '14px' , height: '35px' }}  // Style for button
+        >
+          ค้นหา
+        </Button>
+      </Col>
+    </Row>
+  </React.Fragment>
+)}
+
+
+                {showSteps && !showTable && searchCompleted && (
                     <>
                     <Steps current={currentStep} 
                         onChange={onChange}
@@ -761,22 +821,189 @@ const SaleReturn: React.FC = () => {
                                         ยืนยันการรับเข้า
                                     </Button>
                                 </Col>
-                                <Col span={12} >
+                                {/* <Col span={12} >
                                     <Button id="ส่งข้อมูล" type="primary" onClick={handleSubmit} style={{background:'#14C11B'}} >
                                         ส่งข้อมูล
                                     </Button>
-                                </Col>
+                                </Col> */}
                             </Row>
                         </Row>
-                    <Table
+                    {/* <Table
                         dataSource={data}
                         columns={columns}
                         pagination={false}
                         rowKey="key"
                         style={{ marginTop: '50px' }}
-                    />
+                    /> */}
+
+                        <div >
+                              <Table
+                                 components={{
+                                    header: {
+                                        cell: (props: React.HTMLAttributes<HTMLElement>) => (
+                                        <th {...props} style={{ backgroundColor: '#E9F3FE', color: '#35465B', padding: "12px", textAlign: 'center' }} />
+                                        ),
+                                    },
+                                    body: {
+                                        cell: (props: React.HTMLAttributes<HTMLElement>) => (
+                                            <td {...props} style={{ padding: "12px", textAlign: 'center'}} />
+                                        ),
+                                    }
+                                }}
+                                dataSource={data.slice((currentPage - 1) * pageSize, currentPage * pageSize)} // แสดงเฉพาะจำนวนรายการที่เลือก
+                                columns={columns}
+                                rowKey="key"
+                                pagination={false} // ปิด pagination ใน Table
+                                style={{
+                                  width: "100%",
+                                  tableLayout: "auto",
+                                  border: "1px solid #ddd",
+                                  borderRadius: "8px",
+                                  marginTop: '50px'
+                                }}
+                                bordered={false}
+                              />
+                            
+                            {showPagination && (
+                              <div>
+                                {/* showTotal แสดงอยู่เหนือ showPagination */}
+                                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 20 }}>
+                                    <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#555' }}>
+                                        ทั้งหมด <span style={{ color: '#007bff' }}>{data.length}</span> รายการ
+                                    </span>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 20, gap: 10 }}>
+                                  {/* ปุ่มไปหน้าแรก */}
+                                  <button
+                                      onClick={() => handlePageChange(1, pageSize)}
+                                      disabled={currentPage === 1}
+                                      style={{
+                                          fontSize: "14px",
+                                          // fontWeight: "bold",
+                                          padding: "4px 10px",
+                                          border: "1px solid #ddd",
+                                          borderRadius: "6px",
+                                          background: currentPage === 1 ? "#f5f5f5" : "#fff",
+                                          cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                                      }}
+                                  >
+                                      {"<<"}
+                                  </button>
+                    
+                                  {/* ปุ่มไปหน้าก่อน */}
+                                  <button
+                                      onClick={() => handlePageChange(currentPage - 1, pageSize)}
+                                      disabled={currentPage === 1}
+                                      style={{
+                                          fontSize: "14px",
+                                          // fontWeight: "bold",
+                                          padding: "4px 10px",
+                                          border: "1px solid #ddd",
+                                          borderRadius: "6px",
+                                          background: currentPage === 1 ? "#f5f5f5" : "#fff",
+                                          cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                                      }}
+                                  >
+                                      {"<"}
+                                  </button>
+                    
+                                  {/* แสดงเลขหน้าแบบ [ 1 / 9 ] */}
+                                  <span style={{ fontSize: "14px", fontWeight: 'bold' }}>
+                                      [ {currentPage} to {Math.ceil(data.length / pageSize)} ]
+                                  </span>
+                    
+                                  {/* ปุ่มไปหน้าถัดไป */}
+                                  <button
+                                      onClick={() => handlePageChange(currentPage + 1, pageSize)}
+                                      disabled={currentPage === Math.ceil(data.length / pageSize)}
+                                      style={{
+                                          fontSize: "14px",
+                                          // fontWeight: "bold",
+                                          padding: "4px 10px",
+                                          border: "1px solid #ddd",
+                                          borderRadius: "6px",
+                                          background: currentPage === Math.ceil(data.length / pageSize) ? "#f5f5f5" : "#fff",
+                                          cursor: currentPage === Math.ceil(data.length / pageSize) ? "not-allowed" : "pointer",
+                                      }}
+                                  >
+                                      {">"}
+                                  </button>
+                    
+                                  {/* ปุ่มไปหน้าสุดท้าย */}
+                                  <button
+                                      onClick={() => handlePageChange(Math.ceil(data.length / pageSize), pageSize)}
+                                      disabled={currentPage === Math.ceil(data.length / pageSize)}
+                                      style={{
+                                          fontSize: "14px",
+                                          // fontWeight: "bold",
+                                          padding: "4px 10px",
+                                          border: "1px solid #ddd",
+                                          borderRadius: "6px",
+                                          background: currentPage === Math.ceil(data.length / pageSize) ? "#f5f5f5" : "#fff",
+                                          cursor: currentPage === Math.ceil(data.length / pageSize) ? "not-allowed" : "pointer",
+                                      }}
+                                  >
+                                      {">>"}
+                                  </button>
+                    
+                                  {/* เลือกจำนวนรายการต่อหน้า */}
+                                  <select
+                                      value={pageSize}
+                                      onChange={(e) => handlePageChange(1, Number(e.target.value))}
+                                      className="paginate"
+                                      style={{
+                                          fontSize: "14px",
+                                          fontWeight: "bold",
+                                          padding: "4px 10px",
+                                          border: "1px solid #ddd",
+                                          borderRadius: "6px",
+                                          cursor: "pointer",
+                                      }}
+                                  >
+                                      <option value="5">5 รายการ</option>
+                                      <option value="10">10 รายการ</option>
+                                      <option value="20">20 รายการ</option>
+                                  </select>
+                                </div>
+                                </div>
+                              )}
+                            </div>
+                            <Row justify="center" gutter={16}>
+                              <Button
+                                id="Submit"
+                                onClick={showModal}
+                                className="submit-trade"
+                              >
+                                Submit
+                              </Button>
+                              <Modal
+                                title="คุณแน่ใจหรือไม่ว่าต้องการส่งข้อมูล?"
+                                open={isModalVisible}
+                                onOk={handleOk}
+                                onCancel={handleCancel} 
+                                okText="ใช่"
+                                cancelText="ไม่"
+                                centered
+                                style={{ textAlign: 'center'}}
+                                footer={
+                                  <div style={{ textAlign: "center" }}> {/* ทำให้ปุ่มอยู่ตรงกลาง */}
+                                    <Button key="ok" type="default" onClick={handleOk} style={{ marginRight: 8 }} className="button-yes">
+                                      Yes
+                                    </Button>
+                                    <Button key="cancel" type="dashed" onClick={handleCancel} className="button-no">
+                                      No
+                                    </Button>
+                                  </div>
+                                }
+                
+                              >
+                              </Modal>
+                          </Row>
                     </>
                 )}
+
+              
+                
                 {showWebcam && (
                     <Modal
                         open={showWebcam}
