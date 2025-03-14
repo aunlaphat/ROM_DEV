@@ -1,8 +1,8 @@
 package service
 
 import (
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/dto/response"
+	"boilerplate-back-go-2411/dto/request"
+	"boilerplate-back-go-2411/dto/response"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -137,7 +137,7 @@ func (srv service) UpdateSrNo(ctx context.Context, orderNo string, srNo string, 
 
 	srv.logger.Info("✅ SrNo updated successfully",
 		zap.String("OrderNo", resp.OrderNo),
-		zap.String("SrNo", resp.SrNo),
+		zap.String("SrNo", *resp.SrNo),
 	)
 
 	return resp, nil

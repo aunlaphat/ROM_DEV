@@ -1,9 +1,9 @@
 package service
 
 import (
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
+	"boilerplate-back-go-2411/dto/request"
+	"boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/errors"
 	"context"
 	"io"
 	"mime/multipart"
@@ -17,7 +17,9 @@ import (
 
 type ImportOrderService interface {
 	SearchOrderORTracking(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
-	UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error
+	SearchOrderORTrackingNo(ctx context.Context, search string) ([]response.ImportOrderResponse, error)
+	GetOrderTracking(ctx context.Context) ([]response.ImportItem, error)
+	UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) (string, error)
 	GetSummaryImportOrder(ctx context.Context, orderNo string) ([]response.ImportOrderSummary, error)
 	ValidateSKU(ctx context.Context, orderNo, sku string) (bool, error)
 
@@ -53,36 +55,63 @@ func (srv service) SearchOrderORTracking(ctx context.Context, search string) ([]
 	return orders, nil
 }
 
+func (srv service) SearchOrderORTrackingNo(ctx context.Context, search string) ([]response.ImportOrderResponse, error) {
+	srv.logger.Info("[ Starting search order process ]", zap.String("Search", search))
+
+	// *️⃣ ค้นหา order จาก repository (เรียกใช้แบบ chunking)
+	orders, err := srv.importOrderRepo.SearchOrderORTrackingNo(ctx, search)
+	if err != nil {
+		srv.logger.Error("[ Failed to search OrderNo or TrackingNo ]", zap.String("Search", search), zap.Error(err))
+		return nil, errors.InternalError("[ Failed to search OrderNo or TrackingNo: %v ]", err)
+	}
+
+	srv.logger.Info("[ Successfully search order detail ]")
+	return orders, nil
+}
+
+func (srv service) GetOrderTracking(ctx context.Context) ([]response.ImportItem, error) {
+	order, err := srv.importOrderRepo.GetOrderTracking(ctx)
+	if err != nil {
+		srv.logger.Error("[ Error fetching rders ]", zap.Error(err))
+		return nil, errors.InternalError("[ Failed to fetch orders: %v ]", err)
+	}
+
+	srv.logger.Info("[ Fetched all orders ]", zap.Int("Total amount of data", len(order)))
+	return order, nil
+}
+
 var (
 	photoData = make(map[string][]response.ImportOrderSummary) // ข้อมูลภาพ+sku จะบันทึกลงตัวแปรนี้เพื่อนำไปแสดงที่ GetSummaryImportOrder
 	mu        sync.Mutex
 )
 
-func (srv service) UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) error {
+func (srv service) UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID, sku string, file io.Reader, filename string) (string, error) {
 	srv.logger.Info("[ Starting upload photo process ]", zap.String("OrderNo", orderNo), zap.String("ImageTypeID", imageTypeID), zap.String("SKU", sku), zap.String("Filename", filename))
 
-	// *️⃣ สร้าง path สำหรับบันทึกไฟล์
+	// สร้าง path สำหรับบันทึกไฟล์
 	dirPath := filepath.Join("uploads/images", orderNo, imageTypeID)
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		srv.logger.Error("[ Failed to create directory ]", zap.Error(err))
-		return errors.InternalError("[ Failed to create directory: %v ]", err)
+		return "", errors.InternalError("[ Failed to create directory: %v ]", err)
 	}
 
+	// สร้างไฟล์ใหม่
 	filePath := filepath.Join(dirPath, filename)
 	out, err := os.Create(filePath)
 	if err != nil {
 		srv.logger.Error("[ Failed to create file ]", zap.Error(err))
-		return errors.InternalError("[ Failed to create file: %v ]", err)
+		return "", errors.InternalError("[ Failed to create file: %v ]", err)
 	}
 	defer out.Close()
 
+	// คัดลอกข้อมูลจากไฟล์ที่ได้รับ
 	_, err = io.Copy(out, file)
 	if err != nil {
 		srv.logger.Error("[ Failed to save file ]", zap.Error(err))
-		return errors.InternalError("[ Failed to save file: %v ]", err)
+		return "", errors.InternalError("[ Failed to save file: %v ]", err)
 	}
 
-	// *️⃣ บันทึกข้อมูลรูปภาพในหน่วยความจำ
+	// บันทึกข้อมูลภาพ
 	if imageTypeID == "3" {
 		mu.Lock()
 		defer mu.Unlock()
@@ -94,7 +123,9 @@ func (srv service) UploadPhotoHandler(ctx context.Context, orderNo, imageTypeID,
 	}
 
 	srv.logger.Info("[ Successfully upload photo process ]", zap.String("OrderNo", orderNo), zap.String("ImageTypeID", imageTypeID), zap.String("SKU", sku), zap.String("Filename", filename))
-	return nil
+
+	// ส่งคืน path ของไฟล์ที่ถูกบันทึก
+	return filePath, nil
 }
 
 func (srv service) GetSummaryImportOrder(ctx context.Context, orderNo string) ([]response.ImportOrderSummary, error) {

@@ -1,15 +1,15 @@
 package api
 
 import (
-	// "boilerplate-backend-go/dto/request"
-	// res "boilerplate-backend-go/dto/response"
-	Status "boilerplate-backend-go/errors"
-	"errors"
-	"boilerplate-backend-go/middleware"
-	"boilerplate-backend-go/utils"
+	// "boilerplate-back-go-2411/dto/request"
+	// res "boilerplate-back-go-2411/dto/response"
+	Status "boilerplate-back-go-2411/errors"
+	"boilerplate-back-go-2411/middleware"
+	"boilerplate-back-go-2411/utils"
 	"database/sql"
-	"strings"
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -18,9 +18,8 @@ import (
 // ReturnOrderRoute defines the routes for return order operations
 func (app *Application) BeforeReturnRoute(apiRouter *gin.RouterGroup) {
 	api := apiRouter.Group("/before-return-order")
-	// get real order
-	api.GET("/get-orders", app.GetAllOrderDetails)  // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
-	api.GET("/search", app.SearchOrderDetail) 		// แสดงข้อมูล order ที่ทำรายการคืนของมาโดยเลข SO or OrderNo
+	api.GET("/get-orders", app.GetAllOrderDetails) // แสดงข้อมูลออเดอร์ head+line ทั้งหมดที่กรอกทำรายการเข้ามาในระบบ แบบ paginate
+	api.GET("/search", app.SearchOrderDetail)      // แสดงข้อมูล order ที่ทำรายการคืนของมาโดยเลข SO or OrderNo
 
 	apiAuth := api.Group("/")
 	apiAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
@@ -972,7 +971,6 @@ func (app *Application) SearchOrderDetail(c *gin.Context) {
 	handleResponse(c, true, "[ Orders retrieved successfully ]", result, http.StatusOK)
 }
 
-
 // ลบรายการคืนแต่ละรายการ
 // @Summary 	Delete Order line
 // @Description Delete an order line
@@ -994,13 +992,13 @@ func (app *Application) DeleteBeforeReturnOrderLine(c *gin.Context) {
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
 		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
-		return 
+		return
 	}
 
 	if sku == "" {
 		app.Logger.Warn("[ SKU is required ]")
 		handleError(c, Status.BadRequestError("[ SKU is required ]"))
-		return 
+		return
 	}
 
 	if err := app.Service.BeforeReturn.DeleteBeforeReturnOrderLine(c.Request.Context(), orderNo, sku); err != nil {

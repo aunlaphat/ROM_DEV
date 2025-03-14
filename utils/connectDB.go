@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"boilerplate-backend-go/logs"
+	"boilerplate-back-go-2411/logs"
 	"context"
 	"fmt"
 	"time"

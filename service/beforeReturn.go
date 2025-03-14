@@ -1,9 +1,9 @@
 package service
 
 import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
+	request "boilerplate-back-go-2411/dto/request"
+	response "boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/errors"
 	"context"
 	"database/sql"
 	"fmt"
@@ -73,16 +73,16 @@ type BeforeReturnService interface {
 func (srv service) CreateTradeReturn(ctx context.Context, req request.BeforeReturnOrder) (*response.BeforeReturnOrderResponse, error) {
 	srv.logger.Info("[ Starting trade return creation process ]", zap.String("OrderNo", req.OrderNo))
 
-	// *️⃣ ตรวจสอบว่า OrderNo สร้างซ้ำหรือไม่
-	exists, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
-	if err != nil {
-		srv.logger.Error("[ [ Error checking OrderNo existence ]", zap.Error(err)) // db มีปัญหา
-		return nil, errors.InternalError("[ Error checking OrderNo existence: %v ]", err)
-	}
-	if exists != nil {
-		srv.logger.Warn("[ Order already exists ]", zap.String("OrderNo", req.OrderNo))
-		return nil, errors.ConflictError("[ OrderNo %s already exists: %v ]", req.OrderNo, err)
-	}
+	// // *️⃣ ตรวจสอบว่า OrderNo สร้างซ้ำหรือไม่
+	// exists, err := srv.beforeReturnRepo.GetBeforeReturnOrderByOrderNo(ctx, req.OrderNo)
+	// if err != nil {
+	// 	srv.logger.Error("[ [ Error checking OrderNo existence ]", zap.Error(err)) // db มีปัญหา
+	// 	return nil, errors.InternalError("[ Error checking OrderNo existence: %v ]", err)
+	// }
+	// if exists != nil {
+	// 	srv.logger.Warn("[ Order already exists ]", zap.String("OrderNo", req.OrderNo))
+	// 	return nil, errors.ConflictError("[ OrderNo %s already exists: %v ]", req.OrderNo, err)
+	// }
 
 	// *️⃣ สร้าง trade return order
 	createdOrder, err := srv.beforeReturnRepo.CreateTradeReturn(ctx, req)
@@ -154,18 +154,18 @@ func (srv service) ConfirmReceipt(ctx context.Context, req request.ConfirmTradeR
 		return fmt.Errorf("[ Not found: %s", req.Identifier)
 	}
 
-	// *️⃣ ตรวจสอบ sku ที่เพิ่มมาว่าตรงกับใน BeforeReturn ที่กรอกเข้ามาไหม หากมีจึงจะสามารถเพิ่มได้ เพราะของหน้าคลังต้องตรงกับข้อมูลที่กรอกเข้าระบบ
-	for _, line := range req.ImportLines {
-		exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, req.Identifier, line.SKU)
-		if err != nil {
-			srv.logger.Error("[ Failed to check SKU existence", zap.String("SKU", line.SKU), zap.Error(err))
-			return errors.InternalError("[ failed to check SKU existence: %v ]", err)
-		}
-		if !exists {
-			srv.logger.Warn("[ SKU does not exist in BeforeReturnOrderLine from Identifier ]", zap.Error(err))
-			return errors.ValidationError("[ SKU %s does not exist in BeforeReturnOrderLine from Identifier %s: %v ]", line.SKU, req.Identifier, err)
-		}
-	}
+	// // *️⃣ ตรวจสอบ sku ที่เพิ่มมาว่าตรงกับใน BeforeReturn ที่กรอกเข้ามาไหม หากมีจึงจะสามารถเพิ่มได้ เพราะของหน้าคลังต้องตรงกับข้อมูลที่กรอกเข้าระบบ
+	// for _, line := range req.ImportLines {
+	// 	exists, err := srv.beforeReturnRepo.CheckBefLineSKUExists(ctx, req.Identifier, line.SKU)
+	// 	if err != nil {
+	// 		srv.logger.Error("[ Failed to check SKU existence", zap.String("SKU", line.SKU), zap.Error(err))
+	// 		return errors.InternalError("[ failed to check SKU existence: %v ]", err)
+	// 	}
+	// 	if !exists {
+	// 		srv.logger.Warn("[ SKU does not exist in BeforeReturnOrderLine from Identifier ]", zap.Error(err))
+	// 		return errors.ValidationError("[ SKU %s does not exist in BeforeReturnOrderLine from Identifier %s: %v ]", line.SKU, req.Identifier, err)
+	// 	}
+	// }
 
 	// 1. *️⃣อัปเดตสถานะใน BeforeReturnOrder
 	if err := srv.beforeReturnRepo.UpdateBefToWaiting(ctx, req, updateBy); err != nil {

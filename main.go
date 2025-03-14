@@ -1,10 +1,10 @@
 package main
 
 import (
-	"boilerplate-backend-go/api"
-	"boilerplate-backend-go/logs"
-	"boilerplate-backend-go/service"
-	"boilerplate-backend-go/utils"
+	"boilerplate-back-go-2411/api"
+	"boilerplate-back-go-2411/logs"
+	"boilerplate-back-go-2411/service"
+	"boilerplate-back-go-2411/utils"
 	"flag"
 	"fmt"
 	"log"

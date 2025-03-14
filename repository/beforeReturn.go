@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/utils"
+	"boilerplate-back-go-2411/dto/request"
+	"boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/utils"
 	"context"
 	"database/sql"
 	"fmt"
@@ -109,23 +109,24 @@ func (repo repositoryDB) CreateTradeReturn(ctx context.Context, order request.Be
 		}
 
 		queryLine := `	INSERT INTO BeforeReturnOrderLine (
-							OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, CreateBy, TrackingNo
+							OrderNo, SKU, ItemName, QTY, ReturnQTY, Price, WarehouseID, CreateBy, TrackingNo
 						) VALUES (
-							:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :CreateBy, :TrackingNo
+							:OrderNo, :SKU, :ItemName, :QTY, :ReturnQTY, :Price, :WarehouseID, :CreateBy, :TrackingNo
 						)
 					`
 		// เตรียมข้อมูลทั้งหมดที่ต้องการ insert
 		var params []map[string]interface{}
 		for _, line := range order.BeforeReturnOrderLines {
 			lineParams := map[string]interface{}{
-				"OrderNo":    order.OrderNo,
-				"SKU":        line.SKU,
-				"ItemName":   line.ItemName,
-				"QTY":        line.QTY,
-				"ReturnQTY":  line.ReturnQTY,
-				"Price":      line.Price,
-				"CreateBy":   order.CreateBy,
-				"TrackingNo": order.TrackingNo,
+				"OrderNo":     order.OrderNo,
+				"SKU":         line.SKU,
+				"ItemName":    line.ItemName,
+				"QTY":         line.QTY,
+				"ReturnQTY":   line.ReturnQTY,
+				"Price":       line.Price,
+				"WarehouseID": line.WarehouseID,
+				"CreateBy":    order.CreateBy,
+				"TrackingNo":  order.TrackingNo,
 			}
 			params = append(params, lineParams)
 		}

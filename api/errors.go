@@ -1,12 +1,12 @@
 package api
 
 import (
-	Errors "boilerplate-backend-go/errors"
+	Errors "boilerplate-back-go-2411/errors"
 	"errors"
 	"fmt"
 	"net/http"
 
-	"boilerplate-backend-go/errors"
+	// "boilerplate-back-go-2411/errors"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -32,10 +32,18 @@ func handleError(c *gin.Context, err error) {
 		return
 	}
 
-	if appErr, ok := err.(errors.AppError); ok {
-		handleResponse(c, false, "⚠️ Service error", appErr.Message, appErr.Code)
+	// 🔹 ตรวจสอบว่า Error มาจาก Service Layer
+	var appErr *Errors.AppError
+	if errors.As(err, &appErr) {
+		handleResponse(c, false, appErr.Message, nil, appErr.Code)
 		return
 	}
+
+	// // 🔹 ตรวจสอบว่า Error มาจาก Service Layer หรือไม่
+	// if appErr, ok := err.(*Errors.AppError); ok {
+	// 	handleResponse(c, false, "⚠️ Service error", appErr.Message, appErr.Code)
+	// 	return
+	// }
 
 	handleResponse(c, false, "🔥 Internal server error", err.Error(), http.StatusInternalServerError)
 }

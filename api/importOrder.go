@@ -1,13 +1,13 @@
 package api
 
 import (
-	"boilerplate-backend-go/dto/request"
-	res "boilerplate-backend-go/dto/response"
-	Status "boilerplate-backend-go/errors"
-	"boilerplate-backend-go/middleware"
+	"boilerplate-back-go-2411/dto/request"
+	res "boilerplate-back-go-2411/dto/response"
+	Status "boilerplate-back-go-2411/errors"
+	"boilerplate-back-go-2411/middleware"
 	"strings"
 
-	// "boilerplate-backend-go/utils"
+	// "boilerplate-back-go-2411/utils"
 	// "encoding/json"
 	"time"
 
@@ -22,6 +22,8 @@ import (
 func (app *Application) ImportOrderRoute(apiRouter *gin.RouterGroup) {
 	api := apiRouter.Group("/import-order")
 	api.GET("/search", app.SearchOrderORTracking) // เสิร์ช orderNo, trackingNo เพื่อทำรายการรับเข้าต่อ (ต้องมีข้อมูลขึ้นจึงทำรายการต่อได้)
+	api.GET("/search-order-tracking", app.SearchOrderORTrackingNo)
+	api.GET("/get-order-tracking", app.GetOrderTracking)
 
 	apiAuth := api.Group("/")
 	apiAuth.Use(middleware.JWTMiddleware(app.TokenAuth))
@@ -56,7 +58,7 @@ func (app *Application) SearchOrderORTracking(c *gin.Context) {
 	if search == "" {
 		app.Logger.Warn("[ Search input is required ]")
 		handleError(c, Status.BadRequestError("[ Search input is required ]"))
-		return 
+		return
 	}
 
 	result, err := app.Service.ImportOrder.SearchOrderORTracking(c.Request.Context(), search)
@@ -75,6 +77,74 @@ func (app *Application) SearchOrderORTracking(c *gin.Context) {
 	handleResponse(c, true, "[ Found Orders retrieved successfully ]", result, http.StatusOK)
 }
 
+// SearchOrderORTracking godoc
+// @Summary 	Search order by OrderNo or TrackingNo
+// @Description Retrieve the details of an order by its OrderNo or TrackingNo
+// @ID 			search-orderNo-or-tracking
+// @Tags 		Import Order
+// @Accept 		json
+// @Produce 	json
+// @Param 		search query string true "OrderNo or TrackingNo"
+// @Success 200 {object} api.Response{result=response.ImportOrderResponse} "Order retrieved successfully"
+// @Failure 400 {object} api.Response "Bad Request"
+// @Failure 404 {object} api.Response "OrderNo or TrackingNo not found"
+// @Failure 500 {object} api.Response "Internal Server Error"
+// @Router  /import-order/search-order-tracking [get]
+func (app *Application) SearchOrderORTrackingNo(c *gin.Context) {
+	search := c.DefaultQuery("search", "")
+
+	// *️⃣ ตรวจสอบ search ว่าเป็นค่าว่างหรือไม่
+	search = strings.TrimSpace(search) // ลบช่องว่างหน้าหลังข้อความกันการค้นหาผิดเพราะค่าว่าง
+	if search == "" {
+		app.Logger.Warn("[ Search input is required ]")
+		handleError(c, Status.BadRequestError("[ Search input is required ]"))
+		return
+	}
+
+	result, err := app.Service.ImportOrder.SearchOrderORTrackingNo(c.Request.Context(), search)
+	if err != nil {
+		app.Logger.Error("[ Failed to search ]", zap.String("Search", search), zap.Error(err))
+		handleError(c, err)
+		return
+	}
+
+	if len(result) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
+		return
+	}
+
+	handleResponse(c, true, "[ Found Orders retrieved successfully ]", result, http.StatusOK)
+}
+
+// @Summary 	Get Order and Tracking
+// @Description Retrieve Order and Tracking
+// @ID 			Get-Order-Tracking
+// @Tags 		Import Order
+// @Accept 		json
+// @Produce 	json
+// @Success 	200 {object} Response{result=[]response.ImportItem} "Get All"
+// @Failure 	400 {object} Response "Bad Request"
+// @Failure 	404 {object} Response "Not Found Endpoint"
+// @Failure 	500 {object} Response "Internal Server Error"
+// @Router 		/import-order/get-order-tracking [get]
+func (app *Application) GetOrderTracking(c *gin.Context) {
+	result, err := app.Service.ImportOrder.GetOrderTracking(c.Request.Context())
+	if err != nil {
+		app.Logger.Error("[ Error fetching order ]", zap.Error(err))
+		handleError(c, err)
+		return
+	}
+
+	if len(result) == 0 {
+		app.Logger.Info("[ No data found ]")
+		handleResponse(c, true, "[ No data found ]", nil, http.StatusOK)
+		return
+	}
+
+	handleResponse(c, true, "[ Get Order successfully ]", result, http.StatusOK)
+}
+
 // UploadPhotoHandler godoc
 // @Summary Upload Photo
 // @Description Upload a photo for a return order
@@ -90,24 +160,26 @@ func (app *Application) SearchOrderORTracking(c *gin.Context) {
 // @Failure 400 {object} api.Response
 // @Failure 500 {object} api.Response
 // @Router  /import-order/upload-photo [post]
+// UploadPhotoHandler godoc
 func (app *Application) UploadPhotoHandler(c *gin.Context) {
 	orderNo := c.PostForm("orderNo")
 	imageTypeID := c.PostForm("imageTypeID")
 	sku := c.PostForm("sku")
 
+	// ตรวจสอบข้อมูลที่ได้รับ
 	if orderNo == "" || imageTypeID == "" {
 		app.Logger.Warn("[ OrderNo and ImageTypeID are required ]")
 		handleError(c, Status.BadRequestError("[ OrderNo and ImageTypeID are required ]"))
-		return 
+		return
 	}
 
-	// *️⃣ หาก ImageTypeID เป็น 3 แต่ SKU ไม่ได้ถูกส่งมา
 	if imageTypeID == "3" && sku == "" {
 		app.Logger.Warn("[ SKU is required for 3 imageTypeID ]")
 		handleError(c, Status.BadRequestError("[ SKU is required for 3 imageTypeID ]"))
-		return 
+		return
 	}
 
+	// รับไฟล์
 	header, err := c.FormFile("file")
 	if err != nil {
 		app.Logger.Error("[ Failed to get file from request ]", zap.Error(err))
@@ -115,23 +187,25 @@ func (app *Application) UploadPhotoHandler(c *gin.Context) {
 		return
 	}
 
-	// เปิดไฟล์เพื่ออ่านข้อมูล
+	// เปิดไฟล์
 	file, err := header.Open()
 	if err != nil {
 		app.Logger.Error("[ Failed to open file ]", zap.Error(err))
 		handleError(c, Status.InternalError("[ Failed to open file ]"))
 		return
 	}
-	defer file.Close() // ปิดไฟล์เมื่อใช้งานเสร็จ
+	defer file.Close()
 
-	err = app.Service.ImportOrder.UploadPhotoHandler(c.Request.Context(), orderNo, imageTypeID, sku, file, header.Filename)
+	// อัปโหลดไฟล์และเก็บไว้ในระบบ
+	filePath, err := app.Service.ImportOrder.UploadPhotoHandler(c.Request.Context(), orderNo, imageTypeID, sku, file, header.Filename)
 	if err != nil {
 		app.Logger.Error("[ Failed to upload ]", zap.Error(err))
 		handleError(c, err)
 		return
 	}
 
-	handleResponse(c, true, "[ File uploaded successfully ]", nil, http.StatusOK)
+	// ส่ง response กลับไปยัง client
+	handleResponse(c, true, "[ File uploaded successfully ]", map[string]string{"filePath": filePath}, http.StatusOK)
 }
 
 // @Summary 	Get Sum detail of Import Order
@@ -152,7 +226,7 @@ func (app *Application) GetSummaryImportOrder(c *gin.Context) {
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
 		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
-		return 
+		return
 	}
 
 	summary, err := app.Service.ImportOrder.GetSummaryImportOrder(c.Request.Context(), orderNo)
@@ -191,13 +265,13 @@ func (app *Application) ValidateSKU(c *gin.Context) {
 	if orderNo == "" {
 		app.Logger.Warn("[ OrderNo is required ]")
 		handleError(c, Status.BadRequestError("[ OrderNo is required ]"))
-		return 
+		return
 	}
 
 	if sku == "" {
 		app.Logger.Warn("[ SKU is required ]")
 		handleError(c, Status.BadRequestError("[ SKU is required ]"))
-		return 
+		return
 	}
 
 	valid, err := app.Service.ImportOrder.ValidateSKU(c.Request.Context(), orderNo, sku)
@@ -234,7 +308,7 @@ func (app *Application) ConfirmReceipt(c *gin.Context) {
 	if identifier == "" {
 		app.Logger.Warn("[ OrderNo or TrackingNo are required ]")
 		handleError(c, Status.BadRequestError("[ OrderNo or TrackingNo are required ]"))
-		return 
+		return
 	}
 
 	var req request.ConfirmTradeReturnRequest
@@ -306,19 +380,19 @@ func (app *Application) ConfirmFromWH(c *gin.Context) {
 	if soNo == "" {
 		app.Logger.Warn("[ SoNo is required ]")
 		handleError(c, Status.BadRequestError("[ SoNo is required ]"))
-		return 
+		return
 	}
 
 	if imageTypeID < 1 || imageTypeID > 3 {
 		app.Logger.Warn("[ Image Type ID 1, 2, 3 only ]")
 		handleError(c, Status.BadRequestError("[ Image Type ID 1, 2, 3 only ]"))
-		return 
+		return
 	}
 
 	if len(files) == 0 {
 		app.Logger.Warn("[ no files uploaded ]")
 		handleError(c, Status.BadRequestError("[ no files uploaded ]"))
-		return 
+		return
 	}
 
 	// *️⃣ เรียก Service เพื่อประมวลผล

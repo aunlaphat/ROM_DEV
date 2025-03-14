@@ -67,14 +67,14 @@ type InvoiceInformation struct {
 }
 
 type Province struct {
-	ProvinceCode    int    `db:"ProvinceCode" json:"provinceCode"`
-	ProvicesTH      string `db:"ProvicesTH" json:"provicesTH"`
+	ProvinceCode int    `db:"ProvinceCode" json:"provinceCode"`
+	ProvicesTH   string `db:"ProvicesTH" json:"provicesTH"`
 }
 
 type District struct {
-	ProvinceCode    int    `db:"ProvinceCode" json:"provinceCode"`
-	DistrictCode    int    `db:"DistrictCode" json:"districtCode"`
-	DistrictTH      string `db:"DistrictTH" json:"districtTH"`
+	ProvinceCode int    `db:"ProvinceCode" json:"provinceCode"`
+	DistrictCode int    `db:"DistrictCode" json:"districtCode"`
+	DistrictTH   string `db:"DistrictTH" json:"districtTH"`
 }
 
 type SubDistrict struct {

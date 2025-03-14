@@ -1,10 +1,10 @@
 package service
 
 import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
-	"boilerplate-backend-go/utils"
+	request "boilerplate-back-go-2411/dto/request"
+	response "boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/errors"
+	"boilerplate-back-go-2411/utils"
 	"context"
 
 	"go.uber.org/zap"
@@ -17,6 +17,7 @@ type ReturnOrderService interface {
 	GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error)
 	CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) (*response.CreateReturnOrder, error)
 	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder) (*response.UpdateReturnOrder, error)
+	UpdateReturnOrderLine(ctx context.Context, req request.UpdateReturnOrderLine) error
 	DeleteReturnOrder(ctx context.Context, orderNo string) error
 
 	GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error)
@@ -201,6 +202,32 @@ func (srv service) UpdateReturnOrder(ctx context.Context, req request.UpdateRetu
 
 	srv.logger.Info("[ Return order updated successfully ]", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", *req.UpdateBy))
 	return updatedOrder, nil
+}
+
+func (srv service) UpdateReturnOrderLine(ctx context.Context, req request.UpdateReturnOrderLine) error {
+	srv.logger.Info("[ Starting return order update process ]", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", *req.UpdateBy))
+
+	// *️⃣ ตรวจสอบ OrderNo
+	err := srv.CheckOrderNoExist(ctx, req.OrderNo)
+	if err != nil {
+		return err
+	}
+
+	err = srv.returnOrderRepo.UpdateReturnOrderLine(ctx, req)
+	if err != nil {
+		srv.logger.Error("[ Failed to update order with lines ]", zap.Error(err))
+		return errors.InternalError("[ Failed to update order with lines: %v ]", err)
+	}
+
+	// // *️⃣ ดึงข้อมูล order ที่อัพเดทเสร็จแล้ว
+	// updatedOrder, err := srv.returnOrderRepo.GetUpdateReturnOrder(ctx, req.OrderNo)
+	// if err != nil {
+	// 	srv.logger.Error("[ Failed to fetch updated order ]", zap.Error(err))
+	// 	return nil, errors.InternalError("[ Failed to fetch updated order: %v ]", err)
+	// }
+
+	srv.logger.Info("[ Return order updated successfully ]", zap.String("OrderNo", req.OrderNo), zap.String("UpdateBy", *req.UpdateBy))
+	return nil
 }
 
 func (srv service) DeleteReturnOrder(ctx context.Context, orderNo string) error {

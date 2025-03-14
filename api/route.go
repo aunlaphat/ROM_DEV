@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "boilerplate-backend-go/docs"
+	_ "boilerplate-back-go-2411/docs"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -45,10 +45,10 @@ func Routes(router *gin.Engine, app *Application) {
 	app.AuthRoute(apiRouter)
 	app.UserRoute(apiRouter)
 	app.OrderRoute(apiRouter)
-	app.DraftConfirmRoute(apiRouter)
 	app.ReturnOrder(apiRouter)
 	app.ImportOrderRoute(apiRouter)
 	app.TradeReturnRoute(apiRouter)
 	app.BeforeReturnRoute(apiRouter)
-	app.ConstantRoute(apiRouter)
+	app.Constants(apiRouter)
+	app.DraftConfirmRoute(apiRouter)
 }

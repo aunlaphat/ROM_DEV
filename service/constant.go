@@ -1,7 +1,7 @@
 package service
 
 import (
-	"boilerplate-backend-go/dto/response"
+	"boilerplate-back-go-2411/dto/response"
 	"context"
 
 	"go.uber.org/zap"

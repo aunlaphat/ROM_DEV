@@ -1,13 +1,13 @@
 package api
 
 import (
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/dto/response"
-	Status "boilerplate-backend-go/errors"
-	"boilerplate-backend-go/middleware"
-	"boilerplate-backend-go/utils"
+	"boilerplate-back-go-2411/dto/request"
+	"boilerplate-back-go-2411/dto/response"
+	Status "boilerplate-back-go-2411/errors"
+	"boilerplate-back-go-2411/middleware"
+	"boilerplate-back-go-2411/utils"
 
-	// "boilerplate-backend-go/utils"
+	// "boilerplate-back-go-2411/utils"
 	// "encoding/json"
 	// "fmt"
 	"net/http"
@@ -172,19 +172,19 @@ func (app *Application) CreateTradeReturn(c *gin.Context) {
 		return
 	}
 
-	// *️⃣ ตรวจสอบว่า ReturnOrderLine ต้องไม่เป็นค่าว่าง (มีอย่างน้อย 1 รายการ)
-	if len(req.BeforeReturnOrderLines) == 0 {
-		app.Logger.Warn("[ sku information can't empty must be > 0 line ]")
-		handleError(c, Status.BadRequestError("[ sku information can't empty must be > 0 line ]"))
-		return
-	}
+	// // *️⃣ ตรวจสอบว่า ReturnOrderLine ต้องไม่เป็นค่าว่าง (มีอย่างน้อย 1 รายการ)
+	// if len(req.BeforeReturnOrderLines) == 0 {
+	// 	app.Logger.Warn("[ sku information can't empty must be > 0 line ]")
+	// 	handleError(c, Status.BadRequestError("[ sku information can't empty must be > 0 line ]"))
+	// 	return
+	// }
 
-	// *️⃣ Validate request ที่ส่งมา
-	if err := utils.ValidateCreateTradeReturn(req); err != nil {
-		app.Logger.Warn("[ Validation failed ]", zap.Error(err))
-		handleError(c, Status.BadRequestError("[ Validation failed: %v ]", err))
-		return
-	}
+	// // *️⃣ Validate request ที่ส่งมา
+	// if err := utils.ValidateCreateTradeReturn(req); err != nil {
+	// 	app.Logger.Warn("[ Validation failed ]", zap.Error(err))
+	// 	handleError(c, Status.BadRequestError("[ Validation failed: %v ]", err))
+	// 	return
+	// }
 
 	// *️⃣ ดึง userID จาก JWT token
 	userID, exists := c.Get("UserID")
@@ -240,7 +240,7 @@ func (app *Application) CreateTradeReturnLine(c *gin.Context) {
 		app.Logger.Warn("[ Validation failed ]", zap.Error(err))
 		handleError(c, Status.BadRequestError("[ Validation failed: %v ]", err))
 		return
-	} 
+	}
 
 	// *️⃣ ดึง userID จาก JWT token
 	userID, exists := c.Get("UserID")

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"boilerplate-backend-go/dto/request"
-	"boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
+	"boilerplate-back-go-2411/dto/request"
+	"boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/errors"
 
 	"go.uber.org/zap"
 )

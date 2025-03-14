@@ -1,57 +1,55 @@
 package service
 
 import (
-	"boilerplate-backend-go/logs"
-	"boilerplate-backend-go/repository"
+	"boilerplate-back-go-2411/logs"
+	"boilerplate-back-go-2411/repository"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type service struct {
 	logger           logs.Logger
-	constantRepo     repository.ConstantRepository
 	userRepo         repository.UserRepository
 	orderRepo        repository.OrderRepository
-	draftConfirmRepo repository.DraftConfirmRepository
 	returnOrderRepo  repository.ReturnOrderRepository
 	importOrderRepo  repository.ImportOrderRepository
 	beforeReturnRepo repository.BeforeReturnRepository
 	constant         repository.Constants
+	constantRepo     repository.ConstantRepository
+	draftConfirmRepo repository.DraftConfirmRepository
 }
 type AllOfService struct {
-	Constant     ConstantService
 	Auth         AuthService
 	User         UserService
 	Order        OrderService
-	DraftConfirm DraftConfirmService
 	ReturnOrder  ReturnOrderService
 	ImportOrder  ImportOrderService
 	BeforeReturn BeforeReturnService
 	Constant     Constants
+	DraftConfirm DraftConfirmService
 }
 
 func NewService(db *sqlx.DB, logger logs.Logger) AllOfService {
 	repo := repository.NewDB(db)
 	srv := service{
 		logger:           logger,
-		constantRepo:     repo,
 		userRepo:         repo,
 		orderRepo:        repo,
-		draftConfirmRepo: repo,
 		returnOrderRepo:  repo,
 		importOrderRepo:  repo,
 		beforeReturnRepo: repo,
 		constant:         repo,
+		constantRepo:     repo,
+		draftConfirmRepo: repo,
 	}
 	return AllOfService{
-		Constant:     srv,
 		Auth:         srv,
 		User:         srv,
 		Order:        srv,
-		DraftConfirm: srv,
 		ReturnOrder:  srv,
 		ImportOrder:  srv,
 		BeforeReturn: srv,
 		Constant:     srv,
+		DraftConfirm: srv,
 	}
 }

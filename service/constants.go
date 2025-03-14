@@ -1,8 +1,8 @@
 package service
 
 import (
-	entity "boilerplate-backend-go/Entity"
-	"boilerplate-backend-go/errors"
+	"boilerplate-back-go-2411/entity"
+	"boilerplate-back-go-2411/errors"
 	"context"
 	"database/sql"
 
@@ -12,14 +12,20 @@ import (
 // ส่วนรับ dropdown
 type Constants interface {
 	SearchProvince(ctx context.Context, keyword string) ([]entity.Province, error)
+	GetProvinces(ctx context.Context) ([]entity.Province, error)
 	GetDistrict(ctx context.Context, provinceCode string) ([]entity.District, error)
 	GetSubDistrict(ctx context.Context, districtCode string) ([]entity.SubDistrict, error)
 	GetPostalCode(ctx context.Context, subdistrictCode string) ([]entity.PostalCode, error)
 
 	GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)
-	GetProduct(ctx context.Context, page, limit int) ([]entity.ROM_V_ProductAll, error)
-	SearchCustomer(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.InvoiceInformation, error)
+	GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error)
+
+	SearchInvoiceNameByCustomerID(ctx context.Context, customerID string, keyword string, offset int, limit int) ([]entity.InvoiceInformation, error)
+	GetCustomerID(ctx context.Context) ([]entity.InvoiceInformation, error)
+	GetCustomerInfoByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error)
+
 	SearchProduct(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.ROM_V_ProductAll, error)
+	SearchSKUByNameAndSize(ctx context.Context, nameAlias string, size string, offset int, limit int) ([]entity.ROM_V_ProductAll, error)
 }
 
 // Service Method ที่ค้นหาจังหวัด (Province)
@@ -32,6 +38,15 @@ func (srv service) SearchProvince(ctx context.Context, keyword string) ([]entity
 		}
 		srv.logger.Error("[ Failed to fetch province data ]", zap.Error(err))
 		return nil, errors.InternalError("[ Failed to fetch province data: %v ]", err)
+	}
+	return provinces, nil
+}
+
+func (srv service) GetProvinces(ctx context.Context) ([]entity.Province, error) {
+	provinces, err := srv.constant.GetProvinces(ctx)
+	if err != nil {
+		srv.logger.Error("[ Failed to fetch provinces ]", zap.Error(err))
+		return nil, errors.InternalError("[ Failed to fetch provinces: %v ]", err)
 	}
 	return provinces, nil
 }
@@ -75,9 +90,7 @@ func (srv service) GetWarehouse(ctx context.Context) ([]entity.Warehouse, error)
 	return getWarehouse, nil
 }
 
-func (srv service) GetProduct(ctx context.Context, page, limit int) ([]entity.ROM_V_ProductAll, error) {
-	offset := (page - 1) * limit
-
+func (srv service) GetProduct(ctx context.Context, offset, limit int) ([]entity.ROM_V_ProductAll, error) {
 	getProducts, err := srv.constant.GetProduct(ctx, offset, limit)
 	if err != nil {
 		srv.logger.Error("[  get product error ]", zap.Error(err))
@@ -87,8 +100,8 @@ func (srv service) GetProduct(ctx context.Context, page, limit int) ([]entity.RO
 	return getProducts, nil
 }
 
-func (srv service) SearchCustomer(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.InvoiceInformation, error) {
-	getCustomer, err := srv.constant.SearchCustomer(ctx, keyword, searchType, offset, limit)
+func (srv service) SearchInvoiceNameByCustomerID(ctx context.Context, customerID string, keyword string, offset int, limit int) ([]entity.InvoiceInformation, error) {
+	getCustomer, err := srv.constant.SearchInvoiceNameByCustomerID(ctx, customerID, keyword, offset, limit)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -100,6 +113,24 @@ func (srv service) SearchCustomer(ctx context.Context, keyword string, searchTyp
 	}
 
 	return getCustomer, nil
+}
+
+func (srv service) GetCustomerID(ctx context.Context) ([]entity.InvoiceInformation, error) {
+	customerID, err := srv.constant.GetCustomerID(ctx)
+	if err != nil {
+		srv.logger.Error("[  get customerID error ]", zap.Error(err))
+		return nil, errors.InternalError("[ get customerID error: %v ]", err)
+	}
+	return customerID, nil
+}
+
+func (srv service) GetCustomerInfoByCustomerID(ctx context.Context, customerID string, limit, offset int) ([]entity.InvoiceInformation, error) {
+	customer, err := srv.constant.GetCustomerInfoByCustomerID(ctx, customerID, offset, limit)
+	if err != nil {
+		srv.logger.Error("[ Failed to fetch data ]", zap.Error(err))
+		return nil, errors.InternalError("[ Failed to fetch data: %v ]", err)
+	}
+	return customer, nil
 }
 
 func (srv service) SearchProduct(ctx context.Context, keyword string, searchType string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) {
@@ -115,4 +146,13 @@ func (srv service) SearchProduct(ctx context.Context, keyword string, searchType
 	}
 
 	return getProducts, nil
+}
+
+func (srv service) SearchSKUByNameAndSize(ctx context.Context, nameAlias string, size string, offset int, limit int) ([]entity.ROM_V_ProductAll, error) {
+	products, err := srv.constant.SearchSKUByNameAndSize(ctx, nameAlias, size, offset, limit)
+	if err != nil {
+		srv.logger.Error("[ Failed to fetch product data ]", zap.Error(err))
+		return nil, errors.InternalError("[ Failed to fetch product data: %v ]", err)
+	}
+	return products, nil
 }

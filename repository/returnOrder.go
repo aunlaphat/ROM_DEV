@@ -1,9 +1,9 @@
 package repository
 
 import (
-	request "boilerplate-backend-go/dto/request"
-	response "boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/utils"
+	request "boilerplate-back-go-2411/dto/request"
+	response "boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/utils"
 	"context"
 	"database/sql"
 	"errors"
@@ -20,6 +20,7 @@ type ReturnOrderRepository interface {
 	GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error)
 	CreateReturnOrder(ctx context.Context, req request.CreateReturnOrder) error
 	UpdateReturnOrder(ctx context.Context, req request.UpdateReturnOrder) error
+	UpdateReturnOrderLine(ctx context.Context, req request.UpdateReturnOrderLine) error
 	DeleteReturnOrder(ctx context.Context, orderNo string) error
 	CheckOrderNoExist(ctx context.Context, orderNo string) (bool, error)
 	CheckOrderNoLineExist(ctx context.Context, orderNo string) (bool, error)
@@ -49,7 +50,7 @@ func (repo repositoryDB) GetAllReturnOrder(ctx context.Context) ([]response.Retu
 	orderNos := make([]string, 0, len(orders))
 	for i := range orders {
 		orderNos = append(orderNos, orders[i].OrderNo)
-		orderMap[orders[i].OrderNo] = &orders[i] // ใช้ pointer จาก slice เดิม
+		orderMap[orders[i].OrderNo] = &orders[i]
 	}
 
 	// *️⃣ Batch Processing + sqlx.In เพื่อดึงข้อมูลเป็นกลุ่ม
@@ -141,7 +142,7 @@ func (repo repositoryDB) GetAllReturnOrderLines(ctx context.Context) ([]response
 func (repo repositoryDB) GetReturnOrderLineByOrderNo(ctx context.Context, orderNo string) ([]response.ReturnOrderLine, error) {
 	var lines []response.ReturnOrderLine
 
-	query := `  SELECT OrderNo, SKU, QTY, ReturnQTY, ActualQTY, Price, TrackingNo, 
+	query := `  SELECT OrderNo, SKU, ItemName, QTY, ReturnQTY, ActualQTY, Price, TrackingNo, 
 					   CreateBy, CreateDate, AlterSKU, UpdateBy, UpdateDate
 				FROM ReturnOrderLine
 				WHERE OrderNo = :OrderNo
@@ -167,13 +168,18 @@ func (repo repositoryDB) GetReturnOrderLineByOrderNo(ctx context.Context, orderN
 func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusCheckID int) ([]response.DraftTradeDetail, error) {
 	var orders []response.DraftTradeDetail
 
-	query := `  SELECT OrderNo, SoNo, SrNo, TrackingNo, ChannelID, Reason, StatusCheckID, CreateBy, CreateDate
-				FROM ReturnOrder
-				WHERE StatusCheckID = :statusCheckID
-				ORDER BY CreateDate ASC
+	query := ` 	SELECT 
+					r.OrderNo, r.SoNo, r.CustomerID, r.SrNo, r.TrackingNo, 
+					r.Logistic, c.ChannelName, r.CreateDate, 
+					w.WarehouseName, r.StatusCheckID
+				FROM ReturnOrder r
+				LEFT JOIN Warehouse w ON r.WarehouseID = w.WarehouseID
+				LEFT JOIN Channel c ON r.ChannelID = c.ChannelID
+				WHERE r.StatusCheckID = :StatusCheckID 
+				ORDER BY r.CreateDate ASC
 			 `
 	params := map[string]interface{}{
-		"statusCheckID": statusCheckID,
+		"StatusCheckID": statusCheckID,
 	}
 
 	query, args, err := sqlx.Named(query, params)
@@ -193,13 +199,17 @@ func (repo repositoryDB) GetReturnOrdersByStatus(ctx context.Context, statusChec
 func (repo repositoryDB) GetReturnOrdersByStatusAndDateRange(ctx context.Context, statusCheckID int, startDate, endDate string) ([]response.DraftTradeDetail, error) {
 	var orders []response.DraftTradeDetail
 
-	query := `  SELECT 
-					OrderNo, SoNo, SrNo, TrackingNo, ChannelID, Reason, StatusCheckID, CreateBy, CreateDate
-				FROM ReturnOrder
-				WHERE StatusCheckID = :StatusCheckID 
-				AND CAST(CreateDate AS DATE) >= :StartDate
-				AND CAST(CreateDate AS DATE) <= :EndDate
-				ORDER BY CreateDate ASC
+	query := ` 	SELECT 
+					r.OrderNo, r.SoNo, r.CustomerID, r.SrNo, r.TrackingNo, 
+					r.Logistic, c.ChannelName, r.CreateDate, 
+					w.WarehouseName, r.StatusCheckID
+				FROM ReturnOrder r
+				LEFT JOIN Warehouse w ON r.WarehouseID = w.WarehouseID
+				LEFT JOIN Channel c ON r.ChannelID = c.ChannelID
+				WHERE r.StatusCheckID = :StatusCheckID 
+				AND CAST(r.CreateDate AS DATE) >= :StartDate
+				AND CAST(r.CreateDate AS DATE) <= :EndDate
+				ORDER BY r.CreateDate ASC
 			 `
 	params := map[string]interface{}{
 		"StatusCheckID": statusCheckID,
@@ -296,7 +306,7 @@ func (repo repositoryDB) GetCreateReturnOrder(ctx context.Context, orderNo strin
 	err := repo.db.GetContext(ctx, &order, queryHead, sql.Named("OrderNo", orderNo))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) { // เมื่อไม่มีแถวที่ตรงกับเงื่อนไขในคิวรี่
-			return nil, nil 
+			return nil, nil
 		}
 		return nil, fmt.Errorf("database error querying ReturnOrder by OrderNo %s: %w", orderNo, err)
 	}
@@ -325,7 +335,7 @@ func (repo repositoryDB) GetUpdateReturnOrder(ctx context.Context, orderNo strin
 	err := repo.db.GetContext(ctx, &order, query, sql.Named("OrderNo", orderNo))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) { // เมื่อไม่มีแถวที่ตรงกับเงื่อนไขในคิวรี่
-			return nil, nil 
+			return nil, nil
 		}
 		return nil, fmt.Errorf("database error querying ReturnOrder by OrderNo %s: %w", orderNo, err)
 	}
@@ -461,6 +471,76 @@ func (repo repositoryDB) UpdateReturnOrder(ctx context.Context, req request.Upda
 			if _, err := tx.ExecContext(ctx, lineQueryRebind, lineArgs...); err != nil {
 				return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
 			}
+		}
+
+		return nil
+	})
+}
+
+func (repo repositoryDB) UpdateReturnOrderLine(ctx context.Context, req request.UpdateReturnOrderLine) error {
+	return utils.HandleTransaction(repo.db, func(tx *sqlx.Tx) error {
+		// ดึงข้อมูลปัจจุบันจาก ReturnOrderLine ตาม OrderNo และ SKU
+		var current response.ReturnOrderLine
+		queryCurrent := ` SELECT ActualQTY, Price 
+						  FROM ReturnOrderLine 
+						  WHERE OrderNo = :OrderNo AND SKU = :SKU 
+						`
+		currentParams := map[string]interface{}{
+			"OrderNo": req.OrderNo,
+			"SKU":     req.SKU,
+		}
+
+		namedQuery, args, err := sqlx.Named(queryCurrent, currentParams)
+		if err != nil {
+			return fmt.Errorf("failed to prepare query: %w", err)
+		}
+		query := tx.Rebind(namedQuery)
+
+		if err := tx.GetContext(ctx, &current, query, args...); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("OrderNo and SKU not found: %w", err)
+			}
+			return fmt.Errorf("failed to fetch current data: %w", err)
+		}
+
+		// ตรวจสอบค่าที่เปลี่ยนแปลง
+		updateFields := []string{}
+		params := map[string]interface{}{
+			"OrderNo":  req.OrderNo,
+			"SKU":      req.SKU,
+			"UpdateBy": *req.UpdateBy, // รับค่า UserID จาก API
+		}
+
+		if req.ActualQTY != nil && *req.ActualQTY != *current.ActualQTY {
+			updateFields = append(updateFields, "ActualQTY = :ActualQTY")
+			params["ActualQTY"] = req.ActualQTY
+		}
+		if req.Price != nil && *req.Price != current.Price {
+			updateFields = append(updateFields, "Price = :Price")
+			params["Price"] = req.Price
+		}
+
+		// ถ้าไม่มีการเปลี่ยนแปลง ไม่ต้องอัปเดต
+		if len(updateFields) == 0 {
+			return nil
+		}
+
+		// เพิ่มฟิลด์ UpdateBy และ UpdateDate
+		updateFields = append(updateFields, "UpdateBy = :UpdateBy", "UpdateDate = GETDATE()")
+		updateQuery := fmt.Sprintf(` 
+						UPDATE ReturnOrderLine SET %s 
+						WHERE OrderNo = :OrderNo AND SKU = :SKU`,
+			strings.Join(updateFields, ", "))
+
+		namedUpdateQuery, updateArgs, err := sqlx.Named(updateQuery, params)
+		if err != nil {
+			return fmt.Errorf("failed to prepare update query: %w", err)
+		}
+		updateQueryRebind := tx.Rebind(namedUpdateQuery)
+
+		// ทำการอัปเดต ReturnOrderLine
+		if _, err := tx.ExecContext(ctx, updateQueryRebind, updateArgs...); err != nil {
+			return fmt.Errorf("failed to update ReturnOrderLine: %w", err)
 		}
 
 		return nil

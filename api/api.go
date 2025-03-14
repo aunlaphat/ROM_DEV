@@ -1,8 +1,8 @@
 package api
 
 import (
-	"boilerplate-backend-go/logs"
-	"boilerplate-backend-go/service"
+	"boilerplate-back-go-2411/logs"
+	"boilerplate-back-go-2411/service"
 
 	"github.com/go-chi/jwtauth"
 )

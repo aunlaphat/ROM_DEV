@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"boilerplate-backend-go/dto/response"
-	"boilerplate-backend-go/errors"
+	"boilerplate-back-go-2411/dto/response"
+	"boilerplate-back-go-2411/errors"
 	"context"
 	"fmt"
 )
