@@ -96,7 +96,7 @@ type AddItem struct {
 type CreateReturnOrder struct {
 	OrderNo       string  `json:"orderNo" db:"OrderNo" example:"ORD0001"`
 	SoNo          string  `json:"soNo" db:"SoNo" example:"SO0001"`
-	SrNo          string  `json:"srNo" db:"SrNo" example:"SR0001"`
+	SrNo          *string `json:"srNo" db:"SrNo" example:"SR0001"`
 	TrackingNo    *string `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
 	PlatfID       *int    `json:"platfId" db:"PlatfID" example:"1"`
 	ChannelID     *int    `json:"channelId" db:"ChannelID" example:"2"`
@@ -231,7 +231,7 @@ type ConfirmToReturnRequest struct {
 }
 
 type UpdateToReturn struct {
-	SrNo string `json:"srNo" db:"SrNo"`
+	SrNo *string `json:"srNo" db:"SrNo"`
 }
 
 type ImportLinesActual struct {

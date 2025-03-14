@@ -110,7 +110,7 @@ type ReturnOrderLine struct {
 type CreateReturnOrder struct {
 	OrderNo       string    `json:"orderNo" db:"OrderNo" example:"ORD0001"`
 	SoNo          string    `json:"soNo" db:"SoNo" example:"SO0001"`
-	SrNo          string    `json:"srNo" db:"SrNo" example:"SR0001"`
+	SrNo          *string   `json:"srNo" db:"SrNo" example:"SR0001"`
 	TrackingNo    *string   `json:"trackingNo" db:"TrackingNo" example:"12345678TH"`
 	PlatfID       int       `json:"platfId" db:"PlatfID" example:"1"`
 	ChannelID     int       `json:"channelId" db:"ChannelID" example:"2"`
@@ -265,7 +265,7 @@ type ConfirmReturnResponse struct {
 type ConfirmReturnOrderDetails struct {
 	OrderNo       string  `db:"OrderNo"`
 	SoNo          string  `db:"SoNo"`
-	SrNo          string  `db:"SrNo"`
+	SrNo          *string `db:"SrNo"`
 	ChannelID     int     `db:"ChannelID"`
 	Reason        string  `db:"Reason"`
 	TrackingNo    *string `db:"TrackingNo"`
@@ -327,7 +327,7 @@ type ImportOrderSummary struct {
 type CreateBeforeReturnOrderResponse struct {
 	OrderNo     string     `json:"orderNo" db:"OrderNo"`
 	SoNo        string     `json:"soNo" db:"SoNo"`
-	SrNo        string     `json:"srNo" db:"SrNo"`
+	SrNo        *string    `json:"srNo" db:"SrNo"`
 	ChannelID   int        `json:"channelId" db:"ChannelID"`
 	Reason      string     `json:"reason" db:"Reason"`
 	CustomerID  string     `json:"customerId" db:"CustomerID"`
@@ -360,7 +360,7 @@ type BeforeReturnOrderLineResponse struct {
 
 type UpdateSrNoResponse struct {
 	OrderNo        string    `json:"orderNo" db:"OrderNo"`
-	SrNo           string    `json:"srNo" db:"SrNo"`
+	SrNo           *string   `json:"srNo" db:"SrNo"`
 	StatusReturnID *int      `json:"statusReturnID,omitempty" db:"StatusReturnID"`
 	StatusConfID   *int      `json:"statusConfID,omitempty" db:"StatusConfID"`
 	UpdateBy       string    `json:"updateBy" db:"UpdateBy"`
@@ -386,7 +386,7 @@ type CancelOrderResponse struct {
 type OrderHeadResponse struct {
 	OrderNo     string    `json:"orderNo" db:"OrderNo"`
 	SoNo        string    `json:"soNo" db:"SoNo"`
-	SrNo        string    `json:"srNo" db:"SrNo"`
+	SrNo        *string   `json:"srNo" db:"SrNo"`
 	CustomerID  string    `json:"customerId" db:"CustomerID"`
 	TrackingNo  *string   `json:"trackingNo" db:"TrackingNo"`
 	Logistic    string    `json:"logistic" db:"Logistic"`
@@ -398,7 +398,7 @@ type OrderHeadResponse struct {
 type DraftConfirmResponse struct {
 	OrderNo string             `json:"orderNo" db:"OrderNo"`
 	SoNo    string             `json:"soNo" db:"SoNo"`
-	SrNo    string             `json:"srNo" db:"SrNo"`
+	SrNo    *string            `json:"srNo" db:"SrNo"`
 	Items   []DraftConfirmItem `json:"items"`
 }
 

@@ -137,7 +137,7 @@ func (srv service) UpdateSrNo(ctx context.Context, orderNo string, srNo string, 
 
 	srv.logger.Info("✅ SrNo updated successfully",
 		zap.String("OrderNo", resp.OrderNo),
-		zap.String("SrNo", resp.SrNo),
+		zap.String("SrNo", *resp.SrNo),
 	)
 
 	return resp, nil
